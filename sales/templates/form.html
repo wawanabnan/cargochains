@@ -1,0 +1,153 @@
+{# templates/sales/quotations/form.html #}
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{{ page_title|default:"Quotation Form" }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    .field-errors { color:#b00020; font-size:.9rem; margin:.25rem 0 .5rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: .5rem; vertical-align: top; }
+    tfoot td { font-weight: bold; }
+    .actions { display:flex; gap:.5rem; }
+  </style>
+</head>
+<body>
+  <h1>{{ page_title }}</h1>
+
+  {% if messages %}
+    <ul>
+      {% for m in messages %}
+        <li>{{ m }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <form method="post" action="{% url post_url %}">
+    {% csrf_token %}
+
+    <fieldset>
+      <legend>Header</legend>
+      {{ form.non_field_errors }}
+      <div>
+        {{ form.number.label_tag }}<br>
+        {{ form.number }} {% if form.number.errors %}<div class="field-errors">{{ form.number.errors }}</div>{% endif %}
+      </div>
+      <div>
+        {{ form.customer.label_tag }}<br>
+        {{ form.customer }} {% if form.customer.errors %}<div class="field-errors">{{ form.customer.errors }}</div>{% endif %}
+      </div>
+      <div style="display:flex; gap:1rem;">
+        <div>
+          {{ form.date.label_tag }}<br>
+          {{ form.date }} {% if form.date.errors %}<div class="field-errors">{{ form.date.errors }}</div>{% endif %}
+        </div>
+        <div>
+          {{ form.valid_until.label_tag }}<br>
+          {{ form.valid_until }} {% if form.valid_until.errors %}<div class="field-errors">{{ form.valid_until.errors }}</div>{% endif %}
+        </div>
+      </div>
+      <div style="display:flex; gap:1rem;">
+        <div>
+          {{ form.sales_service.label_tag }}<br>
+          {{ form.sales_service }} {% if form.sales_service.errors %}<div class="field-errors">{{ form.sales_service.errors }}</div>{% endif %}
+        </div>
+        <div>
+          {{ form.currency.label_tag }}<br>
+          {{ form.currency }} {% if form.currency.errors %}<div class="field-errors">{{ form.currency.errors }}</div>{% endif %}
+        </div>
+        <div>
+          {{ form.payment_term.label_tag }}<br>
+          {{ form.payment_term }} {% if form.payment_term.errors %}<div class="field-errors">{{ form.payment_term.errors }}</div>{% endif %}
+        </div>
+      </div>
+      <div>
+        {{ form.notes.label_tag }}<br>
+        {{ form.notes }} {% if form.notes.errors %}<div class="field-errors">{{ form.notes.errors }}</div>{% endif %}
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Lines</legend>
+      {{ formset.non_field_errors }}
+      {{ formset.management_form }}
+      <table>
+        <thead>
+          <tr>
+            <th>Origin</th>
+            <th>Destination</th>
+            <th>Description</th>
+            <th>UOM</th>
+            <th style="width:7rem;">Qty</th>
+            <th style="width:9rem;">Price</th>
+            <th style="width:9rem;">Amount</th>
+            <th style="width:4rem;">Del</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in formset.forms %}
+            <tr>
+              <td>{{ f.origin }}{% if f.origin.errors %}<div class="field-errors">{{ f.origin.errors }}</div>{% endif %}</td>
+              <td>{{ f.destination }}{% if f.destination.errors %}<div class="field-errors">{{ f.destination.errors }}</div>{% endif %}</td>
+              <td>{{ f.description }}{% if f.description.errors %}<div class="field-errors">{{ f.description.errors }}</div>{% endif %}</td>
+              <td>{{ f.uom }}{% if f.uom.errors %}<div class="field-errors">{{ f.uom.errors }}</div>{% endif %}</td>
+              <td>{{ f.qty }}{% if f.qty.errors %}<div class="field-errors">{{ f.qty.errors }}</div>{% endif %}</td>
+              <td>{{ f.price }}{% if f.price.errors %}<div class="field-errors">{{ f.price.errors }}</div>{% endif %}</td>
+              <td>{{ f.amount }}{% if f.amount.errors %}<div class="field-errors">{{ f.amount.errors }}</div>{% endif %}</td>
+              <td>
+                {% if formset.can_delete %}
+                  {{ f.DELETE }} Delete
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="8">
+              <div class="actions">
+                <button type="submit">Save</button>
+                <button type="button" onclick="addFormsetRow()">+ Add Line</button>
+                <a href="javascript:history.back()">Cancel</a>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </fieldset>
+  </form>
+
+  <script>
+    // super-minimal client-side add-row (duplicate last empty row)
+    function addFormsetRow() {
+      const totalForms = document.getElementById('id_salesquotationline_set-TOTAL_FORMS'); // default prefix: modelname_set
+      // fallback: cari input[name$='-TOTAL_FORMS']
+      const totalInput = totalForms || document.querySelector("input[name$='-TOTAL_FORMS']");
+      if (!totalInput) return;
+
+      const formCount = parseInt(totalInput.value, 10);
+      const tbody = document.querySelector("table tbody");
+      const lastRow = tbody.querySelector("tr:last-child");
+      const newRow = lastRow.cloneNode(true);
+
+      // bersihkan nilai input di row baru
+      newRow.querySelectorAll("input, select, textarea").forEach(el => {
+        if (el.name && el.name.indexOf("-" + (formCount - 1) + "-") !== -1) {
+          el.name = el.name.replace("-" + (formCount - 1) + "-", "-" + formCount + "-");
+          el.id = el.id.replace("-" + (formCount - 1) + "-", "-" + formCount + "-");
+          if (el.type === "checkbox") {
+            el.checked = false;
+          } else {
+            el.value = "";
+          }
+        }
+      });
+
+      tbody.appendChild(newRow);
+      totalInput.value = formCount + 1;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Step 2 — Quotation Lines</title>
+    <style>
+      .line { border:1px solid #ccc; padding:8px; margin:8px 0; border-radius:6px; }
+      .actions { display:flex; gap:8px; align-items:center; margin-top:8px; }
+      .btn { padding:6px 10px; border:1px solid #888; background:#f5f5f5; border-radius:6px; cursor:pointer; }
+      .btn-danger { border-color:#c33; color:#c33; background:#fff0f0; }
+    </style>
+  </head>
+  <body>
+    <h2>Step 2 — Quotation Lines (Quotation #{{ quotation.id }})</h2>
+
+    <form method="post" id="lines-form">
+      {% csrf_token %}
+      {{ formset.management_form }}
+
+      <div id="forms">
+        {% for form in formset.forms %}
+          <div class="line">
+            {{ form.as_p }}
+            <div class="actions">
+              {% if formset.can_delete %}
+                <label>{{ form.DELETE }} Hapus</label>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Template untuk baris baru -->
+      <template id="empty-form-template">
+        <div class="line">
+          {{ formset.empty_form.as_p|safe }}
+          <div class="actions">
+            {% if formset.can_delete %}
+              <label>Hapus <input type="checkbox" name="__DELETE__"></label>
+            {% endif %}
+          </div>
+        </div>
+      </template>
+
+      <div class="actions">
+        <button type="button" class="btn" id="add-line">+ Add line</button>
+        <a href="{% url 'sales:freight_quotation_add' %}" class="btn">Kembali</a>
+        <button type="submit" class="btn">Finish</button>
+      </div>
+    </form>
+
+    <script>
+      (function(){
+        const totalForms = document.getElementById('id_' + '{{ formset.prefix }}' + '-TOTAL_FORMS');
+        const formsContainer = document.getElementById('forms');
+        const tmpl = document.getElementById('empty-form-template').content;
+
+        function renumber(el, index) {
+          // ganti __prefix__ dengan index baru
+          el.querySelectorAll('input, select, textarea, label').forEach(node => {
+            ['name','id','for','value'].forEach(attr => {
+              const v = node.getAttribute(attr);
+              if (!v) return;
+              node.setAttribute(attr, v.replace(/__prefix__/g, index));
+            });
+          });
+        }
+
+        document.getElementById('add-line').addEventListener('click', () => {
+          const idx = parseInt(totalForms.value, 10);
+          const clone = document.importNode(tmpl, true);
+          renumber(clone, idx);
+
+          // jika ada checkbox hapus di template, pastikan name/ID ikut prefix yg baru
+          clone.querySelectorAll('input[type="checkbox"][name$="__DELETE__"]').forEach(chk => {
+            chk.name = '{{ formset.prefix }}-' + idx + '-DELETE';
+            chk.id   = '{{ formset.prefix }}-' + idx + '-DELETE';
+          });
+
+          formsContainer.appendChild(clone);
+          totalForms.value = idx + 1;
+        });
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"><title>Step 1 — Quotation Header</title></head>
+  <body>
+    <h2>Step 1 — Quotation Header</h2>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit">Next</button>
+    </form>
+  </body>
+</html>

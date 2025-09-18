@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Quotation List</h2>
+<div class="mb-3">
+  <a href="{% url 'sales_freight_quotation_add' %}" class="btn btn-primary">+ New Quotation</a>
+</div>
+<table class="table table-sm table-striped">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Customer</th>
+      <th>Date</th>
+      <th>Valid Until</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for q in quotations %}
+    <tr>
+      <td>{{ q.id }}</td>
+      <td>{{ q.customer }}</td>
+      <td>{{ q.date }}</td>
+      <td>{{ q.valid_until }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4" class="text-muted">Belum ada data</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
