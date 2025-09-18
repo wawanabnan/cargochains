@@ -13,6 +13,9 @@ VER = "fq-2step-dyn-v1"
 def ping(request):
     return HttpResponse(f"pong {VER}")
 
+def debug_status(request):
+    return HttpResponse("debug ok")
+
 def _next_sequence_number():
     period = _date.today().strftime("%Y%m")
     with transaction.atomic():
@@ -34,24 +37,17 @@ def quotation_add_header(request):
                 if not getattr(obj, "number", None) or str(getattr(obj, "number")).strip() == "":
                     obj.number = _next_sequence_number()
                 obj.save()
-            return redirect("sales:freight_quotation_add_lines", pk=obj.pk)
+            # simpan pk di session supaya bisa pakai URL tanpa pk
+            request.session["current_quotation_pk"] = obj.pk
+            return redirect("sales:freight_quotation_add_lines_session")
     else:
         form = QuotationHeaderForm()
     return render(request, "freight/quotation_step1.html", {"form": form})
 
+
 def quotation_add_lines(request, pk: int):
     quotation = get_object_or_404(SalesQuotation, pk=pk)
-
-    LineFormSet = inlineformset_factory(
-        parent_model=SalesQuotation,
-        model=SalesQuotationLine,
-        form=QuotationLineForm,
-        formset=BaseLineFormSet,   # <— validasi minimal 1 line
-        fk_name="sales_quotation", # <— FK di model line
-        extra=1,                   # <— mulai 1 baris
-        can_delete=True,
-    )
-
+    LineFormSet = _make_line_formset()
     if request.method == "POST":
         formset = LineFormSet(request.POST, instance=quotation)
         if formset.is_valid():
@@ -61,8 +57,15 @@ def quotation_add_lines(request, pk: int):
             return redirect("sales:freight_quotation_list")
     else:
         formset = LineFormSet(instance=quotation)
-
     return render(request, "freight/quotation_step2.html", {"formset": formset, "quotation": quotation})
+
+def quotation_add_lines_session(request):
+    pk = request.session.get("current_quotation_pk")
+    if not pk:
+        # fallback kalau session hilang
+        messages.warning(request, "Session quotation hilang. Mulai dari Step-1.")
+        return redirect("sales:freight_quotation_add")
+    return quotation_add_lines(request, pk)
 
 def freight_quotation_list(request):
     qs = SalesQuotation.objects.order_by("-id")[:200]

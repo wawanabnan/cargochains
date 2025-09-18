@@ -1,86 +1,143 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>Step 2 — Quotation Lines</title>
-    <style>
-      .line { border:1px solid #ccc; padding:8px; margin:8px 0; border-radius:6px; }
-      .actions { display:flex; gap:8px; align-items:center; margin-top:8px; }
-      .btn { padding:6px 10px; border:1px solid #888; background:#f5f5f5; border-radius:6px; cursor:pointer; }
-      .btn-danger { border-color:#c33; color:#c33; background:#fff0f0; }
-    </style>
-  </head>
-  <body>
-    <h2>Step 2 — Quotation Lines (Quotation #{{ quotation.id }})</h2>
+{% extends "base.html" %}
+{% load static %}
 
-    <form method="post" id="lines-form">
-      {% csrf_token %}
-      {{ formset.management_form }}
+{% block title %}New Freight Quotation — Step 2{% endblock %}
 
-      <div id="forms">
-        {% for form in formset.forms %}
-          <div class="line">
-            {{ form.as_p }}
-            <div class="actions">
+{% block content %}
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card card-success card-outline">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title m-0"><i class="fas fa-list"></i> Step 2 — Quotation Lines</h3>
+        <span class="text-muted">Quotation #{{ quotation.id }}</span>
+      </div>
+      <div class="card-body">
+        <form method="post" id="lines-form">
+          {% csrf_token %}
+          {{ formset.management_form }}
+
+          <div id="forms" class="d-flex flex-column gap-3">
+            {% for form in formset.forms %}
+              <div class="card shadow-sm line" data-index="{{ forloop.counter0 }}">
+                <div class="card-body">
+                  <div class="row g-3">
+                    {% for field in form.visible_fields %}
+                      <div class="col-md-4">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field|add_class:"form-control" }}
+                        {% for err in field.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+
+                {% if formset.can_delete %}
+                  <input type="hidden" class="del-flag" name="{{ form.prefix }}-DELETE" id="{{ form.prefix }}-DELETE" value="">
+                  <div class="card-footer d-flex justify-content-end">
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete">
+                      <i class="fas fa-trash"></i> Delete line
+                    </button>
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+
+          <!-- Template baris baru -->
+          <template id="empty-form-template">
+            <div class="card shadow-sm line" data-index="__prefix__">
+              <div class="card-body">
+                <div class="row g-3">
+                  {{ formset.empty_form.as_p|safe }}
+                </div>
+              </div>
               {% if formset.can_delete %}
-                <label>{{ form.DELETE }} Hapus</label>
+                <input type="hidden" class="del-flag" name="__prefix__-DELETE" id="__prefix__-DELETE" value="">
+                <div class="card-footer d-flex justify-content-end">
+                  <button type="button" class="btn btn-sm btn-outline-danger btn-delete">
+                    <i class="fas fa-trash"></i> Delete line
+                  </button>
+                </div>
               {% endif %}
             </div>
+          </template>
+
+          <div class="d-flex gap-2 mt-3">
+            <button type="button" class="btn btn-outline-primary" id="add-line">
+              <i class="fas fa-plus"></i> Add line
+            </button>
+            <a href="{% url 'sales:freight_quotation_add' %}" class="btn btn-secondary">
+              <i class="fas fa-arrow-left"></i> Back
+            </a>
+            <button type="submit" class="btn btn-success">
+              <i class="fas fa-check"></i> Finish
+            </button>
           </div>
-        {% endfor %}
+        </form>
       </div>
+      <div class="card-footer text-muted">Minimal 1 line terisi. Amount dihitung otomatis.</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
 
-      <!-- Template untuk baris baru -->
-      <template id="empty-form-template">
-        <div class="line">
-          {{ formset.empty_form.as_p|safe }}
-          <div class="actions">
-            {% if formset.can_delete %}
-              <label>Hapus <input type="checkbox" name="__DELETE__"></label>
-            {% endif %}
-          </div>
-        </div>
-      </template>
+{% block extra_js %}
+<script>
+  (function(){
+    const prefix = '{{ formset.prefix }}';
+    const totalEl = document.getElementById('id_' + prefix + '-TOTAL_FORMS');
+    const container = document.getElementById('forms');
+    const tmpl = document.getElementById('empty-form-template').content;
 
-      <div class="actions">
-        <button type="button" class="btn" id="add-line">+ Add line</button>
-        <a href="{% url 'sales:freight_quotation_add' %}" class="btn">Kembali</a>
-        <button type="submit" class="btn">Finish</button>
-      </div>
-    </form>
-
-    <script>
-      (function(){
-        const totalForms = document.getElementById('id_' + '{{ formset.prefix }}' + '-TOTAL_FORMS');
-        const formsContainer = document.getElementById('forms');
-        const tmpl = document.getElementById('empty-form-template').content;
-
-        function renumber(el, index) {
-          // ganti __prefix__ dengan index baru
-          el.querySelectorAll('input, select, textarea, label').forEach(node => {
-            ['name','id','for','value'].forEach(attr => {
-              const v = node.getAttribute(attr);
-              if (!v) return;
-              node.setAttribute(attr, v.replace(/__prefix__/g, index));
-            });
-          });
-        }
-
-        document.getElementById('add-line').addEventListener('click', () => {
-          const idx = parseInt(totalForms.value, 10);
-          const clone = document.importNode(tmpl, true);
-          renumber(clone, idx);
-
-          // jika ada checkbox hapus di template, pastikan name/ID ikut prefix yg baru
-          clone.querySelectorAll('input[type="checkbox"][name$="__DELETE__"]').forEach(chk => {
-            chk.name = '{{ formset.prefix }}-' + idx + '-DELETE';
-            chk.id   = '{{ formset.prefix }}-' + idx + '-DELETE';
-          });
-
-          formsContainer.appendChild(clone);
-          totalForms.value = idx + 1;
+    function renumber(el, idx) {
+      el.querySelectorAll('input, select, textarea, label').forEach(node => {
+        ['name','id','for','value'].forEach(attr => {
+          const v = node.getAttribute(attr);
+          if (!v) return;
+          node.setAttribute(attr, v.replace(/__prefix__/g, idx));
         });
-      })();
-    </script>
-  </body>
-</html>
+      });
+      el.setAttribute('data-index', idx);
+    }
+
+    function hookLine(lineEl) {
+      const qtyInput   = lineEl.querySelector(`input[name^="${prefix}-"][name$="-qty"]`);
+      const priceInput = lineEl.querySelector(`input[name^="${prefix}-"][name$="-price"]`);
+      const amtInput   = lineEl.querySelector(`input[name^="${prefix}-"][name$="-amount"]`);
+      const delFlag    = lineEl.querySelector('.del-flag');
+      const delBtn     = lineEl.querySelector('.btn-delete');
+
+      function recalc() {
+        const q = parseFloat(qtyInput?.value || '0');
+        const p = parseFloat(priceInput?.value || '0');
+        const amount = isFinite(q) && isFinite(p) ? (q * p) : 0;
+        if (amtInput) amtInput.value = amount.toFixed(2);
+      }
+      qtyInput && qtyInput.addEventListener('input', recalc);
+      priceInput && priceInput.addEventListener('input', recalc);
+      recalc(); // initial
+
+      if (delBtn && delFlag) {
+        delBtn.addEventListener('click', () => {
+          delFlag.value = 'on';        // tandai delete untuk formset
+          lineEl.style.display = 'none';
+        });
+      }
+    }
+
+    // hook existing
+    container.querySelectorAll('.line').forEach(hookLine);
+
+    // add new
+    document.getElementById('add-line').addEventListener('click', () => {
+      const idx = parseInt(totalEl.value, 10);
+      const clone = document.importNode(tmpl, true);
+      renumber(clone, idx);
+      container.appendChild(clone);
+      totalEl.value = idx + 1;
+      const newLine = container.querySelector(`.line[data-index="${idx}"]`);
+      hookLine(newLine);
+    });
+  })();
+</script>
+{% endblock %}
