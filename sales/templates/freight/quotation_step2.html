@@ -1,81 +1,240 @@
 {% extends "base.html" %}
 {% load static %}
-
-{% block title %}New Freight Quotation — Step 2{% endblock %}
+{% block title %}New Freight Quotation — Step 2 (Cards){% endblock %}
 
 {% block content %}
-<div class="row">
-  <div class="col-lg-12">
-    <div class="card card-success card-outline">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h3 class="card-title m-0"><i class="fas fa-list"></i> Step 2 — Quotation Lines</h3>
-        <span class="text-muted">Quotation #{{ quotation.id }}</span>
-      </div>
-      <div class="card-body">
-        <form method="post" id="lines-form">
-          {% csrf_token %}
-          {{ formset.management_form }}
+<div class="container-fluid">
+  <!-- ===== HEADER INFO (versi yang kamu suka) ===== -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card card-primary card-outline mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="card-title m-0"><i class="fas fa-info-circle"></i> Quotation Header</h3>
+          <span class="text-muted">ID: {{ quotation.id }}</span>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <div class="small text-muted">Number</div>
+              <div class="fw-semibold">{{ quotation.number }}</div>
+            </div>
+            <div class="col-md-3">
+              <div class="small text-muted">Date</div>
+              <div class="fw-semibold">{{ quotation.date }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="small text-muted">Customer</div>
+              <div class="fw-semibold">{{ quotation.customer }}</div>
+            </div>
 
-          <div id="forms" class="d-flex flex-column gap-3">
-            {% for form in formset.forms %}
-              <div class="card shadow-sm line" data-index="{{ forloop.counter0 }}">
-                <div class="card-body">
-                  <div class="row g-3">
-                    {% for field in form.visible_fields %}
-                      <div class="col-md-4">
-                        <label class="form-label">{{ field.label }}</label>
-                        {{ field|add_class:"form-control" }}
-                        {% for err in field.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
-                      </div>
-                    {% endfor %}
-                  </div>
-                </div>
+            <div class="col-md-3">
+              <div class="small text-muted">Sales Service</div>
+              <div class="fw-semibold">{{ quotation.sales_service }}</div>
+            </div>
+            <div class="col-md-3">
+              <div class="small text-muted">Sales Agency</div>
+              <div class="fw-semibold">{{ quotation.sales_agency|default:"—" }}</div>
+            </div>
+            <div class="col-md-3">
+              <div class="small text-muted">Currency</div>
+              <div class="fw-semibold">{{ quotation.currency }}</div>
+            </div>
+            <div class="col-md-3">
+              <div class="small text-muted">Payment Term</div>
+              <div class="fw-semibold">{{ quotation.payment_term|default:"—" }}</div>
+            </div>
 
-                {% if formset.can_delete %}
-                  <input type="hidden" class="del-flag" name="{{ form.prefix }}-DELETE" id="{{ form.prefix }}-DELETE" value="">
-                  <div class="card-footer d-flex justify-content-end">
-                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete">
-                      <i class="fas fa-trash"></i> Delete line
-                    </button>
-                  </div>
-                {% endif %}
+            <div class="col-md-3">
+              <div class="small text-muted">Valid Until</div>
+              <div class="fw-semibold">{{ quotation.valid_until|default:"—" }}</div>
+            </div>
+            <div class="col-md-9 d-flex align-items-end justify-content-end">
+              <div class="text-end">
+                <div class="small text-muted">Grand Total (header)</div>
+                <div class="display-6 fw-bold" id="live-grand-total"
+                     data-amount="{{ quotation.total_amount|default:'0.00' }}">0,00</div>
               </div>
-            {% endfor %}
+            </div>
           </div>
 
-          <!-- Template baris baru -->
-          <template id="empty-form-template">
-            <div class="card shadow-sm line" data-index="__prefix__">
-              <div class="card-body">
-                <div class="row g-3">
-                  {{ formset.empty_form.as_p|safe }}
-                </div>
-              </div>
-              {% if formset.can_delete %}
-                <input type="hidden" class="del-flag" name="__prefix__-DELETE" id="__prefix__-DELETE" value="">
-                <div class="card-footer d-flex justify-content-end">
-                  <button type="button" class="btn btn-sm btn-outline-danger btn-delete">
-                    <i class="fas fa-trash"></i> Delete line
-                  </button>
+          {% if quotation.note_1 %}
+          <hr class="my-3">
+          <div>
+            <div class="small text-muted mb-1">Note</div>
+            <div class="border rounded p-2">{{ quotation.note_1|safe }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LINES (CARD STYLE) ===== -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card card-success card-outline">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="card-title m-0"><i class="fas fa-list"></i> Quotation Lines</h3>
+          <div class="text-end">
+           <!-- <div class="small text-muted">Grand Total (live)</div>
+                <div class="h4 fw-bold" id="live-grand-total">0,00</div>-->
+          </div>
+        </div>
+
+        <div class="card-body">
+          <form method="post" id="lines-form">
+            {% csrf_token %}
+
+            <div id="lines-container" class="d-flex flex-column gap-3">
+              {% if lines and lines|length > 0 %}
+                {% for ln in lines %}
+                  <!-- satu card line (EXISTING) -->
+                  <div class="card shadow-sm line">
+                    <div class="card-body">
+                      <div class="row g-3">
+                        <div class="col-md-3">
+                          <label class="form-label">Origin</label>
+                          <select name="origin[]" class="form-select">
+                            <option value="">—</option>
+                            {% for loc in locations %}
+                              <option value="{{ loc.id }}" {% if ln.origin_id == loc.id %}selected{% endif %}>{{ loc.name }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+
+                        <div class="col-md-3">
+                          <label class="form-label">Destination</label>
+                          <select name="destination[]" class="form-select">
+                            <option value="">—</option>
+                            {% for loc in locations %}
+                              <option value="{{ loc.id }}" {% if ln.destination_id == loc.id %}selected{% endif %}>{{ loc.name }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+
+                        <div class="col-md-6">
+                          <label class="form-label">Description</label>
+                          <textarea name="description[]" rows="3" class="form-control">{{ ln.description }}</textarea>
+                        </div>
+
+                        <div class="col-md-2">
+                          <label class="form-label">UoM</label>
+                          <select name="uom[]" class="form-select">
+                            <option value="">—</option>
+                            {% for u in uoms %}
+                              <option value="{{ u.id }}" {% if ln.uom_id == u.id %}selected{% endif %}>{{ u.name }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+
+                        <div class="col-md-2">
+                          <label class="form-label">Qty</label>
+                          <input name="qty[]" type="text" class="form-control money" value="{{ ln.qty }}">
+                        </div>
+
+                        <div class="col-md-3">
+                          <label class="form-label">Price</label>
+                          <input name="price[]" type="text" class="form-control money" value="{{ ln.price }}">
+                        </div>
+
+                        <div class="col-md-3">
+                          <label class="form-label">Amount</label>
+                          <input name="amount_display[]" type="text" class="form-control money" value="" readonly>
+                        </div>
+
+                        <div class="col-md-2 d-flex align-items-end justify-content-end">
+                          <button type="button" class="btn btn-sm btn-outline-danger btn-remove">
+                            <i class="fas fa-trash"></i> Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <!-- baris kosong pertama (EMPTY) -->
+                <div class="card shadow-sm line">
+                  <div class="card-body">
+                    <div class="row g-6">
+                      <div class="col-md-6">
+                        <label class="form-label">Origin</label>
+                        <select name="origin[]" class="form-select">
+                          <option value="">—</option>
+                          {% for loc in locations %}
+                            <option value="{{ loc.id }}">{{ loc.name }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+
+                      <div class="col-md-6">
+                        <label class="form-label">Destination</label>
+                        <select name="destination[]" class="form-select">
+                          <option value="">—</option>
+                          {% for loc in locations %}
+                            <option value="{{ loc.id }}">{{ loc.name }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+
+                      <div class="col-md-12">
+                        <label class="form-label">Description</label>
+                        <textarea name="description[]" rows="3" class="form-control"></textarea>
+                      </div>
+
+                      <div class="col-md-2">
+                        <label class="form-label">UoM</label>
+                        <select name="uom[]" class="form-select">
+                          <option value="">—</option>
+                          {% for u in uoms %}
+                            <option value="{{ u.id }}">{{ u.name }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+
+                      <div class="col-md-2">
+                        <label class="form-label">Qty</label>
+                        <input name="qty[]" type="text" class="form-control money" value="">
+                      </div>
+
+                      <div class="col-md-3">
+                        <label class="form-label">Price</label>
+                        <input name="price[]" type="text" class="form-control money" value="">
+                      </div>
+
+                      <div class="col-md-3">
+                        <label class="form-label">Amount</label>
+                        <input name="amount_display[]" type="text" class="form-control money" value="" readonly>
+                      </div>
+
+                      <div class="col-md-2 d-flex align-items-end justify-content-end">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove">
+                          <i class="fas fa-trash"></i> Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               {% endif %}
             </div>
-          </template>
 
-          <div class="d-flex gap-2 mt-3">
-            <button type="button" class="btn btn-outline-primary" id="add-line">
-              <i class="fas fa-plus"></i> Add line
-            </button>
-            <a href="{% url 'sales:freight_quotation_add' %}" class="btn btn-secondary">
-              <i class="fas fa-arrow-left"></i> Back
-            </a>
-            <button type="submit" class="btn btn-success">
-              <i class="fas fa-check"></i> Finish
-            </button>
-          </div>
-        </form>
+            <div class="d-flex gap-2 mt-3">
+              <button type="button" class="btn btn-outline-primary" id="add-line">
+                <i class="fas fa-plus"></i> Add line
+              </button>
+              <a href="{% url 'sales:freight_quotation_add' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+              </a>
+              <button type="submit" class="btn btn-success">
+                <i class="fas fa-check"></i> Finish
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card-footer text-muted">
+          Minimal 1 line terisi. Amount dihitung otomatis (format Indonesia).
+        </div>
       </div>
-      <div class="card-footer text-muted">Minimal 1 line terisi. Amount dihitung otomatis.</div>
     </div>
   </div>
 </div>
@@ -84,59 +243,91 @@
 {% block extra_js %}
 <script>
   (function(){
-    const prefix = '{{ formset.prefix }}';
-    const totalEl = document.getElementById('id_' + prefix + '-TOTAL_FORMS');
-    const container = document.getElementById('forms');
-    const tmpl = document.getElementById('empty-form-template').content;
+    // ===== Helpers format lokal (id-ID) =====
+    const nf = new Intl.NumberFormat('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    function parseId(s){ if(s==null) return 0; s=String(s).trim(); if(!s) return 0; s=s.replace(/\./g,'').replace(',','.'); const n=Number(s); return isFinite(n)?n:0; }
+    function fmtId(n){ const num=(typeof n==='number')?n:parseId(n); return nf.format(num); }
 
-    function renumber(el, idx) {
-      el.querySelectorAll('input, select, textarea, label').forEach(node => {
-        ['name','id','for','value'].forEach(attr => {
-          const v = node.getAttribute(attr);
-          if (!v) return;
-          node.setAttribute(attr, v.replace(/__prefix__/g, idx));
-        });
+    // Tampilkan Grand Total (header) pakai format lokal
+    (function(){
+      const el = document.getElementById('header-grand-total');
+      if (!el) return;
+      el.textContent = fmtId(el.getAttribute('data-amount') || '0');
+    })();
+
+    const container = document.getElementById('lines-container');
+
+    function sumLive(){
+      let total=0;
+      container.querySelectorAll('.line').forEach(line=>{
+        const amt = line.querySelector('input[name="amount_display[]"]');
+        total += parseId(amt?.value || '0');
       });
-      el.setAttribute('data-index', idx);
+      const live = document.getElementById('live-grand-total');
+      if (live) live.textContent = fmtId(total);
     }
 
-    function hookLine(lineEl) {
-      const qtyInput   = lineEl.querySelector(`input[name^="${prefix}-"][name$="-qty"]`);
-      const priceInput = lineEl.querySelector(`input[name^="${prefix}-"][name$="-price"]`);
-      const amtInput   = lineEl.querySelector(`input[name^="${prefix}-"][name$="-amount"]`);
-      const delFlag    = lineEl.querySelector('.del-flag');
-      const delBtn     = lineEl.querySelector('.btn-delete');
+    function hook(line){
+      const qty   = line.querySelector('input[name="qty[]"]');
+      const price = line.querySelector('input[name="price[]"]');
+      const amt   = line.querySelector('input[name="amount_display[]"]');
+      const rm    = line.querySelector('.btn-remove');
 
-      function recalc() {
-        const q = parseFloat(qtyInput?.value || '0');
-        const p = parseFloat(priceInput?.value || '0');
-        const amount = isFinite(q) && isFinite(p) ? (q * p) : 0;
-        if (amtInput) amtInput.value = amount.toFixed(2);
-      }
-      qtyInput && qtyInput.addEventListener('input', recalc);
-      priceInput && priceInput.addEventListener('input', recalc);
-      recalc(); // initial
+      // focus -> auto select
+      [qty, price, amt].forEach(inp=>{
+        if (!inp) return;
+        inp.addEventListener('focus', ()=> setTimeout(()=> inp.select(),0));
+      });
 
-      if (delBtn && delFlag) {
-        delBtn.addEventListener('click', () => {
-          delFlag.value = 'on';        // tandai delete untuk formset
-          lineEl.style.display = 'none';
-        });
+      // hitung amount & live total
+      function recalc(){
+        const q = parseId(qty?.value||'0');
+        const p = parseId(price?.value||'0');
+        if (amt) amt.value = fmtId(q*p);
+        sumLive();
       }
+      qty && qty.addEventListener('input', recalc);
+      price && price.addEventListener('input', recalc);
+
+      // beautify on blur
+      qty && qty.addEventListener('blur', e=> e.target.value = fmtId(e.target.value));
+      price && price.addEventListener('blur', e=> e.target.value = fmtId(e.target.value));
+
+      // init
+      recalc();
+      if(qty && qty.value)     qty.value   = fmtId(qty.value);
+      if(price && price.value) price.value = fmtId(price.value);
+      if(amt && !amt.value)    amt.value   = fmtId(0);
+
+      // remove card
+      rm && rm.addEventListener('click', ()=> { line.remove(); sumLive(); });
     }
 
-    // hook existing
-    container.querySelectorAll('.line').forEach(hookLine);
+    // hook all existing lines
+    container.querySelectorAll('.line').forEach(hook);
+    sumLive();
 
-    // add new
-    document.getElementById('add-line').addEventListener('click', () => {
-      const idx = parseInt(totalEl.value, 10);
-      const clone = document.importNode(tmpl, true);
-      renumber(clone, idx);
+    // add new line: clone baris pertama
+    document.getElementById('add-line').addEventListener('click', ()=>{
+      const first = container.querySelector('.line');
+      const clone = first.cloneNode(true);
+      // reset nilai
+      clone.querySelectorAll('input, textarea, select').forEach(el=>{
+        if (el.tagName === 'SELECT') el.selectedIndex = 0;
+        else el.value = '';
+      });
       container.appendChild(clone);
-      totalEl.value = idx + 1;
-      const newLine = container.querySelector(`.line[data-index="${idx}"]`);
-      hookLine(newLine);
+      hook(clone);
+    });
+
+    // normalisasi sebelum submit -> ubah "1.234,56" => "1234.56"
+    document.getElementById('lines-form').addEventListener('submit', ()=>{
+      container.querySelectorAll('.line').forEach(line=>{
+        const q = line.querySelector('input[name="qty[]"]');
+        const p = line.querySelector('input[name="price[]"]');
+        if (q) q.value = String(parseId(q.value));
+        if (p) p.value = String(parseId(p.value));
+      });
     });
   })();
 </script>

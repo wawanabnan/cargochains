@@ -23,6 +23,12 @@
                 {{ form.customer }}
                 {% for e in form.customer.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
               </div>
+                <div class="col-md-6">
+                <label class="form-label">{{ form.valid_until.label }}</label>
+                {{ form.valid_until }}
+                {% for e in form.valid_until.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+              </div>
+
 
               <div class="col-md-6">
                 <label class="form-label">{{ form.sales_service.label }} *</label>
@@ -48,12 +54,7 @@
                 {% for e in form.payment_term.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
               </div>
 
-              <div class="col-md-6">
-                <label class="form-label">{{ form.valid_until.label }}</label>
-                {{ form.valid_until }}
-                {% for e in form.valid_until.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
-              </div>
-
+            
               <!-- NOTE: full row -->
               <div class="col-12">
                 <label class="form-label">{{ form.note_1.label }}</label>
@@ -96,33 +97,44 @@
       table_default_styles: { width: '100%' }
     });
   </script>
-  <!-- Bootstrap Datepicker (styling ala Bootstrap) -->
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script> 
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/css/bootstrap-datepicker.min.css" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/js/bootstrap-datepicker.min.js"></script>
+ <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 
 
  
   <script>
-    (function(){
+   (function(){
       const $ = window.jQuery || window.$;
-      function initDatepicker(){
-        if (!$) return; // butuh jQuery (AdminLTE biasanya sudah include)
-        $('.datepicker').datepicker({
-          format: 'yyyy-mm-dd',
-          autoclose: true,
-          todayHighlight: true
-        }).on('focus', function(){
+      function initFlatpickr(){
+        const els = document.querySelectorAll('.flatpickr');
+        if (!els.length) return;
+        els.forEach(function(el){
+          flatpickr(el, {
+            dateFormat: 'Y-m-d',     // format ke server
+            allowInput: true,        // bisa ketik manual
+            clickOpens: true,        // akan muncul saat focus/click
+            defaultDate: el.value || null,
+            // opsi opsional:
+            // altInput: true,
+            // altFormat: 'd M Y',   // tampilan user-friendly
+            // minDate: 'today',     // kalau mau minimal hari ini
+          });
           // buka otomatis saat focus
-          $(this).datepicker('show');
+          el.addEventListener('focus', function(){
+            if (el._flatpickr) el._flatpickr.open();
+          });
         });
       }
-      // jalankan setelah DOM siap
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initDatepicker);
+        document.addEventListener('DOMContentLoaded', initFlatpickr);
       } else {
-        initDatepicker();
+        initFlatpickr();
       }
+
+
+
     })();
   </script>
 

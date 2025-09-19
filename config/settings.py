@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'formtools',
     'core',
-    'sales',
+    'sales.apps.SalesConfig',
     'partners',
     'shipments',
     'geo',

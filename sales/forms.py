@@ -8,6 +8,7 @@ except Exception:
     PartnerRole = None
 
 
+
 class SalesServiceChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         return getattr(obj, "name", str(obj))
@@ -34,11 +35,13 @@ class QuotationHeaderForm(forms.ModelForm):
             "payment_term":  forms.Select(attrs={"class": "form-select"}),
 
              # Inputs -> form-control
+           # di Meta.widgets QuotationHeaderForm
             "valid_until": forms.TextInput(attrs={
-                "class": "form-control datepicker",
-                "autocomplete": "off",
+                "class": "form-control flatpickr",
                 "placeholder": "YYYY-MM-DD",
+                "autocomplete": "off",
             }),
+
             "note_1":      forms.Textarea(attrs={"rows": 6, "class": "form-control"}),
 
             # Hidden
@@ -105,18 +108,47 @@ class QuotationHeaderForm(forms.ModelForm):
 
 
 class QuotationLineForm(forms.ModelForm):
-    # 2) Amount (Price × Qty) — hanya tampil (tidak disimpan)
+    # Amount (Price × Qty) — tampil saja
     amount = forms.DecimalField(
         required=False,
         label="Amount",
         decimal_places=2,
         max_digits=18,
-        widget=forms.TextInput(attrs={"readonly": "readonly"})
+        widget=forms.TextInput(attrs={"readonly": "readonly", "class": "form-control money"})
     )
 
     class Meta:
         model = SalesQuotationLine
         fields = ["origin", "destination", "description", "qty", "uom", "price", "amount"]
+        widgets = {
+            # Selects
+            "origin": forms.Select(attrs={"class": "form-select"}),
+            "destination": forms.Select(attrs={"class": "form-select"}),
+            "uom": forms.Select(attrs={"class": "form-select"}),
+            # Inputs
+            "description": forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+            "qty": forms.TextInput(attrs={"class": "form-control money", "inputmode": "decimal"}),
+            "price": forms.TextInput(attrs={"class": "form-control money", "inputmode": "decimal"}),
+
+       
+       }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # (opsional) pastikan semua non-hidden punya kelas Bootstrap yang benar
+        from django.forms import HiddenInput, Select
+        for f in self.fields.values():
+            if isinstance(f.widget, HiddenInput):
+                continue
+            cls = f.widget.attrs.get("class", "")
+            if isinstance(f.widget, Select):
+                base = "form-select"
+                if base not in cls:
+                    f.widget.attrs["class"] = (cls + " " + base).strip()
+            else:
+                base = "form-control"
+                if base not in cls:
+                    f.widget.attrs["class"] = (cls + " " + base).strip()
 
     def clean_qty(self):
         v = self.cleaned_data.get("qty")
@@ -129,15 +161,6 @@ class QuotationLineForm(forms.ModelForm):
         if v is not None and v < 0:
             raise forms.ValidationError("Price tidak boleh negatif.")
         return v
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        from django.forms import HiddenInput
-        for name, fld in self.fields.items():
-            if not isinstance(fld.widget, HiddenInput):
-                css = fld.widget.attrs.get("class", "")
-                fld.widget.attrs["class"] = (css + " form-control").strip()
-
 
 
 class BaseLineFormSet(BaseInlineFormSet):

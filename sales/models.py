@@ -3,6 +3,7 @@ from django.db import models
 from django.db.models import PROTECT, CASCADE
 from partners.models import Partner
 from geo.models import Location
+from decimal import Decimal
 
 
 class Currency(models.Model):
@@ -101,6 +102,8 @@ class SalesQuotation(models.Model):
     customer = models.ForeignKey(Partner, on_delete=PROTECT, related_name="quotations")
     date = models.DateField(null=True, blank=True)
     valid_until = models.DateField()
+    total_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+
 
     # relasi service by code (kolom DB varchar via db_column)
     sales_service = models.ForeignKey(
@@ -139,6 +142,20 @@ class SalesQuotation(models.Model):
 
     class Meta:
         db_table = "sales_quotations"
+
+
+    def recalc_totals(self):
+        """
+        Hitung Σ(qty * price) dari semua line aktif dan simpan ke total_amount.
+        """
+        total = (
+            self.lines.annotate(line_total=F("qty") * F("price"))
+            .aggregate(s=Sum("line_total"))["s"]
+            or Decimal("0.00")
+        )
+        self.total_amount = total
+        self.save(update_fields=["total_amount"])
+        return total
 
     def __str__(self):
         return self.number

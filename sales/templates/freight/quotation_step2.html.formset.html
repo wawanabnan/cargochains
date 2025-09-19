@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}New Freight Quotation — Step 2 (Manual){% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Header info -->
+  <div class="card card-primary card-outline mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h3 class="card-title m-0"><i class="fas fa-info-circle"></i> Quotation Header</h3>
+      <span class="text-muted">No: {{ quotation.number }}</span>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3"><div class="small text-muted">Customer</div><div class="fw-semibold">{{ quotation.customer }}</div></div>
+        <div class="col-md-3"><div class="small text-muted">Currency</div><div class="fw-semibold">{{ quotation.currency }}</div></div>
+        <div class="col-md-3"><div class="small text-muted">Valid Until</div><div class="fw-semibold">{{ quotation.valid_until|default:"—" }}</div></div>
+        <div class="col-md-3 text-end">
+          <div class="small text-muted">Grand Total (header)</div>
+          <div class="display-6 fw-bold" id="header-grand-total" data-amount="{{ quotation.total_amount|default:'0.00' }}">0,00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lines manual -->
+  <div class="card card-success card-outline">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h3 class="card-title m-0"><i class="fas fa-list"></i> Lines</h3>
+      <div class="text-end">
+        <div class="small text-muted">Grand Total (live)</div>
+        <div class="h4 fw-bold" id="live-grand-total">0,00</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <form method="post" id="lines-form">
+        {% csrf_token %}
+
+        <div id="lines-container" class="d-flex flex-column gap-3">
+          {% if lines %}
+            {% for ln in lines %}
+              <div class="card shadow-sm line">
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-md-3">
+                      <label class="form-label">Origin</label>
+                      <select name="origin[]" class="form-select">
+                        <option value="">—</option>
+                        {% for loc in locations %}
+                          <option value="{{ loc.id }}" {% if ln.origin_id == loc.id %}selected{% endif %}>{{ loc.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">Destination</label>
+                      <select name="destination[]" class="form-select">
+                        <option value="">—</option>
+                        {% for loc in locations %}
+                          <option value="{{ loc.id }}" {% if ln.destination_id == loc.id %}selected{% endif %}>{{ loc.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Description</label>
+                      <textarea name="description[]" rows="3" class="form-control">{{ ln.description }}</textarea>
+                    </div>
+
+                    <div class="col-md-2">
+                      <label class="form-label">UoM</label>
+                      <select name="uom[]" class="form-select">
+                        <option value="">—</option>
+                        {% for u in uoms %}
+                          <option value="{{ u.id }}" {% if ln.uom_id == u.id %}selected{% endif %}>{{ u.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label">Qty</label>
+                      <input name="qty[]" type="text" class="form-control money" value="{{ ln.qty }}">
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">Price</label>
+                      <input name="price[]" type="text" class="form-control money" value="{{ ln.price }}">
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">Amount</label>
+                      <input name="amount_display[]" type="text" class="form-control money" value="" readonly>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end justify-content-end">
+                      <button type="button" class="btn btn-sm btn-outline-danger btn-remove">
+                        <i class="fas fa-trash"></i> Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <!-- 1 baris kosong awal -->
+            <div class="card shadow-sm line">
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label class="form-label">Origin</label>
+                    <select name="origin[]" class="form-select">
+                      <option value="">—</option>
+                      {% for loc in locations %}
+                        <option value="{{ loc.id }}">{{ loc.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Destination</label>
+                    <select name="destination[]" class="form-select">
+                      <option value="">—</option>
+                      {% for loc in locations %}
+                        <option value="{{ loc.id }}">{{ loc.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Description</label>
+                    <textarea name="description[]" rows="3" class="form-control"></textarea>
+                  </div>
+
+                  <div class="col-md-2">
+                    <label class="form-label">UoM</label>
+                    <select name="uom[]" class="form-select">
+                      <option value="">—</option>
+                      {% for u in uoms %}
+                        <option value="{{ u.id }}">{{ u.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">Qty</label>
+                    <input name="qty[]" type="text" class="form-control money" value="">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Price</label>
+                    <input name="price[]" type="text" class="form-control money" value="">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Amount</label>
+                    <input name="amount_display[]" type="text" class="form-control money" value="" readonly>
+                  </div>
+                  <div class="col-md-2 d-flex align-items-end justify-content-end">
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove">
+                      <i class="fas fa-trash"></i> Remove
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="d-flex gap-2 mt-3">
+          <button type="button" class="btn btn-outline-primary" id="add-line"><i class="fas fa-plus"></i> Add line</button>
+          <a href="{% url 'sales:freight_quotation_add' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+          <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Finish</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function(){
+    // locale helpers
+    const nf = new Intl.NumberFormat('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    function parseId(s){ if(s==null) return 0; s=String(s).trim(); if(!s) return 0; s=s.replace(/\./g,'').replace(',','.'); const n=Number(s); return isFinite(n)?n:0; }
+    function fmtId(n){ const num=(typeof n==='number')?n:parseId(n); return nf.format(num); }
+
+    // set header total (format lokal)
+    (function(){
+      const el=document.getElementById('header-grand-total');
+      if(!el) return; el.textContent = fmtId(el.getAttribute('data-amount')||'0');
+    })();
+
+    const container = document.getElementById('lines-container');
+
+    function hookLine(line){
+      const qty   = line.querySelector('input[name="qty[]"]');
+      const price = line.querySelector('input[name="price[]"]');
+      const amt   = line.querySelector('input[name="amount_display[]"]');
+      const btnRemove = line.querySelector('.btn-remove');
+
+      [qty, price, amt].forEach(inp=>{
+        if(!inp) return;
+        inp.addEventListener('focus', ()=> setTimeout(()=> inp.select(), 0));
+      });
+
+      function recalc(){
+        const q = parseId(qty?.value||'0');
+        const p = parseId(price?.value||'0');
+        if(amt) amt.value = fmtId(q*p);
+        sumLive();
+      }
+      qty && qty.addEventListener('input', recalc);
+      price && price.addEventListener('input', recalc);
+      qty && qty.addEventListener('blur', e=> e.target.value = fmtId(parseId(e.target.value)));
+      price && price.addEventListener('blur', e=> e.target.value = fmtId(parseId(e.target.value)));
+
+      recalc();
+
+      if(btnRemove){
+        btnRemove.addEventListener('click', ()=>{
+          line.remove();
+          sumLive();
+        });
+      }
+    }
+
+    function sumLive(){
+      let total=0;
+      container.querySelectorAll('.line').forEach(line=>{
+        const amt = line.querySelector('input[name="amount_display[]"]');
+        total += parseId(amt?.value||'0');
+      });
+      const el = document.getElementById('live-grand-total');
+      if(el) el.textContent = fmtId(total);
+    }
+
+    // hook existing
+    container.querySelectorAll('.line').forEach(hookLine);
+    sumLive();
+
+    // add new (clone first empty structure)
+    document.getElementById('add-line').addEventListener('click', ()=>{
+      const first = container.querySelector('.line');
+      const clone = first.cloneNode(true);
+      // bersihkan nilai
+      clone.querySelectorAll('input, textarea, select').forEach(el=>{
+        if(el.tagName==='SELECT'){ el.selectedIndex = 0; }
+        else { el.value = ''; }
+      });
+      container.appendChild(clone);
+      hookLine(clone);
+    });
+
+    // normalisasi sebelum submit (ubah tampilan lokal -> angka dot)
+    document.getElementById('lines-form').addEventListener('submit', ()=>{
+      container.querySelectorAll('.line').forEach(line=>{
+        const qty   = line.querySelector('input[name="qty[]"]');
+        const price = line.querySelector('input[name="price[]"]');
+        if(qty)   qty.value   = String(parseId(qty.value));
+        if(price) price.value = String(parseId(price.value));
+      });
+    });
+  })();
+</script>
+{% endblock %}
