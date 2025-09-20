@@ -6,11 +6,121 @@ from django.db import transaction
 from django.forms import inlineformset_factory
 
 from .forms import QuotationHeaderForm #QuotationLineForm, BaseLineFormSet
-from .models import SalesQuotation, SalesQuotationLine, SalesNumberSequence
+from .models import SalesQuotation, SalesQuotationLine, SalesNumberSequence,UOM,SalesService,PaymentTerm,Currency
 from decimal import Decimal
 from geo.models import Location   # <--- tambahin ini
-from sales.models import UOM
+from django.db.models import Q
+from django.utils import timezone
 
+from django.contrib import messages
+
+
+
+STATUS_BADGES = {
+    "draft": "secondary",
+    "confirmed": "success",
+    "cancelled": "danger",
+    "expired": "warning",
+}
+
+ALLOWED_DELETE_STATUSES = {"draft", "cancelled"}
+
+def freight_quotation_list(request):
+    # ==== BULK ACTION (POST)
+    if request.method == "POST":
+        action = request.POST.get("action") or ""
+        ids = request.POST.getlist("ids[]")
+        if action == "delete" and ids:
+            qs = SalesQuotation.objects.filter(id__in=ids)
+            deletable = qs.filter(status__in=ALLOWED_DELETE_STATUSES)
+            blocked   = qs.exclude(status__in=ALLOWED_DELETE_STATUSES)
+            n_ok = deletable.count()
+            n_block = blocked.count()
+            # hapus yang boleh
+            deletable.delete()
+            if n_ok:
+                messages.success(request, f"Deleted {n_ok} quotation(s) (draft/cancelled).")
+            if n_block:
+                messages.warning(request, f"Skipped {n_block} quotation(s) (not draft/cancelled).")
+            return redirect("sales:freight_quotation_list")
+
+    # ==== FILTERS (GET)
+    q = (request.GET.get("q") or "").strip()
+    status = (request.GET.get("status") or "").strip().lower()       # draft/confirmed/cancelled/expired
+    service_id = request.GET.get("service") or ""
+    currency_id = request.GET.get("currency") or ""
+    payment_term_id = request.GET.get("pt") or ""
+    valid_from = request.GET.get("vf") or ""
+    valid_to   = request.GET.get("vt") or ""
+
+    qs = (SalesQuotation.objects
+          .select_related("customer", "sales_service", "currency", "payment_term")
+          .order_by("-id"))
+
+    if q:
+        qs = qs.filter(Q(number__icontains=q) | Q(customer__name__icontains=q))
+
+    today = timezone.localdate()
+    if status == "draft":
+        qs = qs.filter(status__iexact="draft")
+    elif status == "confirmed":
+        qs = qs.filter(status__iexact="confirmed")
+    elif status == "cancelled":
+        qs = qs.filter(status__iexact="cancelled")
+    elif status == "expired":
+        qs = qs.filter(valid_until__lt=today)
+
+    if service_id:
+        qs = qs.filter(sales_service_id=service_id)
+    if currency_id:
+        qs = qs.filter(currency_id=currency_id)
+    if payment_term_id:
+        qs = qs.filter(payment_term_id=payment_term_id)
+    if valid_from:
+        qs = qs.filter(valid_until__gte=valid_from)
+    if valid_to:
+        qs = qs.filter(valid_until__lte=valid_to)
+
+    qs = qs[:200]
+
+    services   = SalesService.objects.all().order_by("name")
+    currencies = Currency.objects.all().order_by("code")
+    pterms     = PaymentTerm.objects.all().order_by("name")
+
+    ctx = {
+        "quotations": qs,
+        "q": q,
+        "status": status,
+        "service_id": service_id,
+        "currency_id": currency_id,
+        "payment_term_id": payment_term_id,
+        "valid_from": valid_from,
+        "valid_to": valid_to,
+        "services": services,
+        "currencies": currencies,
+        "pterms": pterms,
+        "STATUS_BADGES": STATUS_BADGES,
+        "ALLOWED_DELETE_STATUSES": ALLOWED_DELETE_STATUSES,
+    }
+    
+    return render(request, "freight/quotation_list.html", ctx)
+
+
+from datetime import date as _date
+from django.http import HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.db import transaction
+from django.forms import inlineformset_factory
+
+from .forms import QuotationHeaderForm #QuotationLineForm, BaseLineFormSet
+from .models import SalesQuotation, SalesQuotationLine, SalesNumberSequence,UOM,SalesService,PaymentTerm,Currency
+from decimal import Decimal
+from geo.models import Location   # <--- tambahin ini
+from django.db.models import Q
+from django.utils import timezone
+
+from django.contrib import messages
 
 VER = "fq-2step-dyn-v1"
 
@@ -76,12 +186,12 @@ def quotation_add_lines(request, pk: int):
         formset = LineFormSet(instance=quotation)
     return render(request, "freight/quotation_step2.html", {"formset": formset, "quotation": quotation})
 
-def quotation_add_lines_manual_session(request):
+def quotation_add_lines_session(request):
     pk = request.session.get("current_quotation_pk")
     if not pk:
         messages.warning(request, "Session quotation hilang. Mulai dari Step-1.")
         return redirect("sales:freight_quotation_add")
-    return quotation_add_lines_manual(request, pk)
+    return freight_quotation_add_lines(request, pk)
 
 def _parse_dec_id(s: str) -> Decimal:
     """'1.234,56' -> Decimal('1234.56'); aman untuk empty."""
@@ -96,7 +206,7 @@ def _parse_dec_id(s: str) -> Decimal:
         return Decimal("0")
     
 
-def quotation_add_lines_manual(request, pk: int):
+def freight_quotation_add_lines(request, pk: int):
     quotation = get_object_or_404(SalesQuotation, pk=pk)
     # list pilihan untuk dropdown
     locations = Location.objects.all().order_by("name")
@@ -176,13 +286,3 @@ def quotation_add_lines_manual(request, pk: int):
     })
 
 
-def freight_quotation_list(request):
-    q = (request.GET.get("q") or "").strip()
-    qs = SalesQuotation.objects.all().select_related("customer", "currency").order_by("-id")
-    if q:
-        qs = qs.filter(
-            Q(number__icontains=q) |
-            Q(customer__name__icontains=q)
-        )
-    qs = qs[:200]  # batasi 200 terbaru
-    return render(request, "freight/quotation_list.html", {"quotations": qs, "q": q})

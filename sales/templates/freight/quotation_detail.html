@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% load quo_extras %}
+{% block title %}Quotation {{ quotation.number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  {% if messages %}
+  <div class="mt-2">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+  <!-- HEADER -->
+  <div class="card card-primary card-outline mb-3 no-break">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h3 class="card-title mb-0">Quotation {{ quotation.number }}</h3>
+      <div class="btn-group">
+          <a href="{% url 'sales:quotation_edit' quotation.id %}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-edit"></i> Edit
+          </a>
+
+          {# DRAFT -> SENT #}
+          {% if quotation.can_transition_to:"SENT" %}
+            <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#confirmChangeStatusModal" data-status="SENT">
+              <i class="fas fa-paper-plane"></i> Mark as Sent
+            </button>
+          {% endif %}
+
+          {# SENT -> ACCEPTED / CANCELLED / EXPIRED #}
+          {% if quotation.can_transition_to:"ACCEPTED" %}
+            <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#confirmChangeStatusModal" data-status="ACCEPTED">
+              <i class="fas fa-check"></i> Accept
+            </button>
+          {% endif %}
+          {% if quotation.can_transition_to:"CANCELLED" %}
+            <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmChangeStatusModal" data-status="CANCELLED">
+              <i class="fas fa-times"></i> Cancel
+            </button>
+          {% endif %}
+          {% if quotation.can_transition_to:"EXPIRED" %}
+            <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#confirmChangeStatusModal" data-status="EXPIRED">
+              <i class="fas fa-hourglass-end"></i> Expire
+            </button>
+          {% endif %}
+
+          <a href="{% url 'sales:quotation_delete' quotation.id %}" class="btn btn-outline-danger btn-sm"
+            onclick="return confirm('Delete this quotation? Only draft/cancelled allowed.')">
+            <i class="fas fa-trash"></i> Delete
+          </a>
+
+          <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-print"></i> Print
+          </button>
+        </div>
+
+    </div>
+    <div class="card-body">
+      <dl class="row mb-0">
+        <dt class="col-md-3">Customer</dt><dd class="col-md-9">{{ quotation.customer }}</dd>
+        <dt class="col-md-3">Service</dt><dd class="col-md-9">{{ quotation.sales_service }}</dd>
+        <dt class="col-md-3">Payment Term</dt><dd class="col-md-9">{{ quotation.payment_term|default:"—" }}</dd>
+        <dt class="col-md-3">Currency</dt><dd class="col-md-9">{{ quotation.currency }}</dd>
+        <dt class="col-md-3">Valid Until</dt><dd class="col-md-9">{{ quotation.valid_until|date:"d-m-Y"|default:"—" }}</dd>
+        <dt class="col-md-3">Total</dt>
+        <dd class="col-md-9">
+          <span id="grand-total" data-amount="{{ quotation.total_amount }}">{{ quotation.total_amount }}</span>
+        </dd>
+        <dt class="col-md-3">Status</dt>
+          <dd class="col-md-9">
+            {% with s=quotation.status|default:"draft"|lower %}
+              {% if s == "accepted" %}
+                <span class="badge bg-success">Accepted</span>
+              {% elif s == "sent" %}
+                <span class="badge bg-info">Sent</span>
+              {% elif s == "cancelled" %}
+                <span class="badge bg-danger">Cancelled</span>
+              {% elif s == "expired" %}
+                <span class="badge bg-warning">Expired</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ s|title }}</span>
+              {% endif %}
+            {% endwith %}
+          </dd>
+      </dl>
+    </div>
+  </div>
+
+  <!-- LINES -->
+  <div class="card card-outline card-secondary no-break">
+    <div class="card-header">
+      <h3 class="card-title mb-0">Quotation Lines</h3>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle mb-0" id="lines-table">
+          <thead class="table-light">
+            <tr>
+              <th style="width:160px;">Origin</th>
+              <th style="width:160px;">Destination</th>
+              <th>Description</th>
+              <th style="width:100px;">UoM</th>
+              <th style="width:100px;" class="text-end">Qty</th>
+              <th style="width:140px;" class="text-end">Price</th>
+              <th style="width:160px;" class="text-end">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if lines %}
+              {% for l in lines %}
+              <tr>
+                <td>{{ l.origin }}</td>
+                <td>{{ l.destination }}</td>
+                <td>{{ l.description }}</td>
+                <td>{{ l.uom }}</td>
+                <td class="text-end num">{{ l.qty }}</td>
+                <td class="text-end num">{{ l.price }}</td>
+                <td class="text-end num">{{ l.amount }}</td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr><td colspan="7" class="text-center text-muted py-3">No lines</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRINT-FRIENDLY -->
+<style>
+@media print {
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background:#fff; }
+  /* sembunyikan layout/AdminLTE sidebar/header/footer */
+  .app-header, .app-sidebar, .app-footer,
+  .main-header, .main-footer, .navbar, .sidebar { display:none !important; }
+  .app-main, .content-wrapper, .container-fluid { margin:0 !important; padding:0 !important; }
+  .card { border:none; box-shadow:none; }
+  .card-header { border-bottom:1px solid #000 !important; }
+  .table thead th { border-top:1px solid #000 !important; border-bottom:1px solid #000 !important; }
+  .table tbody td { border-bottom:1px solid #ccc !important; }
+  .no-break { page-break-inside: avoid; }
+  @page { size: A4 portrait; margin: 10mm; }
+}
+</style>
+
+<!-- SMART NUMBER FORMATTER -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const fmt = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // "25.000.000,00" | "25000000.00" | "25,000,000.00" -> 25000000
+  function parseSmart(s) {
+    s = (s ?? "").toString().trim();
+    if (!s) return NaN;
+    const hasComma = s.includes(",");
+    const hasDot   = s.includes(".");
+    if (hasComma && hasDot) {
+      // biasanya '.' ribuan, ',' desimal (format ID)
+      s = s.replace(/\./g, "").replace(",", ".");
+    } else if (hasComma) {
+      // koma desimal, tidak ada titik desimal -> buang '.' ribuan
+      s = s.replace(/\./g, "").replace(",", ".");
+    } else {
+      // tidak ada koma -> anggap '.' desimal; buang koma ribuan
+      s = s.replace(/,/g, "");
+    }
+    const v = parseFloat(s);
+    return Number.isFinite(v) ? v : NaN;
+  }
+
+  function fmtCells(selector) {
+    document.querySelectorAll(selector).forEach(el => {
+      const raw = (el.textContent || el.getAttribute("data-amount") || "");
+      const val = parseSmart(raw);
+      if (Number.isFinite(val)) el.textContent = fmt.format(val);
+    });
+  }
+
+  // format tabel & grand total
+  fmtCells("#lines-table td.num");
+  fmtCells("#grand-total");
+});
+</script>
+<div class="modal fade" id="confirmChangeStatusModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form method="post" action="{% url 'sales:quotation_change_status' quotation.id %}" class="modal-content">
+      {% csrf_token %}
+      <input type="hidden" name="status" id="change-status-input" value="">
+      <div class="modal-header">
+        <h5 class="modal-title">Konfirmasi Ubah Status</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+      </div>
+      <div class="modal-body">
+        <p>Ubah status quotation menjadi <strong id="change-status-label">—</strong>?</p>
+        <small class="text-muted d-block mt-2">
+          Catatan: <em>EXPIRED</em> hanya berlaku jika status saat ini <strong>SENT</strong> dan
+          tanggal <code>valid_until</code> sudah terlewati.
+        </small>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+        <button type="submit" class="btn btn-primary">Ya, Ubah</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var modal = document.getElementById("confirmChangeStatusModal");
+  if (!modal) return;
+  modal.addEventListener("show.bs.modal", function (event) {
+    var btn = event.relatedTarget;
+    var status = btn?.getAttribute("data-status") || "";
+    modal.querySelector("#change-status-input").value = status;
+    modal.querySelector("#change-status-label").textContent = status || "—";
+  });
+});
+</script>
+
+{% endblock %}

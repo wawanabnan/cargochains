@@ -1,0 +1,95 @@
+from django.db.models import Q
+from django.utils import timezone
+from django.shortcuts import render, redirect
+from django.contrib import messages
+
+from sales.models import SalesQuotation, SalesService, Currency, PaymentTerm
+
+
+STATUS_BADGES = {
+    "draft": "secondary",
+    "confirmed": "success",
+    "cancelled": "danger",
+    "expired": "warning",
+}
+
+ALLOWED_DELETE_STATUSES = {"draft", "cancelled"}
+
+def quotation_list(request):
+    # ==== BULK ACTION (POST)
+    if request.method == "POST":
+        action = request.POST.get("action") or ""
+        ids = request.POST.getlist("ids[]")
+        if action == "delete" and ids:
+            qs = SalesQuotation.objects.filter(id__in=ids)
+            deletable = qs.filter(status__in=ALLOWED_DELETE_STATUSES)
+            blocked   = qs.exclude(status__in=ALLOWED_DELETE_STATUSES)
+            n_ok = deletable.count()
+            n_block = blocked.count()
+            # hapus yang boleh
+            deletable.delete()
+            if n_ok:
+                messages.success(request, f"Deleted {n_ok} quotation(s) (draft/cancelled).")
+            if n_block:
+                messages.warning(request, f"Skipped {n_block} quotation(s) (not draft/cancelled).")
+            return redirect("sales:quotation_list")
+
+    # ==== FILTERS (GET)
+    q = (request.GET.get("q") or "").strip()
+    status = (request.GET.get("status") or "").strip().lower()       # draft/confirmed/cancelled/expired
+    service_id = request.GET.get("service") or ""
+    currency_id = request.GET.get("currency") or ""
+    payment_term_id = request.GET.get("pt") or ""
+    valid_from = request.GET.get("vf") or ""
+    valid_to   = request.GET.get("vt") or ""
+
+    qs = (SalesQuotation.objects
+          .select_related("customer", "sales_service", "currency", "payment_term")
+          .order_by("-id"))
+
+    if q:
+        qs = qs.filter(Q(number__icontains=q) | Q(customer__name__icontains=q))
+
+    today = timezone.localdate()
+    if status == "draft":
+        qs = qs.filter(status__iexact="draft")
+    elif status == "confirmed":
+        qs = qs.filter(status__iexact="confirmed")
+    elif status == "cancelled":
+        qs = qs.filter(status__iexact="cancelled")
+    elif status == "expired":
+        qs = qs.filter(valid_until__lt=today)
+
+    if service_id:
+        qs = qs.filter(sales_service_id=service_id)
+    if currency_id:
+        qs = qs.filter(currency_id=currency_id)
+    if payment_term_id:
+        qs = qs.filter(payment_term_id=payment_term_id)
+    if valid_from:
+        qs = qs.filter(valid_until__gte=valid_from)
+    if valid_to:
+        qs = qs.filter(valid_until__lte=valid_to)
+
+    qs = qs[:200]
+
+    services   = SalesService.objects.all().order_by("name")
+    currencies = Currency.objects.all().order_by("code")
+    pterms     = PaymentTerm.objects.all().order_by("name")
+
+    ctx = {
+        "quotations": qs,
+        "q": q,
+        "status": status,
+        "service_id": service_id,
+        "currency_id": currency_id,
+        "payment_term_id": payment_term_id,
+        "valid_from": valid_from,
+        "valid_to": valid_to,
+        "services": services,
+        "currencies": currencies,
+        "pterms": pterms,
+        "STATUS_BADGES": STATUS_BADGES,
+        "ALLOWED_DELETE_STATUSES": ALLOWED_DELETE_STATUSES,
+    }
+    return render(request, "freight/quotation_list.html", ctx)

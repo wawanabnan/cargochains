@@ -42,6 +42,9 @@ class SalesService(models.Model):
     def __str__(self):
         return f"{self.code} - {self.name}"
 
+    @property
+    def only_name(self):
+        return self.name
 
 class PaymentTerm(models.Model):
     code = models.CharField(max_length=30, unique=True)
@@ -98,6 +101,53 @@ class SalesNumberSequence(models.Model):
 
 
 class SalesQuotation(models.Model):
+    STATUS_DRAFT     = "DRAFT"
+    STATUS_SENT      = "SENT"
+    STATUS_ACCEPTED  = "ACCEPTED"
+    STATUS_CANCELLED = "CANCELLED"
+    STATUS_EXPIRED   = "EXPIRED"
+
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, "Draft"),
+        (STATUS_SENT, "Sent"),
+        (STATUS_ACCEPTED, "Accepted"),
+        (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_EXPIRED, "Expired"),
+    ]
+
+    # contoh field yang sudah ada:
+    # number = models.CharField(max_length=50, unique=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+    # valid_until = models.DateField(null=True, blank=True)  # pastikan ada field ini
+
+    # Transisi yang diizinkan:
+    # DRAFT -> SENT
+    # SENT -> {ACCEPTED, CANCELLED, EXPIRED}
+    # ACCEPTED -> {CANCELLED}  (opsional; hapus jika tak diinginkan)
+    # CANCELLED -> {} (final)
+    # EXPIRED -> {} (final)
+
+    _ALLOWED_TRANSITIONS = {
+        STATUS_DRAFT:     {STATUS_SENT},
+        STATUS_SENT:      {STATUS_ACCEPTED, STATUS_CANCELLED, STATUS_EXPIRED},
+        STATUS_ACCEPTED:  {STATUS_CANCELLED},  # opsional
+        STATUS_CANCELLED: set(),
+        STATUS_EXPIRED:   set(),
+    }
+
+    def can_transition_to(self, new_status: str) -> bool:
+        return new_status in self._ALLOWED_TRANSITIONS.get(self.status, set())
+
+    # (opsional) buat nentuin warna badge di template
+    def status_badge_class(self) -> str:
+        return {
+            self.STATUS_DRAFT: "bg-secondary",
+            self.STATUS_SENT: "bg-info",
+            self.STATUS_ACCEPTED: "bg-success",
+            self.STATUS_CANCELLED: "bg-danger",
+            self.STATUS_EXPIRED: "bg-warning",
+        }.get(self.status, "bg-secondary")
+
     number = models.CharField(max_length=50, unique=True)
     customer = models.ForeignKey(Partner, on_delete=PROTECT, related_name="quotations")
     date = models.DateField(null=True, blank=True)

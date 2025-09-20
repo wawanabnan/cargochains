@@ -4,136 +4,233 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="card card-primary card-outline">
+  <div class="card">
+    <!-- Header / toolbar -->
     <div class="card-header d-flex flex-wrap gap-2 align-items-center">
       <h3 class="card-title m-0"><i class="fas fa-file-invoice-dollar"></i> Freight Quotations</h3>
 
-      <form class="ms-auto d-flex gap-2" method="get">
-        <input type="text" class="form-control" name="q" placeholder="Search number / customer…" value="{{ q|default:'' }}">
-        <button class="btn btn-outline-primary"><i class="fas fa-search"></i> Search</button>
-        <a class="btn btn-primary" href="{% url 'sales:freight_quotation_add' %}">
+      <!-- Chips status -->
+      <div class="btn-group ms-3" role="group" aria-label="Status">
+        {% with s=status %}
+        <a class="btn btn-sm {% if not s %}btn-primary{% else %}btn-outline-primary{% endif %}" href="?{% if q %}q={{q}}&{% endif %}">All</a>
+        <a class="btn btn-sm {% if s == 'draft' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="?status=draft{% if q %}&q={{q}}{% endif %}">Draft</a>
+        <a class="btn btn-sm {% if s == 'confirmed' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="?status=confirmed{% if q %}&q={{q}}{% endif %}">Confirmed</a>
+        <a class="btn btn-sm {% if s == 'cancelled' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="?status=cancelled{% if q %}&q={{q}}{% endif %}">Cancelled</a>
+        <a class="btn btn-sm {% if s == 'expired' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="?status=expired{% if q %}&q={{q}}{% endif %}">Expired</a>
+        {% endwith %}
+      </div>
+
+      <!-- kanan: Search + New + Filter toggle -->
+      <div class="ms-auto d-flex gap-2">
+        <form class="d-flex gap-2" method="get">
+          <input type="hidden" name="status" value="{{ status }}">
+          <input type="text" class="form-control" name="q" placeholder="Search number / customer…" value="{{ q|default:'' }}">
+          <button class="btn btn-outline-primary"><i class="fas fa-search"></i></button>
+        </form>
+        <button class="btn btn-outline-secondary" id="btn-toggle-filters" title="Show filters">
+          <i class="fas fa-sliders-h"></i>
+        </button>
+        <a class="btn btn-primary" href="{% url 'sales:quotation_add' %}">
           <i class="fas fa-plus"></i> New
         </a>
+      </div>
+    </div>
+
+    <!-- Hidden Filters -->
+    <div id="filters-panel" class="px-3 pt-3 d-none">
+      <form class="row g-2 align-items-end" method="get">
+        <input type="hidden" name="status" value="{{ status }}">
+        <div class="col-md-3">
+          <label class="form-label">Service</label>
+          <select name="service" class="form-select">
+            <option value="">All</option>
+            {% for s in services %}
+              <option value="{{ s.id }}" {% if service_id|default:'' == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Payment Term</label>
+          <select name="pt" class="form-select">
+            <option value="">All</option>
+            {% for p in pterms %}
+              <option value="{{ p.id }}" {% if payment_term_id|default:'' == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Currency</label>
+          <select name="currency" class="form-select">
+            <option value="">All</option>
+            {% for c in currencies %}
+              <option value="{{ c.id }}" {% if currency_id|default:'' == c.id|stringformat:"s" %}selected{% endif %}>{{ c.code }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Valid From</label>
+          <input type="date" name="vf" class="form-control" value="{{ valid_from|default:'' }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Valid To</label>
+          <input type="date" name="vt" class="form-control" value="{{ valid_to|default:'' }}">
+        </div>
+        <div class="col-12 d-flex gap-2 mt-2">
+          <button class="btn btn-outline-primary"><i class="fas fa-filter"></i> Apply</button>
+          <a class="btn btn-outline-secondary" href="{% url 'sales:quotation_list' %}"><i class="fas fa-undo"></i> Reset</a>
+        </div>
       </form>
+      <hr class="mt-3 mb-0">
     </div>
 
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" id="odoo-like-table">
-          <thead class="table-light">
-            <tr>
-              <th style="width:42px;">
-                <input type="checkbox" id="check-all" class="form-check-input">
-              </th>
-              <th style="width: 140px;">Number</th>
-              <th style="width: 110px;">Date</th>
-              <th>Customer</th>
-              <th style="width: 140px;">Currency</th>
-              <th class="text-end" style="width: 180px;">Total Amount</th>
-              <th style="width: 140px;">Valid Until</th>
-            </tr>
-          </thead>
-          <tbody id="fq-list">
-            {% if quotations %}
-              {% for r in quotations %}
-              <tr class="clickable-row" data-href="{% url 'sales:freight_quotation_add_lines' r.id %}" data-total="{{ r.total_amount|default:'0.00' }}">
-                <td>
-                  <input type="checkbox" class="form-check-input row-check" value="{{ r.id }}" aria-label="Select {{ r.number }}">
-                </td>
-                <td>
-                  <span class="fw-semibold">{{ r.number }}</span>
-                </td>
-                <td>{{ r.date|date:"Y-m-d" }}</td>
-                <td>{{ r.customer }}</td>
-                <td>{{ r.currency }}</td>
-                <td class="text-end fw-semibold total-id">0,00</td>
-                <td>{{ r.valid_until|date:"Y-m-d"|default:"—" }}</td>
-              </tr>
-              {% endfor %}
-            {% else %}
+    <!-- Bulk action + table -->
+    <form method="post" id="bulk-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="delete">
+      <div class="px-3 py-2 d-flex justify-content-between align-items-center">
+        <div class="text-muted small">Showing max 200 latest records.</div>
+        <div class="d-flex gap-2">
+          <button type="submit" id="btn-bulk-delete" class="btn btn-outline-danger btn-sm" disabled>
+            <i class="fas fa-trash"></i> Delete Selected
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" id="odoo-like-table">
+            <thead class="table-light">
               <tr>
-                <td colspan="7" class="text-center text-muted py-4">No data.</td>
+                <th style="width:42px;"><input type="checkbox" id="check-all" class="form-check-input"></th>
+                <th style="width: 140px;">Number</th>
+                <th>Customer</th>
+                <th style="width: 130px;">Valid Until</th>
+                <th style="width: 150px;">Service</th>
+                <th style="width: 120px;">Payment Term</th>
+                <th style="width: 100px;">Currency</th>
+                <th class="text-end" style="width: 140px;">Total</th>
+                <th style="width: 90px;">Status</th>
               </tr>
-            {% endif %}
-          </tbody>
-        </table>
+            </thead>
+            <tbody id="fq-list">
+              {% if quotations %}
+                {% for r in quotations %}
+                <tr class="clickable-row"
+                    data-href="{% url 'sales:quotation_detail' r.id %}"
+                    data-total="{{ r.total_amount|default:'0.00' }}"
+                    data-status="{{ r.status|default:'draft'|lower }}">
+                  <td>
+                    <input type="checkbox" class="form-check-input row-check" name="ids[]" value="{{ r.id }}" aria-label="Select {{ r.number }}">
+                  </td>
+                  <td><span class="fw-semibold">{{ r.number }}</span></td>
+                  <td>{{ r.customer }}</td>
+                  <td>{{ r.valid_until|date:"Y-m-d"|default:"—" }}</td>
+                  <td>{{ r.sales_service.only_name }}</td>
+                  <td>{{ r.payment_term|default:"—" }}</td>
+                  <td>{{ r.currency }}</td>
+                  <td class="text-end fw-semibold total-id">0,00</td>
+                  <td>
+                    {% with s=r.status|default:"draft"|lower %}
+                      {% if s == "confirmed" %}
+                        <span class="badge bg-success">Confirmed</span>
+                      {% elif s == "cancelled" %}
+                        <span class="badge bg-danger">Cancelled</span>
+                      {% elif s == "expired" %}
+                        <span class="badge bg-warning">Expired</span>
+                      {% elif s == "draft" %}
+                        <span class="badge bg-secondary">Draft</span>
+                      {% else %}
+                        <span class="badge bg-secondary">{{ s|title }}</span>
+                      {% endif %}
+                    {% endwith %}
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr><td colspan="9" class="text-center text-muted py-4">No data.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-
-    <div class="card-footer d-flex justify-content-between align-items-center">
-      <div>
-        <small class="text-muted">Showing max 200 latest records.</small>
-        {% if q %}<small class="ms-2"><span class="badge bg-info">Filter:</span> <code>{{ q }}</code></small>{% endif %}
-      </div>
-      <div id="selection-info" class="text-muted d-none">
-        <small><span id="selected-count">0</span> selected</small>
-      </div>
-    </div>
+    </form>
   </div>
 </div>
 {% endblock %}
 
 {% block extra_css %}
 <style>
-  /* Odoo-ish feel */
   #odoo-like-table tbody tr.clickable-row { cursor: pointer; }
   #odoo-like-table tbody tr.clickable-row:hover { background: rgba(0,0,0,.03); }
-  /* keep checkbox column tight */
-  #odoo-like-table td:first-child, #odoo-like-table th:first-child { text-align: center; }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
   (function(){
-    // Format kolom Total Amount pakai locale Indonesia
+    // Toggle filters panel
+    const panel = document.getElementById('filters-panel');
+    const btnFilters = document.getElementById('btn-toggle-filters');
+    if (btnFilters && panel){
+      btnFilters.addEventListener('click', ()=>{
+        panel.classList.toggle('d-none');
+      });
+    }
+
+    // Format Total
     const nf = new Intl.NumberFormat('id-ID', {minimumFractionDigits:2, maximumFractionDigits:2});
     document.querySelectorAll('#fq-list tr').forEach(tr=>{
-      const raw = tr.getAttribute('data-total');
+      const raw = tr.getAttribute('data-total') || '0';
       const cell = tr.querySelector('.total-id');
-      if (!cell) return;
-      const num = Number((raw||'0').toString().replace(',', '.')) || 0;
-      cell.textContent = nf.format(num);
+      if (cell) cell.textContent = nf.format(Number(raw.toString().replace(',', '.')) || 0);
     });
 
-    // Row click -> open detail (kecuali klik checkbox)
+    // Row click -> open detail (except on checkbox)
     document.querySelectorAll('#fq-list tr.clickable-row').forEach(tr=>{
       tr.addEventListener('click', (e)=>{
-        const t = e.target;
-        if (t.closest('input[type="checkbox"]')) return; // jangan navigate kalau klik checkbox
+        if (e.target.closest('input[type="checkbox"]')) return;
         const url = tr.getAttribute('data-href');
         if (url) window.location = url;
       });
     });
 
-    // Checkbox behavior ala Odoo (select all + counter)
-    const selInfo = document.getElementById('selection-info');
-    const selCount = document.getElementById('selected-count');
-    const checks = Array.from(document.querySelectorAll('.row-check'));
+    // Select all + enable/disable bulk delete
     const checkAll = document.getElementById('check-all');
+    const checks = Array.from(document.querySelectorAll('.row-check'));
+    const btnDel = document.getElementById('btn-bulk-delete');
 
-    function refreshSelected(){
-      const n = checks.filter(c=>c.checked).length;
-      selCount.textContent = n;
-      selInfo.classList.toggle('d-none', n === 0);
-      if (checks.length) {
-        const all = n === checks.length, some = n > 0 && n < checks.length;
-        checkAll.checked = all;
-        checkAll.indeterminate = some;
-      }
+    function refreshBulkState(){
+      const selected = checks.filter(c=>c.checked);
+      btnDel.disabled = selected.length === 0;
     }
-
     checks.forEach(c=>{
-      c.addEventListener('click', (e)=> e.stopPropagation()); // klik checkbox tidak open row
-      c.addEventListener('change', refreshSelected);
+      c.addEventListener('click', (e)=> e.stopPropagation());
+      c.addEventListener('change', refreshBulkState);
     });
     if (checkAll){
       checkAll.addEventListener('change', ()=>{
         checks.forEach(c=> c.checked = checkAll.checked);
-        refreshSelected();
+        refreshBulkState();
       });
     }
-    refreshSelected();
+    refreshBulkState();
+
+    // Client-side guard: warn if selection contains non-deletable statuses
+    document.getElementById('bulk-form').addEventListener('submit', (e)=>{
+      const selected = checks.filter(c=>c.checked).map(c=> c.closest('tr'));
+      if (!selected.length) { e.preventDefault(); return; }
+      const bad = selected.filter(tr=>{
+        const st = (tr.getAttribute('data-status') || 'draft').toLowerCase();
+        return !(st === 'draft' || st === 'cancelled');
+      });
+      if (bad.length){
+        const ok = selected.length - bad.length;
+        const msg = `Only draft/cancelled can be deleted.\nAllowed: ${ok}\nBlocked: ${bad.length}\nContinue?`;
+        if (!confirm(msg)) { e.preventDefault(); }
+      } else {
+        if (!confirm('Delete selected quotation(s)?')) { e.preventDefault(); }
+      }
+    });
   })();
 </script>
 {% endblock %}
