@@ -147,7 +147,7 @@ class SalesQuotation(TimestampedModel):
         STATUS_CANCELLED:set(),
         STATUS_EXPIRED:  set(),
     }
-    
+
     def can_transition_to(self, new_status: str) -> bool:
         return new_status in self._ALLOWED_TRANSITIONS.get(self.status, set())
 
@@ -247,9 +247,31 @@ class SalesQuotationLine(TimestampedModel):
 
 class SalesOrder(TimestampedModel):
     number = models.CharField(max_length=50, unique=True)
-    quotation = models.ForeignKey(
-        SalesQuotation, on_delete=models.SET_NULL, null=True, blank=True, related_name="orders"
+    sales_quotation = models.ForeignKey(
+        SalesQuotation,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="orders",
+        db_column="sales_quotation_id",
     )
+    
+    quotation = models.ForeignKey(
+        SalesQuotation,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="+",              # <- hilangkan clashes "orders"
+        db_column="quotation_id",      # <- kalau kolom lama ada
+    )
+    
+    sales_service = models.ForeignKey(
+        SalesService,
+        to_field="code",
+        db_column="sales_service_id",
+        on_delete=PROTECT,
+        related_name="services",
+    )
+
     customer = models.ForeignKey(Partner, on_delete=PROTECT, related_name="orders")
     date = models.DateField(null=True, blank=True)
 

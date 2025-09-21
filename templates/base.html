@@ -59,6 +59,7 @@
     <main class="app-main">
       <div class="app-content content-wrap">
         <div class="container-fluid pt-4">
+          {% block content_header %}{% endblock %}
           {% block content %}
           <!-- Default content -->
           {% endblock %}

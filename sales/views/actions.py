@@ -27,6 +27,8 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from sales.models import SalesQuotation
+from ..models import SalesQuotation, SalesOrder, SalesOrderLine
+
 
 #@login_required
 @require_POST
@@ -69,3 +71,47 @@ def quotation_change_status(request, pk):
         messages.success(request, f"Status berubah: {old} → {new_status}.")
 
     return redirect("sales:quotation_detail", pk=quotation.pk)
+
+
+
+@transaction.atomic
+def quotation_generate_po(request, pk):
+    q = get_object_or_404(SalesQuotation, pk=pk)
+
+    if q.status != SalesQuotation.STATUS_ACCEPTED:
+        messages.error(request, "PO hanya bisa digenerate dari Quotation yang Accepted.")
+        return redirect("sales:quotation_detail", pk=q.pk)
+
+    # Cegah duplikasi
+    if q.orders.exists():
+        so = q.orders.first()
+        messages.warning(request, f"PO sudah ada: {so.number}")
+        return redirect("sales:quotation_detail", pk=q.pk)
+
+    # Nomor PO sederhana (nanti bisa ganti pakai sequence)
+    po_number = f"PO-{q.number}"
+
+    so = SalesOrder.objects.create(
+        number=po_number,
+        sales_quotation=q,                 # ← FK baru yang benar
+        customer=q.customer,
+        total_amount=q.total_amount,
+        status="DRAFT",
+        business_type=q.business_type,
+    )
+
+    # Copy lines
+    for ln in q.lines.all():
+        SalesOrderLine.objects.create(
+            sales_order=so,
+            origin=ln.origin,
+            destination=ln.destination,
+            description=ln.description,
+            uom=ln.uom,
+            qty=ln.qty,
+            price=ln.price,
+            amount=ln.amount,
+        )
+
+    messages.success(request, f"PO {so.number} berhasil dibuat.")
+    return redirect("sales:quotation_detail", pk=q.pk)
