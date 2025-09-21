@@ -28,19 +28,20 @@ from django.views.decorators.http import require_POST
 
 from sales.models import SalesQuotation
 
-@login_required
+#@login_required
 @require_POST
 def quotation_change_status(request, pk):
     quotation = get_object_or_404(SalesQuotation, pk=pk)
     new_status = (request.POST.get("status") or "").upper().strip()
 
+    messages.debug(request, f"[DEBUG] posted status='{new_status}', current='{quotation.status}'")
+
     valid_statuses = {
-        SalesQuotation.STATUS_DRAFT,
         SalesQuotation.STATUS_SENT,
         SalesQuotation.STATUS_ACCEPTED,
         SalesQuotation.STATUS_CANCELLED,
-        SalesQuotation.STATUS_EXPIRED,
     }
+
     if new_status not in valid_statuses:
         messages.error(request, "Status tidak dikenal.")
         return redirect("sales:quotation_detail", pk=quotation.pk)

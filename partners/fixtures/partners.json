@@ -1,0 +1,115 @@
+[
+  {
+    "model": "partners.partner",
+    "pk": 1,
+    "fields": {
+      "name": "PT Nusantara Logistics",
+      "code": "AG001",
+      "partner_type": "agent",
+      "email": "agent1@nusantara.com",
+      "phone": "+62-21-555111"
+    }
+  },
+  {
+    "model": "partners.partner",
+    "pk": 2,
+    "fields": {
+      "name": "CV Samudra Agency",
+      "code": "AG002",
+      "partner_type": "agent",
+      "email": "agent2@samudra.com",
+      "phone": "+62-31-444222"
+    }
+  },
+
+  {
+    "model": "partners.partner",
+    "pk": 3,
+    "fields": {
+      "name": "Garuda Shipping Lines",
+      "code": "CR001",
+      "partner_type": "carrier",
+      "email": "carrier1@garuda.com",
+      "phone": "+62-21-777111"
+    }
+  },
+  {
+    "model": "partners.partner",
+    "pk": 4,
+    "fields": {
+      "name": "Pelita Air Cargo",
+      "code": "CR002",
+      "partner_type": "carrier",
+      "email": "carrier2@pelita.com",
+      "phone": "+62-21-888222"
+    }
+  },
+  {
+    "model": "partners.partner",
+    "pk": 5,
+    "fields": {
+      "name": "Oceanic Marine Transport",
+      "code": "CR003",
+      "partner_type": "carrier",
+      "email": "carrier3@oceanic.com",
+      "phone": "+62-31-999333"
+    }
+  },
+
+  {
+    "model": "partners.partner",
+    "pk": 6,
+    "fields": {
+      "name": "PT Borneo Supply",
+      "code": "VD001",
+      "partner_type": "vendor",
+      "email": "vendor1@borneo.com",
+      "phone": "+62-541-555000"
+    }
+  },
+  {
+    "model": "partners.partner",
+    "pk": 7,
+    "fields": {
+      "name": "CV Sumatra Forwarder",
+      "code": "VD002",
+      "partner_type": "vendor",
+      "email": "vendor2@sumatra.com",
+      "phone": "+62-61-666111"
+    }
+  },
+
+  {
+    "model": "partners.partner",
+    "pk": 8,
+    "fields": {
+      "name": "PT Asia Mineral Export",
+      "code": "CS001",
+      "partner_type": "customer",
+      "email": "customer1@asia-mineral.com",
+      "phone": "+62-21-111222"
+    }
+  },
+  {
+    "model": "partners.partner",
+    "pk": 9,
+    "fields": {
+      "name": "CV Textile Nusantara",
+      "code": "CS002",
+      "partner_type": "customer",
+      "email": "customer2@textnusantara.com",
+      "phone": "+62-24-333444"
+    }
+  },
+  {
+    "model": "partners.partner",
+    "pk": 10,
+    "fields": {
+      "name": "PT Agro Lestari",
+      "code": "CS003",
+      "partner_type": "customer",
+      "email": "customer3@agrolestari.com",
+      "phone": "+62-61-555666"
+    }
+  }
+]

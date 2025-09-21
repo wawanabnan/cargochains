@@ -19,43 +19,46 @@
     <div class="card-header d-flex justify-content-between align-items-center">
       <h3 class="card-title mb-0">Quotation {{ quotation.number }}</h3>
       <div class="btn-group">
-          <a href="{% url 'sales:quotation_edit' quotation.id %}" class="btn btn-outline-primary btn-sm">
-            <i class="fas fa-edit"></i> Edit
-          </a>
+  <a href="{% url 'sales:quotation_edit' quotation.id %}" class="btn btn-outline-primary btn-sm">
+    <i class="fas fa-edit"></i> Edit
+  </a>
 
-          {# DRAFT -> SENT #}
-          {% if quotation.can_transition_to:"SENT" %}
-            <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#confirmChangeStatusModal" data-status="SENT">
-              <i class="fas fa-paper-plane"></i> Mark as Sent
-            </button>
-          {% endif %}
+  {# DRAFT -> SENT #}
+  {% if quotation|can_transition_to:"SENT" %}
+    <form action="{% url 'sales:quotation_change_status' quotation.id %}" method="post" class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="status" value="SENT">
+      <button type="submit" class="btn btn-outline-info btn-sm"
+              onclick="return confirm('Mark as SENT?');">
+        <i class="fas fa-paper-plane"></i> Mark as Sent
+      </button>
+    </form>
+  {% endif %}
 
-          {# SENT -> ACCEPTED / CANCELLED / EXPIRED #}
-          {% if quotation.can_transition_to:"ACCEPTED" %}
-            <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#confirmChangeStatusModal" data-status="ACCEPTED">
-              <i class="fas fa-check"></i> Accept
-            </button>
-          {% endif %}
-          {% if quotation.can_transition_to:"CANCELLED" %}
-            <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmChangeStatusModal" data-status="CANCELLED">
-              <i class="fas fa-times"></i> Cancel
-            </button>
-          {% endif %}
-          {% if quotation.can_transition_to:"EXPIRED" %}
-            <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#confirmChangeStatusModal" data-status="EXPIRED">
-              <i class="fas fa-hourglass-end"></i> Expire
-            </button>
-          {% endif %}
+  {# SENT -> ACCEPTED #}
+  {% if quotation|can_transition_to:"ACCEPTED" %}
+    <form action="{% url 'sales:quotation_change_status' quotation.id %}" method="post" class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="status" value="ACCEPTED">
+      <button type="submit" class="btn btn-outline-success btn-sm"
+              onclick="return confirm('Set as ACCEPTED?');">
+        <i class="fas fa-check"></i> Accept
+      </button>
+    </form>
+  {% endif %}
 
-          <a href="{% url 'sales:quotation_delete' quotation.id %}" class="btn btn-outline-danger btn-sm"
-            onclick="return confirm('Delete this quotation? Only draft/cancelled allowed.')">
-            <i class="fas fa-trash"></i> Delete
-          </a>
-
-          <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-print"></i> Print
-          </button>
-        </div>
+  {# SENT -> CANCELLED #}
+  {% if quotation|can_transition_to:"CANCELLED" %}
+    <form action="{% url 'sales:quotation_change_status' quotation.id %}" method="post" class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="status" value="CANCELLED">
+      <button type="submit" class="btn btn-outline-danger btn-sm"
+              onclick="return confirm('Cancel this quotation?');">
+        <i class="fas fa-times"></i> Cancel
+      </button>
+    </form>
+  {% endif %}
+</div>
 
     </div>
     <div class="card-body">
@@ -184,42 +187,6 @@ document.addEventListener("DOMContentLoaded", function() {
   // format tabel & grand total
   fmtCells("#lines-table td.num");
   fmtCells("#grand-total");
-});
-</script>
-<div class="modal fade" id="confirmChangeStatusModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <form method="post" action="{% url 'sales:quotation_change_status' quotation.id %}" class="modal-content">
-      {% csrf_token %}
-      <input type="hidden" name="status" id="change-status-input" value="">
-      <div class="modal-header">
-        <h5 class="modal-title">Konfirmasi Ubah Status</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
-      </div>
-      <div class="modal-body">
-        <p>Ubah status quotation menjadi <strong id="change-status-label">—</strong>?</p>
-        <small class="text-muted d-block mt-2">
-          Catatan: <em>EXPIRED</em> hanya berlaku jika status saat ini <strong>SENT</strong> dan
-          tanggal <code>valid_until</code> sudah terlewati.
-        </small>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-        <button type="submit" class="btn btn-primary">Ya, Ubah</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  var modal = document.getElementById("confirmChangeStatusModal");
-  if (!modal) return;
-  modal.addEventListener("show.bs.modal", function (event) {
-    var btn = event.relatedTarget;
-    var status = btn?.getAttribute("data-status") || "";
-    modal.querySelector("#change-status-input").value = status;
-    modal.querySelector("#change-status-label").textContent = status || "—";
-  });
 });
 </script>
 

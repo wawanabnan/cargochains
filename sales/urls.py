@@ -24,4 +24,7 @@ urlpatterns = [
     path("freight/quotation/<int:pk>/delete/", views.quotation_delete,      name="quotation_delete"),
     path("quotations/<int:pk>/change-status/", views.quotation_change_status, name="quotation_change_status"),
 
+    path("freight/quotation/<int:pk>/change-status/", views.quotation_change_status, name="quotation_change_status"),
+
+
 ]

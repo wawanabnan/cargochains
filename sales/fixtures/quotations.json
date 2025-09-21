@@ -1,0 +1,305 @@
+[
+  {
+    "model": "sales.salesquotation",
+    "pk": 1,
+    "fields": {
+      "number": "FQ-202509-00035",
+      "customer": 7,
+      "sales_service": 1,
+      "currency": 2,
+      "payment_term": 4,
+      "valid_until": "2025-10-05",
+      "status": "DRAFT",
+      "total_amount": 3250.00
+    }
+  },
+  {
+    "model": "sales.quotationline",
+    "pk": 1,
+    "fields": {
+      "quotation": 1,
+      "origin": 32,
+      "destination": 33,
+      "description": "20ft Container Coal",
+      "uom": 6,
+      "qty": 1,
+      "price": 2000.00,
+      "amount": 2000.00
+    }
+  },
+  {
+    "model": "sales.quotationline",
+    "pk": 2,
+    "fields": {
+      "quotation": 1,
+      "origin": 32,
+      "destination": 33,
+      "description": "Handling Charge",
+      "uom": 5,
+      "qty": 1,
+      "price": 1250.00,
+      "amount": 1250.00
+    }
+  },
+
+  {
+    "model": "sales.salesquotation",
+    "pk": 2,
+    "fields": {
+      "number": "FQ-202509-00029",
+      "customer": 8,
+      "sales_service": 2,
+      "currency": 1,
+      "payment_term": "COD",
+      "valid_until": "2025-10-20",
+      "status": "SENT",
+      "total_amount": 54000000.00
+    }
+  },
+  {
+    "model": "sales.quotationline",
+    "pk": 3,
+    "fields": {
+      "quotation": 2,
+      "origin": 33,
+      "destination": 16,
+      "description": "Steel Pipes",
+      "uom": 3,
+      "qty": 30,
+      "price": 1800000.00,
+      "amount": 54000000.00
+    }
+  },
+
+  {
+    "model": "sales.salesquotation",
+    "pk": 3,
+    "fields": {
+      "number": "FQ-202509-00030",
+      "customer": 9,
+      "sales_service": 1,
+      "currency": 2,
+      "payment_term": "TT",
+      "valid_until": "2025-10-25",
+      "status": "SENT",
+      "total_amount": 7500.00
+    }
+  },
+  {
+    "model": "sales.quotationline",
+    "pk": 4,
+    "fields": {
+      "quotation": 3,
+      "origin": 32,
+      "destination": 42,
+      "description": "Electronics Export",
+      "uom": 4,
+      "qty": 15,
+      "price": 500.00,
+      "amount": 7500.00
+    }
+  },
+
+  {
+    "model": "sales.salesquotation",
+    "pk": 4,
+    "fields": {
+      "number": "31-202509-00028",
+      "customer": 10,
+      "sales_service": 3,
+      "currency": 2,
+      "payment_term": "45D",
+      "valid_until": "2025-10-18",
+      "status": "ACCEPTED",
+      "total_amount": 18000.00
+    }
+  },
+  {
+    "model": "sales.quotationline",
+    "pk": 5,
+    "fields": {
+      "quotation": 4,
+      "origin": 34,
+      "destination": 38,
+      "description": "Palm Oil Drums",
+      "uom": "DRM",
+      "qty": 300,
+      "price": 60.00,
+      "amount": 18000.00
+    }
+  },
+
+  {
+    "model": "sales.salesquotation",
+    "pk": 5,
+    "fields": {
+      "number": "FQ-202509-00032",
+      "customer": 7,
+      "sales_service": 2,
+      "currency": 1,
+      "payment_term": 4,
+      "valid_until": "2025-09-10",
+      "status": "EXPIRED",
+      "total_amount": 27000000.00
+    }
+  },
+  {
+    "model": "sales.quotationline",
+    "pk": 6,
+    "fields": {
+      "quotation": 5,
+      "origin": 36,
+      "destination": 25,
+      "description": "Cement Bags",
+      "uom": 3,
+      "qty": 15,
+      "price": 1800000.00,
+      "amount": 27000000.00
+    }
+  },
+
+  {
+    "model": "sales.salesquotation",
+    "pk": 6,
+    "fields": {
+      "number": "QO-2025-0006",
+      "customer": 8,
+      "sales_service": 1,
+      "currency": 2,
+      "payment_term": "COD",
+      "valid_until": "2025-10-05",
+      "status": "CANCELLED",
+      "total_amount": 5000.00
+    }
+  },
+  {
+    "model": "sales.quotationline",
+    "pk": 7,
+    "fields": {
+      "quotation": 6,
+      "origin": 32,
+      "destination": 47,
+      "description": "Furniture Export",
+      "uom": 4,
+      "qty": 10,
+      "price": 500.00,
+      "amount": 5000.00
+    }
+  },
+
+  {
+    "model": "sales.salesquotation",
+    "pk": 7,
+    "fields": {
+      "number": "FQ-202509-00033",
+      "customer": 9,
+      "sales_service": 2,
+      "currency": 1,
+      "payment_term": 4,
+      "valid_until": "2025-10-12",
+      "status": "DRAFT",
+      "total_amount": 45000000.00
+    }
+  },
+  {
+    "model": "sales.quotationline",
+    "pk": 8,
+    "fields": {
+      "quotation": 7,
+      "origin": 35,
+      "destination": 39,
+      "description": "Rice Bags",
+      "uom": 3,
+      "qty": 25,
+      "price": 1800000.00,
+      "amount": 45000000.00
+    }
+  },
+
+  {
+    "model": "sales.salesquotation",
+    "pk": 8,
+    "fields": {
+      "number": "QO-2025-0008",
+      "customer": 10,
+      "sales_service": 1,
+      "currency": 2,
+      "payment_term": "TT",
+      "valid_until": "2025-10-28",
+      "status": "SENT",
+      "total_amount": 9600.00
+    }
+  },
+  {
+    "model": "sales.quotationline",
+    "pk": 9,
+    "fields": {
+      "quotation": 8,
+      "origin": 32,
+      "destination": 42,
+      "description": "Garments",
+      "uom": 4,
+      "qty": 24,
+      "price": 400.00,
+      "amount": 9600.00
+    }
+  },
+
+  {
+    "model": "sales.salesquotation",
+    "pk": 9,
+    "fields": {
+      "number": "FQ-202509-00035",
+      "customer": 7,
+      "sales_service": 2,
+      "currency": 1,
+      "payment_term": 4,
+      "valid_until": "2025-10-22",
+      "status": "SENT",
+      "total_amount": 108000000.00
+    }
+  },
+  {
+    "model": "sales.quotationline",
+    "pk": 10,
+    "fields": {
+      "quotation": 9,
+      "origin": 33,
+      "destination": 55,
+      "description": "Fertilizer",
+      "uom": 3,
+      "qty": 60,
+      "price": 1800000.00,
+      "amount": 108000000.00
+    }
+  },
+
+  {
+    "model": "sales.salesquotation",
+    "pk": 10,
+    "fields": {
+      "number": "FQ-202509-00034",
+      "customer": 8,
+      "sales_service": 3,
+      "currency": 2,
+      "payment_term": 4,
+      "valid_until": "2025-10-30",
+      "status": "DRAFT",
+      "total_amount": 12000.00
+    }
+  },
+  {
+    "model": "sales.quotationline",
+    "pk": 11,
+    "fields": {
+      "quotation": 10,
+      "origin": 32,
+      "destination": 38,
+      "description": "Textile Rolls",
+      "uom": 4,
+      "qty": 30,
+      "price": 400.00,
+      "amount": 12000.00
+    }
+  }
+]

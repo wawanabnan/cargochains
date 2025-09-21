@@ -1,15 +1,15 @@
-# sales/models.py
 from django.db import models
 from django.db.models import PROTECT, CASCADE, F, Sum
+from django.utils import timezone
 from partners.models import Partner
 from geo.models import Location
 from decimal import Decimal
-from django.utils import timezone
+
 
 class TimestampedModel(models.Model):
     """Abstract base with created_at & updated_at, safe for fixtures."""
-    created_at = models.DateTimeField(null=True, blank=True, default=timezone.now, editable=False, db_index=True),
-    updated_at = models.DateTimeField(null=True, blank=True, default=timezone.now)
+    created_at = models.DateTimeField(default=timezone.now, editable=False, db_index=True)
+    updated_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         abstract = True
@@ -19,16 +19,13 @@ class TimestampedModel(models.Model):
             self.updated_at = timezone.now()
         super().save(*args, **kwargs)
 
+
 class Currency(TimestampedModel):
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=10, unique=True)  # contoh: IDR, USD
     symbol = models.CharField(max_length=8, blank=True, null=True)
     decimals = models.PositiveSmallIntegerField(default=2)
     is_active = models.BooleanField(default=True)
-
-    # timestamps (PALING BELAKANG)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "currencies"
@@ -44,20 +41,13 @@ class SalesService(TimestampedModel):
     sort_order = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
-    # timestamps (PALING BELAKANG)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "sales_services"
         ordering = ["sort_order", "name"]
 
     def __str__(self):
-        return f"{self.code} - {self.name}"
+        return f"{self.code}"
 
-    @property
-    def only_name(self):
-        return self.name
 
 class PaymentTerm(TimestampedModel):
     code = models.CharField(max_length=30, unique=True)
@@ -65,32 +55,24 @@ class PaymentTerm(TimestampedModel):
     days = models.PositiveSmallIntegerField(default=0)
     description = models.TextField(blank=True, null=True)
 
-    # timestamps (PALING BELAKANG)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "payment_terms"
         ordering = ["name"]
 
     def __str__(self):
-        return self.name
+        return f"{self.name}"
 
 
 class UOM(TimestampedModel):
     code = models.CharField(max_length=30, unique=True)
     name = models.CharField(max_length=100)
 
-    # timestamps (PALING BELAKANG)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "uoms"
         ordering = ["name"]
 
     def __str__(self):
-        return self.name
+        return f"{self.code}"
 
 
 class SalesNumberSequence(TimestampedModel):
@@ -100,25 +82,21 @@ class SalesNumberSequence(TimestampedModel):
     padding = models.PositiveSmallIntegerField(default=5)
     last_no = models.PositiveIntegerField(default=0)
 
-    # timestamps (PALING BELAKANG)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "sales_number_sequences"
         unique_together = (("business_type", "period"),)
         ordering = ["-period"]
 
     def __str__(self):
-        return f"{self.business_type}-{self.period}: {self.prefix}/{str(self.last_no).zfill(self.padding)}"
+        return f"{self.business_type}-{self.period}"
 
 
 class SalesQuotation(TimestampedModel):
-    STATUS_DRAFT     = "DRAFT"
-    STATUS_SENT      = "SENT"
-    STATUS_ACCEPTED  = "ACCEPTED"
+    STATUS_DRAFT = "DRAFT"
+    STATUS_SENT = "SENT"
+    STATUS_ACCEPTED = "ACCEPTED"
     STATUS_CANCELLED = "CANCELLED"
-    STATUS_EXPIRED   = "EXPIRED"
+    STATUS_EXPIRED = "EXPIRED"
 
     STATUS_CHOICES = [
         (STATUS_DRAFT, "Draft"),
@@ -128,30 +106,20 @@ class SalesQuotation(TimestampedModel):
         (STATUS_EXPIRED, "Expired"),
     ]
 
-    # contoh field yang sudah ada:
-    # number = models.CharField(max_length=50, unique=True)
+    # status utama
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_DRAFT)
-    # valid_until = models.DateField(null=True, blank=True)  # pastikan ada field ini
-
-    # Transisi yang diizinkan:
-    # DRAFT -> SENT
-    # SENT -> {ACCEPTED, CANCELLED, EXPIRED}
-    # ACCEPTED -> {CANCELLED}  (opsional; hapus jika tak diinginkan)
-    # CANCELLED -> {} (final)
-    # EXPIRED -> {} (final)
 
     _ALLOWED_TRANSITIONS = {
-        STATUS_DRAFT:    {STATUS_SENT},
-        STATUS_SENT:     {STATUS_ACCEPTED, STATUS_CANCELLED},  # (EXPIRED kalau mau otomatis)
+        STATUS_DRAFT: {STATUS_SENT},
+        STATUS_SENT: {STATUS_ACCEPTED, STATUS_CANCELLED, STATUS_EXPIRED},
         STATUS_ACCEPTED: set(),
-        STATUS_CANCELLED:set(),
-        STATUS_EXPIRED:  set(),
+        STATUS_CANCELLED: set(),
+        STATUS_EXPIRED: set(),
     }
-    
+
     def can_transition_to(self, new_status: str) -> bool:
         return new_status in self._ALLOWED_TRANSITIONS.get(self.status, set())
 
-    # (opsional) buat nentuin warna badge di template
     def status_badge_class(self) -> str:
         return {
             self.STATUS_DRAFT: "bg-secondary",
@@ -166,62 +134,32 @@ class SalesQuotation(TimestampedModel):
     date = models.DateField(null=True, blank=True)
     valid_until = models.DateField()
     total_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
-
-
-    # relasi service by code (kolom DB varchar via db_column)
-    sales_service = models.ForeignKey(
-        SalesService,
-        to_field="code",
-        db_column="sales_service_id",
-        on_delete=PROTECT,
-        related_name="quotations",
-    )
-
-    # FK standar ke currencies.id (kolom DB = currency_id INTEGER)
+    sales_service = models.ForeignKey(SalesService, on_delete=PROTECT, related_name="quotations")
     currency = models.ForeignKey(Currency, on_delete=PROTECT, related_name="quotations")
-
-    payment_term = models.ForeignKey(
-        PaymentTerm, on_delete=PROTECT, related_name="quotations", null=True, blank=True
-    )
-
-    # notes sesuai permintaan
+    payment_term = models.ForeignKey(PaymentTerm, on_delete=PROTECT, related_name="quotations", null=True, blank=True)
     note_1 = models.TextField(blank=True, null=True)
     note_2 = models.TextField(blank=True, null=True)
-
-    amount_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
-    status = models.CharField(max_length=20, default="DRAFT")
-    business_type = models.CharField(max_length=20, default="freight")
-
-    # info sales
+    
     sales_user_id = models.IntegerField(null=True, blank=True)
     sales_agency = models.ForeignKey(
         Partner, on_delete=models.SET_NULL, null=True, blank=True, related_name="agency_quotations"
     )
-    # sales_reseller: DIHAPUS
-
-    # timestamps (PALING BELAKANG)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+        
+    business_type = models.CharField(max_length=20, default="freight")
 
     class Meta:
         db_table = "sales_quotations"
 
+    def __str__(self):
+        return self.number
 
     def recalc_totals(self):
-        """
-        Hitung Σ(qty * price) dari semua line aktif dan simpan ke total_amount.
-        """
-        total = (
-            self.lines.annotate(line_total=F("qty") * F("price"))
-            .aggregate(s=Sum("line_total"))["s"]
-            or Decimal("0.00")
-        )
+        total = (self.lines
+                 .annotate(line_total=F("qty") * F("price"))
+                 .aggregate(s=Sum("line_total"))["s"] or Decimal("0.00"))
         self.total_amount = total
         self.save(update_fields=["total_amount"])
         return total
-
-    def __str__(self):
-        return self.number
 
 
 class SalesQuotationLine(TimestampedModel):
@@ -234,47 +172,22 @@ class SalesQuotationLine(TimestampedModel):
     price = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
 
-    # timestamps (PALING BELAKANG)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "sales_quotation_lines"
 
     def __str__(self):
-        return f"{self.description or ''} ({self.qty} {self.uom})"
+        return f"Line {self.id} of {self.sales_quotation.number}"
 
 
 class SalesOrder(TimestampedModel):
     number = models.CharField(max_length=50, unique=True)
-    quotation = models.ForeignKey(
-        SalesQuotation, on_delete=models.SET_NULL, null=True, blank=True, related_name="orders"
-    )
+    quotation = models.ForeignKey(SalesQuotation, on_delete=models.SET_NULL, null=True, blank=True, related_name="orders")
     customer = models.ForeignKey(Partner, on_delete=PROTECT, related_name="orders")
     date = models.DateField(null=True, blank=True)
-
-    currency = models.ForeignKey(Currency, on_delete=PROTECT, related_name="orders")
-    payment_term = models.ForeignKey(
-        PaymentTerm, on_delete=PROTECT, related_name="orders", null=True, blank=True
-    )
-
-    # order tidak pakai valid_until
-    notes = models.TextField(blank=True, null=True)
-
-    amount_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
     status = models.CharField(max_length=20, default="DRAFT")
     business_type = models.CharField(max_length=20, default="freight")
 
-    # info sales
-    sales_user_id = models.IntegerField(null=True, blank=True)
-    sales_agency = models.ForeignKey(
-        Partner, on_delete=models.SET_NULL, null=True, blank=True, related_name="agency_orders"
-    )
-    # sales_reseller: DIHAPUS
-
-    # timestamps (PALING BELAKANG)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "sales_orders"
@@ -293,12 +206,8 @@ class SalesOrderLine(TimestampedModel):
     price = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
 
-    # timestamps (PALING BELAKANG)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "sales_order_lines"
 
     def __str__(self):
-        return f"{self.description or ''} ({self.qty} {self.uom})"
+        return f"Line {self.id} of {self.sales_order.number}"

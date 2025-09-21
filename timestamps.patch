@@ -1,0 +1,233 @@
+*** a/sales/models.py
+--- b/sales/models.py
+***************
+-# sales/models.py
+-from django.db import models
+-from django.db.models import PROTECT, CASCADE
+-from partners.models import Partner
+-from geo.models import Location
+-from decimal import Decimal
++# sales/models.py
++from django.db import models
++from django.db.models import PROTECT, CASCADE, F, Sum
++from django.utils import timezone
++from partners.models import Partner
++from geo.models import Location
++from decimal import Decimal
++
++class TimestampedModel(models.Model):
++    """
++    Timestamp base model:
++    - created_at & updated_at NOT NULL, default timezone.now (aman untuk loaddata/fixtures)
++    - updated_at auto-update on save()
++    """
++    created_at = models.DateTimeField(default=timezone.now, editable=False, db_index=True)
++    updated_at = models.DateTimeField(default=timezone.now)
++
++    class Meta:
++        abstract = True
++
++    def save(self, *args, **kwargs):
++        if self.pk:
++            self.updated_at = timezone.now()
++        super().save(*args, **kwargs)
+***************
+-class Currency(models.Model):
++class Currency(TimestampedModel):
+     name = models.CharField(max_length=100)
+     code = models.CharField(max_length=10, unique=True)  # contoh: IDR, USD
+     symbol = models.CharField(max_length=8, blank=True, null=True)
+     decimals = models.PositiveSmallIntegerField(default=2)
+     is_active = models.BooleanField(default=True)
+-
+-    # timestamps (PALING BELAKANG)
+-    created_at = models.DateTimeField(auto_now_add=True)
+-    updated_at = models.DateTimeField(auto_now=True)
+ 
+     class Meta:
+         db_table = "currencies"
+         ordering = ["code"]
+***************
+-class SalesService(models.Model):
++class SalesService(TimestampedModel):
+     code = models.CharField(max_length=30, unique=True)
+     name = models.CharField(max_length=100)
+     sort_order = models.IntegerField(default=0)
+     is_active = models.BooleanField(default=True)
+-
+-    # timestamps (PALING BELAKANG)
+-    created_at = models.DateTimeField(auto_now_add=True)
+-    updated_at = models.DateTimeField(auto_now=True)
+ 
+     class Meta:
+         db_table = "sales_services"
+         ordering = ["sort_order", "name"]
+***************
+-class PaymentTerm(models.Model):
++class PaymentTerm(TimestampedModel):
+     code = models.CharField(max_length=30, unique=True)
+     name = models.CharField(max_length=100)
+     days = models.PositiveSmallIntegerField(default=0)
+     description = models.TextField(blank=True, null=True)
+-
+-    # timestamps (PALING BELAKANG)
+-    created_at = models.DateTimeField(auto_now_add=True)
+-    updated_at = models.DateTimeField(auto_now=True)
+ 
+     class Meta:
+         db_table = "payment_terms"
+         ordering = ["name"]
+***************
+-class UOM(models.Model):
++class UOM(TimestampedModel):
+     code = models.CharField(max_length=30, unique=True)
+     name = models.CharField(max_length=100)
+-
+-    # timestamps (PALING BELAKANG)
+-    created_at = models.DateTimeField(auto_now_add=True)
+-    updated_at = models.DateTimeField(auto_now=True)
+ 
+     class Meta:
+         db_table = "uoms"
+         ordering = ["name"]
+***************
+-class SalesNumberSequence(models.Model):
++class SalesNumberSequence(TimestampedModel):
+     business_type = models.CharField(max_length=20, default="freight")
+     period = models.CharField(max_length=6)  # YYYYMM
+     prefix = models.CharField(max_length=30, default="FQ")
+     padding = models.PositiveSmallIntegerField(default=5)
+     last_no = models.PositiveIntegerField(default=0)
+-
+-    # timestamps (PALING BELAKANG)
+-    created_at = models.DateTimeField(auto_now_add=True)
+-    updated_at = models.DateTimeField(auto_now=True)
+ 
+     class Meta:
+         db_table = "sales_number_sequences"
+         unique_together = (("business_type", "period"),)
+         ordering = ["-period"]
+***************
+-class SalesQuotation(models.Model):
++class SalesQuotation(TimestampedModel):
+     STATUS_DRAFT     = "DRAFT"
+     STATUS_SENT      = "SENT"
+     STATUS_ACCEPTED  = "ACCEPTED"
+     STATUS_CANCELLED = "CANCELLED"
+     STATUS_EXPIRED   = "EXPIRED"
+@@
+-    # contoh field yang sudah ada:
+-    # number = models.CharField(max_length=50, unique=True)
+-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+-    # valid_until = models.DateField(null=True, blank=True)  # pastikan ada field ini
++    # status utama
++    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+ 
+     # Transisi yang diizinkan:
+     # DRAFT -> SENT
+     # SENT -> {ACCEPTED, CANCELLED, EXPIRED}
+     # ACCEPTED -> {CANCELLED}  (opsional; hapus jika tak diinginkan)
+@@
+     def status_badge_class(self) -> str:
+         return {
+             self.STATUS_DRAFT: "bg-secondary",
+             self.STATUS_SENT: "bg-info",
+             self.STATUS_ACCEPTED: "bg-success",
+             self.STATUS_CANCELLED: "bg-danger",
+             self.STATUS_EXPIRED: "bg-warning",
+         }.get(self.status, "bg-secondary")
+ 
+     number = models.CharField(max_length=50, unique=True)
+     customer = models.ForeignKey(Partner, on_delete=PROTECT, related_name="quotations")
+     date = models.DateField(null=True, blank=True)
+     valid_until = models.DateField()
+     total_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+@@
+     currency = models.ForeignKey(Currency, on_delete=PROTECT, related_name="quotations")
+ 
+     payment_term = models.ForeignKey(
+         PaymentTerm, on_delete=PROTECT, related_name="quotations", null=True, blank=True
+     )
+@@
+-    amount_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+-    status = models.CharField(max_length=20, default="DRAFT")
++    # HAPUS DUPLIKAT: amount_total & status duplikat
+     business_type = models.CharField(max_length=20, default="freight")
+@@
+-    # timestamps (PALING BELAKANG)
+-    created_at = models.DateTimeField(auto_now_add=True)
+-    updated_at = models.DateTimeField(auto_now=True)
+-
+     class Meta:
+         db_table = "sales_quotations"
+@@
+     def recalc_totals(self):
+         """
+         Hitung Σ(qty * price) dari semua line aktif dan simpan ke total_amount.
+         """
+-        total = (
+-            self.lines.annotate(line_total=F("qty") * F("price"))
+-            .aggregate(s=Sum("line_total"))["s"]
+-            or Decimal("0.00")
+-        )
++        total = (self.lines
++                 .annotate(line_total=F("qty") * F("price"))
++                 .aggregate(s=Sum("line_total"))["s"] or Decimal("0.00"))
+         self.total_amount = total
+         self.save(update_fields=["total_amount"])
+         return total
+***************
+-class SalesQuotationLine(models.Model):
+-    sales_quotation = models.ForeignKey(SalesQuotation, on_delete=CASCADE, related_name="lines")
++class SalesQuotationLine(TimestampedModel):
++    sales_quotation = models.ForeignKey(SalesQuotation, on_delete=CASCADE, related_name="lines")
+     origin = models.ForeignKey(Location, on_delete=PROTECT, related_name="quotation_origin_lines")
+     destination = models.ForeignKey(Location, on_delete=PROTECT, related_name="quotation_destination_lines")
+     description = models.CharField(max_length=200, blank=True, null=True)
+     uom = models.ForeignKey(UOM, on_delete=PROTECT)
+     qty = models.DecimalField(max_digits=18, decimal_places=3, default=0)
+     price = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+     amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+-
+-    # timestamps (PALING BELAKANG)
+-    created_at = models.DateTimeField(auto_now_add=True)
+-    updated_at = models.DateTimeField(auto_now=True)
+ 
+     class Meta:
+         db_table = "sales_quotation_lines"
+@@
+-class SalesOrder(models.Model):
++class SalesOrder(TimestampedModel):
+     number = models.CharField(max_length=50, unique=True)
+     quotation = models.ForeignKey(
+         SalesQuotation, on_delete=models.SET_NULL, null=True, blank=True, related_name="orders"
+     )
+     customer = models.ForeignKey(Partner, on_delete=PROTECT, related_name="orders")
+@@
+     status = models.CharField(max_length=20, default="DRAFT")
+     business_type = models.CharField(max_length=20, default="freight")
+@@
+-    # timestamps (PALING BELAKANG)
+-    created_at = models.DateTimeField(auto_now_add=True)
+-    updated_at = models.DateTimeField(auto_now=True)
+-
+     class Meta:
+         db_table = "sales_orders"
+***************
+-class SalesOrderLine(models.Model):
++class SalesOrderLine(TimestampedModel):
+     sales_order = models.ForeignKey(SalesOrder, on_delete=CASCADE, related_name="lines")
+     origin = models.ForeignKey(Location, on_delete=PROTECT, related_name="order_origin_lines")
+     destination = models.ForeignKey(Location, on_delete=PROTECT, related_name="order_destination_lines")
+     description = models.CharField(max_length=200, blank=True, null=True)
+     uom = models.ForeignKey(UOM, on_delete=PROTECT)
+     qty = models.DecimalField(max_digits=18, decimal_places=3, default=0)
+     price = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+     amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+-
+-    # timestamps (PALING BELAKANG)
+-    created_at = models.DateTimeField(auto_now_add=True)
+-    updated_at = models.DateTimeField(auto_now=True)
+ 
+     class Meta:
+         db_table = "sales_order_lines"
