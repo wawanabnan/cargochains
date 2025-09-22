@@ -1,0 +1,109 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Quotation {{ q.number }}</title>
+  <style>
+    @page { size: A4; margin: 15mm 15mm 18mm 15mm; }
+
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; }
+    .muted { color:#666; }
+    h1 { font-size: 18px; margin: 0 0 6px; }
+    h3 { font-size: 13px; margin: 0 0 4px; }
+
+    table { width:100%; border-collapse:collapse; }
+    th, td { border:1px solid #ccc; padding:6px; }
+    th { background:#eee; text-align:left; }
+    td.num { text-align:right; }
+
+    .box { border:1px solid #ccc; padding:8px; margin-bottom:10px; }
+    .totals { width:250px; margin-left:auto; border:none; }
+    .totals td { border:none; padding:4px 0; }
+    .footer { margin-top:12px; font-size:11px; color:#666; }
+  </style>
+</head>
+<body>
+  <table style="width:100%; margin-bottom:12px;">
+    <tr>
+      <td style="width:120px;">
+        <img src="{% static 'adminlte/img/logo.png' %}" style="height:60px;" alt="Logo">
+      </td>
+      <td style="text-align:right;">
+        <h1>Quotation</h1>
+        <div class="muted">Number: {{ q.number }}</div>
+        <div><b>Status:</b> {{ q.get_status_display }}</div>
+        {% if q.date %}<div><b>Date:</b> {{ q.date }}</div>{% endif %}
+        {% if q.valid_until %}<div><b>Valid Until:</b> {{ q.valid_until }}</div>{% endif %}
+      </td>
+    </tr>
+  </table>
+
+  <table style="width:100%; margin-bottom:12px;">
+    <tr>
+      <td style="width:50%; padding-right:6px;">
+        <div class="box">
+          <h3>Customer</h3>
+          <p>{{ q.customer }}</p>
+          {% if q.customer and q.customer.address %}<p>{{ q.customer.address }}</p>{% endif %}
+          {% if q.customer and q.customer.email %}<p>{{ q.customer.email }}</p>{% endif %}
+          {% if q.customer and q.customer.phone %}<p>{{ q.customer.phone }}</p>{% endif %}
+        </div>
+      </td>
+      <td style="width:50%; padding-left:6px;">
+        <div class="box">
+          <h3>Details</h3>
+          {% if q.currency %}<p><b>Currency:</b> {{ q.currency }}</p>{% endif %}
+          {% if q.payment_term %}<p><b>Payment Term:</b> {{ q.payment_term }}</p>{% endif %}
+          {% if q.sales_service %}<p><b>Service:</b> {{ q.sales_service }}</p>{% endif %}
+          {% if q.business_type %}<p><b>Business Type:</b> {{ q.business_type|upper }}</p>{% endif %}
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:28px;">#</th>
+        <th>Origin</th>
+        <th>Destination</th>
+        <th>Description</th>
+        <th style="width:60px;">UoM</th>
+        <th style="width:60px;" class="num">Qty</th>
+        <th style="width:70px;" class="num">Price</th>
+        <th style="width:90px;" class="num">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ln in q.lines.all %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ ln.origin }}</td>
+        <td>{{ ln.destination }}</td>
+        <td>{{ ln.description }}</td>
+        <td>{{ ln.uom }}</td>
+        <td class="num">{{ ln.qty }}</td>
+        <td class="num">{{ ln.price|floatformat:2 }}</td>
+        <td class="num">{{ ln.amount|floatformat:2 }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="num">No lines.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <table class="totals">
+    <tr><td>Subtotal</td><td class="num">{{ q.total|floatformat:2 }}</td></tr>
+    <tr><td>VAT</td><td class="num">{{ q.vat|floatformat:2 }}</td></tr>
+    <tr><td><b>Grand Total</b></td><td class="num"><b>{{ q.grand_total|floatformat:2 }}</b></td></tr>
+  </table>
+
+  {% if q.note_1 or q.note_2 %}
+  <div class="footer">
+    {% if q.note_1 %}<div>{{ q.note_1 }}</div>{% endif %}
+    {% if q.note_2 %}<div>{{ q.note_2 }}</div>{% endif %}
+  </div>
+  {% endif %}
+</body>
+</html>

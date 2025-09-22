@@ -21,16 +21,21 @@
         <div class="card-header d-flex justify-content-between align-items-center">
           <h3 class="card-title mb-0">Quotation {{ quotation.number }}</h3>
           <div class="btn-group">
+              <a href="{% url 'sales:quotation_edit' quotation.id %}" class="btn btn-outline-primary btn-sm">Edit</a>
+              <a href="{% url 'sales:quotation_print' quotation.id %}" class="btn btn-outline-secondary btn-sm" target="_blank">Print-friendly</a>
+              <a href="{% url 'sales:quotation_pdf' quotation.id %}" 
+              class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener"> Download PDF</a>
+
               {% if quotation.status != "CANCELLED" %}
                 <a href="{% url 'sales:quotation_edit' quotation.id %}" class="btn btn-outline-primary btn-sm">
                   <i class="fas fa-edit"></i> Edit
                 </a>
               {% endif %}
               {% if quotation.status == "ACCEPTED" %}
-                <a href="{% url 'sales:quotation_generate_po' quotation.id %}"
+                <a href="{% url 'sales:quotation_generate_so' quotation.id %}"
                   class="btn btn-outline-dark btn-sm"
-                  onclick="return confirm('Generate PO dari quotation ini?');">
-                  <i class="fas fa-file-contract"></i> Generate PO
+                  onclick="return confirm('Generate SO dari quotation ini?');">
+                  <i class="fas fa-file-contract"></i> Generate SO
                 </a>
               {% endif %}
               {# DRAFT -> SENT #}

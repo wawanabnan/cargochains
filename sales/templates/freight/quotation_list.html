@@ -98,18 +98,18 @@
 
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0" id="odoo-like-table">
+          <table class="table table-hover table-border  mb-0" id="odoo-like-table">
             <thead class="table-light">
               <tr>
                 <th style="width:42px;"><input type="checkbox" id="check-all" class="form-check-input"></th>
                 <th style="width: 140px;">Number</th>
                 <th>Customer</th>
                 <th style="width: 130px;">Valid Until</th>
-                <th style="width: 150px;">Service</th>
-                <th style="width: 120px;">Payment Term</th>
-                <th style="width: 100px;">Currency</th>
-                <th class="text-end" style="width: 140px;">Total</th>
-                <th style="width: 90px;">Status</th>
+                <th style="width: 140px;">Service</th>
+                <th style="width: 100px;">Pay. Term</th>
+                <th style="width: 60px;">Curr</th>
+                <th class="text-end" style="width: 120px;">Total</th>
+                <th style="width: 70px;">Status</th>
               </tr>
             </thead>
             <tbody id="fq-list">
@@ -126,7 +126,7 @@
                   <td>{{ r.customer }}</td>
                   <td>{{ r.valid_until|date:"Y-m-d"|default:"—" }}</td>
                   <td>{{ r.sales_service.only_name }}</td>
-                  <td>{{ r.payment_term|default:"—" }}</td>
+                  <td style="text-align:center">{{ r.payment_term|default:"—" }}</td>
                   <td>{{ r.currency }}</td>
                   <td class="text-end fw-semibold total-id">0,00</td>
                   <td>
@@ -162,6 +162,7 @@
 <style>
   #odoo-like-table tbody tr.clickable-row { cursor: pointer; }
   #odoo-like-table tbody tr.clickable-row:hover { background: rgba(0,0,0,.03); }
+  .tabler th {border-right:1px solid #ddd}
 </style>
 {% endblock %}
 

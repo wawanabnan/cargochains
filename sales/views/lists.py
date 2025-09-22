@@ -4,6 +4,8 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 
 from sales.models import SalesQuotation, SalesService, Currency, PaymentTerm
+from ..models import SalesOrder
+
 
 
 STATUS_BADGES = {
@@ -93,3 +95,10 @@ def quotation_list(request):
         "ALLOWED_DELETE_STATUSES": ALLOWED_DELETE_STATUSES,
     }
     return render(request, "freight/quotation_list.html", ctx)
+
+
+
+def order_list(request):
+    orders = SalesOrder.objects.select_related("customer", "sales_quotation").order_by("-id")
+    return render(request, "freight/order_list.html", {"orders": orders})
+

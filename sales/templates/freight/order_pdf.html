@@ -1,0 +1,97 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sales Order {{ o.number }}</title>
+  <style>
+    @page { size: A4; margin: 15mm 15mm 18mm 15mm; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size:12px; color:#111; }
+    h1 { font-size:18px; margin:0 0 6px; }
+    h3 { font-size:13px; margin:0 0 4px; }
+    .muted { color:#666; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { border:1px solid #ccc; padding:6px; }
+    th { background:#eee; text-align:left; }
+    td.num { text-align:right; }
+    .box { border:1px solid #ccc; padding:8px; margin-bottom:10px; }
+    .totals { width:250px; margin-left:auto; border:none; }
+    .totals td { border:none; padding:4px 0; }
+  </style>
+</head>
+<body>
+  <table style="width:100%; margin-bottom:12px;">
+    <tr>
+      <td style="width:120px;">
+        <img src="{% static 'adminlte/img/logo.png' %}" style="height:60px" alt="Logo">
+      </td>
+      <td style="text-align:right;">
+        <h1>Sales Order</h1>
+        <div class="muted">Number: {{ o.number }}</div>
+        <div><b>Status:</b> {{ o.get_status_display|default:o.status }}</div>
+        {% if o.date %}<div><b>Date:</b> {{ o.date }}</div>{% endif %}
+      </td>
+    </tr>
+  </table>
+
+  <table style="width:100%; margin-bottom:12px;">
+    <tr>
+      <td style="width:50%; padding-right:6px;">
+        <div class="box">
+          <h3>Customer</h3>
+          <p>{{ o.customer }}</p>
+          {% if o.customer and o.customer.address %}<p>{{ o.customer.address }}</p>{% endif %}
+          {% if o.customer and o.customer.email %}<p>{{ o.customer.email }}</p>{% endif %}
+          {% if o.customer and o.customer.phone %}<p>{{ o.customer.phone }}</p>{% endif %}
+        </div>
+      </td>
+      <td style="width:50%; padding-left:6px;">
+        <div class="box">
+          <h3>Details</h3>
+          {% if o.currency %}<p><b>Currency:</b> {{ o.currency }}</p>{% endif %}
+          {% if o.payment_term %}<p><b>Payment Term:</b> {{ o.payment_term }}</p>{% endif %}
+          {% if o.sales_service %}<p><b>Service:</b> {{ o.sales_service }}</p>{% endif %}
+          {% if o.business_type %}<p><b>Business Type:</b> {{ o.business_type|upper }}</p>{% endif %}
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:28px">#</th>
+        <th>Origin</th>
+        <th>Destination</th>
+        <th>Description</th>
+        <th style="width:60px">UoM</th>
+        <th style="width:60px" class="num">Qty</th>
+        <th style="width:70px" class="num">Price</th>
+        <th style="width:90px" class="num">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ln in o.lines.all %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ ln.origin }}</td>
+        <td>{{ ln.destination }}</td>
+        <td>{{ ln.description }}</td>
+        <td>{{ ln.uom }}</td>
+        <td class="num">{{ ln.qty }}</td>
+        <td class="num">{{ ln.price|floatformat:2 }}</td>
+        <td class="num">{{ ln.amount|floatformat:2 }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="num">No lines.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <table class="totals">
+    <tr><td>Subtotal</td><td class="num">{{ o.total|floatformat:2 }}</td></tr>
+    <tr><td>VAT</td><td class="num">{{ o.vat|floatformat:2 }}</td></tr>
+    <tr><td><b>Grand Total</b></td><td class="num"><b>{{ o.grand_total|floatformat:2 }}</b></td></tr>
+  </table>
+</body>
+</html>

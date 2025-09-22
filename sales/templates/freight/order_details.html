@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load quo_extras %}
+
+{% block content_header %}
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb breadcrumb-sm m-0">
+      <li class="breadcrumb-item"><a href="{% url 'sales:order_list' %}">Sales Orders</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ order.number }}</li>
+    </ol>
+  </nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  {% if messages %}
+    <div class="mt-2">
+      {% for m in messages %}
+        <div class="alert alert-{{ m.tags }}">{{ m }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h3 class="card-title m-0">Sales Order {{ order.number }}</h3>
+      <div class="d-flex gap-2">
+        <a href="{% url 'sales:order_list' %}" class="btn btn-link btn-sm text-secondary">← Back</a>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <dl class="row mb-3">
+        <dt class="col-md-3">Customer</dt><dd class="col-md-9">{{ order.customer }}</dd>
+        <dt class="col-md-3">Status</dt><dd class="col-md-9"><span class="badge">{{ order.get_status_display }}</span></dd>
+        <dt class="col-md-3">Subtotal</dt><dd class="col-md-9">{{ order.total }}</dd>
+        <dt class="col-md-3">VAT</dt><dd class="col-md-9">{{ order.vat }}</dd>
+        <dt class="col-md-3">Grand Total</dt><dd class="col-md-9 fw-bold">{{ order.grand_total }}</dd>
+        {% if order.sales_quotation %}
+          <dt class="col-md-3">From Quotation</dt>
+          <dd class="col-md-9"><a href="{% url 'sales:quotation_detail' order.sales_quotation.id %}">{{ order.sales_quotation.number }}</a></dd>
+        {% endif %}
+      </dl>
+
+      <div class="mb-3">
+        
+
+        <div class="btn-group">
+            <a href="{% url 'sales:order_print' order.id %}" 
+              class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener">Print-friendly</a>
+        
+            <a href="{% url 'sales:order_pdf' order.id %}"   
+                class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener">Download PDF</a>
+
+
+
+        </div>
+        {# aksi status kecil — pakai filter can_transition_to dari quo_extras #}
+
+        {% if order|can_transition_to:"CONFIRMED" %}
+          <form method="post" action="{% url 'sales:order_change_status' order.id %}" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="CONFIRMED">
+            <button class="btn btn-outline-primary btn-sm">Confirm</button>
+          </form>
+        {% endif %}
+
+        {% if order|can_transition_to:"ON_PROGRESS" %}
+          <form method="post" action="{% url 'sales:order_change_status' order.id %}" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="ON_PROGRESS">
+            <button class="btn btn-outline-info btn-sm">Start Progress</button>
+          </form>
+        {% endif %}
+
+        {% if order|can_transition_to:"ON_HOLD" %}
+          <form method="post" action="{% url 'sales:order_change_status' order.id %}" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="ON_HOLD">
+            <button class="btn btn-outline-secondary btn-sm">Hold</button>
+          </form>
+        {% endif %}
+
+        {% if order|can_transition_to:"COMPLETED" %}
+          <form method="post" action="{% url 'sales:order_change_status' order.id %}" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="COMPLETED">
+            <button class="btn btn-outline-success btn-sm">Complete</button>
+          </form>
+        {% endif %}
+
+        {% if order|can_transition_to:"CANCELLED" %}
+          <form method="post" action="{% url 'sales:order_change_status' order.id %}" class="d-inline" onsubmit="return confirm('Cancel this Sales Order?')">
+            {% csrf_token %}
+            <input type="hidden" name="status" value="CANCELLED">
+            <button class="btn btn-outline-danger btn-sm">Cancel</button>
+          </form>
+        {% endif %}
+      </div>
+
+      {% if lines %}
+        <div class="table-responsive">
+          <table class="table table-sm table-striped align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width:40px;">#</th>
+                <th>Origin</th>
+                <th>Destination</th>
+                <th>Description</th>
+                <th class="text-end">Qty</th>
+                <th>UoM</th>
+                <th class="text-end">Price</th>
+                <th class="text-end">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ln in lines %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ ln.origin }}</td>
+                <td>{{ ln.destination }}</td>
+                <td>{{ ln.description }}</td>
+                <td class="text-end">{{ ln.qty }}</td>
+                <td>{{ ln.uom }}</td>
+                <td class="text-end">{{ ln.price }}</td>
+                <td class="text-end">{{ ln.amount }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}

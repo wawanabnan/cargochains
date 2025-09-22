@@ -30,7 +30,7 @@ class SalesOrderAdmin(admin.ModelAdmin):
         "date",
         "sales_user_id",
         "currency",
-        "amount_total",
+#        "amount_total",
         "status",
         "updated_at",
     )

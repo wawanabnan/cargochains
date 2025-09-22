@@ -16,6 +16,8 @@ MODEL_MAP = {
     "payment_term": m.PaymentTerm,
 }
 
+
+
 def _next_sequence_number() -> str:
     period = _date.today().strftime("%Y%m")
     with transaction.atomic():
@@ -65,6 +67,10 @@ def _parse_iso_date_safe(v) -> _date | None:
         return None
 
 # ===== STEP 1: HEADER -> simpan di session (serialize) =====
+from datetime import date
+from core.models import NumberSequence
+from core.numbering import next_number
+
 def quotation_add_header(request):
     if request.method == "POST":
         form = QuotationHeaderForm(request.POST)
@@ -80,11 +86,25 @@ def quotation_add_header(request):
                     header_session[f"{k}_id"] = v.id
                 else:
                     header_session[k] = v
+
+            # === generate nomor quotation ===
+            business_type = (cd.get("business_type") or "freight").lower()
+            SEQ_CODE_BY_TYPE = {
+                "freight": "QUOTATION_FREIGHT",
+                "charter": "QUOTATION_CHARTER",
+            }
+            seq_code = SEQ_CODE_BY_TYPE.get(business_type, "QUOTATION_FREIGHT")
+
+            seq_qs = NumberSequence.objects.filter(app_label="sales", code=seq_code)
+            header_session["number"] = next_number(seq_qs, today=date.today())
+            # ================================
+
             request.session["quotation_header_data"] = header_session
             return redirect("sales:quotation_add_lines")
     else:
         form = QuotationHeaderForm()
     return render(request, "freight/quotation_step1.html", {"form": form})
+
 
 # ===== STEP 2: LINES -> saveAll (atomic) =====
 @transaction.atomic
@@ -129,8 +149,15 @@ def quotation_add_lines(request):
             quotation.date = _date.today()
         if not getattr(quotation, "number", None):
             quotation.number = _next_sequence_number()
+        # totals baru
+        quotation.total = Decimal("0.00")
+        quotation.vat = Decimal("0.00")
+        quotation.grand_total = Decimal("0.00")
+        # (opsional) sinkron legacy sementara
         quotation.total_amount = Decimal("0.00")
         quotation.save()
+
+
 
         rows = max(len(origins), len(dests), len(descs), len(uom_ids), len(qtys), len(prices))
         lines_to_create, total, any_valid = [], Decimal("0.00"), False
@@ -174,12 +201,20 @@ def quotation_add_lines(request):
 
         # simpan lines & update total
         m.SalesQuotationLine.objects.bulk_create(lines_to_create)
-        quotation.total_amount = total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        quotation.save(update_fields=["total_amount"])
+        subtotal = total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        quotation.total = subtotal
+        quotation.vat = quotation.vat or Decimal("0.00")   # asumsikan sudah 0 kalau belum diisi
+        quotation.grand_total = (quotation.total + quotation.vat).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+        # (opsional) sinkron legacy sementara agar kode lama tak putus
+        quotation.total_amount = quotation.total
+        quotation.save(update_fields=["total", "vat", "grand_total", "total_amount"])
+
 
         # bersihkan session
         request.session.pop("quotation_header_data", None)
-        messages.success(request, f"Quotation {quotation.number} berhasil dibuat. Total {quotation.total_amount}")
+        messages.success(request, f"Quotation {quotation.number} berhasil dibuat. Grand Total {quotation.grand_total}")
+
         return redirect("sales:quotation_list")
 
     # GET → render form lines

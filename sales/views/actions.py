@@ -1,6 +1,20 @@
+from datetime import date
+
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
+from django.db.models import F, Sum
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
 from sales.models import SalesQuotation
+from ..models import SalesQuotation, SalesOrder, SalesOrderLine
+from core.models import NumberSequence
+from core.numbering import next_number
+
+
+
 
 ALLOWED_DELETE_STATUSES = {"draft", "cancelled"}
 
@@ -18,16 +32,6 @@ def quotation_delete(request, pk):
     messages.success(request, f"Deleted quotation {q.number}")
     return redirect("sales:freight_quotation_list")
 
-# sales/actions.py
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.db import transaction
-from django.shortcuts import get_object_or_404, redirect
-from django.utils import timezone
-from django.views.decorators.http import require_POST
-
-from sales.models import SalesQuotation
-from ..models import SalesQuotation, SalesOrder, SalesOrderLine
 
 
 #@login_required
@@ -72,46 +76,125 @@ def quotation_change_status(request, pk):
 
     return redirect("sales:quotation_detail", pk=quotation.pk)
 
+def _has_field(model, name):
+    try:
+        model._meta.get_field(name); return True
+    except Exception:
+        return False
+
+
+
+
+@require_POST
+def order_change_status(request, pk):
+    so = get_object_or_404(SalesOrder, pk=pk)
+    new_status = (request.POST.get("status") or "").upper().strip()
+    if not so.can_transition_to(new_status):
+        messages.error(request, f"Transisi tidak valid: {so.status} → {new_status}")
+        return redirect("sales:order_detail", pk=so.pk)
+    old = so.status
+    so.status = new_status
+    so.save(update_fields=["status"])
+    messages.success(request, f"Status Order {so.number} berubah: {old} → {new_status}")
+    return redirect("sales:order_detail", pk=so.pk)
+
+
 
 
 @transaction.atomic
-def quotation_generate_po(request, pk):
+def quotation_generate_so(request, pk):
+    # Ambil quotation
     q = get_object_or_404(SalesQuotation, pk=pk)
 
+    # Hanya boleh generate dari ACCEPTED
     if q.status != SalesQuotation.STATUS_ACCEPTED:
-        messages.error(request, "PO hanya bisa digenerate dari Quotation yang Accepted.")
+        messages.error(request, "Generate Order hanya bisa dari Quotation berstatus ACCEPTED.")
         return redirect("sales:quotation_detail", pk=q.pk)
 
-    # Cegah duplikasi
-    if q.orders.exists():
-        so = q.orders.first()
-        messages.warning(request, f"PO sudah ada: {so.number}")
+    # Pastikan ada currency (sering NOT NULL di SO)
+    if not getattr(q, "currency_id", None):
+        messages.error(request, "Quotation belum memiliki currency. Lengkapi dulu currency-nya.")
         return redirect("sales:quotation_detail", pk=q.pk)
 
-    # Nomor PO sederhana (nanti bisa ganti pakai sequence)
-    po_number = f"PO-{q.number}"
+    # Tentukan sequence code berdasarkan business_type
+    SEQ_CODE_ORDER_BY_TYPE = {
+        "freight": "ORDER_FREIGHT",
+        "charter": "ORDER_CHARTER",
+    }
+    bt = (q.business_type or "freight").lower()
+    seq_code = SEQ_CODE_ORDER_BY_TYPE.get(bt, "ORDER_FREIGHT")
 
-    so = SalesOrder.objects.create(
-        number=po_number,
-        sales_quotation=q,                 # ← FK baru yang benar
-        customer=q.customer,
-        total_amount=q.total_amount,
-        status="DRAFT",
-        business_type=q.business_type,
+    # Generate nomor SO
+    so_number = next_number(
+        NumberSequence.objects.filter(app_label="sales", code=seq_code),
+        today=date.today()
     )
 
-    # Copy lines
-    for ln in q.lines.all():
-        SalesOrderLine.objects.create(
+    # Siapkan kwargs create SO (defensif: isi kalau field ada)
+    def _has_field(model, name):
+        try:
+            model._meta.get_field(name)
+            return True
+        except Exception:
+            return False
+
+    kwargs = {
+        "number": so_number,
+        "sales_quotation": q,
+        "customer": q.customer,
+        "status": SalesOrder.STATUS_DRAFT if _has_field(SalesOrder, "status") else "DRAFT",
+        "business_type": q.business_type,
+    }
+
+    # Wajib: currency (karena error kamu sebelumnya)
+    if _has_field(SalesOrder, "currency"):
+        kwargs["currency"] = q.currency
+
+    # Opsional: payment_term / sales_service kalau ada di SO
+    if _has_field(SalesOrder, "payment_term"):
+        kwargs["payment_term"] = getattr(q, "payment_term", None)
+    if _has_field(SalesOrder, "sales_service"):
+        kwargs["sales_service"] = getattr(q, "sales_service", None)
+
+    # Total/VAT/Grand total
+    for fld in ("total", "vat", "grand_total"):
+        if _has_field(SalesOrder, fld):
+            kwargs[fld] = getattr(q, fld, None)
+
+    # Create SalesOrder
+    so = SalesOrder.objects.create(**kwargs)
+
+    # Copy lines dari quotation ke order
+    q_lines = q.lines.all()
+    bulk = []
+    for ln in q_lines:
+        bulk.append(SalesOrderLine(
             sales_order=so,
             origin=ln.origin,
             destination=ln.destination,
             description=ln.description,
-            uom=ln.uom,
             qty=ln.qty,
+            uom=ln.uom,
             price=ln.price,
-            amount=ln.amount,
-        )
+            amount=getattr(ln, "amount", None) or (ln.qty * ln.price),
+        ))
+    if bulk:
+        SalesOrderLine.objects.bulk_create(bulk)
 
-    messages.success(request, f"PO {so.number} berhasil dibuat.")
-    return redirect("sales:quotation_detail", pk=q.pk)
+    # (Opsional) Re-calc total dari lines bila total kosong
+    if not so.total or not so.grand_total:
+        agg = so.lines.annotate(line_total=F("qty") * F("price")).aggregate(s=Sum("line_total"))
+        subtotal = agg["s"] or 0
+        vat = so.vat or 0
+        so.total = subtotal
+        so.grand_total = subtotal + vat
+        so.save(update_fields=["total", "grand_total"])
+
+    # Update status quotation → ORDERED (final)
+    if q.can_transition_to(SalesQuotation.STATUS_ORDERED):
+        q.status = SalesQuotation.STATUS_ORDERED
+        q.save(update_fields=["status"])
+
+    messages.success(request, f"Sales Order {so.number} berhasil dibuat.")
+    return redirect("sales:order_details", pk=so.pk)  # atau ke quotation_detail, terserah kamu
+
