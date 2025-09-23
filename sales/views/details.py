@@ -1,135 +1,60 @@
-from django.shortcuts import render, get_object_or_404
-from sales import models as m
-from django.http import HttpResponse
-from django.template.loader import render_to_string
-from ..models import SalesQuotation
-from django.template.loader import render_to_string
-from django.contrib.staticfiles import finders
-from ..models import SalesQuotation
-from django.conf import settings
-from xhtml2pdf import pisa
-import io, os
+# sales/views/details.py
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import DetailView
+from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import login_required
+from account.decorators import role_required
+from ..models import SalesOrder, SalesQuotation
+from ..auth import SalesAccessRequiredMixin
 
 
+@method_decorator(login_required(login_url="account:login"), name="dispatch")
+@method_decorator(role_required("sales", "admin"), name="dispatch")
+class QuotationDetailView(LoginRequiredMixin, DetailView):
+    model = SalesQuotation
+    context_object_name = "quotation"
+    template_name = "freight/quotation_details.html"   # ← sesuai yang kamu pakai
+    pk_url_kwarg = "pk"
 
-def quotation_detail(request, pk):
-    quotation = get_object_or_404(
-        m.SalesQuotation.objects.select_related(
-            "customer", "sales_service", "currency", "payment_term"
-        ),
-        pk=pk,
-    )
-    lines = (
-        m.SalesQuotationLine.objects
-        .select_related("origin", "destination", "uom")
-        .filter(sales_quotation=quotation)
-        .order_by("id")
-    )
-    return render(request, "freight/quotation_detail.html", {
-        "quotation": quotation,
-        "lines": lines,
-    })
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        q = self.object
+        # isi ctx["lines"] supaya template lama tetap dapat item baris
+        lines = None
+        for accessor in ("lines", "quotation_lines", "items", "details"):
+            mgr = getattr(q, accessor, None)
+            if hasattr(mgr, "all"):
+                lines = mgr.all(); break
+        if lines is None:
+            for rel in q._meta.related_objects:
+                if rel.one_to_many and "line" in rel.related_model.__name__.lower():
+                    mgr = getattr(q, rel.get_accessor_name())
+                    if hasattr(mgr, "all"):
+                        lines = mgr.all(); break
+        ctx["lines"] = lines or []
+        return ctx
 
+@method_decorator(login_required(login_url="account:login"), name="dispatch")
+@method_decorator(role_required("sales", "admin"), name="dispatch")
+class OrderDetailView(LoginRequiredMixin, DetailView):
+    model = SalesOrder
+    context_object_name = "order"
+    template_name = "freight/order_details.html"       # ← sesuai yang kamu pakai
+    pk_url_kwarg = "pk"
 
-
-from ..models import SalesOrder
-
-def order_detail(request, pk):
-    so = get_object_or_404(SalesOrder.objects.select_related("customer","sales_quotation"), pk=pk)
-    lines = so.lines.all() if hasattr(so, "lines") else []
-    return render(request, "freight/order_details.html", {"order": so, "lines": lines})
-
-
-def quotation_print(request, pk):
-    q = get_object_or_404(
-        SalesQuotation.objects.select_related("customer", "currency")
-        .prefetch_related("lines__origin", "lines__destination", "lines__uom"),
-        pk=pk
-    )
-    # pakai template yang ramah print (tanpa sidebar/header besar)
-    return render(request, "freight/quotation_print.html", {"q": q, "is_pdf": False})
-
-
-
-def _link_callback(uri, rel):
-    """
-    Resolve static file paths for xhtml2pdf tanpa bikin SuspiciousFileOperation.
-    """
-    static_url = getattr(settings, "STATIC_URL", "/static/")
-
-    # 1) kalau diawali STATIC_URL → resolve manual ke BASE_DIR/static
-    if uri.startswith(static_url):
-        subpath = uri[len(static_url):]
-        candidate = os.path.join(settings.BASE_DIR, "static", subpath)
-        if os.path.isfile(candidate):
-            return os.path.abspath(candidate)
-
-    # 2) coba lewat finders (fallback, misalnya static di app)
-    result = finders.find(uri)
-    if result:
-        if isinstance(result, (list, tuple)):
-            result = result[0]
-        return os.path.abspath(result)
-
-    # 3) kalau absolute path sudah valid
-    if os.path.isabs(uri) and os.path.isfile(uri):
-        return os.path.abspath(uri)
-
-    # 4) fallback: biarin pisa coba handle
-    return uri
-
-
-
-
-
-def quotation_pdf(request, pk):
-    q = get_object_or_404(
-        SalesQuotation.objects.select_related("customer", "currency")
-        .prefetch_related("lines__origin", "lines__destination", "lines__uom"),
-        pk=pk
-    )
-    # render template PDF khusus
-    html = render_to_string("freight/quotation_pdf.html", {"q": q, "is_pdf": True})
-
-    buf = io.BytesIO()
-    pdf = pisa.CreatePDF(io.BytesIO(html.encode("utf-8")),
-                         dest=buf, encoding="utf-8",
-                         link_callback=_link_callback)
-    if pdf.err:
-        return HttpResponse("Gagal membuat PDF.", status=500)
-
-    resp = HttpResponse(buf.getvalue(), content_type="application/pdf")
-    resp["Content-Disposition"] = f'inline; filename=\"Quotation-{q.number}.pdf\"'
-    return resp
-
-
-def order_print(request, pk):
-    so = get_object_or_404(
-        SalesOrder.objects.select_related("customer", "currency")
-        .prefetch_related("lines__origin", "lines__destination", "lines__uom"),
-        pk=pk
-    )
-    return render(request, "freight/order_print.html", {"o": so, "is_pdf": False})
-
-
-def order_pdf(request, pk):
-    so = get_object_or_404(
-        SalesOrder.objects.select_related("customer", "currency")
-        .prefetch_related("lines__origin", "lines__destination", "lines__uom"),
-        pk=pk
-    )
-    html = render_to_string("freight/order_pdf.html", {"o": so, "is_pdf": True})
-
-    buf = io.BytesIO()
-    pdf = pisa.CreatePDF(
-        io.BytesIO(html.encode("utf-8")),
-        dest=buf,
-        encoding="utf-8",
-        link_callback=_link_callback,
-    )
-    if pdf.err:
-        return HttpResponse("Gagal membuat PDF.", status=500)
-
-    resp = HttpResponse(buf.getvalue(), content_type="application/pdf")
-    resp["Content-Disposition"] = f'inline; filename="SO-{so.number}.pdf"'
-    return resp
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        o = self.object
+        lines = None
+        for accessor in ("lines", "order_lines", "items", "details"):
+            mgr = getattr(o, accessor, None)
+            if hasattr(mgr, "all"):
+                lines = mgr.all(); break
+        if lines is None:
+            for rel in o._meta.related_objects:
+                if rel.one_to_many and "line" in rel.related_model.__name__.lower():
+                    mgr = getattr(o, rel.get_accessor_name())
+                    if hasattr(mgr, "all"):
+                        lines = mgr.all(); break
+        ctx["lines"] = lines or []
+        return ctx

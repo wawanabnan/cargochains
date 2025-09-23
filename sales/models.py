@@ -5,6 +5,8 @@ from partners.models import Partner
 from geo.models import Location
 from decimal import Decimal
 from django.utils import timezone
+from django.conf import settings
+
 
 class TimestampedModel(models.Model):
     """Abstract base with created_at & updated_at, safe for fixtures."""
@@ -174,6 +176,13 @@ class SalesQuotation(TimestampedModel):
     grand_total = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))   # total + vat
 
 
+    salesperson = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="sales_quotations",
+        db_index=True,
+        null=True, blank=True,
+    )
     # relasi service by code (kolom DB varchar via db_column)
     sales_service = models.ForeignKey(
         SalesService,
@@ -266,7 +275,13 @@ class SalesOrder(TimestampedModel):
         db_column="sales_quotation_id",
     )
     
-    
+    salesperson = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="sales_orders",
+        db_index=True,
+        null=True, blank=True,
+    )
    
     sales_service = models.ForeignKey(   # ✅ field baru
         SalesService,
@@ -330,6 +345,7 @@ class SalesOrder(TimestampedModel):
 
     
     business_type = models.CharField(max_length=20, default="freight")
+    
 
     # info sales
     sales_user_id = models.IntegerField(null=True, blank=True)
@@ -344,11 +360,23 @@ class SalesOrder(TimestampedModel):
 
     class Meta:
         db_table = "sales_orders"
+       
+        
 
     def __str__(self):
         return self.number
 
+class SalesModule(SalesOrder):
+    class Meta:
+        proxy = True                   # ✅ hanya proxy
+        app_label = "sales"
+        verbose_name = "Sales module"
+        verbose_name_plural = "Sales module"
+        permissions = (
+            ("access_sales", "Can access Sales module"),
+        )
 
+        
 class SalesOrderLine(TimestampedModel):
     sales_order = models.ForeignKey(SalesOrder, on_delete=CASCADE, related_name="lines")
 
@@ -366,3 +394,4 @@ class SalesOrderLine(TimestampedModel):
 
     def __str__(self):
         return f"{self.description or ''} ({self.qty} {self.uom})"
+
