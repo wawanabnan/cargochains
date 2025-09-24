@@ -30,6 +30,16 @@
     </div>
 
     <div class="card-body">
+           {% if not form.fields.salesperson.disabled %}
+            <div class="mb-3">{{ form.salesperson.label_tag }} {{ form.salesperson }}</div>
+          {% else %}
+            <div class="mb-3">
+              <label class="form-label">Salesperson</label>
+              <div class="form-control bg-body-secondary">
+                {{ request.user.get_full_name|default:request.user.username }}
+              </div>
+            </div>
+          {% endif %}
       <dl class="row mb-3">
         <dt class="col-md-3">Customer</dt><dd class="col-md-9">{{ order.customer }}</dd>
         <dt class="col-md-3">Status</dt><dd class="col-md-9"><span class="badge">{{ order.get_status_display }}</span></dd>

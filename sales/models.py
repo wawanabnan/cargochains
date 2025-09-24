@@ -176,12 +176,13 @@ class SalesQuotation(TimestampedModel):
     grand_total = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))   # total + vat
 
 
-    salesperson = models.ForeignKey(
+    sales_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name="sales_quotations",
         db_index=True,
         null=True, blank=True,
+        db_column="sales_user_id",
     )
     # relasi service by code (kolom DB varchar via db_column)
     sales_service = models.ForeignKey(
@@ -207,7 +208,6 @@ class SalesQuotation(TimestampedModel):
     business_type = models.CharField(max_length=20, default="freight")
 
     # info sales
-    sales_user_id = models.IntegerField(null=True, blank=True)
     sales_agency = models.ForeignKey(
         Partner, on_delete=models.SET_NULL, null=True, blank=True, related_name="agency_quotations"
     )
@@ -275,12 +275,13 @@ class SalesOrder(TimestampedModel):
         db_column="sales_quotation_id",
     )
     
-    salesperson = models.ForeignKey(
+    sales_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name="sales_orders",
         db_index=True,
         null=True, blank=True,
+        db_column="sales_user_id",
     )
    
     sales_service = models.ForeignKey(   # ✅ field baru
@@ -348,7 +349,6 @@ class SalesOrder(TimestampedModel):
     
 
     # info sales
-    sales_user_id = models.IntegerField(null=True, blank=True)
     sales_agency = models.ForeignKey(
         Partner, on_delete=models.SET_NULL, null=True, blank=True, related_name="agency_orders"
     )
@@ -374,6 +374,7 @@ class SalesModule(SalesOrder):
         verbose_name_plural = "Sales module"
         permissions = (
             ("access_sales", "Can access Sales module"),
+            ("view_all_sales", "Can view all sales data"),  # ← IZIN KUNCI
         )
 
         

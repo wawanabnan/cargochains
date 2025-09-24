@@ -1,87 +1,140 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView
+# sales/views/lists.py
 from django.db.models import Q
-from django.utils.decorators import method_decorator
+from django.views.generic import ListView
+from ..models import SalesQuotation, SalesOrder
+from ..auth import SalesAccessRequiredMixin, sales_queryset_for_user, is_sales_supervisor
 
-from account.decorators import role_required
-from ..models import SalesQuotation,SalesOrder
-from django.contrib.auth.decorators import login_required
-from django.utils.decorators import method_decorator
-from django.contrib.auth import REDIRECT_FIELD_NAME  # default: "next"
-from ..auth import SalesAccessRequiredMixin
-
-
-@method_decorator(login_required(login_url="account:login",
-                                 redirect_field_name=REDIRECT_FIELD_NAME), name="dispatch")
-@method_decorator(role_required("sales", "admin"), name="dispatch")  # kalau kamu pakai role
-class QuotationListView(LoginRequiredMixin, ListView):
-    login_url = "account:login"
+class QuotationListView(SalesAccessRequiredMixin, ListView):
     model = SalesQuotation
     template_name = "freight/quotation_list.html"
-    context_object_name = "quotations"            # samakan dgn variabel di template
-    paginate_by = 25                              # ubah sesuai kebutuhan
-    ordering = ["-created_at"]                    # sesuaikan field waktu milikmu
+    context_object_name = "quotations"
+    paginate_by = 25
+    ordering = ["-created_at"]  # ganti ke ["-id"] jika tidak ada created_at
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        # contoh optimisasi relasi jika ada:
-        # qs = qs.select_related("customer")
+        qs = SalesQuotation.objects.select_related("customer", "sales_user")
+        if getattr(self, "ordering", None):
+            qs = qs.order_by(*self.ordering)
+
         q = (self.request.GET.get("q") or "").strip()
         if q:
-            # SESUAIKAN field pencarian dengan skema kamu
-            # Minimal cari di 'number'; kalau ada relasi customer/name dan status, ini ikut kepake
             qs = qs.filter(
-                Q(number__icontains=q) |
-                Q(status__icontains=q) |
-                Q(customer__name__icontains=q)
+                Q(number__icontains=q)
+                | Q(status__icontains=q)
+                | Q(customer__name__icontains=q)
+                | Q(sales_user__username__icontains=q)
+                | Q(sales_user__first_name__icontains=q)
+                | Q(sales_user__last_name__icontains=q)
             )
-        # Sorting opsional via ?sort=number / created_at & ?dir=asc|desc
+
+        sp = (self.request.GET.get("sp") or "").strip()
+        if sp and is_sales_supervisor(self.request.user):
+            if sp == "me":
+                qs = qs.filter(sales_user=self.request.user)
+            elif sp.isdigit():
+                qs = qs.filter(sales_user_id=int(sp))
+            else:
+                qs = qs.filter(
+                    Q(sales_user__username__icontains=sp)
+                    | Q(sales_user__first_name__icontains=sp)
+                    | Q(sales_user__last_name__icontains=sp)
+                )
+
         sort = (self.request.GET.get("sort") or "").strip()
         direction = (self.request.GET.get("dir") or "desc").lower()
-        allowed = {"number", "created_at", "status"}  # tambahkan field yang aman untuk di-sort
+        allowed = {"number", "created_at", "status", "id", "sales_user"}
         if sort in allowed:
+            sort_key = "sales_user__username" if sort == "sales_user" else sort
             prefix = "" if direction == "asc" else "-"
-            qs = qs.order_by(prefix + sort)
+            qs = qs.order_by(prefix + sort_key)
+
+        qs = sales_queryset_for_user(qs, self.request.user)
         return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx.update({
             "title": "Freight Quotations",
-            "ns": "sales",            # kalau dipakai utk active menu
+            "ns": "sales",
             "menu": "quotation",
             "q": self.request.GET.get("q", ""),
             "sort": self.request.GET.get("sort", ""),
             "dir": self.request.GET.get("dir", "desc"),
+            "sp": self.request.GET.get("sp", ""),
         })
         return ctx
 
 
-@method_decorator(login_required(login_url="account:login"), name="dispatch")   # ⬅️ ini HARUS di atas
-@method_decorator(role_required("sales", "admin"), name="dispatch")
-class OrderListView(LoginRequiredMixin, ListView):
-    login_url = "account:login"
-    model = SalesOrder                     # ⬅️ ganti jika nama beda
-    template_name = "freight/order_list.html"   # ⬅️ pastikan file ada
-    context_object_name = "orders"         # ⬅️ plural untuk list
+# sales/views/lists.py
+from django.db.models import Q
+from django.views.generic import ListView
+from ..auth import SalesAccessRequiredMixin, sales_queryset_for_user
+from ..models import SalesOrder
+
+class OrderListView(SalesAccessRequiredMixin, ListView):
+    model = SalesOrder
+    template_name = "freight/order_list.html"
+    context_object_name = "orders"
     paginate_by = 25
-    ordering = ["-created_at"]             # ⬅️ sesuaikan field waktu
+    ordering = ["-created_at"]
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        # contoh optimisasi: qs = qs.select_related("customer")
+        qs = sales_queryset_for_user(super().get_queryset(), self.request.user, include_null=True)
+
+        # search
         q = (self.request.GET.get("q") or "").strip()
         if q:
             qs = qs.filter(
                 Q(number__icontains=q) |
                 Q(status__icontains=q) |
-                Q(customer__name__icontains=q)
+                Q(customer__name__icontains=q) |
+                Q(sales_quotation__number__icontains=q)
             )
-        # optional sort
+
+        # filters
+        statuses = [s.strip() for s in self.request.GET.getlist("status") if s.strip()]
+        if statuses:
+            cond = Q()
+            for s in statuses:
+                cond |= Q(status__iexact=s)
+            qs = qs.filter(cond)
+
+        start = (self.request.GET.get("start") or "").strip()
+        end   = (self.request.GET.get("end") or "").strip()
+        if start:
+            qs = qs.filter(created_at__date__gte=start)
+        if end:
+            qs = qs.filter(created_at__date__lte=end)
+
+        if (self.request.GET.get("mine") or "") == "1":
+            qs = qs.filter(sales_user=self.request.user)
+
+        # sorting
         sort = (self.request.GET.get("sort") or "").strip()
         direction = (self.request.GET.get("dir") or "desc").lower()
-        allowed = {"number", "created_at", "status"}
+        allowed = {"number", "created_at", "status", "sales_quotation__number"}
         if sort in allowed:
             prefix = "" if direction == "asc" else "-"
             qs = qs.order_by(prefix + sort)
-        return qs
+        else:
+            qs = qs.order_by("-created_at")
+
+        return qs.select_related(
+            "sales_quotation", "customer", "sales_user", "sales_service",
+            "currency", "payment_term", "sales_agency"
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx.update({
+            "q": self.request.GET.get("q", ""),
+            "sort": self.request.GET.get("sort", ""),
+            "dir": self.request.GET.get("dir", "desc"),
+            "flt_statuses": [s.strip() for s in self.request.GET.getlist("status") if s.strip()],
+            "flt_start": self.request.GET.get("start", ""),
+            "flt_end": self.request.GET.get("end", ""),
+            "flt_mine": (self.request.GET.get("mine") or "") == "1",
+            # ↓ kirim list ke template, jadi TIDAK perlu filter |split
+            "status_options": ["draft", "open", "confirmed", "processed", "in progress", "done", "canceled"],
+        })
+        return ctx

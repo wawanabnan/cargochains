@@ -10,6 +10,21 @@
             </li>
             <li class="nav-item d-none d-md-block"><a href="#" class="nav-link">Home</a></li>
             <li class="nav-item d-none d-md-block"><a href="#" class="nav-link">Contact</a></li>
+            {% if request.user.is_authenticated %}
+              <li class="nav-item">
+                <span class="nav-link d-flex align-items-center gap-2">
+                  <i class="fas fa-user-circle"></i>
+                  <span>
+                    {{ request.user.get_full_name|default:request.user.username }}
+                    {% if perms.sales.view_all_sales %}<span class="badge text-bg-primary ms-2">Supervisor</span>{% endif %}
+                  </span>
+                </span>
+              </li>
+              {% else %}
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'account:login' %}?next={{ request.get_full_path }}">Login</a>
+              </li>
+          {% endif %}
           </ul>
           <!--end::Start Navbar Links-->
           <!--begin::End Navbar Links-->

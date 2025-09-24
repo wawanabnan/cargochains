@@ -26,6 +26,7 @@ class QuotationHeaderForm(forms.ModelForm):
             "valid_until",
             "note_1",
             "date",           # hidden + auto today
+            "sales_user"
         ]
         widgets = {
              "customer":      forms.Select(attrs={"class": "form-select"}),
@@ -51,6 +52,7 @@ class QuotationHeaderForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
 
         # 1) Filter CUSTOMER: roles.role='customer'
@@ -72,6 +74,12 @@ class QuotationHeaderForm(forms.ModelForm):
                 help_text=base.help_text,
                 widget=base.widget,
             )
+
+
+        from .auth import is_sales_supervisor
+        if self.user and not is_sales_supervisor(self.user):
+            self.fields["sales_user"].disabled = True
+
 
         # Filter AGENCY: roles.role='agency'
         if "sales_agency" in self.fields:

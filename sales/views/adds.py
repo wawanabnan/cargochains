@@ -7,6 +7,7 @@ from django.shortcuts import redirect, render
 from sales.forms import QuotationHeaderForm
 from sales import models as m
 from geo.models import Location
+from decimal import Decimal, ROUND_HALF_UP
 
 MODEL_MAP = {
     "customer": m.Partner,
@@ -96,9 +97,11 @@ def quotation_add_header(request):
             seq_code = SEQ_CODE_BY_TYPE.get(business_type, "QUOTATION_FREIGHT")
 
             seq_qs = NumberSequence.objects.filter(app_label="sales", code=seq_code)
+            
             header_session["number"] = next_number(seq_qs, today=date.today())
+            header_session["sales_user_id"] = request.user.id
             # ================================
-
+    
             request.session["quotation_header_data"] = header_session
             return redirect("sales:quotation_add_lines")
     else:
@@ -109,12 +112,31 @@ def quotation_add_header(request):
 # ===== STEP 2: LINES -> saveAll (atomic) =====
 @transaction.atomic
 def quotation_add_lines(request):
-    header_data = request.session.get("quotation_header_data")
+    # SENTINEL
+    from django.contrib import messages
+    from django.shortcuts import render, redirect
+    from django.db import transaction
+    from sales import models as m
+    from geo.models import Location
+
+    SESSION_KEY = "quotation_header_data"
+
+    # helper fallback: parse decimal
+    def _pdec(x):
+        try:
+            x = (x or "").strip()
+            if not x:
+                return Decimal("0")
+            return Decimal(x.replace(".", "").replace(",", "."))
+        except Exception:
+            return Decimal("0")
+
+    header_data = request.session.get(SESSION_KEY)
     if not header_data:
         messages.warning(request, "Step-1 belum diisi.")
         return redirect("sales:quotation_add")
 
-    # rebuild kwargs header dari session (FK: *_id -> objek)
+    # Rebuild kwargs header (ikut pola yang lama)
     hdr_kwargs = {}
     for k, v in header_data.items():
         if k.endswith("_id"):
@@ -136,88 +158,143 @@ def quotation_add_lines(request):
     uoms = m.UOM.objects.all().order_by("name")
 
     if request.method == "POST":
-        origins = request.POST.getlist("origin[]")
-        dests   = request.POST.getlist("destination[]")
-        descs   = request.POST.getlist("description[]")
-        uom_ids = request.POST.getlist("uom[]")
-        qtys    = request.POST.getlist("qty[]")
-        prices  = request.POST.getlist("price[]")
+        # Baca nama field versi lama & alternatif (jaga-jaga)
+        def L(name):
+            vals = request.POST.getlist(name)
+            return vals if vals else request.POST.getlist(name.rstrip("[]"))
+        origins = L("origin[]")
+        dests   = L("destination[]")
+        descs   = L("description[]")
+        uom_ids = L("uom[]")
+        qtys    = L("qty[]")
+        prices  = L("price[]")
 
-        # buat header
-        quotation = m.SalesQuotation(**hdr_kwargs)
-        if not getattr(quotation, "date", None):
-            quotation.date = _date.today()
-        if not getattr(quotation, "number", None):
-            quotation.number = _next_sequence_number()
-        # totals baru
-        quotation.total = Decimal("0.00")
-        quotation.vat = Decimal("0.00")
-        quotation.grand_total = Decimal("0.00")
-        # (opsional) sinkron legacy sementara
-        quotation.total_amount = Decimal("0.00")
-        quotation.save()
-
-
-
-        rows = max(len(origins), len(dests), len(descs), len(uom_ids), len(qtys), len(prices))
-        lines_to_create, total, any_valid = [], Decimal("0.00"), False
-
+        # ===== VALIDASI AWAL — stop kalau invalid (tanpa save) =====
+        rows = max(len(origins), len(dests), len(descs), len(uom_ids), len(qtys), len(prices)) or 0
+        incomplete_rows, has_valid = [], False
         for i in range(rows):
-            origin_id = (origins[i] if i < len(origins) else "") or ""
-            dest_id   = (dests[i]   if i < len(dests)   else "") or ""
-            uom_id    = (uom_ids[i] if i < len(uom_ids) else "") or ""
-            description = ((descs[i] if i < len(descs) else "") or "").strip()
-            qty   = _parse_dec_id(qtys[i]   if i < len(qtys)   else "0")
-            price = _parse_dec_id(prices[i] if i < len(prices) else "0")
+            origin_id = (origins[i] if i < len(origins) else "").strip()
+            dest_id   = (dests[i]   if i < len(dests)   else "").strip()
+            uom_id    = (uom_ids[i] if i < len(uom_ids) else "").strip()
+            qty_raw   = (qtys[i]    if i < len(qtys)    else "").strip()
+            price_raw = (prices[i]  if i < len(prices)  else "")
+            desc      = ((descs[i] if i < len(descs) else "") or "").strip()
 
-            # lewati baris kosong atau tidak valid
-            if not (origin_id and dest_id and uom_id and qty > 0):
-                continue
+            any_filled = any([origin_id, dest_id, uom_id, qty_raw, price_raw, desc])
+            qty = _pdec(qty_raw)
+            full_ok = all([origin_id, dest_id, uom_id]) and (qty > 0)  # tambahkan `and desc` kalau deskripsi wajib
 
-            origin = Location.objects.get(pk=origin_id)
-            dest   = Location.objects.get(pk=dest_id)
-            uom    = m.UOM.objects.get(pk=uom_id)
+            if any_filled and not full_ok:
+                incomplete_rows.append(i + 1)
+            if full_ok:
+                has_valid = True
 
-            line_total = (qty * price).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-            total += line_total
-            any_valid = True
-
-            lines_to_create.append(
-                m.SalesQuotationLine(
-                    sales_quotation=quotation,
-                    origin=origin,
-                    destination=dest,
-                    description=description,
-                    qty=qty,
-                    uom=uom,
-                    price=price,
-                    amount=line_total,   # PASTIKAN TERSIMPAN
-                )
+        if incomplete_rows:
+            messages.error(
+                request,
+                "Baris belum lengkap: {}. Lengkapi atau kosongkan sepenuhnya."
+                .format(", ".join(map(str, incomplete_rows)))
             )
+            return render(request, "freight/quotation_step2.html",
+                          {"quotation": header_data, "locations": locations, "uoms": uoms, "lines": []})
 
-        if not any_valid:
-            # trigger rollback seluruh transaksi
-            raise ValueError("Minimal satu line valid harus diisi.")
+        if not has_valid:
+            messages.error(request, "Minimal satu line valid harus diisi.")
+            return render(request, "freight/quotation_step2.html",
+                          {"quotation": header_data, "locations": locations, "uoms": uoms, "lines": []})
+        # ===== END VALIDASI =====
 
-        # simpan lines & update total
-        m.SalesQuotationLine.objects.bulk_create(lines_to_create)
-        subtotal = total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        quotation.total = subtotal
-        quotation.vat = quotation.vat or Decimal("0.00")   # asumsikan sudah 0 kalau belum diisi
-        quotation.grand_total = (quotation.total + quotation.vat).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        # ===== SIMPAN (ATOMIK) SETELAH LOLOS VALIDASI =====
+        with transaction.atomic():
+            # Buat header
+            quotation = m.SalesQuotation(**hdr_kwargs)
 
-        # (opsional) sinkron legacy sementara agar kode lama tak putus
-        quotation.total_amount = quotation.total
-        quotation.save(update_fields=["total", "vat", "grand_total", "total_amount"])
+            # tanggal default
+            if not getattr(quotation, "date", None):
+                quotation.date = _date.today()
 
+            # set SALES PERSON ke kolom yang benar (punyamu: sales_user_id)
+            if hasattr(quotation, "sales_user_id") and not getattr(quotation, "sales_user_id", None):
+                quotation.sales_user_id = header_data.get("sales_user_id", request.user.id)
 
-        # bersihkan session
-        request.session.pop("quotation_header_data", None)
+            # nomor (pakai yang ada, atau generate)
+            if not getattr(quotation, "number", None):
+                quotation.number = _next_sequence_number()
+
+            # nomor unik (hindari IntegrityError 1062)
+            attempts = 0
+            while m.SalesQuotation.objects.filter(number=quotation.number).exists():
+                attempts += 1
+                quotation.number = _next_sequence_number()
+                if attempts >= 5:
+                    messages.error(request, "Gagal membuat nomor unik untuk quotation. Coba lagi.")
+                    return render(request, "freight/quotation_step2.html",
+                                  {"quotation": header_data, "locations": locations, "uoms": uoms, "lines": []})
+
+            # init total
+            quotation.total = Decimal("0.00")
+            quotation.vat = Decimal("0.00")
+            quotation.grand_total = Decimal("0.00")
+            quotation.total_amount = Decimal("0.00")
+
+            quotation.save()
+
+            # Lines
+            total = Decimal("0.00")
+            lines_to_create = []
+            for i in range(rows):
+                origin_id = (origins[i] if i < len(origins) else "") or ""
+                dest_id   = (dests[i]   if i < len(dests)   else "") or ""
+                uom_id    = (uom_ids[i] if i < len(uom_ids) else "") or ""
+                description = ((descs[i] if i < len(descs) else "") or "").strip()
+                qty   = _pdec(qtys[i]   if i < len(qtys)   else "0")
+                price = _pdec(prices[i] if i < len(prices) else "0")
+
+                if not (origin_id and dest_id and uom_id and qty > 0):
+                    continue
+
+                origin = Location.objects.get(pk=origin_id)
+                dest   = Location.objects.get(pk=dest_id)
+                uom    = m.UOM.objects.get(pk=uom_id)
+
+                line_total = (qty * price).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                total += line_total
+
+                lines_to_create.append(
+                    m.SalesQuotationLine(
+                        sales_quotation=quotation,
+                        origin=origin,
+                        destination=dest,
+                        description=description,
+                        qty=qty,
+                        uom=uom,
+                        price=price,
+                        amount=line_total,
+                    )
+                )
+
+            if not lines_to_create:
+                messages.error(request, "Minimal satu line valid harus diisi.")
+                return render(request, "freight/quotation_step2.html",
+                              {"quotation": header_data, "locations": locations, "uoms": uoms, "lines": []})
+
+            m.SalesQuotationLine.objects.bulk_create(lines_to_create)
+
+            # Update total header
+            subtotal = total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            quotation.total = subtotal
+            quotation.vat = quotation.vat or Decimal("0.00")
+            quotation.grand_total = (quotation.total + quotation.vat).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            quotation.total_amount = quotation.total
+            quotation.save(update_fields=["total", "vat", "grand_total", "total_amount"])
+
+            # bersihkan session
+            request.session.pop(SESSION_KEY, None)
+
         messages.success(request, f"Quotation {quotation.number} berhasil dibuat. Grand Total {quotation.grand_total}")
-
         return redirect("sales:quotation_list")
 
-    # GET → render form lines
+    # GET
     return render(
         request,
         "freight/quotation_step2.html",

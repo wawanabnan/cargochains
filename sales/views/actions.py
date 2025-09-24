@@ -12,6 +12,8 @@ from sales.models import SalesQuotation
 from ..models import SalesQuotation, SalesOrder, SalesOrderLine
 from core.models import NumberSequence
 from core.numbering import next_number
+from ..auth import sales_access_required, sales_queryset_for_user
+
 
 
 
@@ -101,100 +103,126 @@ def order_change_status(request, pk):
 
 
 
+#---generate so
+@require_POST
+@sales_access_required
 @transaction.atomic
 def quotation_generate_so(request, pk):
-    # Ambil quotation
-    q = get_object_or_404(SalesQuotation, pk=pk)
+    """
+    Generate SalesOrder dari SalesQuotation.
+    - Akses dibatasi via guard (sales_access_required).
+    - Ambil quotation via queryset yang sudah difilter per user (sales_queryset_for_user).
+    - Cegah double-generate.
+    - Isi salesperson = quotation.salesperson (fallback ke request.user).
+    - TODO: ganti penomoran next_number sesuai nomorator Anda.
+    """
+    # Ambil quotation dengan lock, dan sudah difilter object-level per user/role
+    q_qs = sales_queryset_for_user(SalesQuotation.objects.select_for_update(), request.user)
+    quotation = get_object_or_404(q_qs, pk=pk)
 
-    # Hanya boleh generate dari ACCEPTED
-    if q.status != SalesQuotation.STATUS_ACCEPTED:
-        messages.error(request, "Generate Order hanya bisa dari Quotation berstatus ACCEPTED.")
-        return redirect("sales:quotation_detail", pk=q.pk)
+    # Cegah double generate untuk quotation yg sama
+    existing = SalesOrder.objects.filter(quotation=quotation).first()
+    if existing:
+        return redirect(reverse("sales:order_details", args=[existing.pk]))
 
-    # Pastikan ada currency (sering NOT NULL di SO)
-    if not getattr(q, "currency_id", None):
-        messages.error(request, "Quotation belum memiliki currency. Lengkapi dulu currency-nya.")
-        return redirect("sales:quotation_detail", pk=q.pk)
+    # Tentukan salesperson (utama: dari quotation; fallback: request.user)
+    salesperson = quotation.salesperson or request.user
 
-    # Tentukan sequence code berdasarkan business_type
-    SEQ_CODE_ORDER_BY_TYPE = {
-        "freight": "ORDER_FREIGHT",
-        "charter": "ORDER_CHARTER",
-    }
-    bt = (q.business_type or "freight").lower()
-    seq_code = SEQ_CODE_ORDER_BY_TYPE.get(bt, "ORDER_FREIGHT")
+    # TODO: ganti ini dengan nomorator final Anda
+    next_number = f"SO-{quotation.pk}"
 
-    # Generate nomor SO
-    so_number = next_number(
-        NumberSequence.objects.filter(app_label="sales", code=seq_code),
-        today=date.today()
+    order = SalesOrder.objects.create(
+        quotation=quotation,
+        customer=quotation.customer,
+        number=next_number,
+        salesperson=salesperson,
+        status="draft",
     )
 
-    # Siapkan kwargs create SO (defensif: isi kalau field ada)
-    def _has_field(model, name):
-        try:
-            model._meta.get_field(name)
-            return True
-        except Exception:
-            return False
+    # (Opsional) salin line items dari quotation ke order di sini
+    # for ql in quotation.lines.all():
+    #     OrderLine.objects.create(
+    #         order=order,
+    #         description=ql.description,
+    #         quantity=ql.quantity,
+    #         price=ql.price,
+    #         ...
+    #     )
 
-    kwargs = {
-        "number": so_number,
-        "sales_quotation": q,
-        "customer": q.customer,
-        "status": SalesOrder.STATUS_DRAFT if _has_field(SalesOrder, "status") else "DRAFT",
-        "business_type": q.business_type,
+    return redirect(reverse("sales:order_details", args=[order.pk]))
+
+
+# sales/views/actions.py
+
+@login_required
+@require_POST
+@transaction.atomic
+
+def order_set_status(request, pk):
+    so = get_object_or_404(
+        sales_queryset_for_user(SalesOrder.objects.all(), request.user, include_null=True),
+        pk=pk
+    )
+    to = (request.POST.get("to") or "").strip().lower()
+    cur = (so.status or "draft").strip().lower()
+
+    allowed = {
+        "draft": {"confirmed", "canceled"},
+        "open": {"confirmed", "canceled"},
+        "confirmed": {"processed", "canceled"},
+        "processed": {"done", "canceled"},
+        "in progress": {"done", "canceled"},
+        "done": set(),
+        "completed": set(),
+        "canceled": set(),
+        "cancelled": set(),
     }
 
-    # Wajib: currency (karena error kamu sebelumnya)
-    if _has_field(SalesOrder, "currency"):
-        kwargs["currency"] = q.currency
+    if to not in allowed.get(cur, set()):
+        messages.error(request, f"Transisi status {cur} → {to} tidak diizinkan.")
+        return redirect(request.POST.get("next") or "sales:order_list")
 
-    # Opsional: payment_term / sales_service kalau ada di SO
-    if _has_field(SalesOrder, "payment_term"):
-        kwargs["payment_term"] = getattr(q, "payment_term", None)
-    if _has_field(SalesOrder, "sales_service"):
-        kwargs["sales_service"] = getattr(q, "sales_service", None)
+    so.status = to
+    so.save(update_fields=["status"])
+    messages.success(request, f"Order {so.number} diubah ke '{to}'.")
+    return redirect(request.POST.get("next") or "sales:order_list")
 
-    # Total/VAT/Grand total
-    for fld in ("total", "vat", "grand_total"):
-        if _has_field(SalesOrder, fld):
-            kwargs[fld] = getattr(q, fld, None)
 
-    # Create SalesOrder
-    so = SalesOrder.objects.create(**kwargs)
+# sales/views/actions.py
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.db import transaction
+from ..models import SalesOrder
+from ..auth import sales_queryset_for_user
 
-    # Copy lines dari quotation ke order
-    q_lines = q.lines.all()
-    bulk = []
-    for ln in q_lines:
-        bulk.append(SalesOrderLine(
-            sales_order=so,
-            origin=ln.origin,
-            destination=ln.destination,
-            description=ln.description,
-            qty=ln.qty,
-            uom=ln.uom,
-            price=ln.price,
-            amount=getattr(ln, "amount", None) or (ln.qty * ln.price),
-        ))
-    if bulk:
-        SalesOrderLine.objects.bulk_create(bulk)
+@login_required
+@require_POST
+@transaction.atomic
+def order_set_status(request, pk):
+    so = get_object_or_404(
+        sales_queryset_for_user(SalesOrder.objects.all(), request.user, include_null=True),
+        pk=pk
+    )
+    to = (request.POST.get("to") or "").strip().lower()
+    cur = (so.status or "draft").strip().lower()
 
-    # (Opsional) Re-calc total dari lines bila total kosong
-    if not so.total or not so.grand_total:
-        agg = so.lines.annotate(line_total=F("qty") * F("price")).aggregate(s=Sum("line_total"))
-        subtotal = agg["s"] or 0
-        vat = so.vat or 0
-        so.total = subtotal
-        so.grand_total = subtotal + vat
-        so.save(update_fields=["total", "grand_total"])
+    allowed = {
+        "draft": {"confirmed", "canceled"},
+        "open": {"confirmed", "canceled"},
+        "confirmed": {"processed", "canceled"},
+        "processed": {"done", "canceled"},
+        "in progress": {"done", "canceled"},
+        "done": set(), "completed": set(),
+        "canceled": set(), "cancelled": set(),
+    }
 
-    # Update status quotation → ORDERED (final)
-    if q.can_transition_to(SalesQuotation.STATUS_ORDERED):
-        q.status = SalesQuotation.STATUS_ORDERED
-        q.save(update_fields=["status"])
+    if to not in allowed.get(cur, set()):
+        messages.error(request, f"Transisi status {cur} → {to} tidak diizinkan.")
+    else:
+        so.status = to
+        so.save(update_fields=["status"])
+        messages.success(request, f"Order {so.number} diubah ke '{to}'.")
 
-    messages.success(request, f"Sales Order {so.number} berhasil dibuat.")
-    return redirect("sales:order_details", pk=so.pk)  # atau ke quotation_detail, terserah kamu
-
+    return redirect(request.POST.get("next") or "sales:order_list")

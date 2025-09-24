@@ -1,80 +1,240 @@
 {% extends "base.html" %}
 {% load static %}
+{% load querystring %}
 
 {% block content %}
-<div class="container-fluid">
-  <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <h3 class="card-title m-0"><i class="fas fa-file-contract"></i> Sales Orders</h3>
-      <div class="card-tools">
-        <!-- optional toolbar / bulk action -->
-        <button type="button" class="btn btn-sm btn-outline-secondary">Bulk Action</button>
-      </div>
-    </div>
-    <div class="card-body p-0">
-      <table class="table table-hover table-striped mb-0 align-middle">
-        <thead>
-          <tr>
-            <th style="width:28px;">
-              <input type="checkbox" id="check-all">
-            </th>
-            <th>No.</th>
-            <th>Customer</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th class="text-end">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for o in orders %}
-           <tr class="clickable-row" data-href="{% url 'sales:order_detail' o.id %}">
 
-            <td>
-              <input type="checkbox" class="row-check" value="{{ o.id }}">
-            </td>
-            <td>
-              <a href="{% url 'sales:order_detail' o.id %}">{{ o.number }}</a>
-            </td>
-            <td>{{ o.customer }}</td>
-            <td>{{ o.date|date:"d-m-Y" }}</td>
-            <td>
-              <span class="badge bg-secondary">{{ o.get_status_display|default:o.status }}</span>
-            </td>
-            <td class="text-end">{{ o.grand_total|default:o.total|floatformat:2 }}</td>
-           </tr>
-          {% empty %}
-          <tr><td colspan="7" class="text-center text-muted">No orders.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <div>
+      <h1 class="h5 mb-0">Sales Orders</h1>
+      <small class="text-muted">Daftar order dari quotation yang sudah dikonfirmasi</small>
     </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'sales:order_list' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+      <button id="btn-toggle-filters" type="button" class="btn btn-outline-primary btn-sm">
+        Filters
+      </button>
+    </div>
+  </div>
+
+  {% if messages %}
+    <div class="px-3 pt-3">
+      {% for m in messages %}
+        <div class="alert alert-{{ m.tags|default:'info' }} mb-2">{{ m }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {# Chips filter aktif #}
+  <div class="px-3 pt-2">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <form class="d-flex gap-2" method="get" action="">
+        <input type="text" class="form-control form-control-sm" name="q" value="{{ q }}" placeholder="Search...">
+        <button class="btn btn-sm btn-primary">Search</button>
+      </form>
+
+      {% if flt_mine %}
+        <a class="btn btn-sm btn-light border" href="{% qs_update request mine=None page=None %}">Mine ×</a>
+      {% endif %}
+
+      {% for s in flt_statuses %}
+        <a class="btn btn-sm btn-light border" href="{% qs_update request status=None page=None %}">Status: {{ s }} ×</a>
+      {% endfor %}
+
+      {% if flt_start or flt_end %}
+        <a class="btn btn-sm btn-light border"
+           href="{% qs_update request start=None end=None page=None %}">
+           Date: {{ flt_start|default:"…" }} → {{ flt_end|default:"…" }} ×
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Panel filter (show/hide) #}
+  <div id="filters-panel" class="px-3 pb-2 pt-2 d-none">
+    <form method="get" action="" class="row g-2">
+      <div class="col-12 col-md-3">
+        <label class="form-label mb-1">Status</label>
+        <div class="d-flex flex-wrap gap-2">
+          {% for name in status_options %}
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="status" value="{{ name }}"
+                     id="st-{{ forloop.counter }}" {% if name in flt_statuses %}checked{% endif %}>
+              <label class="form-check-label" for="st-{{ forloop.counter }}">{{ name|title }}</label>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label mb-1">Start</label>
+        <input type="date" class="form-control" name="start" value="{{ flt_start }}">
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label mb-1">End</label>
+        <input type="date" class="form-control" name="end" value="{{ flt_end }}">
+      </div>
+      <div class="col-12 col-md-2 pt-4">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="mine" name="mine" value="1" {% if flt_mine %}checked{% endif %}>
+          <label class="form-check-label" for="mine">Mine only</label>
+        </div>
+      </div>
+      <div class="col-12 col-md-3 d-flex align-items-end gap-2">
+        <button class="btn btn-primary">Apply</button>
+        <a class="btn btn-outline-secondary" href="{% url 'sales:order_list' %}">Clear</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="card-body pt-2">
+    {% if orders %}
+      <div class="table-responsive">
+        <table id="tabledata" class="table table-sm table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th class="text-nowrap">
+                {% if sort == 'number' and dir == 'asc' %}
+                  <a href="{% qs_update request sort='number' dir='desc' %}" class="link-dark text-decoration-none">Order # <small>▲</small></a>
+                {% else %}
+                  <a href="{% qs_update request sort='number' dir='asc' %}" class="link-dark text-decoration-none">Order # {% if sort == 'number' %}<small>▼</small>{% endif %}</a>
+                {% endif %}
+              </th>
+              <th class="text-nowrap">
+                {% if sort == 'sales_quotation__number' and dir == 'asc' %}
+                  <a href="{% qs_update request sort='sales_quotation__number' dir='desc' %}" class="link-dark text-decoration-none">Quotation # <small>▲</small></a>
+                {% else %}
+                  <a href="{% qs_update request sort='sales_quotation__number' dir='asc' %}" class="link-dark text-decoration-none">Quotation # {% if sort == 'sales_quotation__number' %}<small>▼</small>{% endif %}</a>
+                {% endif %}
+              </th>
+              <th class="text-nowrap">
+                {% if sort == 'created_at' and dir == 'asc' %}
+                  <a href="{% qs_update request sort='created_at' dir='desc' %}" class="link-dark text-decoration-none">Date <small>▲</small></a>
+                {% else %}
+                  <a href="{% qs_update request sort='created_at' dir='asc' %}" class="link-dark text-decoration-none">Date {% if sort == 'created_at' %}<small>▼</small>{% endif %}</a>
+                {% endif %}
+              </th>
+              <th>Customer</th>
+              <th>Status</th>
+              <th class="text-end">Total</th>
+              <th>Sales</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for o in orders %}
+              {% with s=o.status|default:"-"|lower %}
+              <tr>
+                <td class="text-nowrap"><a href="{% url 'sales:order_detail' o.pk %}" class="fw-semibold text-decoration-none">{{ o.number }}</a></td>
+                <td class="text-nowrap">
+                  {% if o.sales_quotation %}
+                    <a href="{% url 'sales:quotation_detail' o.sales_quotation.pk %}" class="text-decoration-none">
+                      {{ o.sales_quotation.number }}
+                    </a>
+                  {% else %}<span class="text-muted">—</span>{% endif %}
+                </td>
+                <td class="text-nowrap">{{ o.created_at|date:"Y-m-d" }}</td>
+                <td>{{ o.customer.name|default:"—" }}</td>
+                <td>
+                  {% if s == 'draft' or s == 'open' %}<span class="badge bg-secondary text-uppercase">{{ o.status|default:"-" }}</span>
+                  {% elif s == 'confirmed' %}<span class="badge bg-info text-uppercase">{{ o.status }}</span>
+                  {% elif s == 'processed' or s == 'in progress' %}<span class="badge bg-primary text-uppercase">{{ o.status }}</span>
+                  {% elif s == 'done' or s == 'completed' %}<span class="badge bg-success text-uppercase">{{ o.status }}</span>
+                  {% elif s == 'canceled' or s == 'cancelled' %}<span class="badge bg-danger text-uppercase">{{ o.status }}</span>
+                  {% else %}<span class="badge bg-light text-dark text-uppercase">{{ o.status|default:"-" }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-end text-nowrap">{% if o.currency %}{{ o.currency.code }} {% endif %}{{ o.grand_total|default:o.total|floatformat:2 }}</td>
+                <td class="text-nowrap">
+                  {% with u=o.sales_user %}{% if u %}{% firstof u.get_full_name u.username %}{% else %}—{% endif %}{% endwith %}
+                </td>
+                <td class="text-center">
+                  {# Tombol transisi status #}
+                  {% if s == 'draft' or s == 'open' %}
+                    <form method="post" action="{% url 'sales:order_set_status' o.pk %}" class="d-inline">{% csrf_token %}
+                      <input type="hidden" name="to" value="confirmed"><input type="hidden" name="next" value="{{ request.get_full_path }}">
+                      <button class="btn btn-sm btn-outline-primary">Confirm</button>
+                    </form>
+                    <form method="post" action="{% url 'sales:order_set_status' o.pk %}" class="d-inline">{% csrf_token %}
+                      <input type="hidden" name="to" value="canceled"><input type="hidden" name="next" value="{{ request.get_full_path }}">
+                      <button class="btn btn-sm btn-outline-danger">Cancel</button>
+                    </form>
+                  {% elif s == 'confirmed' %}
+                    <form method="post" action="{% url 'sales:order_set_status' o.pk %}" class="d-inline">{% csrf_token %}
+                      <input type="hidden" name="to" value="processed"><input type="hidden" name="next" value="{{ request.get_full_path }}">
+                      <button class="btn btn-sm btn-outline-primary">Process</button>
+                    </form>
+                    <form method="post" action="{% url 'sales:order_set_status' o.pk %}" class="d-inline">{% csrf_token %}
+                      <input type="hidden" name="to" value="canceled"><input type="hidden" name="next" value="{{ request.get_full_path }}">
+                      <button class="btn btn-sm btn-outline-danger">Cancel</button>
+                    </form>
+                  {% elif s == 'processed' or s == 'in progress' %}
+                    <form method="post" action="{% url 'sales:order_set_status' o.pk %}" class="d-inline">{% csrf_token %}
+                      <input type="hidden" name="to" value="done"><input type="hidden" name="next" value="{{ request.get_full_path }}">
+                      <button class="btn btn-sm btn-outline-success">Done</button>
+                    </form>
+                    <form method="post" action="{% url 'sales:order_set_status' o.pk %}" class="d-inline">{% csrf_token %}
+                      <input type="hidden" name="to" value="canceled"><input type="hidden" name="next" value="{{ request.get_full_path }}">
+                      <button class="btn btn-sm btn-outline-danger">Cancel</button>
+                    </form>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endwith %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if is_paginated %}
+        <nav class="mt-3">
+          <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+              <li class="page-item"><a class="page-link" href="{% qs_update request page=1 %}">&laquo;</a></li>
+              <li class="page-item"><a class="page-link" href="{% qs_update request page=page_obj.previous_page_number %}">&lsaquo;</a></li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+              <li class="page-item disabled"><span class="page-link">&lsaquo;</span></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+            {% if page_obj.has_next %}
+              <li class="page-item"><a class="page-link" href="{% qs_update request page=page_obj.next_page_number %}">&rsaquo;</a></li>
+              <li class="page-item"><a class="page-link" href="{% qs_update request page=page_obj.paginator_num_pages %}">&raquo;</a></li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">&rsaquo;</span></li>
+              <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+            {% endif %}
+          </ul>
+        </nav>
+      {% endif %}
+
+    {% else %}
+      <div class="text-center text-muted py-5">
+        <div class="display-6 mb-2">😶</div>
+        <div class="mb-2">Sales Order belum ada / tidak ditemukan.</div>
+        <div><a href="{% url 'sales:order_list' %}">Bersihkan filter</a> atau coba kata kunci lain.</div>
+      </div>
+    {% endif %}
   </div>
 </div>
 
-<style>
-  tr.clickable-row { cursor: pointer; }
-  tr.clickable-row:hover { background-color: #f5f5f5; }
-</style>
+{% endblock %}
 
+{% block extra_js %}
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-  const checkAll = document.getElementById("check-all");
-  if (checkAll) {
-    checkAll.addEventListener("change", function() {
-      document.querySelectorAll(".row-check").forEach(cb => cb.checked = this.checked);
-    });
-  }
-
-  // Klik baris → redirect
-  document.querySelectorAll("tr.clickable-row").forEach(row => {
-    row.addEventListener("click", function() {
-      const href = this.dataset.href;
-      if (href) {
-        window.location = href;
-      }
-    });
+(function(){
+  const btn = document.getElementById('btn-toggle-filters');
+  const panel = document.getElementById('filters-panel');
+  if(!btn || !panel) return;
+  const key = 'orders_filters_open';
+  try { if(localStorage.getItem(key)==='1') panel.classList.remove('d-none'); } catch(e){}
+  btn.addEventListener('click', function(){
+    panel.classList.toggle('d-none');
+    try { localStorage.setItem(key, panel.classList.contains('d-none') ? '0' : '1'); } catch(e){}
   });
-});
+})();
 </script>
-
 {% endblock %}

@@ -1,0 +1,140 @@
+:root{
+  --bg:#f7f9fb;
+  --text:#222326;
+  --muted:#6b6f76;
+  --card:#ffffff;
+  --border:#e5e7ef;
+  --brand:#875A7B;         /* Odoo purple */
+  --brand-600:#6f4a63;
+  --radius:10px;
+  --shadow:0 6px 18px rgba(0,0,0,.06);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, "Noto Sans", sans-serif;
+  color:var(--text);
+  background:var(--bg);
+}
+
+/* wrapper */
+.o-auth{
+  min-height:100%;
+  display:grid;
+  place-items:center;
+  padding:24px;
+}
+
+/* card kecil tengah seperti Odoo */
+.o-box{
+  width:min(300px, 100%);
+  background:var(--card);
+  border:1px solid var(--border);
+  /*border-radius:var(--radius);*/
+  box-shadow:var(--shadow);
+  padding:22px 22px 18px;
+}
+
+/* header sederhana + “logo” bulat */
+.o-header{ text-align:center; margin-bottom:12px }
+
+.o-logo{
+  display:flex;
+  justify-content:center;
+  margin-bottom:6px;
+}
+
+.o-logo img{
+  width:100px;          /* atur ukuran logo */
+  height:auto;
+  display:block;
+}
+
+
+.o-header h1{
+  margin:6px 0 0; font-size:20px; font-weight:700; letter-spacing:.2px;
+}
+
+/* alert */
+.o-alert{
+  margin:8px 0 10px;
+  font-size:13px;
+  color:#6c2323;
+  background:#fff4f4;
+  border:1px solid #ffd6d6;
+  border-radius:8px;
+  padding:10px 12px;
+}
+
+/* form */
+.o-form{ display:grid; gap:12px; margin-top:8px }
+
+.o-field{ display:grid; gap:6px }
+.o-label{ font-size:13px; color:var(--muted); font-weight:600 }
+.o-input{
+  width:100%;
+  padding:7px 12px;
+  font-size:12px;
+  color:var(--text);
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:0px;
+  outline:none;
+  transition: box-shadow .15s, border-color .15s;
+}
+.o-input:hover{ border-color:#d8dae5 }
+.o-input:focus{
+  border-color: color-mix(in oklab, var(--brand) 50%, #fff);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand) 18%, transparent);
+}
+
+.o-input--sm{ padding:8px 10px; font-size:13px }
+
+.o-row{
+  display:flex; justify-content:space-between; align-items:center;
+  gap:10px; flex-wrap:wrap; margin-top:2px;
+}
+.o-check{ display:inline-flex; align-items:center; gap:8px; user-select:none }
+.o-check__box{ width:16px; height:16px; margin:0; accent-color:var(--brand) }
+.o-check__label{ font-size:13px; color:var(--muted) }
+
+.o-link{
+  color:var(--brand); text-decoration:none; font-weight:600; font-size:13px;
+}
+.o-link:hover{ text-decoration:underline }
+
+.o-btn{
+  width:100%;
+  display:inline-flex; justify-content:center; align-items:center;
+  padding:10px 14px;
+  font-weight:700; letter-spacing:.2px;
+  background:var(--brand); color:#fff; border:0; border-radius:8px;
+  cursor:pointer; transition: filter .12s ease, transform .02s ease;
+}
+.o-btn:hover{ filter:brightness(1.04) }
+.o-btn:active{ transform: translateY(1px) }
+
+.o-lang{
+  margin-top:8px;
+  display:flex; align-items:center; gap:8px;
+  color:var(--muted); font-size:13px;
+}
+
+.o-footer{ margin-top:10px; text-align:center }
+.o-muted{ color:var(--muted); font-size:12px }
+
+/* responsive tipis */
+@media (max-width:420px){
+  .o-box{ padding:18px 16px 14px }
+}
+
+/* dark mode ringan */
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#111216; --card:#17181d; --text:#f5f6fb; --muted:#a9adba; --border:#2a2c33;
+    --shadow:0 10px 24px rgba(0,0,0,.35);
+  }
+  .o-input{ background:#15161a }
+}
