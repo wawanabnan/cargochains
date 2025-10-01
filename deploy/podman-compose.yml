@@ -1,0 +1,40 @@
+# podman-compose.yml
+# Usage:
+#   cd deploy
+#   cp .env.example .env   # then edit values
+#   podman-compose up -d --build
+services:
+  db:
+    image: mariadb:10.11
+    restart: always
+    environment:
+      - MARIADB_DATABASE=${DB_NAME}
+      - MARIADB_USER=${DB_USER}
+      - MARIADB_PASSWORD=${DB_PASSWORD}
+      - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MARIADB_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Containerfile
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - db
+    volumes:
+      - media:/app/media
+    ports:
+      # Map host port 8001 -> container 8000 (avoid clashing with existing web servers)
+      - "8001:8000"
+
+volumes:
+  dbdata:
+  media:

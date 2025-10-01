@@ -1,0 +1,33 @@
+
+<form method="post">
+  {% csrf_token %}
+  {{ doc_formset.management_form }}
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Doc Type</th>
+          <th>Path</th>
+          <th>Note</th>
+          <th>Delete</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in doc_formset %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ f.doc_type }}</td>
+          <td>{{ f.file_path }}</td>
+          <td>{{ f.note }}</td>
+          <td>{{ f.DELETE }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="d-flex gap-2">
+    <button name="save_docs" class="btn btn-outline-primary btn-sm">Save Documents</button>
+    <button name="{{ doc_formset.add_prefix('add') }}" value="1" class="btn btn-outline-secondary btn-sm" formnovalidate>Add Row</button>
+  </div>
+</form>

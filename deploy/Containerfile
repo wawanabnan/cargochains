@@ -1,0 +1,27 @@
+# Containerfile for Django + Gunicorn (Podman/Docker compatible)
+# Multi-purpose: works for MySQL/MariaDB or Postgres (install -dev libs as needed)
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1         PYTHONUNBUFFERED=1         PIP_NO_CACHE_DIR=1
+
+# System deps for building popular Python wheels (reportlab, mysqlclient, cryptography, etc.)
+RUN apt-get update && apt-get install -y --no-install-recommends         build-essential gcc         python3-dev         libjpeg-dev zlib1g-dev libfreetype6-dev         default-libmysqlclient-dev libpq-dev         libffi-dev libssl-dev curl ca-certificates         && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+# Copy only requirements first to leverage Docker/Podman layer cache
+COPY requirements.txt /app/requirements.txt
+RUN pip install --upgrade pip && pip install -r /app/requirements.txt
+
+# Copy project
+COPY . /app
+
+# Add entrypoint (wait for DB, migrate, collectstatic, launch gunicorn)
+COPY deploy/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Create non-root user
+RUN useradd -m appuser
+USER appuser
+
+EXPOSE 8000
+ENTRYPOINT ["/entrypoint.sh"]

@@ -1,0 +1,33 @@
+
+<form method="post">
+  {% csrf_token %}
+  {{ route_formset.management_form }}
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Origin</th>
+          <th>Destination</th>
+          <th>Transportation</th>
+          <th>Delete</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in route_formset %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ f.origin }}</td>
+          <td>{{ f.destination }}</td>
+          <td>{{ f.transportation_type }}</td>
+          <td>{{ f.DELETE }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="d-flex gap-2">
+    <button name="save_routes" class="btn btn-outline-primary btn-sm">Save Routes</button>
+    <button name="{{ route_formset.add_prefix('add') }}" value="1" class="btn btn-outline-secondary btn-sm" formnovalidate>Add Row</button>
+  </div>
+</form>

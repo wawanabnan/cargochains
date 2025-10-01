@@ -1,0 +1,30 @@
+
+<form method="post" action="{% url 'shipment:add_log' form.instance.pk %}">
+  {% csrf_token %}
+  <div class="row g-2 align-items-end">
+    <div class="col-md-3">{{ status_form.status.label_tag }} {{ status_form.status }}</div>
+    <div class="col-md-3">{{ status_form.event_time.label_tag }} {{ status_form.event_time }}</div>
+    <div class="col-md-4">{{ status_form.note.label_tag }} {{ status_form.note }}</div>
+    <div class="col-md-2"><button class="btn btn-primary btn-sm w-100">Add Log</button></div>
+  </div>
+</form>
+
+<hr/>
+
+<div class="table-responsive">
+  <table class="table table-sm">
+    <thead><tr><th>When</th><th>Status</th><th>User</th><th>Note</th></tr></thead>
+    <tbody>
+      {% for log in status_logs %}
+      <tr>
+        <td>{{ log.event_time|default:log.recorded_at|date:"Y-m-d H:i" }}</td>
+        <td>{{ log.status }}</td>
+        <td>{{ log.user }}</td>
+        <td>{{ log.note|default:"-" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-muted">No logs yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
