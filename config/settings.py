@@ -26,12 +26,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-=o&n*svev4)483cuyo%y)60caqh$8p4d6s-b(21l3slzp%9(#2'
+#SECRET_KEY = 'django-insecure-=o&n*svev4)483cuyo%y)60caqh$8p4d6s-b(21l3slzp%9(#2'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-insecure')
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
+
+def split_csv(val, default=None):
+    if not val:
+        return default or []
+    return [x.strip() for x in val.split(',') if x.strip()]
+
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+#DEBUG = True
 
-ALLOWED_HOSTS = []
+#ALLOWED_HOSTS = []
+ALLOWED_HOSTS = split_csv(os.environ.get('ALLOWED_HOSTS', ''))
+CSRF_TRUSTED_ORIGINS = split_csv(os.environ.get('CSRF_TRUSTED_ORIGINS', ''))
 
 
 # Application definition
@@ -87,19 +98,6 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "cargochains_django",
-        "USER": "root",
-        "PASSWORD": "",         # kosongkan kalau default Laragon
-        "HOST": "127.0.0.1",
-        "PORT": "3306",
-        "OPTIONS": {
-            "charset": "utf8mb4",
-        },
-    }
-}
 
 TIME_ZONE = "Asia/Jakarta"
 USE_TZ = True
@@ -141,6 +139,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+
 STATICFILES_DIRS = [ BASE_DIR / "static" ] 
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
 
@@ -153,3 +156,26 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = "account:login"
 LOGIN_REDIRECT_URL = "account:dashboard"
 LOGOUT_REDIRECT_URL = "account:login"
+
+
+DB_ENGINE = os.environ.get('DB_ENGINE', 'mysql')
+if DB_ENGINE == 'postgres':
+    DATABASES = {'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'app'),
+        'USER': os.environ.get('DB_USER', 'app'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', 'db'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
+    }}
+else:
+    DATABASES = {'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ.get('DB_NAME', 'cargochains_django'),
+        'USER': os.environ.get('DB_USER', 'root'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
+        'OPTIONS': {'charset': 'utf8mb4',
+                    'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"},
+}}
