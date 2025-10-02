@@ -17,15 +17,17 @@ Including another URLconf
 
 # config/urls.py (atau <project_name>/urls.py)
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include,reverse_lazy
+from django.views.generic import RedirectView
+from django.conf import settings          # <— INI WAJIB
 
-from django.contrib import admin
-from django.urls import path, include
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("sales/", include("sales.urls", namespace="sales")),  # <— include dengan namespace
     path("account/", include("account.urls", namespace="account")),
     path("shipments/", include("shipments.urls")),
+    path("", RedirectView.as_view(url=reverse_lazy(settings.LOGIN_URL), permanent=False)),
 
 ]

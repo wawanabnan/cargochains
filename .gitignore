@@ -1,0 +1,16 @@
+# Django
+*.pyc
+__pycache__/
+db.sqlite3
+
+# Env & logs
+.env
+*.log
+
+# Static/media hasil runtime
+/media/
+staticfiles/
+
+# Virtualenv
+venv/
+.venv/
