@@ -1,13 +1,15 @@
 :root{
-  --bg:#f7f9fb;
+  --bg:#f8f7f7;
   --text:#222326;
   --muted:#6b6f76;
   --card:#ffffff;
   --border:#e5e7ef;
-  --brand:#875A7B;         /* Odoo purple */
-  --brand-600:#6f4a63;
+  --brand:#0087f5;         /* Odoo purple */
+  --brand-600:#0087f5;
   --radius:10px;
   --shadow:0 6px 18px rgba(0,0,0,.06);
+   
+
 }
 
 *{box-sizing:border-box}
@@ -29,12 +31,9 @@ body{
 
 /* card kecil tengah seperti Odoo */
 .o-box{
-  width:min(300px, 100%);
-  background:var(--card);
-  border:1px solid var(--border);
-  /*border-radius:var(--radius);*/
-  box-shadow:var(--shadow);
-  padding:22px 22px 18px;
+  width:min(350px, 100%);
+  background: none;
+  
 }
 
 /* header sederhana + “logo” bulat */
@@ -47,7 +46,7 @@ body{
 }
 
 .o-logo img{
-  width:100px;          /* atur ukuran logo */
+  width:150px;          /* atur ukuran logo */
   height:auto;
   display:block;
 }
@@ -55,6 +54,25 @@ body{
 
 .o-header h1{
   margin:6px 0 0; font-size:20px; font-weight:700; letter-spacing:.2px;
+}
+
+.o-body { 
+
+  padding:30px 20px 10px 20px;
+     position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    height: var(--bs-card-height);
+    color: var(--bs-body-color);
+    word-wrap: break-word;
+    background-color: #fff;
+    background-clip: border-box;
+    border: var(--bs-card-border-width) solid var(--bs-card-border-color);
+   
+    box-shadow: var(--bs-card-box-shadow);
+
+    
 }
 
 /* alert */
@@ -110,7 +128,7 @@ body{
   display:inline-flex; justify-content:center; align-items:center;
   padding:10px 14px;
   font-weight:700; letter-spacing:.2px;
-  background:var(--brand); color:#fff; border:0; border-radius:8px;
+  background:var(--brand); color:#fff; border:0; border-radius:0px;
   cursor:pointer; transition: filter .12s ease, transform .02s ease;
 }
 .o-btn:hover{ filter:brightness(1.04) }

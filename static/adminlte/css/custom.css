@@ -8,7 +8,7 @@ body
 
 .bg-body-tertiary {
     --bs-bg-opacity: 1;
-    background-color: #fff !important;
+    
 }
 
  th:first-child, tr td:first-child {
@@ -16,7 +16,6 @@ body
        
         color: navy;
         font-weight: bold;
-        text-align: center;
 }
 
 td {
@@ -47,5 +46,28 @@ input[type=text]
     width: 100vw; /* Ensure the body takes up the full viewport width */
     margin: 0; /* Remove default body margin */
     padding: 0; /* Remove default body padding */
+
    
 }
+
+.card {
+ 
+
+  box-shadow: none !important; 
+  border-radius: 0 !important;
+  
+}
+
+
+.app-content.content-wrap {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.nav {
+
+  padding-left: 30px !important;
+  border-radius: 0 !important;
+}
+
+.tab-content {padding:0px !important}

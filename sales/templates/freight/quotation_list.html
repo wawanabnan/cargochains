@@ -3,8 +3,7 @@
 {% block title %}Freight Quotations{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-  <div class="card">
+<div class="card">
     <!-- Header / toolbar -->
     <div class="card-header d-flex flex-wrap gap-2 align-items-center">
       <h3 class="card-title m-0"><i class="fas fa-file-invoice-dollar"></i> Freight Quotations</h3>
@@ -155,7 +154,6 @@
       </div>
     </form>
   </div>
-</div>
 {% endblock %}
 
 {% block extra_css %}
@@ -234,4 +232,44 @@
     });
   })();
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.app-sidebar a[href]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.currentTarget.blur();
+      setTimeout(() => {
+        if (window.innerWidth < 992) {
+          document.body.classList.remove('sidebar-open');
+          document.body.classList.add('sidebar-collapse');
+          document.querySelector('.app-wrapper')?.classList.remove('sidebar-open');
+        }
+      }, 150);
+    });
+  });
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const sidebarLinks = document.querySelectorAll(".app-sidebar a[href], .main-sidebar a[href]");
+  sidebarLinks.forEach(link => {
+    link.addEventListener("click", (e) => {
+      // hilangkan fokus
+      e.currentTarget.blur();
+
+      // tunggu event internal AdminLTE selesai dulu
+      setTimeout(() => {
+        const body = document.body;
+        const wrapper = document.querySelector(".app-wrapper") || document.querySelector(".wrapper");
+
+        if (window.innerWidth < 992) {
+          body.classList.remove("sidebar-open");
+          body.classList.add("sidebar-collapse");
+          wrapper?.classList.remove("sidebar-open");
+        }
+      }, 200);
+    });
+  });
+});
+</script>
+
 {% endblock %}

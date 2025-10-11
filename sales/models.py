@@ -361,7 +361,10 @@ class SalesOrder(TimestampedModel):
     class Meta:
         db_table = "sales_orders"
        
-        
+    @property
+    def sales_user_name(self):
+        user = self.sales_user
+        return user.get_full_name() or user.username    
 
     def __str__(self):
         return self.number
