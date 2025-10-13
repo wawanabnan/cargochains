@@ -1,0 +1,32 @@
+    <form method="get" action="" class="row g-2">
+      <div class="col-12 col-md-3">
+        <label class="form-label mb-1">Status</label>
+        <div class="d-flex flex-wrap gap-2">
+          {% for name in status_options %}
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="status" value="{{ name }}"
+                     id="st-{{ forloop.counter }}" {% if name in flt_statuses %}checked{% endif %}>
+              <label class="form-check-label" for="st-{{ forloop.counter }}">{{ name|title }}</label>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label mb-1">Start</label>
+        <input type="date" class="form-control" name="start" value="{{ flt_start }}">
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label mb-1">End</label>
+        <input type="date" class="form-control" name="end" value="{{ flt_end }}">
+      </div>
+      <div class="col-12 col-md-2 pt-4">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="mine" name="mine" value="1" {% if flt_mine %}checked{% endif %}>
+          <label class="form-check-label" for="mine">Mine only</label>
+        </div>
+      </div>
+      <div class="col-12 col-md-3 d-flex align-items-end gap-2">
+        <button class="btn btn-primary">Apply</button>
+        <a class="btn btn-outline-secondary" href="{% url 'sales:order_list' %}">Clear</a>
+      </div>
+    </form>

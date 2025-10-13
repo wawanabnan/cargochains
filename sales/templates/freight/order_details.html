@@ -1,77 +1,45 @@
 {% extends "base.html" %}
 {% load quo_extras %}
+{% block title %}Quotation {{ quotation.number }}{% endblock %}
 
-{% block content_header %}
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb breadcrumb-sm m-0">
-      <li class="breadcrumb-item"><a href="{% url 'sales:order_list' %}">Sales Orders</a></li>
-      <li class="breadcrumb-item active" aria-current="page">{{ order.number }}</li>
-    </ol>
-  </nav>
-{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-
-  {% if messages %}
-    <div class="mt-2">
-      {% for m in messages %}
-        <div class="alert alert-{{ m.tags }}">{{ m }}</div>
-      {% endfor %}
+<div class="container-fluid py-2" style="border-bottom:1px solid #ccc;" >
+  <div class="row">
+     <div class="col-md-6 text-left">
+           <h3 class="card-title m-0">Sales Order {{ order.number }}</h3>
+     
+     <!--end of button group--> 
     </div>
-  {% endif %}
+    <div class="col-md-6 text-end">
+      
 
-  <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <h3 class="card-title m-0">Sales Order {{ order.number }}</h3>
-      <div class="d-flex gap-2">
-        <a href="{% url 'sales:order_list' %}" class="btn btn-link btn-sm text-secondary">← Back</a>
-      </div>
+     <!--end of button group--> 
     </div>
+    
 
-    <div class="card-body">
-           {% if not form.fields.salesperson.disabled %}
-            <div class="mb-3">{{ form.salesperson.label_tag }} {{ form.salesperson }}</div>
-          {% else %}
-            <div class="mb-3">
-              <label class="form-label">Salesperson</label>
-              <div class="form-control bg-body-secondary">
-                {{ request.user.get_full_name|default:request.user.username }}
-              </div>
-            </div>
-          {% endif %}
-      <dl class="row mb-3">
-        <dt class="col-md-3">Customer</dt><dd class="col-md-9">{{ order.customer }}</dd>
-        <dt class="col-md-3">Status</dt><dd class="col-md-9"><span class="badge">{{ order.get_status_display }}</span></dd>
-        <dt class="col-md-3">Subtotal</dt><dd class="col-md-9">{{ order.total }}</dd>
-        <dt class="col-md-3">VAT</dt><dd class="col-md-9">{{ order.vat }}</dd>
-        <dt class="col-md-3">Grand Total</dt><dd class="col-md-9 fw-bold">{{ order.grand_total }}</dd>
-        {% if order.sales_quotation %}
-          <dt class="col-md-3">From Quotation</dt>
-          <dd class="col-md-9"><a href="{% url 'sales:quotation_detail' order.sales_quotation.id %}">{{ order.sales_quotation.number }}</a></dd>
-        {% endif %}
-      </dl>
+  </div>
 
-      <div class="mb-3">
+</div>
+  
+<div class="container-fluid pt-2" >
+  <div class="row">
+     <div class="col-md-6 text-left">
         
-
-        <div class="btn-group">
             <a href="{% url 'sales:order_print' order.id %}" 
-              class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener">Print-friendly</a>
+              class="btn btn-primary btn-sm" target="_blank" rel="noopener">Preview</a>
         
             <a href="{% url 'sales:order_pdf' order.id %}"   
-                class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener">Download PDF</a>
-
-
-
-        </div>
-        {# aksi status kecil — pakai filter can_transition_to dari quo_extras #}
-
+                class="btn btn-secondary btn-sm" target="_blank" rel="noopener">PDF</a>
+       
+     </div>
+     <div class="col-md-6 text-end">
         {% if order|can_transition_to:"CONFIRMED" %}
+         
           <form method="post" action="{% url 'sales:order_change_status' order.id %}" class="d-inline">
             {% csrf_token %}
             <input type="hidden" name="status" value="CONFIRMED">
-            <button class="btn btn-outline-primary btn-sm">Confirm</button>
+            <button class="btn btn-info btn-sm">Confirm</button>
           </form>
         {% endif %}
 
@@ -79,7 +47,7 @@
           <form method="post" action="{% url 'sales:order_change_status' order.id %}" class="d-inline">
             {% csrf_token %}
             <input type="hidden" name="status" value="ON_PROGRESS">
-            <button class="btn btn-outline-info btn-sm">Start Progress</button>
+            <button class="btn btn-succes btn-sm">Start Progress</button>
           </form>
         {% endif %}
 
@@ -103,45 +71,150 @@
           <form method="post" action="{% url 'sales:order_change_status' order.id %}" class="d-inline" onsubmit="return confirm('Cancel this Sales Order?')">
             {% csrf_token %}
             <input type="hidden" name="status" value="CANCELLED">
-            <button class="btn btn-outline-danger btn-sm">Cancel</button>
+            <button class="btn btn-danger btn-sm">Cancel</button>
           </form>
         {% endif %}
-      </div>
 
-      {% if lines %}
-        <div class="table-responsive">
-          <table class="table table-sm table-striped align-middle">
-            <thead class="table-light">
-              <tr>
-                <th style="width:40px;">#</th>
-                <th>Origin</th>
-                <th>Destination</th>
-                <th>Description</th>
-                <th class="text-end">Qty</th>
-                <th>UoM</th>
-                <th class="text-end">Price</th>
-                <th class="text-end">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for ln in lines %}
-              <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ ln.origin }}</td>
-                <td>{{ ln.destination }}</td>
-                <td>{{ ln.description }}</td>
-                <td class="text-end">{{ ln.qty }}</td>
-                <td>{{ ln.uom }}</td>
-                <td class="text-end">{{ ln.price }}</td>
-                <td class="text-end">{{ ln.amount }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% endif %}
-
+     </div>
+  </div>     
+</div>  
+ {% if messages %}
+    <div class="mt-2">
+      {% for m in messages %}
+        <div class="alert alert-{{ m.tags }}">{{ m }}</div>
+      {% endfor %}
     </div>
-  </div>
+  {% endif %}
+
+<div class="container-fluid  pt-2">
+    <div class="card">
+      
+      <div class="card-body">
+       <div class="row">
+      <div class="col-md-6">
+        <dl class="row mb-0">
+          <dt class="col-md-3">Customer</dt><dd class="col-md-9">{{ order.customer.name }}</dd>
+          <dt class="col-md-3"></dt><dd class="col-md-9">{{ order.customer.address }}</dd>
+          <dt class="col-md-3">Sales </dt><dd class="col-md-9">{{ order.sales_user.username }}</dd>
+          <dt class="col-md-3">Services</dt><dd class="col-md-9">{{ order.sales_service.only_name }}</dd>
+          <dt class="col-md-3"></dt><dd class="col-md-9"></dd>
+        </dl>             
+      </div>
+      <div class="col-md-6">
+          <dl class="row mb-0">
+            <dt class="col-md-3">Date</dt><dd class="col-md-9">{{ order.date|date:"d-m-Y"|default:"—" }}</dd>
+            <dt class="col-md-3">Payment Term</dt><dd class="col-md-9">{{ order.payment_term|default:"—" }}</dd>
+            <dt class="col-md-3">Currency</dt><dd class="col-md-9">{{ order.currency }}</dd>
+            <dt class="col-md-3">Status</dt>
+              <dd class="col-md-9">
+                {% with s=order.status|default:"draft"|lower %}
+                  {% if s == "accepted" %}
+                    <span class="badge bg-success">Accepted</span>
+                  {% elif s == "sent" %}
+                    <span class="badge bg-info">Sent</span>
+                  {% elif s == "cancelled" %}
+                    <span class="badge bg-danger">Cancelled</span>
+                  {% elif s == "expired" %}
+                    <span class="badge bg-warning">Expired</span>
+                  {% else %}
+                    <span class="badge bg-secondary">{{ s|title }}</span>
+                  {% endif %}
+                {% endwith %}
+              </dd>
+          </dl>       
+      </div>
+    </div>
+         <div class="row">
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected="true">Qoutation Lines</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="false">Attachment</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact" type="button" role="tab" aria-controls="contact" aria-selected="false">Log</button>
+              </li>
+            </ul>
+            <div class="tab-content" id="myTabContent">
+              <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+                <div class="table-responsive">
+                    <table class="table"   id="lines-table">
+                      <thead class="table-light2">
+                        <tr>
+                          <th>Origin</th>
+                          <th>Destination</th>
+                          <th>Description</th>
+                          <th class="text-end">Qty</th>
+                          <th>UoM</th>
+                          <th class="text-end">Price</th>
+                          <th class="text-end">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for ln in lines %}
+                        <tr>
+                          <td>{{ ln.origin.name }}</td>
+                          <td>{{ ln.destination.name }}</td>
+                          <td>{{ ln.description }}</td>
+                          <td class="text-end">{{ ln.qty }}</td>
+                          <td>{{ ln.uom }}</td>
+                          <td class="text-end">{{ ln.price }}</td>
+                          <td class="text-end">{{ ln.amount }}</td>
+                        </tr>
+                        {% endfor %}
+                        <tr><td colspan="6" class="text-end text-muted">Sub Total</td><td class="text-end num">{{ order.total }}</td></tr>
+                        <tr><td colspan="6" class="text-end text-muted">VAT</td><td class="text-end num">{{ order.vat }}</td></tr>
+                        <tr><td colspan="6" class="text-end text-muted">Grand Total</td><td class="text-end num">{{ order.grand_total }}</td></tr>
+           
+                      </tbody>
+                    </table>
+                  </div>  
+              </div>  
+            </div>    
+         </div>
+      </div>
+    </div>  
 </div>
+
+
+<!-- SMART NUMBER FORMATTER -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const fmt = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // "25.000.000,00" | "25000000.00" | "25,000,000.00" -> 25000000
+  function parseSmart(s) {
+    s = (s ?? "").toString().trim();
+    if (!s) return NaN;
+    const hasComma = s.includes(",");
+    const hasDot   = s.includes(".");
+    if (hasComma && hasDot) {
+      // biasanya '.' ribuan, ',' desimal (format ID)
+      s = s.replace(/\./g, "").replace(",", ".");
+    } else if (hasComma) {
+      // koma desimal, tidak ada titik desimal -> buang '.' ribuan
+      s = s.replace(/\./g, "").replace(",", ".");
+    } else {
+      // tidak ada koma -> anggap '.' desimal; buang koma ribuan
+      s = s.replace(/,/g, "");
+    }
+    const v = parseFloat(s);
+    return Number.isFinite(v) ? v : NaN;
+  }
+
+  function fmtCells(selector) {
+    document.querySelectorAll(selector).forEach(el => {
+      const raw = (el.textContent || el.getAttribute("data-amount") || "");
+      const val = parseSmart(raw);
+      if (Number.isFinite(val)) el.textContent = fmt.format(val);
+    });
+  }
+
+  // format tabel & grand total
+  fmtCells("#lines-table td.num");
+  fmtCells("#grand-total");
+});
+</script>
+
 {% endblock %}

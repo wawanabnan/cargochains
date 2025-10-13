@@ -17,7 +17,7 @@
     th { background:#eee; text-align:left; }
     td.num { text-align:right; }
 
-    .box { border:1px solid #ccc; padding:8px; margin-bottom:10px; }
+    .box { border:1px solid #ccc; padding:2px; margin-bottom:10px; }
     .totals { width:250px; margin-left:auto; border:none; }
     .totals td { border:none; padding:4px 0; }
     .footer { margin-top:12px; font-size:11px; color:#666; }
@@ -44,10 +44,16 @@
       <td style="width:50%; padding-right:6px;">
         <div class="box">
           <h3>Customer</h3>
-          <p>{{ q.customer }}</p>
-          {% if q.customer and q.customer.address %}<p>{{ q.customer.address }}</p>{% endif %}
-          {% if q.customer and q.customer.email %}<p>{{ q.customer.email }}</p>{% endif %}
-          {% if q.customer and q.customer.phone %}<p>{{ q.customer.phone }}</p>{% endif %}
+          <p class="p2">{{ q.customer }}</p>
+          {% if q.customer and q.customer.address %}
+            <p class="p2">{{ q.customer.address }}</p>
+          {% endif %}
+          {% if q.customer and q.customer.email %}
+            <p>{{ q.customer.email }}</p>
+          {% endif %}
+          {% if q.customer and q.customer.phone %}
+              <p>{{ q.customer.phone }}</p>
+          {% endif %}
         </div>
       </td>
       <td style="width:50%; padding-left:6px;">
@@ -65,22 +71,20 @@
   <table>
     <thead>
       <tr>
-        <th style="width:28px;">#</th>
-        <th>Origin</th>
-        <th>Destination</th>
+        <th style="width:30px;">#</th>
+        <th style="width:140px;">Origin - Destination</th>
         <th>Description</th>
-        <th style="width:60px;">UoM</th>
-        <th style="width:60px;" class="num">Qty</th>
-        <th style="width:70px;" class="num">Price</th>
-        <th style="width:90px;" class="num">Amount</th>
+        <th style="width:130px;">UoM</th>
+        <th style="width:70px;" class="num text-end " >Qty</th>
+        <th style="width:80px;" class="num text-end ">Price</th>
+        <th style="width:80px;" class="num text-end ">Amount</th>
       </tr>
     </thead>
     <tbody>
       {% for ln in q.lines.all %}
       <tr>
         <td>{{ forloop.counter }}</td>
-        <td>{{ ln.origin }}</td>
-        <td>{{ ln.destination }}</td>
+        <td>{{ ln.origin.name }} - {{ ln.destination.name }}</td>
         <td>{{ ln.description }}</td>
         <td>{{ ln.uom }}</td>
         <td class="num">{{ ln.qty }}</td>

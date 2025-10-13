@@ -64,10 +64,38 @@ input[type=text]
   margin: 0 !important;
 }
 
-.nav {
+.nav-tabs {
 
   padding-left: 30px !important;
   border-radius: 0 !important;
 }
 
 .tab-content {padding:0px !important}
+
+.btn-white {
+  
+    --bs-btn-color: #fff;
+    color:#222 !important;
+    background-color: var(--bs-btn-color) !important;
+}
+
+
+/* Supaya striping dimulai dari header */
+.table-striped-all tr:nth-child(odd) {
+  background-color: var(--bs-table-striped-bg) !important;
+}
+.table-striped-all tr:nth-child(even) {
+  background-color: transparent !important;
+}
+
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+  --bs-table-color-type: var(--bs-table-striped-color !important);
+  --bs-table-bg-type: #fff !important;
+}
+
+.table2 > :not(caption) > * > * {
+    padding: 0.5rem 0.5rem;
+    color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
+    background-color: #f1f1f1;
+  }

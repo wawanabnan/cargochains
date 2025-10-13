@@ -11,3 +11,4 @@ class PartnerRoleAdmin(admin.ModelAdmin):
     list_display = ("id","partner","role")
     list_filter = ("role",)
     search_fields = ("partner__name","role")
+    

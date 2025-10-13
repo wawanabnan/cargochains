@@ -3,10 +3,11 @@
 {% block title %}Quotation {{ quotation.number }}{% endblock %}
 
 {% block content %}
+
 <div class="container-fluid pt-2" style="border-bottom:1px solid #ccc;" >
   <div class="row">
      <div class="col-md-6 text-left">
-       <p>Judul</p>
+        <a href="{% url 'sales:quotation_edit' quotation.id %}" class="btn btn-white btn-sm">New</a>
 
      <!--end of button group--> 
     </div>
@@ -24,28 +25,16 @@
 <div class="container-fluid pt-2" >
   <div class="row">
      <div class="col-md-6 text-left">
-     
-          <a href="{% url 'sales:quotation_edit' quotation.id %}" class="btn btn-outline-primary btn-sm">Edit</a>
-          <a href="{% url 'sales:quotation_print' quotation.id %}" class="btn btn-outline-secondary btn-sm" target="_blank">Preview</a>
+          
+          <a href="{% url 'sales:quotation_edit' quotation.id %}" class="btn btn-primary btn-sm">Edit</a>
+          <a href="{% url 'sales:quotation_print' quotation.id %}" class="btn  btn-secondary btn-sm" target="_blank">Preview</a>
           <a href="{% url 'sales:quotation_pdf' quotation.id %}" 
-              class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener"> PDF</a>
+              class="btn btn-secondary btn-sm" target="_blank" rel="noopener"> PDF</a>
       
 
      <!--end of button group--> 
     </div>
     <div class="col-md-6 text-end">
-       <div class="btn-group">
-      <a href="{% url 'sales:quotation_edit' quotation.id %}" class="btn btn-outline-primary btn-sm">Edit</a>
-      <a href="{% url 'sales:quotation_print' quotation.id %}" class="btn btn-outline-secondary btn-sm" target="_blank">Print-friendly</a>
-      <a href="{% url 'sales:quotation_pdf' quotation.id %}" 
-          class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener"> Download PDF</a>
-
-      {% if quotation.status != "CANCELLED" %}
-        <a href="{% url 'sales:quotation_edit' quotation.id %}" class="btn btn-outline-primary btn-sm">
-          <i class="fas fa-edit"></i> Edit
-        </a>
-      {% endif %}
-        
       {% if quotation.status == "ACCEPTED" %}
                <form method="post" action="{% url 'sales:quotation_generate_so' quotation.id %}" style="display:inline;">
                 {% csrf_token %}
@@ -62,7 +51,7 @@
                   <form action="{% url 'sales:quotation_change_status' quotation.id %}" method="post" class="d-inline">
                     {% csrf_token %}
                     <input type="hidden" name="status" value="SENT">
-                    <button type="submit" class="btn btn-outline-info btn-sm"
+                    <button type="submit" class="btn btn-info btn-sm"
                             onclick="return confirm('Mark as SENT?');">
                       <i class="fas fa-paper-plane"></i> Mark as Sent
                     </button>
@@ -74,7 +63,7 @@
                   <form action="{% url 'sales:quotation_change_status' quotation.id %}" method="post" class="d-inline">
                     {% csrf_token %}
                     <input type="hidden" name="status" value="ACCEPTED">
-                    <button type="submit" class="btn btn-outline-success btn-sm"
+                    <button type="submit" class="btn btn-success btn-sm"
                             onclick="return confirm('Set as ACCEPTED?');">
                       <i class="fas fa-check"></i> Accept
                     </button>
@@ -86,14 +75,13 @@
                   <form action="{% url 'sales:quotation_change_status' quotation.id %}" method="post" class="d-inline">
                     {% csrf_token %}
                     <input type="hidden" name="status" value="CANCELLED">
-                    <button type="submit" class="btn btn-outline-danger btn-sm"
+                    <button type="submit" class="btn btn-danger btn-sm"
                             onclick="return confirm('Cancel this quotation?');">
                       <i class="fas fa-times"></i> Cancel
                     </button>
                   </form>
                {% endif %}
-            </div>
-
+  
      <!--end of button group--> 
     </div>
     
@@ -101,12 +89,17 @@
   </div>
 
 </div>
-<div class="container-fluid  pt-2">
-<div class="card">
-   <div class="card-header" style="border:none">
 
-   </div> 
-   <div class="card-body">
+<div class="container-fluid  pt-2">
+  <div class="card">
+    <div class="card-body">
+     <div class="row">
+       <h4>{{ quotation.number }}</h4>
+       <br>
+       <br>
+       <br>
+      </div>
+   
     <div class="row">
       <div class="col-md-6">
         <dl class="row mb-0">
@@ -163,7 +156,7 @@
         <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
           <div class="table-responsive">
             <table class="table " id="lines-table">
-              <thead class="table-light">
+              <thead class="table">
                 <tr>
                   <th style="width:180px;">Origin</th>
                   <th style="width:160px;">Destination</th>

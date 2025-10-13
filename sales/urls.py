@@ -52,18 +52,11 @@ urlpatterns = [
     path("freight/quotation/add/",                   RedirectView.as_view(pattern_name="sales:quotation_add",     permanent=False)),
     path("freight/quotation/lines/",                 RedirectView.as_view(pattern_name="sales:quotation_add_lines", permanent=False)),
 
-    path("freight/quotations/<int:pk>/generate-so/", sales_access_required(quotation_generate_so), name="quotation_generate_so"),
-        path("freight/orders/<int:pk>/status/", action_views.order_set_status, name="order_set_status"),
-
+    #path("freight/quotations/<int:pk>/generate-so/", sales_access_required(quotation_generate_so), name="quotation_generate_so"),
+    #path("freight/orders/<int:pk>/status/", action_views.order_set_status, name="order_set_status"),
+   
 
 ]
-
-
-
-
-
-
-
 
 
 

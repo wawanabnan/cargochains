@@ -61,10 +61,11 @@
           <div class="box">
             <div class="h3">Details</div>
             <dl class="kv">
-              {% if o.currency %}<dt>Currency</dt><dd>{{ o.currency }}</dd>{% endif %}
+              {% if o.business_type %}<dt>PO. Ref</dt><dd>-</dd>{% endif %}
+              {% if o.sales_service %}<dt>Service</dt><dd>{{ o.sales_service.only_name }}</dd>{% endif %}
               {% if o.payment_term %}<dt>Payment Term</dt><dd>{{ o.payment_term }}</dd>{% endif %}
-              {% if o.sales_service %}<dt>Service</dt><dd>{{ o.sales_service }}</dd>{% endif %}
-              {% if o.business_type %}<dt>Business Type</dt><dd>{{ o.business_type|upper }}</dd>{% endif %}
+              {% if o.currency %}<dt>Currency</dt><dd>{{ o.currency }}</dd>{% endif %}
+              
             </dl>
           </div>
         </td>
@@ -107,6 +108,21 @@
       <tr><td>VAT</td><td class="num">{{ o.vat|floatformat:2 }}</td></tr>
       <tr><td><b>Grand Total</b></td><td class="num"><b>{{ o.grand_total|floatformat:2 }}</b></td></tr>
     </table>
+    {% if o.notes %}
+        <div class="footer">
+           <p>Note</p> 
+          <div style="width:50%">
+           
+              {{ o.notes }}
+                       
+          </div>
+        </div>
+        {% endif %}
+        <div style="margin-top:135px">
+          {{ o.sales_user.first_name }}
+
+        </div>
+
   </div>
 </body>
 </html>

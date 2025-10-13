@@ -7,7 +7,7 @@
   <style>
     @page { size: A4; margin: 15mm 15mm 18mm 15mm; }
 
-    body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; margin: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; margin: 0;}
     .muted { color:#666; }
     .h1 { font-size: 20px; font-weight: bold; margin: 0; }
     .h3 { font-size: 13px; font-weight: bold; margin: 0 0 6px 0; }
@@ -123,8 +123,8 @@
             {% for ln in q.lines.all %}
             <tr>
               <td>{{ forloop.counter }}</td>
-              <td>{{ ln.origin }}</td>
-              <td>{{ ln.destination }}</td>
+              <td>{{ ln.origin.name }}</td>
+              <td>{{ ln.destination.name }}</td>
               <td>{{ ln.description }}</td>
               <td>{{ ln.uom }}</td>
               <td class="num">{{ ln.qty }}</td>
@@ -144,17 +144,24 @@
           <tr><td class="label"><b>Grand Total</b></td><td class="num"><b>{{ q.grand_total|floatformat:2 }}</b></td></tr>
         </table>
 
-        {% if q.note_1 or q.note_2 %}
+        {% if q.note_1 %}
         <div class="footer">
-          {% if q.note_1 %}<div>{{ q.note_1 }}</div>{% endif %}
-          {% if q.note_2 %}<div>{{ q.note_2 }}</div>{% endif %}
+           <p>Note</p> 
+          <div style="width:50%">
+           
+              {{ q.note_1 }}
+                       
+          </div>
         </div>
         {% endif %}
+        <div style="margin-top:135px">
+          {{ q.sales_user.first_name }}
 
-      </div><!-- /.page -->
+        </div>
+
+      </div>
 
     </td></tr>
-  </table><!-- /.wrap-table -->
-
+  </table>
 </body>
 </html>

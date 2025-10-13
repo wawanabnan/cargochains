@@ -3,8 +3,10 @@ from django.db.models import Q
 from django.views.generic import ListView
 from ..models import SalesQuotation, SalesOrder
 from ..auth import SalesAccessRequiredMixin, sales_queryset_for_user, is_sales_supervisor
+from sales.utils.search import parse_date, parse_multi, parse_bool, safe_int
 
 class QuotationListView(SalesAccessRequiredMixin, ListView):
+    model = SalesQuotation
     model = SalesQuotation
     template_name = "freight/quotation_list.html"
     context_object_name = "quotations"
@@ -138,3 +140,4 @@ class OrderListView(SalesAccessRequiredMixin, ListView):
             "status_options": ["draft", "open", "confirmed", "processed", "in progress", "done", "canceled"],
         })
         return ctx
+        

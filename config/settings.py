@@ -14,12 +14,14 @@ SESSION_COOKIE_SECURE = False
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "django.contrib.humanize",
     'formtools',
     'account.apps.AccountConfig',
     'core',
@@ -137,3 +139,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = "account:login"
 LOGIN_REDIRECT_URL = "account:dashboard"
 LOGOUT_REDIRECT_URL = "account:login"
+
+
+JAZZMIN_SETTINGS = {
+    "site_title": " Cargochains Admin",
+    "site_header": "Cargochains",
+    "site_brand": "Cargochains",
+    "login_logo": "adminlte/img/logo_small.png",
+}

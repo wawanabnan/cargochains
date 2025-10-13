@@ -1,0 +1,39 @@
+ <div id="filters-panel" class="px-3 py-3 d-none  border-top">
+      <form class="row g-2 align-items-end" method="get">
+        <input type="hidden" name="status" value="{{ status }}">
+        <div class="col-md-3">
+          <select name="service" class="form-select">
+            <option value="">All Services</option>
+            {% for s in services %}
+              <option value="{{ s.id }}" {% if service_id|default:'' == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select name="pt" class="form-select">
+            <option value="">All Payment term</option>
+            {% for p in pterms %}
+              <option value="{{ p.id }}" {% if payment_term_id|default:'' == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select name="currency" class="form-select">
+            {% for c in currencies %}
+              <option value="{{ c.id }}" {% if currency_id|default:'' == c.id|stringformat:"s" %}selected{% endif %}>{{ c.code }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <input type="date" name="vf" class="form-control" value="{{ valid_from|default:'' }}">
+        </div>
+        <div class="col-md-2">
+          <input type="date" name="vt" class="form-control" value="{{ valid_to|default:'' }}">
+        </div>
+        <div class="col-12 d-flex gap-2 mt-2">
+          <button class="btn btn-sm primary"><i class="fas fa-filter"></i> Apply</button>
+          <a class="btn btn-sm  btn btn-secondary" href="{% url 'sales:quotation_list' %}"><i class="fas fa-undo"></i> Reset</a>
+        </div>
+      </form>
+      
+    </div>
