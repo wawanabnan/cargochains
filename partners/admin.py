@@ -6,9 +6,3 @@ class PartnerAdmin(admin.ModelAdmin):
     list_display = ("id","name","email","phone","city","country")
     search_fields = ("name","email","phone","city","country")
 
-@admin.register(PartnerRole)
-class PartnerRoleAdmin(admin.ModelAdmin):
-    list_display = ("id","partner","role")
-    list_filter = ("role",)
-    search_fields = ("partner__name","role")
-    

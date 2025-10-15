@@ -27,17 +27,16 @@ class Partner(TimeStampedModel):
         blank=True,
         null=True
     )
+    is_individual = models.BooleanField(default=False, help_text="Centang jika perorangan; kosongkan jika perusahaan.")
+    is_pkp = models.BooleanField(default=False, help_text="Centang jika PKP (Pengusaha Kena Pajak).")
 
     tax = models.CharField(max_length=50,   null=True, blank=True)   # NPWP / Tax ID
     address = models.TextField(null=True, blank=True)
     country = models.CharField(max_length=100, null=True, blank=True)
     city = models.CharField(max_length=100,   null=True, blank=True)
-    postcode = models.CharField(max_length=20, null=True, blank=True)
-
-    is_individual = models.BooleanField(default=False, help_text="Centang jika perorangan; kosongkan jika perusahaan.")
+    post_code = models.CharField(max_length=20, null=True, blank=True)
     
-    is_pkp = models.BooleanField(default=False, help_text="Centang jika PKP (Pengusaha Kena Pajak).")
-
+    
     sales_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -56,13 +55,29 @@ class Partner(TimeStampedModel):
 
     def __str__(self): return self.name
 
-class PartnerRole(TimeStampedModel):
-    partner = models.ForeignKey(Partner, on_delete=models.CASCADE, db_column="partner_id", related_name="roles")
-    role = models.CharField(max_length=30)  # 'customer','agency','vendor','carrier',...
+class Role(models.Model):
+    name = models.CharField(max_length=50)
+    
+    class Meta:
+        db_table = "roles"
+        verbose_name = "Role"
+        verbose_name_plural = "Roles"
+        ordering = ["name"]
 
+    def __str__(self):
+        return self.name
+
+
+
+
+class PartnerRole(TimeStampedModel):
+    partner = models.ForeignKey(Partner, on_delete=models.CASCADE, related_name="partner_roles")
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="partner_roles")
+  
     class Meta:
         db_table = "partner_roles"
-        unique_together = (("partner", "role"),)
-        indexes = [models.Index(fields=["partner", "role"], name="partner_role_idx")]
+        unique_together = ("partner", "role")
+        verbose_name = "Partner Role"
+        verbose_name_plural = "Partner Roles"
 
     def __str__(self): return f"{self.partner.name} → {self.role}"
