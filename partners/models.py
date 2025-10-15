@@ -55,13 +55,13 @@ class Partner(TimeStampedModel):
 
     def __str__(self): return self.name
 
-class Role(models.Model):
+class PartnerRoleTypes(models.Model):
     name = models.CharField(max_length=50)
     
     class Meta:
-        db_table = "roles"
-        verbose_name = "Role"
-        verbose_name_plural = "Roles"
+        db_table = "partner_roles_types"
+        verbose_name = "Partner Role Types"
+        verbose_name_plural = "Partner Roles Type"
         ordering = ["name"]
 
     def __str__(self):
@@ -72,7 +72,7 @@ class Role(models.Model):
 
 class PartnerRole(TimeStampedModel):
     partner = models.ForeignKey(Partner, on_delete=models.CASCADE, related_name="partner_roles")
-    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="partner_roles")
+    role = models.ForeignKey(PartnerRoleTypes, on_delete=models.CASCADE, related_name="partner_roles")
   
     class Meta:
         db_table = "partner_roles"
