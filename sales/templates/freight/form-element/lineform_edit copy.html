@@ -1,0 +1,58 @@
+<div class="table-responsive p-0">
+      <table class="table table-hover mb-0 align-middle" id="lines-table">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 12%; padding-left:15px">Origin</th>
+            <th style="width: 14%">Destination</th>
+            <th>Description</th>
+            <th style="width: 10%">UoM</th>
+            <th style="width: 10%" class="text-end">Qty</th>
+            <th style="width: 12%" class="text-end">Price</th>
+            <th style="width: 12%" class="text-end">Amount</th>
+            <th style="width: 4%"></td>
+          </tr>
+        </thead>
+                <tbody id="lines-tbody">
+  {% for f in formset %}
+  <tr class="line">
+    <td> {{ f.origin_text }}  {{ f.origin }} </td>
+    <td> {{ f.destination_text }}  {{ f.destination }}</td>
+    <td>{{ f.description }}</td>
+    <td>{{ f.uom }}</td>
+    <td>{{ f.qty }}</td>
+    <td>{{ f.price }}</td>
+    <td>{{ f.amount }}</td>
+    <td class="text-center">
+      {{ f.DELETE.as_hidden  }}
+      <button type="button" class="btn btn-sm btn-outline-danger btn-remove" title="Remove">
+        <i class="fas fa-times"></i>
+      </button>
+    </td>
+  </tr>
+  {% empty %}
+  {# biarkan kosong; user bisa klik Add Line #}
+  {% endfor %}
+</tbody>
+
+
+        <tfoot>
+           <tr>
+            <td colspan="5"></td>
+            <td class="text-end">TAX</td>
+            <td class="text-end">
+              <input type="text" id="vat" class="form-control form-control-sm text-end" value="" readonly>
+            </td>
+            <td></td>
+          </tr>
+
+          <tr>
+            <td colspan="5"></td>
+            <td class="text-end">Grand Total</td>
+            <td class="text-end">
+              <input type="text" id="grand-total" class="form-control form-control-sm text-end" value="" readonly>
+            </td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>

@@ -1,0 +1,742 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}New Quotation{% endblock %}
+
+{% block content %}
+  <div class="container-fluid mt-3">
+    <form method="post" id="quotation-form">
+      {% csrf_token %}
+
+      <div class="card" style="background-color: none;">
+        <div class="card-header">
+          <h5 class="card-title mb-0"><i class="fas fa-file-alt"></i> Quotation Header</h5>
+        </div>
+        <div class="card-body">
+
+            <div class="row" style="padding:20px;background-color:none;">
+
+                 {% include 'freight/form-element/headerform.html' %}
+
+            </div>  
+            <div class="row">
+              <ul class="nav nav-tabs" id="quotationTabs" role="tablile">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="tab-cargo-tab" data-bs-toggle="tab"
+                          data-bs-target="#tab-cargo" type="button" role="tab"
+                          aria-controls="tab-cargo" aria-selected="true">
+                      <i class="fas fa-boxes"></i> Cargo Detail
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="tab-note-tab" data-bs-toggle="tab"
+                          data-bs-target="#tab-note" type="button" role="tab"
+                          aria-controls="tab-note" aria-selected="false">
+                    <i class="fas fa-sticky-note"></i> Note
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="tab-attach-tab" data-bs-toggle="tab"
+                          data-bs-target="#tab-attach" type="button" role="tab"
+                          aria-controls="tab-attach" aria-selected="false">
+                    <i class="fas fa-paperclip"></i> Attachment
+                  </button>
+                </li>
+              </ul>              
+            </div>
+            <div class="row mt-3">
+              <div class="tab-content" id="quotationTabsContent">
+                <!-- === TAB 1: CARGO DETAIL === -->
+                  <div class="tab-pane fade show active" id="tab-cargo" role="tabpanel" aria-labelledby="tab-cargo-tab">
+                       {% include 'freight/form-element/lineform.html' %}
+
+                  </div>
+
+                  <!-- === TAB 2: NOTE === -->
+                     {{ formset.management_form }}
+                  <div class="tab-pane fade" id="tab-note" role="tabpanel" aria-labelledby="tab-note-tab">
+                    <div class="px-2">
+                        {{ form.note_1 }}
+                        {%  for e in form.note_1.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                    </div>
+                  </div>
+
+                  <div class="tab-pane fade" id="tab-attach" role="tabpanel" aria-labelledby="tab-attachtab">
+                    <div class="px-2">
+                        {{ form.note_1 }}
+                        {%  for e in form.note_1.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                    </div>
+                  </div>
+
+              </div>
+            </div>    
+       </div>
+      </div>
+
+  </form>
+  <div class="card-footer d-flex gap-2 mt-3">
+    <button type="button" class="btn btn-sm btn-primary" id="btn-add-line">
+      <i class="fas fa-plus"></i> Add a line
+    </button>
+  <button type="button" id="btn-save" class="btn btn-success">
+      <i class="fas btn-xs  fa-check"></i> Save
+    </button>
+   
+  </div>
+</div>
+
+<!-- TEMPLATE: baris baru (dipakai nanti oleh JS) -->
+<template id="tpl-line">
+  <tr class="line">
+    <td>
+      <input type="text" class="form-control form-control-sm js-origin-input"
+             placeholder="Search origin…" data-url="{% url 'geo:locations_autocomplete' %}">
+      <input type="hidden" name="origin[]" class="js-origin-id">
+    </td>
+    <td>
+      <input type="text" class="form-control form-control-sm js-dest-input"
+             placeholder="Search destination…" data-url="{% url 'geo:locations_autocomplete' %}">
+      <input type="hidden" name="destination[]" class="js-dest-id">
+    </td>
+    <td>
+      <textarea name="description[]" rows="1" class="form-control form-control-sm"></textarea>
+    </td>
+    <td>
+      <select name="uom[]" class="form-select form-select-sm">
+        <option value="">—</option>
+        {% for u in uoms %}
+          <option value="{{ u.id }}">{{ u.name }}</option>
+        {% endfor %}
+      </select>
+    </td>
+    <td><input name="qty[]" type="text" class="form-control form-control-sm text-end money"></td>
+    <td><input name="price[]" type="text" class="form-control form-control-sm text-end money"></td>
+    <td><input name="amount_display[]" type="text" class="form-control form-control-sm text-end js-amount" readonly></td>
+    <td class="text-center">
+      <button type="button" class="btn btn-sm btn-outline-danger btn-remove" title="Remove">
+        <i class="fas fa-times"></i>
+      </button>
+    </td>
+  </tr>
+</template>
+    
+  </div>
+
+{% endblock %}
+{% block extra_css %}
+ <link rel="stylesheet" href="https://code.jquery.com/ui/1.14.1/themes/base/jquery-ui.css">
+
+<style>
+  /* === Autocomplete dropdown === */
+  .ui-autocomplete.ui-widget.ui-widget-content {
+    border: 0 !important;
+    background: #fff !important;
+    border-radius: .25rem !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,.08) !important;
+    z-index: 3000 !important;
+    overflow: hidden !important;    /* no scroll */
+  }
+  .ui-autocomplete .ui-menu-item { border: 0 !important; margin: 0 !important; }
+  .ui-menu-item-wrapper { padding: 0 !important; }
+
+  /* baris custom kita */
+  .ui-ac-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .5rem;
+    padding: 6px 10px;
+    min-width: 0;
+  }
+  .ui-ac-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ui-ac-badge {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    /* kecilkan badge sedikit biar seimbang */
+    transform: scale(.9);
+    transform-origin: right center;
+  }
+
+  /* warna badge default */
+  .badge { display:inline-block; padding:.35em .5em; font-size:75%; border-radius:.375rem; line-height:1; }
+  .text-bg-secondary { color:#fff; background-color:#6c757d; }
+
+  /* state aktif (hover/select): hijau & badge ikut warna highlight */
+  .ui-state-active .ui-ac-row {
+    background: #0d6efd !important;
+    color: #fff !important;
+    background:none;
+    color:#333;
+    font-weight: bold;
+  }
+  .ui-state-active .ui-ac-name { color: #fff !important; }
+  .ui-state-active .ui-ac-badge .badge {
+    background-color:#0d6efd !important;
+    color: #fff !important;
+  }
+  .badge.text-bg-secondary {
+  background-color: #0d6efd !important;  /* misalnya biru Bootstrap */
+  color: #fff !important;
+}
+  
+  #lines-table .is-invalid { outline: 2px solid #dc3545; outline-offset:-1px; background:#fff6f6; }
+ .line-row.active-line {
+    border-bottom: 2px solid var(--bs-primary, #0d6efd);
+  }
+    .is-invalid { border-color: #dc3545 !important; }
+  .line-error { background: rgba(220,53,69,.06); }
+  #lines-table {
+    border-collapse: collapse !important;
+  }
+  #lines-table td {
+    padding: 0 !important;
+    padding-left:15px !important;
+    border-left: none !important;
+    border-right: none !important;
+    vertical-align: middle;
+  }
+  
+  #lines-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+  }
+  #lines-table td input,
+  #lines-table td textarea,
+  #lines-table td select {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+    padding: 4px ;
+    height: calc(1.8em + 0.5rem);
+    background: transparent;
+  }
+  #lines-table td textarea {
+    resize: none;
+  }
+  #lines-table tr:hover {
+    background-color: #f5f5f5;
+  }
+  /* tombol remove kecil rapi */
+  #lines-table .btn-remove {
+    border: none;
+    color: #dc3545;
+    background: transparent;
+  }
+  #lines-table .btn-remove:hover {
+    background: #f8d7da;
+  }
+ /* Buang padding card-body & tab-content */
+  .card.card-outline > .card-body,
+  .card.card-outline .tab-content,
+  .card.card-outline .tab-pane {
+    padding: 0 !important;
+  }
+
+  /* Header card & nav-tabs tanpa jarak & garis bawah */
+  .card.card-outline > .card-header {
+    padding: 0 !important;
+    margin: 0 !important;
+    border-bottom: 0 !important;
+  }
+  .card.card-outline .nav-tabs {
+    margin: 0 !important;
+    border: 0 !important;
+  }
+
+  /* Tab item tanpa border & radius, rapet */
+  .card.card-outline .nav-tabs .nav-link {
+    border: 0 !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: .5rem .9rem; /* boleh 0 kalau mau super rapet */
+    background: transparent !important;
+  }
+  /* Hilangkan garis “pertemuan” 1px di bawah tab aktif */
+  .card.card-outline .nav-tabs .nav-link.active {
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  
+  .card > .card-body   { padding:12px !important;padding-bottom: 0px !important; }
+
+
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+
+{% endblock %}
+{% block extra_js %}
+<!-- jQuery (CDN) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+        crossorigin="anonymous"></script>
+
+<!-- jQuery UI (CDN) -->
+<link rel="stylesheet"
+      href="https://code.jquery.com/ui/1.13.3/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/ui/1.13.3/jquery-ui.min.js"
+        integrity="sha256-sw0iNNXmOJbQhYFuC9OF2kOlD5KQKe1y5lfBn4C9Sjg="
+        crossorigin="anonymous"></script>
+
+<script>
+
+/* ==== AUTOCOMPLETE + INIT LINE (FULL) ==== */
+(function($){
+  // --- helper angka (opsional, kalau kamu sudah punya, boleh dihapus) ---
+  function parseNum(val){ if(val==null) return 0; val=String(val).trim().replace(/\./g,'').replace(',','.'); var n=parseFloat(val); return isNaN(n)?0:n; }
+  function formatNum(n){ return (n||0).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+  // --- cek kesiapan plugin ---
+  function uiReady(){ return !!(window.jQuery && $.ui && $.ui.autocomplete); }
+
+  // --- inisialisasi autocomplete dengan renderer kustom ---
+  function ensureAutocomplete($text, $hidden){
+    if (!uiReady()) return;
+
+    // hancurkan instansi lama biar nggak dobel
+    if ($text.data('ui-autocomplete')) { try { $text.autocomplete('destroy'); } catch(e){} }
+
+    var url = $text.data('url') || '/geo/locations/autocomplete/';
+
+    $text.autocomplete({
+      minLength: 1,
+      delay: 150,
+      appendTo: 'body',
+      position: { my: 'left top+4', at: 'left bottom' },
+      source: function(req, resp){
+        $.getJSON(url, { q: req.term }).done(function(data){
+          resp($.map(data || [], function(o){
+            var kind = o.kind ? (o.kind.charAt(0).toUpperCase() + o.kind.slice(1)) : '';
+            return { label:o.name, value:o.name, id:o.id, name:o.name, kind:kind };
+          }));
+        }).fail(function(){ resp([]); });
+      },
+      select: function(e, ui){
+        $text.val(ui.item.value);
+        $hidden.val(ui.item.id).trigger('change');
+        return false;
+      },
+      change: function(e, ui){
+        if (!ui || !ui.item) $hidden.val('').trigger('change');
+      },
+      focus: function(){ return false; }
+    });
+
+    // --- renderer kustom: Nama — Kind ---
+    var ac = $text.data('ui-autocomplete');
+    if (ac && !ac._renderedOnce) {
+  ac._renderItem = function(ul, item){
+    // badge pakai kelas Bootstrap 5: text-bg-secondary
+    var $row = $('<div class="ui-ac-row">')
+      .append($('<span class="ui-ac-name">').text(item.name))
+      .append(
+        $('<span class="ui-ac-badge">').append(
+          $('<span class="badge text-bg-secondary">').text(item.kind || '')
+        )
+      );
+    return $('<li>').append($row).appendTo(ul);
+  };
+  ac._renderedOnce = true;
+}
+    // saat teks manual berubah, kosongkan hidden id
+    $text.on('input', function(){ $hidden.val(''); });
+  }
+
+  // --- hitung amount & total (opsional; skip jika sudah ada di script lain) ---
+  function calcLineAmount($tr){
+    if (!$tr.find('.js-amount').length) return; // kalau nggak pakai kolom amount, lewati
+    var qty = parseNum($tr.find('[name="qty[]"]').val());
+    var price = parseNum($tr.find('[name="price[]"]').val());
+    $tr.find('.js-amount').val( formatNum(qty*price) );
+  }
+
+
+ function calcGrandTotal(){
+  // butuh grand-total untuk menampilkan hasil
+  if (!$('#grand-total').length) return;
+
+  // hitung subtotal dari semua amount di line
+  var subtotal = 0;
+  $('#lines-tbody .line').each(function(){
+    subtotal += parseNum($(this).find('.js-amount').val());
+  });
+
+  // ambil tax rate dari hidden input (mis. <input id="tax-rate" value="0.11">)
+  var rate = 0.11; // fallback 11%
+  if ($('#tax-rate').length) {
+    var r = parseNum($('#tax-rate').val());
+    if (r > 0) rate = r;
+  }
+
+  // hitung VAT & Grand Total
+  var vat   = subtotal * rate;
+  var grand = subtotal + vat;
+
+  // tampilkan hasil (format Indonesia)
+  if ($('#vat').length)         { $('#vat').val( formatNum(vat) ); }
+  if ($('#grand-total').length) { $('#grand-total').val( formatNum(grand) ); }
+}
+ 
+
+
+
+  // --- init satu baris (panggil setiap kali tambah baris) ---
+  function initLine($tr){
+    var $origTxt = $tr.find('.js-origin-input').attr('autocomplete','off');
+    var $origId  = $tr.find('.js-origin-id');
+    var $destTxt = $tr.find('.js-dest-input').attr('autocomplete','off');
+    var $destId  = $tr.find('.js-dest-id');
+
+    // init pada focus (aman untuk table/tab)
+    $origTxt.on('focus', function(){ ensureAutocomplete($origTxt, $origId); });
+    $destTxt.on('focus', function(){ ensureAutocomplete($destTxt, $destId); });
+
+    // atau langsung init jika UI siap
+    if (uiReady()){
+      ensureAutocomplete($origTxt, $origId);
+      ensureAutocomplete($destTxt, $destId);
+    }
+
+    // kalkulasi (kalau ada kolom amount)
+    $tr.find('[name="qty[]"], [name="price[]"]').on('input', function(){
+      calcLineAmount($tr); calcGrandTotal();
+    });
+    calcLineAmount($tr);
+    
+  // === ADD: default angka, border aktif, format Indonesia, fokus origin ===
+    var money0 = formatNum(0);
+
+    // default angka jika kosong
+    var $qty   = $tr.find('[name="qty[]"]');
+    var $price = $tr.find('[name="price[]"]');
+    var $amt   = $tr.find('.js-amount'); // input[name="amount_display[]"] bila ada
+
+    if ($qty.length   && !$qty.val())   $qty.val(money0);
+    if ($price.length && !$price.val()) $price.val(money0);
+    if ($amt.length   && !$amt.val())   $amt.val(money0);
+
+    // border aktif saat fokus
+    var $focusables = $tr.find('input, select, textarea, button');
+    $focusables.on('focus', function(){ $tr.addClass('active-line'); });
+    $focusables.on('blur', function(){
+      setTimeout(function(){
+        if (!$tr.find(':focus').length) $tr.removeClass('active-line');
+      }, 0);
+    });
+
+    // format Indonesia saat blur + recalculation
+    function _recalc(){ 
+      // kalau kamu sudah punya calcLineAmount/calcGrandTotal, panggil saja:
+      try { calcLineAmount($tr); } catch(e){}
+      try { calcGrandTotal(); } catch(e){}
+    }
+    $qty.on('blur',  function(){ $(this).val( formatNum( parseNum($(this).val()) ) ); _recalc(); });
+    $price.on('blur',function(){ $(this).val( formatNum( parseNum($(this).val()) ) ); _recalc(); });
+
+    // fokus ke origin text (autocomplete)
+    $tr.find('.js-origin-input').trigger('focus');
+
+  
+  }
+  
+  
+  // expose biar bisa dipanggil dari script lain juga
+  window.initLine = initLine;
+
+
+
+
+  // --- INIT awal: baris yang sudah ada + hook tombol add line ---
+  $(function(){
+    // init semua baris yang ada saat load
+    $('#lines-tbody .line').each(function(){ initLine($(this)); });
+
+    // kalau kamu sudah punya handler tombol add-line sendiri, cukup pastikan
+    // kamu panggil initLine($rowBaru) setelah append.
+    // Di bawah ini fallback generic (boleh dihapus kalau sudah ada):
+    $(document).on('click', '#add-line, #btn-add-line, #btn-add-line-bottom', function(){
+      var $new;
+      if ($('#tpl-line').length){
+        $new = $($('#tpl-line').html());
+      } else {
+        var $first = $('#lines-tbody .line:first');
+        $new = $first.clone(true, true);
+        $new.find('input[type="text"], textarea').val('');
+        $new.find('select').val('');
+        $new.find('.js-origin-id, .js-dest-id').val('');
+      }
+      $('#lines-tbody').append($new);
+      initLine($new);
+    });
+  });
+})(jQuery);
+</script>
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const el = document.querySelector('input[name="valid_until"]');
+  if (el) {
+    const fp = flatpickr(el, {
+      dateFormat: el.getAttribute('data-date-format') || 'd-m-Y',
+      allowInput: true,
+      clickOpens: true
+    });
+    el.addEventListener('focus', () => fp.open()); // poin (2): buka kalender saat fokus
+  }
+});
+</script>
+<script>
+// ADD: normalisasi angka sebelum form terkirim
+$(document).on('submit', '#quotation-form', function(){
+  // ubah "1.234,56" -> "1234.56" utk qty dan price
+  $('#lines-tbody input[name="qty[]"], #lines-tbody input[name="price[]"]').each(function(){
+    $(this).val( String( parseNum($(this).val()) ) );
+  });
+  // jika kamu juga kirim VAT & Grand Total (readonly), bisa dinormalisasi juga:
+  // if ($('#vat').length) $('#vat').val( String(parseNum($('#vat').val())) );
+  // if ($('#grand-total').length) $('#grand-total').val( String(parseNum($('#grand-total').val())) );
+});
+</script>
+
+<script>
+  // === TAMBAH: validator baris sebelum submit ===
+  function validateLines() {
+    var ok = true, firstBad = null;
+
+    $('#lines-tbody .line').each(function(idx){
+      var $tr   = $(this).removeClass('line-error');
+      var $oriT = $tr.find('.js-origin-input').removeClass('is-invalid');
+      var $oriH = $tr.find('.js-origin-id');
+      var $dstT = $tr.find('.js-dest-input').removeClass('is-invalid');
+      var $dstH = $tr.find('.js-dest-id');
+      var $desc = $tr.find('textarea[name="description[]"]').removeClass('is-invalid');
+      var $uom  = $tr.find('select[name="uom[]"]').removeClass('is-invalid');
+      var $qty  = $tr.find('input[name="qty[]"]').removeClass('is-invalid');
+      var $price= $tr.find('input[name="price[]"]').removeClass('is-invalid');
+
+      // helper parse (pakai punyamu)
+      function _parse(val){ return parseNum ? parseNum(val) : (parseFloat(String(val).replace(/\./g,'').replace(',','.')) || 0); }
+
+      // cek origin (hidden id wajib)
+      if (!$oriH.val()) {
+        ok = false; $tr.addClass('line-error'); $oriT.addClass('is-invalid');
+        if (!firstBad) firstBad = $oriT;
+      }
+
+      // cek destination
+      if (!$dstH.val()) {
+        ok = false; $tr.addClass('line-error'); $dstT.addClass('is-invalid');
+        if (!firstBad) firstBad = $dstT;
+      }
+
+      // cek description wajib isi
+      if (!$.trim($desc.val())) {
+        ok = false; $tr.addClass('line-error'); $desc.addClass('is-invalid');
+        if (!firstBad) firstBad = $desc;
+      }
+
+      // cek uom wajib pilih
+      if (!$uom.val()) {
+        ok = false; $tr.addClass('line-error'); $uom.addClass('is-invalid');
+        if (!firstBad) firstBad = $uom;
+      }
+
+      // cek qty > 0
+      if (_parse($qty.val()) <= 0) {
+        ok = false; $tr.addClass('line-error'); $qty.addClass('is-invalid');
+        if (!firstBad) firstBad = $qty;
+      }
+
+      // cek price >= 0 (kalau wajib > 0, ganti jadi > 0)
+      if (_parse($price.val()) < 0) {
+        ok = false; $tr.addClass('line-error'); $price.addClass('is-invalid');
+        if (!firstBad) firstBad = $price;
+      }
+    });
+
+    if (!ok) {
+      if (firstBad) { firstBad.focus(); }
+      // pesan singkat (boleh ganti sesuai kebutuhan)
+      alert('Lengkapi semua kolom line: origin, destination, description, UoM, qty, price.');
+    }
+    return ok;
+  }
+
+  // === TAMBAH: intercept tombol Save (di luar form) agar validasi dulu ===
+  $(document).on('click', '#btn-save', function(e){
+    e.preventDefault();
+    if (!validateLines()) return;           // ⬅️ WAJIB LULUS VALIDASI
+    $('#quotation-form').trigger('submit'); // lanjut submit (handler kamu tetap jalan)
+  });
+
+  // OPTIONAL: ketika user memperbaiki input, hilangkan merahnya
+  $(document).on('input change', '#lines-tbody .line input, #lines-tbody .line select, #lines-tbody .line textarea', function(){
+    $(this).removeClass('is-invalid');
+    $(this).closest('.line').removeClass('line-error');
+  });
+  
+</script>
+
+
+
+<script>
+  // === TAMBAH: validator baris sebelum submit ===
+  function validateLines() {
+    var ok = true, firstBad = null;
+
+    $('#lines-tbody .line').each(function(idx){
+      var $tr   = $(this).removeClass('line-error');
+      var $oriT = $tr.find('.js-origin-input').removeClass('is-invalid');
+      var $oriH = $tr.find('.js-origin-id');
+      var $dstT = $tr.find('.js-dest-input').removeClass('is-invalid');
+      var $dstH = $tr.find('.js-dest-id');
+      var $desc = $tr.find('textarea[name="description[]"]').removeClass('is-invalid');
+      var $uom  = $tr.find('select[name="uom[]"]').removeClass('is-invalid');
+      var $qty  = $tr.find('input[name="qty[]"]').removeClass('is-invalid');
+      var $price= $tr.find('input[name="price[]"]').removeClass('is-invalid');
+
+      // helper parse (pakai punyamu)
+      function _parse(val){ return parseNum ? parseNum(val) : (parseFloat(String(val).replace(/\./g,'').replace(',','.')) || 0); }
+
+      // cek origin (hidden id wajib)
+      if (!$oriH.val()) {
+        ok = false; $tr.addClass('line-error'); $oriT.addClass('is-invalid');
+        if (!firstBad) firstBad = $oriT;
+      }
+
+      // cek destination
+      if (!$dstH.val()) {
+        ok = false; $tr.addClass('line-error'); $dstT.addClass('is-invalid');
+        if (!firstBad) firstBad = $dstT;
+      }
+
+      // cek description wajib isi
+      if (!$.trim($desc.val())) {
+        ok = false; $tr.addClass('line-error'); $desc.addClass('is-invalid');
+        if (!firstBad) firstBad = $desc;
+      }
+
+      // cek uom wajib pilih
+      if (!$uom.val()) {
+        ok = false; $tr.addClass('line-error'); $uom.addClass('is-invalid');
+        if (!firstBad) firstBad = $uom;
+      }
+
+      // cek qty > 0
+      if (_parse($qty.val()) <= 0) {
+        ok = false; $tr.addClass('line-error'); $qty.addClass('is-invalid');
+        if (!firstBad) firstBad = $qty;
+      }
+
+      // cek price >= 0 (kalau wajib > 0, ganti jadi > 0)
+      if (_parse($price.val()) < 0) {
+        ok = false; $tr.addClass('line-error'); $price.addClass('is-invalid');
+        if (!firstBad) firstBad = $price;
+      }
+    });
+
+    if (!ok) {
+      if (firstBad) { firstBad.focus(); }
+      // pesan singkat (boleh ganti sesuai kebutuhan)
+      alert('Lengkapi semua kolom line: origin, destination, description, UoM, qty, price.');
+    }
+    return ok;
+  }
+
+  // OPTIONAL: ketika user memperbaiki input, hilangkan merahnya
+  $(document).on('input change', '#lines-tbody .line input, #lines-tbody .line select, #lines-tbody .line textarea', function(){
+    $(this).removeClass('is-invalid');
+    $(this).closest('.line').removeClass('line-error');
+  });
+</script>
+
+
+
+<script>
+(function($){
+  // fallback parser kalau parseNum belum ada
+  function _parseNum(val){
+    if (typeof parseNum === 'function') return parseNum(val);
+    if (val == null) return 0;
+    val = String(val).trim().replace(/\./g,'').replace(',','.');
+    var n = parseFloat(val);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function getFormElem(){
+    var $f = $('#quotation-form');
+    if ($f.length) return $f.get(0);
+    // fallback: cari form terdekat dari tabel
+    var t = document.getElementById('lines-table');
+    return t ? t.closest('form') : document.querySelector('form');
+  }
+
+  function normalizeNumbers(){
+    // qty & price → titik-desimal
+    $('#lines-tbody input[name="qty[]"], #lines-tbody input[name="price[]"]').each(function(){
+      this.value = String(_parseNum(this.value));
+    });
+    // kalau kamu juga kirim VAT/Grand Total ke server, buka ini:
+    // var vat = document.getElementById('vat'); if (vat) vat.value = String(_parseNum(vat.value));
+    // var gt  = document.getElementById('grand-total'); if (gt) gt.value = String(_parseNum(gt.value));
+  }
+
+  // REPLACE semua handler lama untuk #btn-save dengan ini
+  $(document).off('click', '#btn-save').on('click', '#btn-save', function(e){
+    e.preventDefault();
+    var $btn = $(this);
+    var form = getFormElem();
+    if (!form) { alert('Form tidak ditemukan. Pastikan <form id="quotation-form"> ada.'); return; }
+
+    // jalankan validasi line jika ada
+    try {
+      if (typeof validateLines === 'function') {
+        if (!validateLines()) return; // gagal → jangan submit
+      }
+    } catch (err) {
+      console.warn('validateLines error:', err);
+      // jangan blokir submit hanya karena error JS validasi
+    }
+
+    // normalisasi angka sebelum submit
+    try { normalizeNumbers(); } catch(err){ console.warn('normalize error:', err); }
+
+    // hormati HTML5 validity (required, pattern, dll.)
+    if (typeof form.reportValidity === 'function') {
+      if (!form.reportValidity()) return;
+    }
+
+    // cegah double submit
+    $btn.prop('disabled', true).addClass('disabled').data('submitting', true);
+
+    // submit dengan cara paling aman
+    try {
+      if (typeof form.requestSubmit === 'function') form.requestSubmit();
+      else form.submit();
+    } catch (err) {
+      console.error('submit error:', err);
+      $btn.prop('disabled', false).removeClass('disabled').data('submitting', false);
+    }
+  });
+
+  // re-enable tombol kalau server balikin halaman (mis. error form)
+  $(function(){
+    $('#btn-save').prop('disabled', false).removeClass('disabled').data('submitting', false);
+  });
+})(jQuery);
+</script>
+
+
+{% endblock %}

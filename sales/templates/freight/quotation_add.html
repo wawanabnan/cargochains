@@ -1,0 +1,1087 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}New Quotation{% endblock %}
+
+{% block content %}
+  <div class="container-fluid mt-3">
+    <form method="post" id="quotation-form">
+      {% csrf_token %}
+
+      <div class="card" style="background-color: none;">
+        <div class="card-header">
+          <h5 class="card-title mb-0"><i class="fas fa-file-alt"></i> Quotation Header</h5>
+        </div>
+        <div class="card-body">
+
+            <div class="row" style="padding:20px;background-color:none;">
+
+                 {% include 'freight/form-element/headerform.html' %}
+
+            </div>  
+            <div class="row">
+              <ul class="nav nav-tabs" id="quotationTabs" role="tablile">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="tab-cargo-tab" data-bs-toggle="tab"
+                          data-bs-target="#tab-cargo" type="button" role="tab"
+                          aria-controls="tab-cargo" aria-selected="true">
+                      <i class="fas fa-boxes"></i> Cargo Detail
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="tab-note-tab" data-bs-toggle="tab"
+                          data-bs-target="#tab-note" type="button" role="tab"
+                          aria-controls="tab-note" aria-selected="false">
+                    <i class="fas fa-sticky-note"></i> Note
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="tab-attach-tab" data-bs-toggle="tab"
+                          data-bs-target="#tab-attach" type="button" role="tab"
+                          aria-controls="tab-attach" aria-selected="false">
+                    <i class="fas fa-paperclip"></i> Attachment
+                  </button>
+                </li>
+              </ul>              
+            </div>
+            <div class="row mt-3">
+              <div class="tab-content" id="quotationTabsContent">
+                <!-- === TAB 1: CARGO DETAIL === -->
+                  <div class="tab-pane fade show active" id="tab-cargo" role="tabpanel" aria-labelledby="tab-cargo-tab">
+                       {% include 'freight/form-element/lineform.html' %}
+
+                  </div>
+
+                  <!-- === TAB 2: NOTE === -->
+                     {{ formset.management_form }}
+                  <div class="tab-pane fade" id="tab-note" role="tabpanel" aria-labelledby="tab-note-tab">
+                    <div class="px-2">
+                        {{ form.note_1 }}
+                        {%  for e in form.note_1.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                    </div>
+                  </div>
+
+                  <div class="tab-pane fade" id="tab-attach" role="tabpanel" aria-labelledby="tab-attachtab">
+                    <div class="px-2">
+                        {{ form.note_1 }}
+                        {%  for e in form.note_1.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                    </div>
+                  </div>
+
+              </div>
+            </div>    
+       </div>
+      </div>
+
+  </form>
+  <div class="card-footer d-flex gap-2 mt-3">
+    <button type="button" class="btn btn-sm btn-primary" id="btn-add-line">
+      <i class="fas fa-plus"></i> Add a line
+    </button>
+  <button type="button" id="btn-save" class="btn btn-success">
+      <i class="fas btn-xs  fa-check"></i> Save
+    </button>
+   
+  </div>
+</div>
+
+<!-- TEMPLATE: baris baru (dipakai nanti oleh JS) -->
+<template id="tpl-line">
+  <tr class="line">
+    <td>
+      <input type="text" class="form-control form-control-sm js-origin-input"
+             placeholder="Search origin…" data-url="{% url 'geo:locations_autocomplete' %}">
+      <input type="hidden" name="origin[]" class="js-origin-id">
+    </td>
+    <td>
+      <input type="text" class="form-control form-control-sm js-dest-input"
+             placeholder="Search destination…" data-url="{% url 'geo:locations_autocomplete' %}">
+      <input type="hidden" name="destination[]" class="js-dest-id">
+    </td>
+    <td>
+          <input type="text" name="description[]" class="form-control form-control-sm"  placeholder=" ">
+
+    </td>
+    <td>
+      <select name="uom[]" class="form-select form-select-sm">
+        <option value="">—</option>
+        {% for u in uoms %}
+          <option value="{{ u.id }}">{{ u.name }}</option>
+        {% endfor %}
+      </select>
+    </td>
+    <td><input name="qty[]" type="text" class="form-control form-control-sm text-end money "  value="{{ ln.qty|default:'0,00' }}"></td>
+    <td><input name="price[]" type="text" class="form-control form-control-sm text-end money"  value="{{ ln.price|default:'0,00' }}"></td>
+    <td><input name="amount_display[]" type="text" class="form-control form-control-sm text-end js-amount" readonly></td>
+    <td class="text-center">
+      <button type="button" class="btn btn-sm btn-outline-danger btn-remove" title="Remove">
+        <i class="fas fa-times"></i>
+      </button>
+    </td>
+  </tr>
+</template>
+    
+  </div>
+
+{% endblock %}
+{% block extra_css %}
+ <link rel="stylesheet" href="https://code.jquery.com/ui/1.14.1/themes/base/jquery-ui.css">
+
+<style>
+  /* === Autocomplete dropdown === */
+  .ui-autocomplete.ui-widget.ui-widget-content {
+    border: 0 !important;
+    background: #fff !important;
+    border-radius: .25rem !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,.08) !important;
+    z-index: 3000 !important;
+    overflow: hidden !important;    /* no scroll */
+  }
+  .ui-autocomplete .ui-menu-item { border: 0 !important; margin: 0 !important; }
+  .ui-menu-item-wrapper { padding: 0 !important; }
+
+  /* baris custom kita */
+  .ui-ac-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .5rem;
+    padding: 6px 10px;
+    min-width: 0;
+  }
+  .ui-ac-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ui-ac-badge {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    /* kecilkan badge sedikit biar seimbang */
+    transform: scale(.9);
+    transform-origin: right center;
+  }
+
+  /* warna badge default */
+  .badge { display:inline-block; padding:.35em .5em; font-size:75%; border-radius:.375rem; line-height:1; }
+  .text-bg-secondary { color:#fff; background-color:#6c757d; }
+
+  /* state aktif (hover/select): hijau & badge ikut warna highlight */
+  .ui-state-active .ui-ac-row {
+    background: #0d6efd !important;
+    color: #fff !important;
+    background:none;
+    color:#333;
+    font-weight: bold;
+  }
+  .ui-state-active .ui-ac-name { color: #fff !important; }
+  .ui-state-active .ui-ac-badge .badge {
+    background-color:#0d6efd !important;
+    color: #fff !important;
+  }
+  .badge.text-bg-secondary {
+  background-color: #0d6efd !important;  /* misalnya biru Bootstrap */
+  color: #fff !important;
+}
+  
+  #lines-table .is-invalid { outline: 2px solid #dc3545; outline-offset:-1px; background:#fff6f6; }
+ .line-row.active-line {
+    border-bottom: 2px solid var(--bs-primary, #0d6efd);
+  }
+    .is-invalid { border-color: #dc3545 !important; }
+  .line-error { background: rgba(220,53,69,.06); }
+  #lines-table {
+    border-collapse: collapse !important;
+  }
+  #lines-table td {
+    padding: 0 !important;
+    padding-left:15px !important;
+    border-left: none !important;
+    border-right: none !important;
+    vertical-align: middle;
+  }
+  
+  #lines-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+  }
+  #lines-table td input,
+  #lines-table td textarea,
+  #lines-table td select {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+    padding: 4px ;
+    height: calc(1.8em + 0.5rem);
+    background: transparent;
+  }
+  #lines-table td textarea {
+    resize: none;
+  }
+  #lines-table tr:hover {
+    background-color: #f5f5f5;
+  }
+  /* tombol remove kecil rapi */
+  #lines-table .btn-remove {
+    border: none;
+    color: #dc3545;
+    background: transparent;
+  }
+  #lines-table .btn-remove:hover {
+    background: #f8d7da;
+  }
+ /* Buang padding card-body & tab-content */
+  .card.card-outline > .card-body,
+  .card.card-outline .tab-content,
+  .card.card-outline .tab-pane {
+    padding: 0 !important;
+  }
+
+  /* Header card & nav-tabs tanpa jarak & garis bawah */
+  .card.card-outline > .card-header {
+    padding: 0 !important;
+    margin: 0 !important;
+    border-bottom: 0 !important;
+  }
+  .card.card-outline .nav-tabs {
+    margin: 0 !important;
+    border: 0 !important;
+  }
+
+  /* Tab item tanpa border & radius, rapet */
+  .card.card-outline .nav-tabs .nav-link {
+    border: 0 !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: .5rem .9rem; /* boleh 0 kalau mau super rapet */
+    background: transparent !important;
+  }
+  /* Hilangkan garis “pertemuan” 1px di bawah tab aktif */
+  .card.card-outline .nav-tabs .nav-link.active {
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  
+  .card > .card-body   { padding:12px !important;padding-bottom: 0px !important; }
+
+/* === TAB LINK COLOR STYLE ========================================= */
+
+/* Warna dasar tab link */
+.nav-tabs .nav-link {
+  color: #6c757d !important;     /* abu-abu Bootstrap */
+  font-weight: normal;
+  transition: all .2s ease;
+}
+
+/* Saat hover */
+.nav-tabs .nav-link:hover {
+  color: #495057 !important;     /* sedikit lebih gelap */
+}
+
+/* Tab aktif */
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-item.show .nav-link {
+  color: #212529 !important;     /* hampir hitam */
+  font-weight: 600;              /* bold */
+  background-color: #f8f9fa;     /* opsional: sedikit abu-abu muda background */
+  border-color: #dee2e6 #dee2e6 #fff;
+}
+
+
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+/* === OVERRIDE TAB LINK COLOR (AdminLTE + Bootstrap) ============ */
+
+/* Warna dasar semua link tab */
+.nav.nav-tabs .nav-link,
+.nav-tabs .nav-link,
+.app-nav .nav-link,
+.card-header-tabs .nav-link {
+  color: #6c757d !important;         /* abu-abu */
+  font-weight: normal !important;
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+/* Hover */
+.nav.nav-tabs .nav-link:hover,
+.nav-tabs .nav-link:hover,
+.app-nav .nav-link:hover {
+  color: #495057 !important;         /* sedikit lebih gelap */
+}
+
+/* Aktif / show */
+.nav.nav-tabs .nav-link.active,
+.nav-tabs .nav-link.active,
+.app-nav .nav-link.active,
+.card-header-tabs .nav-link.active,
+.nav-item.show .nav-link {
+  color: #212529 !important;         /* hitam */
+  font-weight: 600 !important;       /* bold */
+  background-color: #f8f9fa !important;
+  border-color: #dee2e6 #dee2e6 #fff !important;
+  box-shadow: none !important;
+}
+</style>
+
+
+{% endblock %}
+{% block extra_js %}
+<!-- jQuery (CDN) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+        crossorigin="anonymous"></script>
+
+<!-- jQuery UI (CDN) -->
+<link rel="stylesheet"
+      href="https://code.jquery.com/ui/1.13.3/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/ui/1.13.3/jquery-ui.min.js"
+        integrity="sha256-sw0iNNXmOJbQhYFuC9OF2kOlD5KQKe1y5lfBn4C9Sjg="
+        crossorigin="anonymous"></script>
+
+
+<script>
+(function($){
+  /* =================== MATIKAN HANDLER & MASKER LAMA =================== */
+  $('#lines-tbody').off('.ccAll .ccNav').off('input blur focus change keydown');
+  $(document).off('.ccAll .ccNav');
+
+  function unmaskMoney($el){
+    try { if ($el.inputmask) $el.inputmask('remove'); } catch(e){}
+    try { if ($el.data && $el.data('autoNumeric')) $el.autoNumeric('destroy'); } catch(e){}
+    try { if ($el.unmask) $el.unmask(); } catch(e){}
+  }
+
+  /* =================== AUTOCOMPLETE ORIGIN & DESTINATION =================== */
+  function uiReady(){ return !!(window.jQuery && $.ui && $.ui.autocomplete); }
+
+  function ensureAutocomplete($text, $hidden){
+    if (!uiReady()) return;
+    if ($text.data('ui-autocomplete')) { try { $text.autocomplete('destroy'); } catch(e){} }
+
+    const url = $text.data('url') || '/geo/locations/autocomplete/';
+    $text.autocomplete({
+      minLength: 1,
+      delay: 150,
+      appendTo: 'body',
+      position: { my: 'left top+4', at: 'left bottom' },
+      source: (req, resp) => {
+        $.getJSON(url, { q: req.term })
+          .done(data => resp($.map(data||[], o => ({
+            label:o.name, value:o.name, id:o.id,
+            name:o.name, kind:(o.kind||'').replace(/^./,c=>c.toUpperCase())
+          }))))
+          .fail(() => resp([]));
+      },
+      select: (e, ui) => { $text.val(ui.item.value); $hidden.val(ui.item.id).trigger('change'); return false; },
+      change: (e, ui) => { if (!ui || !ui.item) $hidden.val('').trigger('change'); },
+      focus: () => false
+    });
+
+    const ac = $text.data('ui-autocomplete');
+    if (ac && !ac._renderedOnce) {
+      ac._renderItem = function(ul, item){
+        const $row = $('<div class="ui-ac-row">')
+          .append($('<span class="ui-ac-name">').text(item.name))
+          .append($('<span class="ui-ac-badge">').append($('<span class="badge text-bg-secondary">').text(item.kind||'')));
+        return $('<li>').append($row).appendTo(ul);
+      };
+      ac._renderedOnce = true;
+    }
+    $text.off('input.autoclean').on('input.autoclean', () => $hidden.val(''));
+  }
+
+  function initLine($tr){
+    const $origTxt = $tr.find('.js-origin-input').attr('autocomplete','off');
+    const $origId  = $tr.find('.js-origin-id');
+    const $destTxt = $tr.find('.js-dest-input').attr('autocomplete','off');
+    const $destId  = $tr.find('.js-dest-id');
+
+    $origTxt.off('focus.autoinit').on('focus.autoinit', () => ensureAutocomplete($origTxt, $origId));
+    $destTxt.off('focus.autoinit').on('focus.autoinit', () => ensureAutocomplete($destTxt, $destId));
+    if (uiReady()) { ensureAutocomplete($origTxt, $origId); ensureAutocomplete($destTxt, $destId); }
+  }
+
+  /* =================== FORMAT & PERHITUNGAN ANGKA =================== */
+  function toCanonical(raw){
+    if (raw == null) return "0";
+    let s = String(raw).trim();
+    if (!s) return "0";
+    s = s.replace(/\s|\u00A0/g, "").replace(/[Rp$€£¥₫]/g, "");
+
+    const hasComma = s.includes(","), hasDot = s.includes(".");
+    if (hasComma && hasDot) {
+      const lastC = s.lastIndexOf(","), lastD = s.lastIndexOf(".");
+      if (lastC > lastD) s = s.replace(/\./g,"").replace(",",".");
+      else               s = s.replace(/,/g,"");
+    } else if (hasComma) {
+      s = s.replace(/\./g,"").replace(",",".");
+    } else if (hasDot) {
+      const parts = s.split(".");
+      if (parts.length > 2) { const last = parts.pop(); s = parts.join("") + "." + last; }
+      else { s = s.replace(/,/g,""); }
+    }
+    return (/^-?\d+(\.\d+)?$/.test(s)) ? s : "0";
+  }
+
+  const nfID = new Intl.NumberFormat('id-ID', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  function toID(n){ const x = Number(n); return Number.isFinite(x) ? nfID.format(x) : '0,00'; }
+
+  function recalcRow($row){
+    const q = Number(toCanonical($row.find('input[name="qty[]"]').val())) || 0;
+    const p = Number(toCanonical($row.find('input[name="price[]"]').val())) || 0;
+    $row.find('.js-amount').val( toID(q * p) ); // readonly
+  }
+
+  function recalcTotals(){
+    const $tbody = $('#lines-tbody');
+    if (!$tbody.length) return;
+
+    let subtotal = 0;
+    $tbody.find('tr.line').each(function(){
+      subtotal += Number(toCanonical($(this).find('.js-amount').val())) || 0;
+    });
+
+    if ($('#subtotal').length) $('#subtotal').val( toID(subtotal) );
+
+    let rate = 0.11;
+    if ($('#tax-rate').length) {
+      const r = Number(toCanonical($('#tax-rate').val()));
+      if (Number.isFinite(r) && r >= 0) rate = (r > 1 ? r/100 : r); // 11 → 0.11
+    }
+
+    const vat   = subtotal * rate;
+    const grand = subtotal + vat;
+
+    if ($('#vat').length)         $('#vat').val( toID(vat) );
+    if ($('#grand-total').length) $('#grand-total').val( toID(grand) );
+  }
+
+  /* =================== URUTAN FOKUS PER BARIS =================== */
+  function getRowFields($row){
+    // urutan sesuai permintaan
+    const $origin = $row.find('.js-origin-input');
+    const $dest   = $row.find('.js-dest-input');
+    const $desc   = $row.find('textarea[name="description[]"], input[name="description[]"]').first();
+    const $uom    = $row.find('select[name="uom[]"]');
+    const $qty    = $row.find('input[name="qty[]"]');
+    const $price  = $row.find('input[name="price[]"]');
+    return [$origin, $dest, $desc, $uom, $qty, $price];
+  }
+
+  function isAutocompleteMenuOpen($input){
+    try{
+      const ac = $input.data('ui-autocomplete');
+      return !!(ac && ac.menu && ac.menu.element && ac.menu.element.is(':visible') && ac.menu.active);
+    }catch(e){ return false; }
+  }
+
+  function focusSelect($el){
+    if (!$el || !$el.length) return;
+    $el.trigger('focus');
+    // select isi kalau input/textarea
+    const el = $el.get(0);
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+      setTimeout(() => el.select && el.select(), 10);
+    }
+  }
+
+  function gotoNextField($row, current){
+    const fields = getRowFields($row);
+    const idx = fields.findIndex($f => $f && $f.length && $f.get(0) === current);
+    if (idx >= 0 && idx < fields.length - 1) {
+      focusSelect(fields[idx+1]);
+      return true;
+    }
+    // setelah price → ke tombol Add Line
+    const $btn = $('#btn-add-line');
+    if ($btn.length) { $btn.trigger('focus'); }
+    return false;
+  }
+
+  /* =================== ADD / REMOVE LINE =================== */
+  function addLine(){
+    let $new;
+    if ($('#tpl-line').length) {
+      $new = $($.parseHTML($('#tpl-line').html().trim()));
+    } else {
+      const $first = $('#lines-tbody .line:first');
+      $new = $first.clone(false,false);
+      $new.find('input[type="text"], textarea').val('');
+      $new.find('select').val('');
+      $new.find('.js-origin-id, .js-dest-id').val('');
+    }
+    $('#lines-tbody').append($new);
+    initLine($new);
+
+    // default angka tampilan
+    const $q = $new.find('input[name="qty[]"]');
+    const $p = $new.find('input[name="price[]"]');
+    unmaskMoney($q); unmaskMoney($p);
+    if (!$q.val()) $q.val('0,00');
+    if (!$p.val()) $p.val('0,00');
+    recalcRow($new); recalcTotals();
+
+    // ⬅️ sesuai request: fokus ke origin baris baru
+    focusSelect($new.find('.js-origin-input'));
+  }
+
+  /* =================== BOOTSTRAP SAAT HALAMAN SIAP =================== */
+  $(function(){
+    // init baris yang sudah ada
+    $('#lines-tbody .line').each(function(){
+      const $r = $(this);
+      initLine($r);
+      const $q = $r.find('input[name="qty[]"]');
+      const $p = $r.find('input[name="price[]"]');
+      unmaskMoney($q); unmaskMoney($p);
+      if (!$q.val()) $q.val('0,00');
+      if (!$p.val()) $p.val('0,00');
+      recalcRow($r);
+    });
+    recalcTotals();
+
+    // Fokus → raw + auto-select
+    $('#lines-tbody').on('focus.ccAll', 'input[name="qty[]"], input[name="price[]"]', function(){
+      unmaskMoney($(this));
+      const canon = toCanonical($(this).val());
+      const n = Number(canon);
+      $(this).val(Number.isFinite(n) ? String(n) : '');
+      setTimeout(() => this.select(), 10);
+    });
+
+    // Ketik → hitung amount live + totals
+    $('#lines-tbody').on('input.ccAll', 'input[name="qty[]"], input[name="price[]"]', function(){
+      const $row = $(this).closest('tr.line');
+      recalcRow($row); recalcTotals();
+    });
+
+    // Blur → format ID + hitung ulang
+    $('#lines-tbody').on('blur.ccAll', 'input[name="qty[]"], input[name="price[]"]', function(){
+      const canon = toCanonical($(this).val());
+      $(this).val( toID(canon) );
+      const $row = $(this).closest('tr.line');
+      recalcRow($row); recalcTotals();
+    });
+
+    // Perubahan tax-rate → totals
+    $(document).on('input.ccAll change.ccAll', '#tax-rate', function(){
+      recalcTotals();
+    });
+
+    // tombol add line
+    $(document).on('click.ccAll', '#btn-add-line', function(e){
+      e.preventDefault();
+      addLine();
+    });
+
+    // hapus baris
+    $(document).on('click.ccAll', '#lines-tbody .btn-remove', function(){
+      $(this).closest('tr.line').remove();
+      recalcTotals();
+    });
+
+    /* ============ NAVIGASI: ENTER / TAB SESUAI URUTAN ============ */
+    $('#lines-tbody').on('keydown.ccNav', 'input, select, textarea', function(e){
+      const isEnter = (e.key === 'Enter');
+      const isTab   = (e.key === 'Tab' && !e.shiftKey);
+
+      if (!isEnter && !isTab) return;
+
+      const $row = $(this).closest('tr.line');
+
+      // Jangan override Enter jika autocomplete sedang terbuka
+      const $this = $(this);
+      if ($this.is('.js-origin-input, .js-dest-input') && isEnter && isAutocompleteMenuOpen($this)) {
+        return; // biarkan jQuery UI menangani pilihan
+      }
+
+      e.preventDefault();
+      // Jika user tekan Enter/Tab di <select>, pastikan nilai tersimpan lalu lanjut
+      if (this.tagName === 'SELECT') { $this.trigger('change'); }
+
+      // Pindah ke field berikutnya dalam baris; setelah price → #btn-add-line
+      gotoNextField($row, this);
+    });
+  });
+
+  // expose kalau perlu
+  window.addLine   = addLine;
+  window.initLine  = initLine;
+  window.recalcRow = recalcRow;
+  window.recalcTotals = recalcTotals;
+
+})(jQuery);
+</script>
+<script>
+(function($){
+  /* 1) Hapus baris (btn-remove) */
+  $(document).on('click.ccAll', '#lines-tbody .btn-remove', function(e){
+    e.preventDefault();
+    const $tr = $(this).closest('tr.line');
+    $tr.remove();
+    // update ringkasan setelah hapus
+    if (typeof window.recalcTotals === 'function') window.recalcTotals();
+    // kalau sudah tidak ada baris, arahkan fokus ke tombol Add Line
+    if (!$('#lines-tbody .line').length) {
+      const $btnAdd = $('#btn-add-line');
+      if ($btnAdd.length) $btnAdd.trigger('focus');
+    }
+  });
+
+  /* 2) Validasi minimal 1 line saat Save */
+  // Tangkap klik tombol save (kalau ada)
+  $(document).on('click.ccAll', '#btn-save', function(e){
+    if ($('#lines-tbody .line').length === 0) {
+      e.preventDefault();
+      alert('Minimal harus ada satu line quotation.');
+      const $btnAdd = $('#btn-add-line');
+      if ($btnAdd.length) $btnAdd.trigger('focus');
+      return false;
+    }
+  });
+
+  // Cadangan: tangkap submit form langsung (misal user tekan Enter di form)
+  $(document).on('submit.ccAll', '#quotation-form', function(e){
+    if ($('#lines-tbody .line').length === 0) {
+      e.preventDefault();
+      alert('Minimal harus ada satu line quotation.');
+      const $btnAdd = $('#btn-add-line');
+      if ($btnAdd.length) $btnAdd.trigger('focus');
+      return false;
+    }
+  });
+})(jQuery);
+</script>
+<script>
+(function($){
+  // --- Submit eksplisit saat klik Save ---
+  $(document).off('click.ccSave').on('click.ccSave', '#btn-save', function(e){
+    // jika tidak ada line → tampilkan alert & batalkan
+    if ($('#lines-tbody .line').length === 0) {
+      e.preventDefault();
+      alert('Minimal harus ada satu line quotation.');
+      $('#btn-add-line').trigger('focus');
+      return false;
+    }
+
+    // opsional: pastikan amount/totals sudah terakhir dihitung
+    if (typeof window.recalcTotals === 'function') window.recalcTotals();
+
+    // submit form secara eksplisit (atasi tombol type="button")
+    const form = document.getElementById('quotation-form');
+    if (!form) {
+      alert('Form #quotation-form tidak ditemukan.');
+      return false;
+    }
+
+    // cegah double submit
+    const $btn = $(this);
+    if ($btn.data('submitting')) return false;
+    $btn.data('submitting', true).prop('disabled', true);
+
+    e.preventDefault(); // pastikan tidak ada handler lain yang bentrok
+    if (typeof form.requestSubmit === 'function') form.requestSubmit();
+    else form.submit();
+    return false;
+  });
+
+  // --- Guard juga untuk submit via Enter di form ---
+  $(document).off('submit.ccSave').on('submit.ccSave', '#quotation-form', function(e){
+    if ($('#lines-tbody .line').length === 0) {
+      e.preventDefault();
+      alert('Minimal harus ada satu line quotation.');
+      $('#btn-add-line').trigger('focus');
+      return false;
+    }
+    // biarkan submit lanjut
+  });
+})(jQuery);
+</script>
+<script>
+(function($){
+  // Matikan handler Save sebelumnya (hanya namespace kita)
+  $(document).off('.ccSave');
+
+  // Helper: cari form terdekat atau fallback #quotation-form
+  function getFormFromBtn($btn){
+    return $btn.closest('form').get(0) || document.getElementById('quotation-form');
+  }
+
+  // Guard submit via klik tombol Save
+  $(document).on('click.ccSave', '#btn-save', function(e){
+    const $btn  = $(this);
+    const form  = getFormFromBtn($btn);
+
+    // 0) Minimal harus ada 1 line
+    if ($('#lines-tbody .line').length === 0) {
+      e.preventDefault();
+      alert('Minimal harus ada satu line quotation.');
+      $('#btn-add-line').trigger('focus');
+      return;
+    }
+
+    // 1) Sinkronkan perhitungan terakhir (kalau ada)
+    if (typeof window.recalcTotals === 'function') try { window.recalcTotals(); } catch(_){}
+
+    // 2) HTML5 validation (required, pattern, dll)
+    if (form && typeof form.reportValidity === 'function') {
+      // reportValidity() akan menampilkan pesan bawaan browser & fokus ke field invalid
+      if (!form.reportValidity()) {
+        e.preventDefault();
+        return;
+      }
+    }
+
+    // 3) Jika tombol type="submit", biarkan default submit bekerja
+    const type = ($btn.attr('type') || '').toLowerCase();
+    if (type === 'submit') {
+      // tidak panggil preventDefault; biarkan submit alami + handler lain jalan
+      return;
+    }
+
+    // 4) Jika tombol type="button", submit eksplisit
+    e.preventDefault(); // cegah no-op
+    if (!form) {
+      alert('Form #quotation-form tidak ditemukan.');
+      return;
+    }
+
+    // cegah double submit ringan
+    if ($btn.data('submitting')) return;
+    $btn.data('submitting', true).prop('disabled', true);
+
+    if (typeof form.requestSubmit === 'function') form.requestSubmit();  // hormati HTML5 validation & onsubmit
+    else form.submit();                                                  // fallback
+  });
+
+  // Guard submit via Enter (submit native form)
+  $(document).on('submit.ccSave', '#quotation-form', function(e){
+    if ($('#lines-tbody .line').length === 0) {
+      e.preventDefault();
+      alert('Minimal harus ada satu line quotation.');
+      $('#btn-add-line').trigger('focus');
+      return false;
+    }
+    // biarkan submit lanjut; HTML5 validation sudah otomatis bekerja
+  });
+})(jQuery);
+</script>
+<script>
+(function($){
+  // --- Lepas handler save lama (namespace kita) ---
+  $(document).off('.ccSave');
+
+  // --- RE-USE parser dari script utama (kalau belum ada, define ringan di sini) ---
+  window.toCanonical = window.toCanonical || function(raw){
+    if (raw == null) return "0";
+    let s = String(raw).trim();
+    if (!s) return "0";
+    s = s.replace(/\s|\u00A0/g, "").replace(/[Rp$€£¥₫]/g, "");
+    const hasComma = s.includes(","), hasDot = s.includes(".");
+    if (hasComma && hasDot) {
+      const lastC = s.lastIndexOf(","), lastD = s.lastIndexOf(".");
+      if (lastC > lastD) s = s.replace(/\./g,"").replace(",","."); else s = s.replace(/,/g,"");
+    } else if (hasComma) {
+      s = s.replace(/\./g,"").replace(",",".");
+    } else if (hasDot) {
+      const parts = s.split(".");
+      if (parts.length > 2) { const last = parts.pop(); s = parts.join("") + "." + last; }
+      else { s = s.replace(/,/g,""); }
+    }
+    return (/^-?\d+(\.\d+)?$/.test(s)) ? s : "0";
+  };
+
+  // --- Normalisasi angka tepat sebelum submit ---
+  function normalizeNumbersForSubmit($scope){
+    // angka yang PASTI dipakai server (wajib aman):
+    const $qty   = $scope.find('input[name="qty[]"]');
+    const $price = $scope.find('input[name="price[]"]');
+    $qty.each(function(){ this.value = toCanonical(this.value); });
+    $price.each(function(){ this.value = toCanonical(this.value); });
+
+    // tax rate (boleh 11 → 0.11, atau 0,11 → 0.11)
+    const $tax = $scope.find('#tax-rate');
+    if ($tax.length){
+      let canon = Number(toCanonical($tax.val())) || 0;
+      if (canon > 1) canon = canon / 100;     // 11 => 0.11
+      $tax.val(String(canon));                // kirim sebagai "0.11"
+    }
+
+    // kalau kamu kirim subtotal/vat/grand ke server, amankan juga:
+    ['#subtotal','#vat','#grand-total'].forEach(sel=>{
+      const $el = $scope.find(sel);
+      if ($el.length) $el.val( toCanonical($el.val()) );
+    });
+
+    // amount per baris (kalau ikut terkirim dan dibaca server)
+    $scope.find('.js-amount').each(function(){
+      this.value = toCanonical(this.value);
+    });
+  }
+
+  // --- Dapatkan form terkait ---
+  function getFormFromBtn($btn){
+    return $btn.closest('form').get(0) || document.getElementById('quotation-form');
+  }
+
+  // --- Klik tombol Save ---
+  $(document).on('click.ccSave', '#btn-save', function(e){
+    const $btn  = $(this);
+    const form  = getFormFromBtn($btn);
+    const $scope = $(form || document);
+
+    // minimal 1 line
+    if ($('#lines-tbody .line').length === 0) {
+      e.preventDefault();
+      alert('Minimal harus ada satu line quotation.');
+      $('#btn-add-line').trigger('focus');
+      return;
+    }
+
+    // hitung terakhir biar angka konsisten
+    if (typeof window.recalcTotals === 'function') try { window.recalcTotals(); } catch(_){}
+
+    // HTML5 validity (required, pattern, dsb)
+    if (form && typeof form.reportValidity === 'function' && !form.reportValidity()){
+      e.preventDefault();
+      return;
+    }
+
+    // **KUNCI**: normalisasi angka sebelum submit
+    normalizeNumbersForSubmit($scope);
+
+    // kalau button type="submit", biarkan default submit
+    const type = ($btn.attr('type') || '').toLowerCase();
+    if (type === 'submit') return;
+
+    // kalau type="button", submit eksplisit
+    e.preventDefault();
+    if (!form){ alert('Form #quotation-form tidak ditemukan.'); return; }
+    if ($btn.data('submitting')) return;
+    $btn.data('submitting', true).prop('disabled', true);
+    if (typeof form.requestSubmit === 'function') form.requestSubmit(); else form.submit();
+  });
+
+  // --- Submit via Enter di form ---
+  $(document).on('submit.ccSave', '#quotation-form', function(e){
+    if ($('#lines-tbody .line').length === 0) {
+      e.preventDefault();
+      alert('Minimal harus ada satu line quotation.');
+      $('#btn-add-line').trigger('focus');
+      return false;
+    }
+    // normalisasi angka juga pada jalur submit langsung
+    const $scope = $(this);
+    if (typeof window.recalcTotals === 'function') try { window.recalcTotals(); } catch(_){}
+    normalizeNumbersForSubmit($scope);
+    // lanjut submit
+  });
+
+})(jQuery);
+</script>
+<script>
+(function($){
+  /* === Helper: ambil tax rate dengan default 11% === */
+  function getTaxRate(){
+    const $tx = $('#tax-rate');
+    // default 11% bila tidak ada field tax-rate
+    if (!$tx.length) return 0.11;
+
+    let r = Number(window.toCanonical ? window.toCanonical($tx.val()) : String($tx.val()||'').replace(',','.'));
+    if (!Number.isFinite(r) || r < 0) r = 0.11;
+    // Jika user isi "11" (persen), convert ke 0.11
+    if (r > 1) r = r / 100;
+
+    // Tulis balik ke field agar tidak kosong saat submit
+    $tx.val(String(r));
+    return r;
+  }
+
+  /* === Ganti recalcTotals agar selalu mengisi VAT === */
+  window.recalcTotals = function(){
+    const $tbody = $('#lines-tbody');
+    if (!$tbody.length) return;
+
+    let subtotal = 0;
+    $tbody.find('tr.line').each(function(){
+      const amtCanon = (window.toCanonical ? window.toCanonical($(this).find('.js-amount').val()) : '0');
+      subtotal += Number(amtCanon) || 0;
+    });
+
+    const rate = getTaxRate();             // <-- pakai helper default 11%
+    const vat   = subtotal * rate;
+    const grand = subtotal + vat;
+
+    if ($('#subtotal').length)   $('#subtotal').val( (new Intl.NumberFormat('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})).format(subtotal) );
+    if ($('#vat').length)        $('#vat').val(      (new Intl.NumberFormat('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})).format(vat) );
+    if ($('#grand-total').length)$('#grand-total').val((new Intl.NumberFormat('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})).format(grand) );
+  };
+
+  /* === Normalisasi sebelum submit: pastikan tax-rate terisi 0.11 kalau kosong === */
+  $(document)
+    .off('click.ccSaveFix')
+    .on('click.ccSaveFix', '#btn-save', function(e){
+      // minimal 1 line
+      if (!$('#lines-tbody .line').length) {
+        e.preventDefault();
+        alert('Minimal harus ada satu line quotation.');
+        $('#btn-add-line').trigger('focus');
+        return;
+      }
+
+      // hitung terakhir dan pastikan tax-rate berisi nilai canonical
+      if (typeof window.recalcTotals === 'function') window.recalcTotals();
+
+      // pastikan #tax-rate ada nilai canonical (0.11)
+      const $form = $(this).closest('form').length ? $(this).closest('form') : $('#quotation-form');
+      const $tx = $form.find('#tax-rate');
+      if ($tx.length){
+        const r = getTaxRate();          // ini juga sekaligus menulis balik ke field
+        $tx.val(String(r));              // pastikan serialized sebagai "0.11"
+      }
+
+      // kalau tombol type="button", submit eksplisit
+      const type = (($(this).attr('type')||'')+'').toLowerCase();
+      if (type !== 'submit') {
+        e.preventDefault();
+        const form = $form.get(0);
+        if (form){
+          if (typeof form.requestSubmit === 'function') form.requestSubmit();
+          else form.submit();
+        }
+      }
+    });
+
+  // Pastikan saat enter-submit juga aman
+  $(document)
+    .off('submit.ccSaveFix')
+    .on('submit.ccSaveFix', '#quotation-form', function(e){
+      if (!$('#lines-tbody .line').length) {
+        e.preventDefault();
+        alert('Minimal harus ada satu line quotation.');
+        $('#btn-add-line').trigger('focus');
+        return false;
+      }
+      // set default tax rate jika kosong
+      const r = getTaxRate();
+      $('#tax-rate').val(String(r));
+    });
+
+  // Saat halaman load, kalau ada #tax-rate tapi kosong → set default 0.11 lalu hitung sekali
+  $(function(){
+    if ($('#tax-rate').length && !String($('#tax-rate').val()).trim()){
+      $('#tax-rate').val('0.11');
+    }
+    if (typeof window.recalcTotals === 'function') window.recalcTotals();
+  });
+})(jQuery);
+</script>
+
+<script>
+(function($){
+  // helper: ambil elemen by id atau name
+  function pickField(key){
+    // prioritas: id dulu (#vat), lalu name (input/select/textarea[name="vat"])
+    let $el = $(key);
+    if ($el.length) return $el;
+    const name = key.replace(/^#/, '');
+    $el = $(`input[name="${name}"], select[name="${name}"], textarea[name="${name}"]`);
+    return $el;
+  }
+
+  // parser canonical (pakai yang sudah ada kalau sudah didefinisikan)
+  window.toCanonical = window.toCanonical || function(raw){
+    if (raw == null) return "0";
+    let s = String(raw).trim();
+    if (!s) return "0";
+    s = s.replace(/\s|\u00A0/g, "").replace(/[Rp$€£¥₫%]/g, "");
+    const hasC = s.includes(","), hasD = s.includes(".");
+    if (hasC && hasD) {
+      const lastC = s.lastIndexOf(","), lastD = s.lastIndexOf(".");
+      if (lastC > lastD) s = s.replace(/\./g,"").replace(",","."); else s = s.replace(/,/g,"");
+    } else if (hasC) {
+      s = s.replace(/\./g,"").replace(",",".");
+    } else if (hasD) {
+      const parts = s.split(".");
+      if (parts.length > 2) { const last = parts.pop(); s = parts.join("") + "." + last; }
+      else { s = s.replace(/,/g,""); }
+    }
+    return (/^-?\d+(\.\d+)?$/.test(s)) ? s : "0";
+  };
+
+  const nfID = new Intl.NumberFormat('id-ID', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  function toID(n){ const x = Number(n); return Number.isFinite(x) ? nfID.format(x) : '0,00'; }
+
+  // ambil tax rate: #tax-rate (0.11) atau data-tax-rate-percent (11), default 11%
+  window.getTaxRate = function(){
+    const $tx = $('#tax-rate'); // hidden input kalau ada
+    if ($tx.length){
+      let r = Number(toCanonical($tx.val()));
+      if (!Number.isFinite(r) || r <= 0) r = 0.11;
+      if (r > 1) r = r/100;  // 11 → 0.11
+      // tulis balik supaya konsisten
+      $tx.val(String(r));
+      return r;
+    }
+    // fallback dari atribut data pada form
+    const p = Number($('#quotation-form').data('tax-rate-percent'));
+    let r = Number.isFinite(p) ? p : 11;
+    r = (r > 1) ? (r/100) : r;
+    if (r <= 0) r = 0.11;
+    return r;
+  };
+
+  // ganti total calc agar nulis ke id ATAU name
+  window.recalcTotals = function(){
+    let subtotal = 0;
+    $('#lines-tbody tr.line').each(function(){
+      subtotal += Number(toCanonical($(this).find('.js-amount').val())) || 0;
+    });
+
+    const rate  = getTaxRate();               // 0.11 jika kosong/invalid
+    const vat   = subtotal * rate;
+    const grand = subtotal + vat;
+
+    const $subtotal = pickField('#subtotal');
+    const $vat      = pickField('#vat');
+    const $grand    = pickField('#grand-total');
+
+    if ($subtotal.length) $subtotal.val( toID(subtotal) );
+    if ($vat.length)      $vat.val(      toID(vat) );
+    if ($grand.length)    $grand.val(    toID(grand) );
+  };
+
+  // re-bind ringan: qty/price perubahan → hitung
+  $(function(){
+    // hitung sekali saat load
+    if (typeof window.recalcTotals === 'function') window.recalcTotals();
+
+    // qty/price input/blur
+    $(document)
+      .off('input.ccTotals blur.ccTotals', '#lines-tbody input[name="qty[]"], #lines-tbody input[name="price[]"]')
+      .on('input.ccTotals blur.ccTotals', '#lines-tbody input[name="qty[]"], #lines-tbody input[name="price[]"]', function(){
+        if (typeof window.recalcRow === 'function') {
+          const $row = $(this).closest('tr.line');
+          window.recalcRow($row);
+        }
+        window.recalcTotals();
+      });
+
+    // tax-rate berubah (kalau ada elemennya) → hitung
+    $(document)
+      .off('input.ccTax change.ccTax', '#tax-rate')
+      .on('input.ccTax change.ccTax', '#tax-rate', function(){
+        window.recalcTotals();
+      });
+  });
+
+})(jQuery);
+</script>
+        
+{% endblock %}

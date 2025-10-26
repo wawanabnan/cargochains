@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}New Quotation{% endblock %}
+
+{% block content %}
+  <div class="container-fluid mt-3">
+    <form method="post" id="quotation-form">
+      {% csrf_token %}
+      <div class="card" style="background-color: none;">
+        <div class="card-header">
+          <h5 class="card-title mb-0"><i class="fas fa-file-alt"></i> Quotation Header</h5>
+        </div>
+        <div class="card-body">
+            <div class="row" style="padding:20px;background-color:none;">
+              {{ formset.management_form }}
+
+                  <!-------Headaer form ------------>
+                 {% include 'freight/form-element/headerform.html' %}
+
+            </div>  
+            <div class="row">
+              <ul class="nav nav-tabs" id="quotationTabs" role="tablile">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="tab-cargo-tab" data-bs-toggle="tab"
+                          data-bs-target="#tab-cargo" type="button" role="tab"
+                          aria-controls="tab-cargo" aria-selected="true">
+                      <i class="fas fa-boxes"></i> Cargo Detail
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="tab-note-tab" data-bs-toggle="tab"
+                          data-bs-target="#tab-note" type="button" role="tab"
+                          aria-controls="tab-note" aria-selected="false">
+                    <i class="fas fa-sticky-note"></i> Note
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="tab-attach-tab" data-bs-toggle="tab"
+                          data-bs-target="#tab-attach" type="button" role="tab"
+                          aria-controls="tab-attach" aria-selected="false">
+                    <i class="fas fa-paperclip"></i> Attachment
+                  </button>
+                </li>
+              </ul>              
+            </div>
+            <div class="row">
+              <div class="tab-content" id="quotationTabsContent">
+                <!-- === TAB 1: CARGO DETAIL === -->
+                  <div class="tab-pane fade show active" id="tab-cargo" role="tabpanel" aria-labelledby="tab-cargo-tab">
+                    
+                      <!--Line Form-->
+                      {% include 'freight/form-element/lineform_edit.html' %}
+
+                  </div>
+
+                  <!-- === TAB 2: NOTE === -->
+                     {{ formset.management_form }}
+                  <div class="tab-pane fade" id="tab-note" role="tabpanel" aria-labelledby="tab-note-tab">
+                    <div class="px-2">
+                        {{ form.note_1 }}
+                        {%  for e in form.note_1.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                    </div>
+                  </div>
+
+                  <div class="tab-pane fade" id="tab-attach" role="tabpanel" aria-labelledby="tab-attachtab">
+                    <div class="px-2">
+                        {{ form.note_1 }}
+                        {%  for e in form.note_1.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                    </div>
+                  </div>
+
+              </div>
+            </div>    
+       </div>
+      </div>
+
+  </form>
+  <div class="card-footer d-flex gap-2 mt-3">
+    <button type="button" class="btn btn-sm btn-primary" id="btn-add-line">
+      <i class="fas fa-plus"></i> Add a line
+    </button>
+  <button type="button" id="btn-save" class="btn btn-success">
+      <i class="fas btn-xs  fa-check"></i> Save
+    </button>
+   
+  </div>
+</div>
+
+<!-- TEMPLATE: baris baru (dipakai nanti oleh JS) -->
+<template id="tpl-line">
+  <tr class="line">
+    <td>
+      <input type="text" class="form-control form-control-sm js-origin-input"
+             placeholder="Search origin…" data-url="{% url 'geo:locations_autocomplete' %}">
+      <input type="hidden" name="origin[]" class="js-origin-id">
+    </td>
+    <td>
+      <input type="text" class="form-control form-control-sm js-dest-input"
+             placeholder="Search destination…" data-url="{% url 'geo:locations_autocomplete' %}">
+      <input type="hidden" name="destination[]" class="js-dest-id">
+    </td>
+    <td>
+          <input type="text" name="description[]" class="form-control form-control-sm"  placeholder=" ">
+
+    </td>
+    <td>
+      <select name="uom[]" class="form-select form-select-sm">
+        <option value="">—</option>
+        {% for u in uoms %}
+          <option value="{{ u.id }}">{{ u.name }}</option>
+        {% endfor %}
+      </select>
+    </td>
+    <td><input name="qty[]" type="text" class="form-control form-control-sm text-end money"></td>
+    <td><input name="price[]" type="text" class="form-control form-control-sm text-end money"></td>
+    <td><input name="amount_display[]" type="text" class="form-control form-control-sm text-end js-amount" readonly></td>
+    <td class="text-center">
+      <button type="button" class="btn btn-sm btn-outline-danger btn-remove" title="Remove">
+        <i class="fas fa-times"></i>
+      </button>
+    </td>
+  </tr>
+</template>
+    
+</div>
+
+{% endblock %}
+{% block extra_css %}
+ 
+<style>
+  
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+<style>
+ 
+  #lines-table .is-invalid { outline: 2px solid #dc3545; outline-offset:-1px; background:#fff6f6; }
+ .line-row.active-line {
+    border-bottom: 2px solid var(--bs-primary, #0d6efd);
+  }
+    .is-invalid { border-color: #dc3545 !important; }
+  .line-error { background: rgba(220,53,69,.06); }
+  #lines-table {
+    border-collapse: collapse !important;
+  }
+  #lines-table td {
+    padding: 0 !important;
+    padding-left:15px !important;
+    border-left: none !important;
+    border-right: none !important;
+    vertical-align: middle;
+  }
+  
+  #lines-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    padding:10px 5px;
+  }
+  #lines-table td input,
+  #lines-table td textarea,
+  #lines-table td select {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+    padding: 4px ;
+    height: calc(1.8em + 0.5rem);
+    background: transparent;
+  }
+  #lines-table td textarea {
+    resize: none;
+  }
+  #lines-table tr:hover {
+    background-color: #f5f5f5;
+  }
+  /* tombol remove kecil rapi */
+  #lines-table .btn-remove {
+    border: none;
+    color: #dc3545;
+    background: transparent;
+  }
+  #lines-table .btn-remove:hover {
+    background: #f8d7da;
+  }
+ 
+</style>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+<script src="https://code.jquery.com/ui/1.14.1/jquery-ui.js"></script>
+<script>
+  $(document).on('focus', '.js-origin-input, .js-dest-input', function () {
+    var $input = $(this);
+    if ($input.data('uiAutocomplete')) return;
+
+    var hiddenName = this.name.replace(/_text$/, '');
+    var url = new URL($input.attr('data-url'), location.origin).href;
+
+    $input.autocomplete({
+      source: url,
+      minLength: 1,
+      delay: 150,
+      appendTo: "body",
+      classes: { "ui-autocomplete": "cc-autocomplete" }, // ← class khusus
+      select: function (e, ui) {
+        $(this.form).find('[name="' + hiddenName + '"]').val(ui.item.id);
+      },
+      change: function (e, ui) {
+        if (!ui.item) $(this.form).find('[name="' + hiddenName + '"]').val('');
+      }
+    });
+  });
+</script>
+<script>
+$(document).on("click", ".btn-remove-line", function(){
+  const $row = $(this).closest(".formset-row");
+  const $del = $row.find("input[name$='-DELETE']");
+  
+  if ($del.length) {
+    $del.prop("checked", true);   // centang DELETE
+    $row.hide();                  // sembunyikan dari UI
+  } else {
+    $row.remove();                // baris baru (belum ada di DB)
+  }
+});
+</script>
+
+{% endblock %}

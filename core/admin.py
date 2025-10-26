@@ -1,6 +1,15 @@
 # core/admin.py
 from django.contrib import admin
-from .models import NumberSequence
+from .models import (
+    NumberSequence,
+    CoreSetting,
+    CompanyProfile,
+    UOM,
+    PaymentTerm,
+    Currency,
+    SalesService,
+)
+
 
 @admin.action(description="Reset counter (last_no=0, tetap periode sekarang)")
 def reset_counter(modeladmin, request, queryset):
@@ -14,22 +23,31 @@ def reset_counter(modeladmin, request, queryset):
 @admin.register(NumberSequence)
 class NumberSequenceAdmin(admin.ModelAdmin):
     list_display = (
-        "app_label", "code", "prefix", "period_format",
-        "period_year", "period_month", "last_no",
-        "branch", "mode", "active",
+        "app_label",
+        "code",
+        "name",
+        "prefix",
+        "format",        # jika field ini ada di model baru
+        "reset",         # "none" | "monthly" | "yearly"
+        "period_year",
+        "period_month",
+        "last_number",
+        "padding",
     )
-    list_filter = ("app_label", "code", "period_format", "branch", "mode", "active")
-    search_fields = ("app_label", "code", "prefix", "branch", "mode")
-    ordering = ("app_label", "code", "-period_year", "-period_month")
-    actions = [reset_counter]
 
-    # Susun field di form (buat created_at/updated_at di belakang)
-    fields = (
-        "active",
-        "app_label", "code",
-        "prefix", "period_format", "padding",
-        "branch", "mode",
-        "period_year", "period_month", "last_no",
-        "created_at", "updated_at",
+    search_fields = ("app_label", "code", "name", "prefix")
+
+    # Hanya field yang benar-benar ada di model
+    list_filter = (
+        "app_label",
+        "reset",
+        "period_year",
+        "period_month",
     )
-    readonly_fields = ("created_at", "updated_at")  # kalau pakai TimeStampedModel
+
+    ordering = ("app_label", "code")
+
+@admin.register(CoreSetting)
+class CoreSettingAdmin(admin.ModelAdmin):
+    list_display = ("code", "int_value", "char_value", "notes")
+    search_fields = ("code",)

@@ -1,8 +1,9 @@
 from django.conf import settings
 from django.db import models
-from core.models import TimeStampedModel
+from django.utils import timezone
 
-class Partner(TimeStampedModel):
+
+class Partner(models.Model):
     COMPANY_TYPE_CHOICES = [
         ('PT', 'PT'),
         ('CV', 'CV'),
@@ -48,6 +49,8 @@ class Partner(TimeStampedModel):
     )
 
 
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "partners"
@@ -56,10 +59,15 @@ class Partner(TimeStampedModel):
     def __str__(self): return self.name
 
 class PartnerRoleTypes(models.Model):
+    code = models.CharField(max_length=50, unique=True,blank=True);
     name = models.CharField(max_length=50)
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        db_table = "partner_roles_types"
+        db_table = "partner_role_types"
         verbose_name = "Partner Role Types"
         verbose_name_plural = "Partner Roles Type"
         ordering = ["name"]
@@ -70,14 +78,19 @@ class PartnerRoleTypes(models.Model):
 
 
 
-class PartnerRole(TimeStampedModel):
+class PartnerRole(models.Model):
     partner = models.ForeignKey(Partner, on_delete=models.CASCADE, related_name="partner_roles")
-    role = models.ForeignKey(PartnerRoleTypes, on_delete=models.CASCADE, related_name="partner_roles")
-  
+    role_type = models.ForeignKey(PartnerRoleTypes, on_delete=models.CASCADE, related_name="partner_roles")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     class Meta:
         db_table = "partner_roles"
-        unique_together = ("partner", "role")
+        unique_together = ("partner", "role_type")
         verbose_name = "Partner Role"
         verbose_name_plural = "Partner Roles"
 
     def __str__(self): return f"{self.partner.name} → {self.role}"
+
+

@@ -31,11 +31,11 @@ def next_number(seq_qs, *, today: date | None = None) -> str:
     needs_period = seq.period_format in ("YYYY", "YYYYMM", "MMYY")
     if needs_period:
         if (seq.period_year, seq.period_month) != (today.year, today.month):
-            seq.period_year, seq.period_month, seq.last_no = today.year, today.month, 0
+            seq.period_year, seq.period_month, seq.last_number = today.year, today.month, 0
 
-    seq.last_no += 1
-    seq.save(update_fields=["period_year", "period_month", "last_no"])
+    seq.last_number += 1
+    seq.save(update_fields=["period_year", "period_month", "last_number"])
 
     period = format_period(seq.period_year, seq.period_month, seq.period_format) if needs_period else ""
-    counter = str(seq.last_no).zfill(seq.padding)
+    counter = str(seq.last_number).zfill(seq.padding)
     return f"{seq.prefix}{period}{counter}"

@@ -1,73 +1,134 @@
+# sales/forms.py — FINAL
+
+from datetime import timedelta
 from django import forms
-from django.forms import BaseInlineFormSet
-from datetime import date as _date, timedelta
-from .models import SalesQuotation, SalesQuotationLine, Partner
+from django.forms import BaseInlineFormSet, HiddenInput, Select, inlineformset_factory
+from django.utils import timezone
+
+from . import models as m
+from .models import SalesQuotation, SalesQuotationLine
+from partners.models import Partner
+
+
+# sales/forms.py
+from django.forms import inlineformset_factory
+
+
+# opsional: kalau ada tabel junction PartnerRole
 try:
     from partners.models import PartnerRole
 except Exception:
     PartnerRole = None
 
+# opsional: ambil setting hari berlaku
+try:
+    from core.utils import get_int_setting
+except Exception:
+    get_int_setting = None
 
 
+# ==== Helper: sales service label ====
 class SalesServiceChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         return getattr(obj, "name", str(obj))
 
 
+# ================= HEADER FORM =================
 class QuotationHeaderForm(forms.ModelForm):
+    # terima dd-mm-YYYY + fallback ISO
+    valid_until = forms.DateField(
+        input_formats=["%d-%m-%Y", "%Y-%m-%d"],
+        widget=forms.TextInput(attrs={
+            "class": "form-control",
+            "placeholder": "dd-mm-YYYY",
+            "autocomplete": "off",
+            "data-date-format": "d-m-Y",
+        }),
+        required=False,
+    )
+
     class Meta:
-        model = SalesQuotation
+        model = m.SalesQuotation
         fields = [
-            "customer",       # hanya partners role='customer'
+            "customer",
             "sales_service",
-            "sales_agency",   # hanya partners role='agency'
+            "sales_agency",
             "currency",
             "payment_term",
             "valid_until",
             "note_1",
-            "date",           # hidden + auto today
-            "sales_user"
+            "date",        # hidden; server-side juga set
+            "sales_user",  # hidden; server-side juga set
         ]
         widgets = {
-             "customer":      forms.Select(attrs={"class": "form-select"}),
+            "customer":      forms.Select(attrs={"class": "form-select"}),
             "sales_service": forms.Select(attrs={"class": "form-select"}),
             "sales_agency":  forms.Select(attrs={"class": "form-select"}),
             "currency":      forms.Select(attrs={"class": "form-select"}),
             "payment_term":  forms.Select(attrs={"class": "form-select"}),
-
-             # Inputs -> form-control
-           # di Meta.widgets QuotationHeaderForm
-            "valid_until": forms.TextInput(attrs={
-                "class": "form-control flatpickr",
-                "placeholder": "YYYY-MM-DD",
-                "autocomplete": "off",
-            }),
-
-            "note_1":      forms.Textarea(attrs={"rows": 6, "class": "form-control"}),
-
-            # Hidden
-            "date": forms.HiddenInput(),
-
-
+            "note_1":        forms.Textarea(attrs={"rows": 6, "class": "form-control"}),
+            "date":          forms.HiddenInput(),
+            "sales_user":    forms.HiddenInput(),
         }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
 
-        # 1) Filter CUSTOMER: roles.role='customer'
-        if "customer" in self.fields:
-            if PartnerRole is not None:
-                cust_ids = PartnerRole.objects.filter(role__iexact="customer").values_list("partner_id", flat=True)
-                self.fields["customer"].queryset = Partner.objects.filter(id__in=cust_ids).distinct()
-            else:
-                self.fields["customer"].queryset = Partner.objects.filter(roles__role__iexact="customer").distinct()
+        # hidden default
+        if not self.is_bound and "date" in self.fields:
+            self.initial["date"] = timezone.localdate().isoformat()
+        if self.user and "sales_user" in self.fields:
+            self.initial["sales_user"] = getattr(self.user, "pk", None)
 
-        # Label sales_service tanpa code
+        # auto valid_until = today + N (default 7 / dari core setting)
+        days = 7
+        try:
+            days = int(get_int_setting("quotation_valid_days", 7)) if get_int_setting else 7
+        except Exception:
+            pass
+        if not self.is_bound and "valid_until" in self.fields:
+            self.initial["valid_until"] = (timezone.localdate() + timedelta(days=days)).strftime("%d-%m-%Y")
+
+        # filter CUSTOMER: role_type.code = 'customer'
+        if "customer" in self.fields:
+            try:
+                if PartnerRole is not None:
+                    ids = PartnerRole.objects.filter(
+                        role_type__code__iexact="customer"
+                    ).values_list("partner_id", flat=True)
+                    qs = Partner.objects.filter(id__in=ids).distinct()
+                else:
+                    qs = Partner.objects.filter(
+                        roles__role_type__code__iexact="customer"
+                    ).distinct()
+                self.fields["customer"].queryset = qs.order_by("name")
+            except Exception:
+                pass
+            self.fields["customer"].empty_label = "— pilih customer —"
+
+        # filter AGENCY: role_type.code = 'agency'
+        if "sales_agency" in self.fields:
+            try:
+                if PartnerRole is not None:
+                    ids = PartnerRole.objects.filter(
+                        role_type__code__iexact="agency"
+                    ).values_list("partner_id", flat=True)
+                    qs = Partner.objects.filter(id__in=ids).distinct()
+                else:
+                    qs = Partner.objects.filter(
+                        roles__role_type__code__iexact="agency"
+                    ).distinct()
+                self.fields["sales_agency"].queryset = qs.order_by("name")
+            except Exception:
+                pass
+            self.fields["sales_agency"].empty_label = "— pilih agency —"
+
+        # label sales_service tanpa code
         if "sales_service" in self.fields:
             base = self.fields["sales_service"]
             self.fields["sales_service"] = SalesServiceChoiceField(
-                queryset=base.queryset,
+                queryset=getattr(base, "queryset", None),
                 required=base.required,
                 empty_label=getattr(base, "empty_label", "---------"),
                 label=base.label or "Sales service",
@@ -75,113 +136,139 @@ class QuotationHeaderForm(forms.ModelForm):
                 widget=base.widget,
             )
 
-
-        from .auth import is_sales_supervisor
-        if self.user and not is_sales_supervisor(self.user):
-            self.fields["sales_user"].disabled = True
-
-
-        # Filter AGENCY: roles.role='agency'
-        if "sales_agency" in self.fields:
-            if PartnerRole is not None:
-                agency_ids = PartnerRole.objects.filter(role__iexact="agency").values_list("partner_id", flat=True)
-                self.fields["sales_agency"].queryset = Partner.objects.filter(id__in=agency_ids).distinct()
-            else:
-                self.fields["sales_agency"].queryset = Partner.objects.filter(roles__role__iexact="agency").distinct()
-
-        # default tanggal
-        if not self.data.get("valid_until") and not self.initial.get("valid_until"):
-            self.fields["valid_until"].initial = _date.today() + timedelta(days=7)
-        if "date" in self.fields and not (self.data.get("date") or self.initial.get("date")):
-            self.fields["date"].initial = _date.today()
-
-        # currency default IDR kalau tersedia
-        if "currency" in self.fields and not (self.data.get("currency") or self.initial.get("currency")):
-            try:
-                CurrencyModel = self.fields["currency"].queryset.model
-                idr = CurrencyModel.objects.get(code="IDR")
-                self.fields["currency"].initial = idr.pk
-            except Exception:
-                pass
-
-            # === styling AdminLTE/Bootstrap ===
-        from django.forms import HiddenInput
-        for name, fld in self.fields.items():
-            if not isinstance(fld.widget, HiddenInput):
-                css = fld.widget.attrs.get("class", "")
-                fld.widget.attrs["class"] = (css + " form-control").strip()
-            
-    def clean_date(self):
-        return self.cleaned_data.get("date") or _date.today()
+        # kunci sales_user untuk non supervisor (opsional)
+        try:
+            from .auth import is_sales_supervisor
+            if self.user and not is_sales_supervisor(self.user):
+                self.fields["sales_user"].disabled = True
+        except Exception:
+            pass
 
 
+# ================= LINE FORM =================
 class QuotationLineForm(forms.ModelForm):
-    # Amount (Price × Qty) — tampil saja
     amount = forms.DecimalField(
-        required=False,
-        label="Amount",
-        decimal_places=2,
-        max_digits=18,
-        widget=forms.TextInput(attrs={"readonly": "readonly", "class": "form-control money"})
+    required=False,
+    label="Amount",
+    decimal_places=2,
+    max_digits=18,
+    widget=forms.TextInput(attrs={"readonly": "readonly", "class": "form-control money"})
     )
 
+   
     class Meta:
         model = SalesQuotationLine
-        fields = ["origin", "destination", "description", "qty", "uom", "price", "amount"]
+        fields = ["origin", "destination", "description", "uom", "qty", "price", "amount"]
         widgets = {
-            # Selects
-            "origin": forms.Select(attrs={"class": "form-select"}),
-            "destination": forms.Select(attrs={"class": "form-select"}),
+            "origin": forms.TextInput(attrs={
+                "class": "form-control form-control-sm js-origin-input",
+                "placeholder": "Search origin…",
+                "data-url": "/ajax/locations/",  # endpoint autocomplete
+                "autocomplete": "off",
+            }),
+            "destination": forms.TextInput(attrs={
+                "class": "form-control form-control-sm js-dest-input",
+                "placeholder": "Search destination…",
+                "data-url": "/ajax/locations/",
+                "autocomplete": "off",
+            }),
+
             "uom": forms.Select(attrs={"class": "form-select"}),
-            # Inputs
             "description": forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
             "qty": forms.TextInput(attrs={"class": "form-control money", "inputmode": "decimal"}),
             "price": forms.TextInput(attrs={"class": "form-control money", "inputmode": "decimal"}),
-
-       
-       }
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # (opsional) pastikan semua non-hidden punya kelas Bootstrap yang benar
-        from django.forms import HiddenInput, Select
+        # tambah class bootstrap bila belum ada
         for f in self.fields.values():
             if isinstance(f.widget, HiddenInput):
                 continue
             cls = f.widget.attrs.get("class", "")
-            if isinstance(f.widget, Select):
-                base = "form-select"
-                if base not in cls:
-                    f.widget.attrs["class"] = (cls + " " + base).strip()
-            else:
-                base = "form-control"
-                if base not in cls:
-                    f.widget.attrs["class"] = (cls + " " + base).strip()
+            base = "form-select" if isinstance(f.widget, Select) else "form-control"
+            if base not in cls:
+                f.widget.attrs["class"] = (cls + " " + base).strip()
 
-    def clean_qty(self):
-        v = self.cleaned_data.get("qty")
-        if v is not None and v <= 0:
-            raise forms.ValidationError("Qty harus > 0.")
-        return v
+    # mandatory rules (baris harus lengkap)
+    def clean(self):
+        cleaned = super().clean()
+        errs = {}
+        if not cleaned.get("origin"):
+            errs["origin"] = "Origin wajib diisi."
+        if not cleaned.get("destination"):
+            errs["destination"] = "Destination wajib diisi."
+        if not cleaned.get("description"):
+            errs["description"] = "Description wajib diisi."
+        if not cleaned.get("uom"):
+            errs["uom"] = "UoM wajib dipilih."
+        if cleaned.get("qty") is None or cleaned.get("qty") <= 0:
+            errs["qty"] = "Qty harus > 0."
+        if cleaned.get("price") is None or cleaned.get("price") < 0:
+            errs["price"] = "Price tidak boleh negatif."
+        if errs:
+            for k, v in errs.items():
+                self.add_error(k, v)
+        return cleaned
 
-    def clean_price(self):
-        v = self.cleaned_data.get("price")
-        if v is not None and v < 0:
-            raise forms.ValidationError("Price tidak boleh negatif.")
-        return v
 
-
+# ================= FORMSET =================
 class BaseLineFormSet(BaseInlineFormSet):
+    """Validasi gabungan untuk seluruh baris."""
     def clean(self):
         super().clean()
-        # minimal 1 baris memiliki data
-        has_any = False
-        for f in self.forms:
-            cd = getattr(f, "cleaned_data", {}) or {}
+
+        # kalau sudah ada error per-form (field errors), jangan tambah non_form_error berulang
+        if any(f.errors for f in self.forms):
+            return
+
+        any_filled = False
+        line_errors = []
+
+        for idx, f in enumerate(self.forms, start=1):
+            cd = getattr(f, "cleaned_data", None) or {}
             if cd.get("DELETE"):
                 continue
-            if any(cd.get(k) for k in ("origin", "destination", "description", "qty", "uom", "price")):
-                has_any = True
-                break
-        if not has_any:
-            raise forms.ValidationError("Minimal satu line harus diisi.")
+
+            filled = any(cd.get(k) for k in ("origin", "destination", "description", "uom", "qty", "price"))
+            if not filled:
+                continue  # baris kosong: abaikan (tidak dianggap valid)
+
+            any_filled = True
+
+            missing = []
+            for k in ("origin", "destination", "description", "uom"):
+                if not cd.get(k):
+                    missing.append(k)
+            if cd.get("qty") is None or cd.get("qty") <= 0:
+                missing.append("qty")
+            if cd.get("price") is None or cd.get("price") < 0:
+                missing.append("price")
+
+            if missing:
+                # tandai ke field masing-masing (sekali per field)
+                for k in set(missing):
+                    f.add_error(k, "Wajib diisi dengan benar.")
+                # tampung pesan baris untuk ditampilkan sekali di atas
+                line_errors.append(f"Baris belum lengkap: {idx}. Lengkapi atau kosongkan sepenuhnya.")
+
+        # kalau ada baris terisi tapi belum lengkap → tampilkan pesan gabungan SEKALI
+        if line_errors:
+            raise forms.ValidationError(line_errors)
+
+        # tidak ada satu pun baris valid terisi → beri satu pesan saja
+        if not any_filled:
+            raise forms.ValidationError("Minimal satu line valid harus diisi.")
+
+
+# FormSet yang dipakai view
+#QuotationLineFormSet = inlineformset_factory(
+#   parent_model=SalesQuotation,
+#    model=SalesQuotationLine,
+#    form=QuotationLineForm,
+#    formset=BaseLineFormSet,
+#    extra=0,
+#    can_delete=False,
+#    validate_min=True,
+#    min_num=1,
+#)

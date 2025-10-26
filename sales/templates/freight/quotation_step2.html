@@ -2,6 +2,7 @@
 {% load static %}
 {% block title %}New Freight Quotation — Step 2 (Cards){% endblock %}
 
+
 {% block content %}
 <div class="container-fluid">
   <!-- ===== HEADER INFO (versi yang kamu suka) ===== -->
@@ -94,23 +95,29 @@
                     <div class="card-body">
                       <div class="row g-3">
                         <div class="col-md-3">
-                          <label class="form-label">Origin</label>
-                          <select name="origin[]" class="form-select">
-                            <option value="">—</option>
-                            {% for loc in locations %}
-                              <option value="{{ loc.id }}" {% if ln.origin_id == loc.id %}selected{% endif %}>{{ loc.name }}</option>
-                            {% endfor %}
-                          </select>
-                        </div>
+                          <label class="form-label">Origin 2</label>
+                            <input type="text" id="origin_search" class="form-control" placeholder="Ketik lokasi…">
+                            <input type="hidden" name="origin[]" id="origin_id" value="{{ ln.origin_id|default:'' }}">
+
+                          </div>
 
                         <div class="col-md-3">
-                          <label class="form-label">Destination</label>
-                          <select name="destination[]" class="form-select">
-                            <option value="">—</option>
-                            {% for loc in locations %}
-                              <option value="{{ loc.id }}" {% if ln.destination_id == loc.id %}selected{% endif %}>{{ loc.name }}</option>
-                            {% endfor %}
-                          </select>
+                          <label class="form-label">Destination 2</label>
+                          <input type="text" id="destination_search" class="form-control" placeholder="Ketik lokasi…">
+                          <input type="hidden" name="destination[]" id="destination_id" value="{{ ln.origin_id|default:'' }}">
+
+                          <select 
+                          name="destination[]" 
+                          class="select2-ajax" 
+                          data-url="/ajax/locations/" 
+                          data-placeholder="Search destination…">
+                          {% if ln.destination %}
+                            <option value="{{ ln.destination.id }}" selected>
+                              {{ ln.destination.code }} — {{ ln.destination.name }}
+                            </option>
+                          {% endif %}
+                        </select>
+
                         </div>
 
                         <div class="col-md-6">
@@ -158,23 +165,20 @@
                   <div class="card-body">
                     <div class="row g-6">
                       <div class="col-md-6">
-                        <label class="form-label">Origin</label>
-                        <select name="origin[]" class="form-select">
-                          <option value="">—</option>
-                          {% for loc in locations %}
-                            <option value="{{ loc.id }}">{{ loc.name }}</option>
-                          {% endfor %}
-                        </select>
+                           <label class="form-label">Origin</label>
+                          <input type="text" id="origin_search" class="form-control  js-origin-input" placeholder="Ketik lokasi…">
+                          <input type="hidden" name="origin[]" class="js-origin-id" id="origin_id" value="{{ ln.origin_id|default:'' }}">
+
+                      </select>
+
                       </div>
 
                       <div class="col-md-6">
                         <label class="form-label">Destination</label>
-                        <select name="destination[]" class="form-select">
-                          <option value="">—</option>
-                          {% for loc in locations %}
-                            <option value="{{ loc.id }}">{{ loc.name }}</option>
-                          {% endfor %}
-                        </select>
+                        <input type="text" id="destination_search" class="form-control  js-dest-input" placeholder="Ketik lokasi…">
+                        <input type="hidden" name="destination[]" class="js--id" id="destination_id" value="{{ ln.destination_id|default:'' }}">
+
+
                       </div>
 
                       <div class="col-md-12">
@@ -240,96 +244,263 @@
   </div>
 </div>
 {% endblock %}
+{% block extra_css %}
+ <link rel="stylesheet" href="https://code.jquery.com/ui/1.14.1/themes/base/jquery-ui.css">
+<style>
+/* gaya badge di dropdown autocomplete */
+.ui-autocomplete .badge {
+  font-size: 0.85rem;       /* ukuran huruf sedikit lebih besar */
+  font-weight: 500;
+  background-color: #0d6efd; /* warna biru bootstrap */
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 0.5rem;
+}
+
+/* gaya item dropdown */
+.ui-autocomplete li div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+}
+
+/* supaya dropdown-nya lebih jelas */
+.ui-autocomplete {
+  max-height: 250px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1051 !important; /* biar di atas modal/adminlte */
+  font-size: 0.9rem;
+}
+.is-invalid {
+  border-color: #dc3545 !important;
+  background-color: #ffe8e8 !important;
+}
+.is-invalid:focus {
+  box-shadow: 0 0 0 0.2rem rgba(220,53,69,.25);
+}
+
+</style>
+
+{% endblock %}
 
 {% block extra_js %}
 <script>
+(function(){
+  // ===== Helpers format lokal (id-ID) =====
+  const nf = new Intl.NumberFormat('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  function parseId(s){ if(s==null) return 0; s=String(s).trim(); if(!s) return 0; s=s.replace(/\./g,'').replace(',','.'); const n=Number(s); return isFinite(n)?n:0; }
+  function fmtId(n){ const num=(typeof n==='number')?n:parseId(n); return nf.format(num); }
+
+  // Header grand total (jika ada)
   (function(){
-    // ===== Helpers format lokal (id-ID) =====
-    const nf = new Intl.NumberFormat('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    function parseId(s){ if(s==null) return 0; s=String(s).trim(); if(!s) return 0; s=s.replace(/\./g,'').replace(',','.'); const n=Number(s); return isFinite(n)?n:0; }
-    function fmtId(n){ const num=(typeof n==='number')?n:parseId(n); return nf.format(num); }
+    const el = document.getElementById('header-grand-total');
+    if (!el) return;
+    el.textContent = fmtId(el.getAttribute('data-amount') || '0');
+  })();
 
-    // Tampilkan Grand Total (header) pakai format lokal
-    (function(){
-      const el = document.getElementById('header-grand-total');
-      if (!el) return;
-      el.textContent = fmtId(el.getAttribute('data-amount') || '0');
-    })();
+  const container = document.getElementById('lines-container');
 
-    const container = document.getElementById('lines-container');
+  function sumLive(){
+    let total=0;
+    container.querySelectorAll('.line').forEach(line=>{
+      const amt = line.querySelector('input[name="amount_display[]"]');
+      total += parseId(amt?.value || '0');
+    });
+    const live = document.getElementById('live-grand-total');
+    if (live) live.textContent = fmtId(total);
+  }
 
-    function sumLive(){
-      let total=0;
-      container.querySelectorAll('.line').forEach(line=>{
-        const amt = line.querySelector('input[name="amount_display[]"]');
-        total += parseId(amt?.value || '0');
-      });
-      const live = document.getElementById('live-grand-total');
-      if (live) live.textContent = fmtId(total);
+  function hookCalc(line){
+    const qty   = line.querySelector('input[name="qty[]"]');
+    const price = line.querySelector('input[name="price[]"]');
+    const amt   = line.querySelector('input[name="amount_display[]"]');
+
+    // auto-select on focus
+    [qty, price, amt].forEach(inp=>{
+      if (!inp) return;
+      inp.addEventListener('focus', ()=> setTimeout(()=> inp.select(),0));
+    });
+
+    function recalc(){
+      const q = parseId(qty?.value||'0');
+      const p = parseId(price?.value||'0');
+      if (amt) amt.value = fmtId(q*p);
+      sumLive();
     }
+    qty && qty.addEventListener('input', recalc);
+    price && price.addEventListener('input', recalc);
 
-    function hook(line){
-      const qty   = line.querySelector('input[name="qty[]"]');
-      const price = line.querySelector('input[name="price[]"]');
-      const amt   = line.querySelector('input[name="amount_display[]"]');
-      const rm    = line.querySelector('.btn-remove');
+    // beautify on blur
+    qty && qty.addEventListener('blur', e=> e.target.value = fmtId(e.target.value));
+    price && price.addEventListener('blur', e=> e.target.value = fmtId(e.target.value));
 
-      // focus -> auto select
-      [qty, price, amt].forEach(inp=>{
-        if (!inp) return;
-        inp.addEventListener('focus', ()=> setTimeout(()=> inp.select(),0));
-      });
+    // init values
+    recalc();
+    if(qty && qty.value)     qty.value   = fmtId(qty.value);
+    if(price && price.value) price.value = fmtId(price.value);
+    if(amt && !amt.value)    amt.value   = fmtId(0);
+  }
 
-      // hitung amount & live total
-      function recalc(){
-        const q = parseId(qty?.value||'0');
-        const p = parseId(price?.value||'0');
-        if (amt) amt.value = fmtId(q*p);
-        sumLive();
+  // expose biar bisa dipanggil script lain
+  window.hookCalc = hookCalc;
+  window.sumLive  = sumLive;
+
+  // init semua baris yang sudah ada
+  container.querySelectorAll('.line').forEach(hookCalc);
+  sumLive();
+
+  // === REMOVE via event delegation ===
+  container.addEventListener('click', function(e){
+    const btn = e.target.closest('.btn-remove');
+    if (!btn) return;
+
+    const line = btn.closest('.line');
+    if (!line) return;
+
+    const lines = container.querySelectorAll('.line');
+    if (lines.length > 1) {
+      // jika pakai jQuery UI di input, destroy dulu (aman kalau tidak ada)
+      if (window.jQuery) {
+        const $row = window.jQuery(line);
+        $row.find('.js-origin-input, .js-dest-input').each(function(){
+          try { window.jQuery(this).autocomplete('destroy'); } catch(e){}
+        });
       }
-      qty && qty.addEventListener('input', recalc);
-      price && price.addEventListener('input', recalc);
-
-      // beautify on blur
-      qty && qty.addEventListener('blur', e=> e.target.value = fmtId(e.target.value));
-      price && price.addEventListener('blur', e=> e.target.value = fmtId(e.target.value));
-
-      // init
-      recalc();
-      if(qty && qty.value)     qty.value   = fmtId(qty.value);
-      if(price && price.value) price.value = fmtId(price.value);
-      if(amt && !amt.value)    amt.value   = fmtId(0);
-
-      // remove card
-      rm && rm.addEventListener('click', ()=> { line.remove(); sumLive(); });
+      line.remove();
+      sumLive();
+    } else {
+      // minimal 1 baris: reset saja
+      line.querySelectorAll('input, textarea, select').forEach(el=>{
+        if (el.tagName === 'SELECT') el.selectedIndex = 0;
+        else el.value = '';
+        el.classList.remove('ui-autocomplete-input');
+        el.removeAttribute('aria-controls');
+        el.removeAttribute('aria-expanded');
+        el.removeAttribute('role');
+      });
+      sumLive();
     }
+  });
+})();
+</script>
+<!-- jQuery & jQuery UI (urutan wajib: jQuery dulu, baru UI) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://code.jquery.com/ui/1.14.1/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.14.1/themes/base/jquery-ui.css">
 
-    // hook all existing lines
-    container.querySelectorAll('.line').forEach(hook);
-    sumLive();
+<script>
+$(function () {
+  function wire($input, $hidden) {
+    try { $input.autocomplete("destroy"); } catch(e) {}
 
-    // add new line: clone baris pertama
-    document.getElementById('add-line').addEventListener('click', ()=>{
+    $input.autocomplete({
+      minLength: 1,
+      delay: 200,
+      source: function(req, resp){
+        $.getJSON("/ajax/locations/autocomplete/", { term: req.term }, resp);
+      },
+      select: function(e, ui){
+        var withKind = ui.item.label + (ui.item.kind ? (" [" + ui.item.kind + "]") : "");
+        $input.val(withKind);
+        $hidden.val(ui.item.id);
+        return false;
+      },
+      change: function(e, ui){
+        if (!ui.item) $hidden.val("");
+      }
+    });
+
+    // dropdown: Name + badge kind
+    var inst = $input.autocomplete("instance");
+    if (inst) {
+      inst._renderItem = function(ul, item) {
+        var badge = item.kind ? '<span class="badge rounded-pill" style="margin-left:8px;">'+ item.kind +'</span>' : '';
+        return $("<li>").append('<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;">'
+          + '<span>'+ item.label +'</span>' + badge + '</div>').appendTo(ul);
+      };
+    }
+  }
+
+  function hookAuto(line){
+    const $row = $(line);
+    wire($row.find(".js-origin-input"), $row.find(".js-origin-id"));
+    wire($row.find(".js-dest-input"),   $row.find(".js-dest-id"));
+  }
+
+  // expose biar bisa dipanggil dari script lain
+  window.hookAuto = hookAuto;
+
+  // init baris yang sudah ada
+  document.querySelectorAll(".line").forEach(hookAuto);
+
+  // === ADD LINE ===
+  const container = document.getElementById('lines-container');
+  const addBtn = document.getElementById('add-line');
+  if (addBtn) {
+    addBtn.addEventListener('click', ()=>{
       const first = container.querySelector('.line');
       const clone = first.cloneNode(true);
-      // reset nilai
+
+      // reset nilai & bersihkan jejak jQuery UI yang mungkin ikut ter-copy
       clone.querySelectorAll('input, textarea, select').forEach(el=>{
         if (el.tagName === 'SELECT') el.selectedIndex = 0;
         else el.value = '';
+        el.removeAttribute('id');
+        el.classList.remove('ui-autocomplete-input');
+        el.removeAttribute('aria-controls');
+        el.removeAttribute('aria-expanded');
+        el.removeAttribute('role');
       });
+
       container.appendChild(clone);
-      hook(clone);
+      // panggil KEDUANYA untuk baris baru
+      if (window.hookCalc) window.hookCalc(clone);
+      hookAuto(clone);
+    });
+  }
+});
+</script>
+<script>
+(function(){
+  const form = document.getElementById('lines-form');
+  form.addEventListener('submit', (e)=>{
+    const lines = Array.from(container.querySelectorAll('.line'));
+
+    const errors = [];
+    const seen = new Set();
+    const toRemove = [];
+
+    // Bersihkan baris kosong, cek validasi, tandai duplikat
+    lines.forEach((line, idx)=>{
+      const v = readLine(line);
+
+      // buang baris kosong
+      if (isEmptyLine(v)) {
+        toRemove.push(line);
+        return;
+      }
+
+      // VALIDASI WAJIB
+      if (!v.originId) errors.push(`Line ${idx+1}: Origin wajib dipilih dari daftar.`);
+      if (!v.destId)   errors.push(`Line ${idx+1}: Destination wajib dipilih dari daftar.`);
+      if (!v.uomId)    errors.push(`Line ${idx+1}: UoM wajib diisi.`);
+      if (!(v.qty > 0))   errors.push(`Line ${idx+1}: Qty harus > 0.`);
+      if (!(v.price >= 0)) errors.push(`Line ${idx+1}: Price tidak boleh negatif.`);
+
+      // DEDUPE (baris sama persis)
+      const key = makeKey(v);
+      if (seen.has(key)) {
+        toRemove.push(line);
+      } else {
+        seen.add(key);
+      }
     });
 
-    // normalisasi sebelum submit -> ubah "1.234,56" => "1234.56"
-    document.getElementById('lines-form').addEventListener('submit', ()=>{
-      container.querySelectorAll('.line').forEach(line=>{
-        const q = line.querySelector('input[name="qty[]"]');
-        const p = line.querySelector('input[name="price[]"]');
-        if (q) q.value = String(parseId(q.value));
-        if (p) p.value = String(parseId(p.value));
-      });
-    });
-  })();
+  });
+})();
 </script>
+
+
 {% endblock %}

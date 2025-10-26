@@ -116,53 +116,32 @@ def quotation_generate_so(request, pk):
         messages.error(request, "Quotation belum memiliki currency. Lengkapi dulu currency-nya.")
         return redirect("sales:quotation_detail", pk=q.pk)
 
-    # Tentukan sequence code berdasarkan business_type
-    SEQ_CODE_ORDER_BY_TYPE = {
-        "freight": "ORDER_FREIGHT",
-        "charter": "ORDER_CHARTER",
-    }
-    bt = (q.business_type or "freight").lower()
-    seq_code = SEQ_CODE_ORDER_BY_TYPE.get(bt, "ORDER_FREIGHT")
 
-    # Generate nomor SO
-    so_number = next_number(
-        NumberSequence.objects.filter(app_label="sales", code=seq_code),
-        today=date.today()
+
+    from core.utils import get_next_number
+    SEQ_CODE_ORDER_BY_TYPE = {
+        "freight": "FREIGHT_ORDER",   # konsisten dengan data di DB
+        "charter": "CHARTER_ORDER",
+    }
+
+    bt = (q.business_type or "freight").lower()
+    seq_code = SEQ_CODE_ORDER_BY_TYPE.get(bt, "FREIGHT_ORDER")
+   
+    so_number = get_next_number("sales", seq_code)
+    so = SalesOrder.objects.create(
+        number=so_number,
+        sales_quotation=q,
+        customer=q.customer,
+        status=SalesOrder.STATUS_DRAFT,
+        business_type=q.business_type,
+        currency=q.currency,
+        payment_term=getattr(q, "payment_term", None),
+        sales_service=getattr(q, "sales_service", None),
+        total=getattr(q, "total", 0),
+        vat=getattr(q, "vat", 0),
+        grand_total=getattr(q, "grand_total", 0),
     )
 
-    # Siapkan kwargs create SO (defensif: isi kalau field ada)
-    def _has_field(model, name):
-        try:
-            model._meta.get_field(name)
-            return True
-        except Exception:
-            return False
-
-    kwargs = {
-        "number": so_number,
-        "sales_quotation": q,
-        "customer": q.customer,
-        "status": SalesOrder.STATUS_DRAFT if _has_field(SalesOrder, "status") else "DRAFT",
-        "business_type": q.business_type,
-    }
-
-    # Wajib: currency (karena error kamu sebelumnya)
-    if _has_field(SalesOrder, "currency"):
-        kwargs["currency"] = q.currency
-
-    # Opsional: payment_term / sales_service kalau ada di SO
-    if _has_field(SalesOrder, "payment_term"):
-        kwargs["payment_term"] = getattr(q, "payment_term", None)
-    if _has_field(SalesOrder, "sales_service"):
-        kwargs["sales_service"] = getattr(q, "sales_service", None)
-
-    # Total/VAT/Grand total
-    for fld in ("total", "vat", "grand_total"):
-        if _has_field(SalesOrder, fld):
-            kwargs[fld] = getattr(q, fld, None)
-
-    # Create SalesOrder
-    so = SalesOrder.objects.create(**kwargs)
 
     # Copy lines dari quotation ke order
     q_lines = q.lines.all()

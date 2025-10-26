@@ -20,6 +20,8 @@ class TransportationType(models.Model):
 
 class Shipment(models.Model):
     number = models.CharField(max_length=30)  # set unique=True kalau mau
+    so_number=models.CharField(max_length=30)  ;
+    so_number=models.CharField(max_length=30)  ;
     origin = models.ForeignKey('geo.Location', on_delete=models.PROTECT,
                                related_name='shipment_origins', db_column='origin_id')
     destination = models.ForeignKey('geo.Location', on_delete=models.PROTECT,

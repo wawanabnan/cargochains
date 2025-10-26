@@ -1,0 +1,35 @@
+from django.http import JsonResponse
+from django.db.models import Q
+from django.contrib.auth.decorators import login_required
+from ..models import Location
+
+@login_required
+def location_autocomplete(request):
+    term = (request.GET.get("term") or "").strip()
+    qs = Location.objects.all().select_related("parent", "parent__parent")
+    if term:
+        qs = qs.filter(
+            Q(name__icontains=term) |
+            Q(kind__icontains=term) |
+            Q(iata_code__icontains=term) |
+            Q(unlocode__icontains=term)
+        ).order_by("name")[:20]
+
+    def make_path(loc):
+        parts = []
+        if loc.parent:
+            parts.append(loc.parent.name)
+            if loc.parent.parent:
+                parts.append(loc.parent.parent.name)
+        return " • ".join(parts)  # contoh: "East Kalimantan • Indonesia"
+
+    results = []
+    for o in qs:
+        results.append({
+            "id": o.id,
+            "label": o.name,        # yang ditaruh ke input
+            "value": o.name,        # jQuery UI pakai ini juga
+            "kind": o.kind,         # city / seaport / airport / jetty / ...
+            "path": make_path(o),   # opsional: breadcrumb parent
+        })
+    return JsonResponse(results, safe=False)

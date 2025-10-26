@@ -76,7 +76,7 @@ DB_ENGINE = os.environ.get('DB_ENGINE', 'mysql')
 DATABASES = {
     "default": {
          'ENGINE': 'django.db.backends.mysql',
-        "NAME": "cargochains_django",
+        "NAME": "cargochains",
         "USER": "root",
         "PASSWORD": "",         # kosongkan kalau default Laragon
         "HOST": "127.0.0.1",

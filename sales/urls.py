@@ -8,12 +8,15 @@ from .views.lists import QuotationListView, OrderListView
 from .views.details import QuotationDetailView, OrderDetailView
 
 # FBV: Add / Edit / Print / PDF / Actions
-from .views.adds import quotation_add_header, quotation_add_lines
-from .views.edits import quotation_edit
+#from .views.adds import quotation_add_header, quotation_add_lines
+from .views.adds import FreightQuotationAddView  # ⬅️ ganti ini
+from .views.edits import FreightQuotationEditView 
 from .views.prints import quotation_print, quotation_pdf, order_print, order_pdf
 from .views.actions import (
     quotation_change_status, order_change_status, quotation_generate_so
 )
+
+
 
 from .auth import sales_access_required
 from .views import actions as action_views
@@ -25,9 +28,13 @@ urlpatterns = [
     # ===== QUOTATIONS =====
     path("freight/quotations/",                      QuotationListView.as_view(),   name="quotation_list"),
     path("freight/quotations/<int:pk>/",             QuotationDetailView.as_view(), name="quotation_details"),  # ← pakai nama plural 'details'
-    path("freight/quotations/add/",                  login_required(quotation_add_header, login_url="account:login"), name="quotation_add"),
-    path("freight/quotations/lines/",                login_required(quotation_add_lines,  login_url="account:login"), name="quotation_add_lines"),
-    path("freight/quotations/<int:pk>/edit/",        login_required(quotation_edit,       login_url="account:login"), name="quotation_edit"),
+ 
+    path("freight/quotations/add/",               FreightQuotationAddView.as_view(),  name="quotation_add"),
+    path("freight/quotations/<int:pk>/edit/",     FreightQuotationEditView.as_view(),  name="quotation_edit"),
+
+
+   # path("freight/quotations/lines/",                login_required(quotation_add_lines,  login_url="account:login"), name="quotation_add_lines"),
+   
     path("freight/quotations/<int:pk>/status/",      login_required(quotation_change_status, login_url="account:login"), name="quotation_change_status"),
     path("freight/quotations/<int:pk>/generate-so/", login_required(quotation_generate_so,  login_url="account:login"), name="quotation_generate_so"),
     path("freight/quotations/<int:pk>/print/",       login_required(quotation_print,      login_url="account:login"), name="quotation_print"),

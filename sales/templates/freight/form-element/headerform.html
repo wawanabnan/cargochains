@@ -1,0 +1,47 @@
+
+<div class="col">
+    <div class="row">
+        <div class="col">
+            <label class="form-label">{{ form.valid_until.label }}</label>
+            {{ form.valid_until }}
+             {{ form.date }} {# hidden #}
+            {% for e in form.valid_until.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}            
+        </div>
+        <div class="col">
+                <label class="form-label">{{ form.customer.label }} *</label>
+                {{ form.customer }}
+                {% for e in form.customer.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+             
+        </div>
+        <div class="col">
+                <label class="form-label">{{ form.currency.label }} *</label>
+                {{ form.currency }}
+                {% for e in form.currency.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+
+    </div>  
+    <div class="row">
+        <div class="col">
+           <label class="form-label">{{ form.sales_service.label }} *</label>
+                {{ form.sales_service }}
+                {% for e in form.sales_service.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+             
+        </div>
+        <div class="col">
+           <label class="form-label">{{ form.sales_agency.label }}</label>
+                {{ form.sales_agency }}
+                {% for e in form.sales_agency.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                       
+        </div>
+        <div class="col">
+            <label class="form-label">{{ form.payment_term.label }}</label>
+            {{ form.payment_term }}
+            {% for e in form.payment_term.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+       
+            
+          </div>
+          <!--hidden tax-->
+          <input type="hidden" id="tax-rate" value="0.11">
+        </div>
+        
+    </div>    

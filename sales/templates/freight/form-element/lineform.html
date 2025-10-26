@@ -1,0 +1,91 @@
+<div class="table-responsive p-0">
+      <table class="table table-hover mb-0 align-middle" id="lines-table">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 12%; padding-left:15px">Origin</th>
+            <th style="width: 14%">Destination</th>
+            <th>Description</th>
+            <th style="width: 10%">UoM</th>
+            <th style="width: 10%" class="text-end">Qty</th>
+            <th style="width: 12%" class="text-end">Price</th>
+            <th style="width: 12%" class="text-end">Amount</th>
+            <th style="width: 4%"></td>
+          </tr>
+        </thead>
+        <tbody id="lines-tbody">
+         
+        </tbody>
+        <tbody id="lines-tbody">
+  {% for ln in quotation.salesquotationline_set.all %}
+  <tr class="line">
+    <td>
+      <input type="text" class="form-control form-control-sm js-origin-input"
+             value="{{ ln.origin.name|default:'' }}" placeholder="Search origin…">
+      <input type="hidden" name="origin[]" class="js-origin-id" value="{{ ln.origin_id|default:'' }}">
+    </td>
+    <td>
+      <input type="text" class="form-control form-control-sm js-dest-input"
+             value="{{ ln.destination.name|default:'' }}" placeholder="Search destination…">
+      <input type="hidden" name="destination[]" class="js-dest-id" value="{{ ln.destination_id|default:'' }}">
+    </td>
+    <td>
+      <input type="text" name="description[]" class="form-control form-control-sm"
+             value="{{ ln.description|default:'' }}">
+    </td>
+    <td>
+      <select name="uom[]" class="form-select form-select-sm">
+        <option value="">—</option>
+        {% for u in uoms %}
+          <option value="{{ u.id }}" {% if ln.uom_id == u.id %}selected{% endif %}>
+            {{ u.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </td>
+    <td><input name="qty[]"   type="text" class="form-control form-control-sm text-end money" 
+               value="{{ ln.qty|default:'0,00' }}"></td>
+    <td><input name="price[]" type="text" class="form-control form-control-sm text-end money" 
+              value="{{ ln.price|default:'0,00' }}"></td>
+    <td><input name="amount_display[]" type="text" class="form-control form-control-sm text-end money js-amount"
+               value="{{ ln.amount|default:'0,00' }}" readonly></td>
+    <td class="text-center">
+      <button type="button" class="btn btn-sm btn-outline-danger btn-remove" title="Remove">
+        <i class="fas fa-times"></i>
+      </button>
+    </td>
+  </tr>
+  {% empty %}
+  {# biarkan kosong; user bisa klik Add Line #}
+  {% endfor %}
+</tbody>
+
+
+        <tfoot>
+           <tr>
+            <td colspan="5"></td>
+            <td class="text-end"><b>Sub Total</b></td>
+            <td class="text-end">
+              <input type="text" id="subtotal" class="form-control form-control-sm text-end" value="" readonly>
+            </td>
+            <td></td>
+          </tr>
+           <tr>
+            <td colspan="5"></td>
+            <td class="text-end"><b>TAX</b></td>
+            <td class="text-end">
+              <input type="text" id="vat" class="form-control form-control-sm text-end" value="" readonly>
+            </td>
+            <td></td>
+          </tr>
+
+          <tr>
+            <td colspan="5"></td>
+            <td class="text-end"><b>Grand Total</b></td>
+            <td class="text-end">
+              <input type="text" id="grand-total" class="form-control form-control-sm text-end" value="" readonly>
+            </td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>

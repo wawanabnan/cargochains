@@ -29,5 +29,9 @@ urlpatterns = [
     path("account/", include("account.urls", namespace="account")),
     path("shipments/", include("shipments.urls")),
     path("", RedirectView.as_view(url=reverse_lazy(settings.LOGIN_URL), permanent=False)),
+#    path("partners/", include("partners.urls", namespace="partners")),  # <— include dengan namespace
+    path("", include(("partners.urls", "partners"), namespace="partners")),  # <= TANPA prefix
+
+    path("geo/", include(("geo.urls", "geo"), namespace="geo")),  # wajib kalau pakai {% url 'geo:...' %}
 
 ]

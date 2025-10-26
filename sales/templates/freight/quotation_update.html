@@ -1,0 +1,136 @@
+{% load static %}
+
+<div class="card shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Edit Quotation — {{ quotation.number }}</h5>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:quotation_details' quotation.pk %}">Back</a>
+    </div>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs px-3 pt-2" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-header" type="button" role="tab">
+          Header
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-lines" type="button" role="tab">
+          Lines
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content p-3">
+      <!-- HEADER -->
+      <div class="tab-pane fade show active" id="tab-header" role="tabpanel">
+        {% if hdr_form.non_field_errors %}
+          <div class="alert alert-danger py-2">{{ hdr_form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Customer</label>
+            {{ hdr_form.customer }}
+            {{ hdr_form.customer.errors }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Sales Agency</label>
+            {{ hdr_form.sales_agency }}
+            {{ hdr_form.sales_agency.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Salesperson</label>
+            {{ hdr_form.sales_user }}
+            {{ hdr_form.sales_user.errors }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Service</label>
+            {{ hdr_form.sales_service }}
+            {{ hdr_form.sales_service.errors }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Currency</label>
+            {{ hdr_form.currency }}
+            {{ hdr_form.currency.errors }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Payment Term</label>
+            {{ hdr_form.payment_term }}
+            {{ hdr_form.payment_term.errors }}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Valid Until</label>
+            {{ hdr_form.valid_until }}
+            {{ hdr_form.valid_until.errors }}
+          </div>
+
+          <div class="col-md-9">
+            <label class="form-label">Note</label>
+            {{ hdr_form.note_1 }}
+            {{ hdr_form.note_1.errors }}
+          </div>
+
+          {# hidden date auto — tetap render agar value terbawa #}
+          {{ hdr_form.date }}
+        </div>
+      </div>
+
+      <!-- LINES -->
+      <div class="tab-pane fade" id="tab-lines" role="tabpanel">
+        {% if formset.non_form_errors %}
+          <div class="alert alert-danger py-2">{{ formset.non_form_errors }}</div>
+        {% endif %}
+        {{ formset.management_form }}
+
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width:16%">Origin</th>
+                <th style="width:16%">Destination</th>
+                <th>Description</th>
+                <th style="width:10%">UoM</th>
+                <th style="width:10%" class="text-end">Qty</th>
+                <th style="width:14%" class="text-end">Price</th>
+                <th style="width:14%" class="text-end">Amount</th>
+                <th style="width:6%">Del</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for f in formset.forms %}
+                <tr>
+                  <td>{{ f.origin }}{{ f.origin.errors }}</td>
+                  <td>{{ f.destination }}{{ f.destination.errors }}</td>
+                  <td>{{ f.description }}{{ f.description.errors }}</td>
+                  <td>{{ f.uom }}{{ f.uom.errors }}</td>
+                  <td class="text-end">{{ f.qty }}{{ f.qty.errors }}</td>
+                  <td class="text-end">{{ f.price }}{{ f.price.errors }}</td>
+                  <td class="text-end">{{ f.amount }}{{ f.amount.errors }}</td>
+                  <td class="text-center">
+                    {% if formset.can_delete %}{{ f.DELETE }}{% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <button type="submit" name="add_row" value="1" class="btn btn-outline-secondary btn-sm mt-2">
+          + Add Row
+        </button>
+      </div>
+    </div>
+
+    <div class="card-footer d-flex justify-content-end gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'sales:quotation_details' quotation.pk %}">Cancel</a>
+      <button class="btn btn-primary" type="submit">Save</button>
+    </div>
+  </form>
+</div>
