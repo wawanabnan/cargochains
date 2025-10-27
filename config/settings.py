@@ -27,7 +27,7 @@ INSTALLED_APPS = [
     'core',
     'sales.apps.SalesConfig',
     'partners',
-    'shipments',
+    "shipments.apps.ShipmentsConfig",
     'geo',
 ]
 

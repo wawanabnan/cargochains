@@ -29,9 +29,14 @@
             <a href="{% url 'sales:order_print' order.id %}" 
               class="btn btn-primary btn-sm" target="_blank" rel="noopener">Preview</a>
         
-            <a href="{% url 'sales:order_pdf' order.id %}"   
-                class="btn btn-secondary btn-sm" target="_blank" rel="noopener">PDF</a>
-       
+          {% if order.status == "CONFIRMED" %}
+            <!-- Tombol utama -->
+              <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#confirmGenerateModal">
+                <i class="fas fa-truck"></i> Generate Shipment
+              </button>
+
+          {% endif %}
+
      </div>
      <div class="col-md-6 text-end">
         {% if order|can_transition_to:"CONFIRMED" %}
@@ -171,12 +176,54 @@
                     </table>
                   </div>  
               </div>  
+              <div class="tab-pane fade show active" id="tab-attachment" role="tabpanel" aria-labelledby="tab-attach=tab">
+                   {{ quotation.note }}
+              </div>    
             </div>    
          </div>
       </div>
     </div>  
 </div>
 
+
+
+
+<!-- Modal Konfirmasi -->
+<div class="modal fade" id="confirmGenerateModal" tabindex="-1" aria-labelledby="confirmGenerateLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="confirmGenerateLabel">
+          <i class="fas fa-question-circle"></i> Konfirmasi Generate Shipment
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <p class="mb-2">
+          Apakah Anda yakin ingin membuat <strong>Shipment</strong> dari Sales Order ini?
+        </p>
+        <p class="text-muted small mb-0">
+          Jika dilanjutkan, sistem akan membuat Shipment baru berdasarkan data Sales Order.
+        </p>
+      </div>
+
+      <div class="modal-footer bg-body-tertiary">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times"></i> Batal
+        </button>
+        <form method="post" action="{% url 'sales:order_generate_shipment' order.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit"
+                        class="btn btn-dark btn-sm">
+                  <i class="fas fa-file-contract"></i> Generate Shipment
+                </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- SMART NUMBER FORMATTER -->
 <script>

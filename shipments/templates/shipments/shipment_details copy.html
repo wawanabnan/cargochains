@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-3">
+  <h3 class="mb-3">Shipment {{ shipment.number }}</h3>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-4">Status</dt>
+              <dd class="col-8">
+                 <span class="badge text-bg-{{ shipment.status_badge_class }}">
+                  {{ shipment.status_label }}
+                </span>
+              </dd>
+              <dt class="col-4">Shipper</dt><dd class="col-8">{{ shipment.shipper_name }}</dd>
+            <dt class="col-4">Consignee</dt><dd class="col-8">{{ shipment.consignee_name }}</dd>
+            <dt class="col-4">Carrier</dt><dd class="col-8">{{ shipment.carrier_name }}</dd>
+
+
+            <dt class="col-4">Origin</dt><dd class="col-8">{{ shipment.origin_text }}</dd>
+            <dt class="col-4">Destination</dt><dd class="col-8">{{ shipment.destination_text }}</dd>
+            <dt class="col-4">Booking No</dt><dd class="col-8">{{ shipment.booking_number|default:"-" }}</dd>
+            <dt class="col-4">BL/AWB</dt><dd class="col-8">
+              {{ shipment.bill_of_lading_no|default:shipment.airwaybill_no|default:"-" }}
+            </dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-4">Shipper</dt><dd class="col-8">{{ shipment.shipper_name }}</dd>
+            <dt class="col-4">Consignee</dt><dd class="col-8">{{ shipment.consignee_name }}</dd>
+            <dt class="col-4">Carrier</dt><dd class="col-8">{{ shipment.carrier_name }}</dd>
+            <dt class="col-4">ETD / ETA</dt><dd class="col-8">{{ shipment.etd|date:"Y-m-d"|default:"-" }} / {{ shipment.eta|date:"Y-m-d"|default:"-" }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h5 class="mt-4">Routes</h5>
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Route</th>
+        <th>Planned</th>
+        <th>Actual</th>
+        <th>Transport</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in shipment.routes.all %}
+      <tr>
+        <td>{{ r.order }}</td>
+        <td><strong>{{ r.origin_text }}</strong> → <strong>{{ r.destination_text }}</strong></td>
+        <td>{{ r.planned_departure|date:"Y-m-d H:i"|default:"-" }} → {{ r.planned_arrival|date:"Y-m-d H:i"|default:"-" }}</td>
+        <td>{{ r.actual_departure|date:"Y-m-d H:i"|default:"-" }} → {{ r.actual_arrival|date:"Y-m-d H:i"|default:"-" }}</td>
+        <td><strong>{{ r.route_label }}</strong></td>
+        <td>{{ r.transportation_type_name }}</td>
+        <td>{{ r.transportation_asset_identifier }}</td>
+         <!-- 
+        <td>
+        
+                 </td>
+      -->
+        <td><span class="badge text-bg-secondary">{{ r.get_status_display }}</span></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center text-muted">Belum ada route.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="d-flex gap-2 mb-3">
+  {% if shipment.status == "DRAFT" and perms.shipments.can_confirm_shipment %}
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#confirmConfirmModal">
+      Confirm Shipment
+    </button>
+  {% endif %}
+  {% if shipment.status == "CONFIRMED" and perms.shipments.can_book_shipment %}
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmBookModal">
+      Book to Carrier
+    </button>
+  {% endif %}
+</div>
+<div class="modal fade" id="confirmConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header bg-success text-white">
+      <h5 class="modal-title">Confirm Shipment?</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      Pastikan data sudah lengkap (origin/destination, shipper/consignee, minimal 1 route).
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+      <form action="{% url 'shipments:shipment_confirm' shipment.pk %}" method="post" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Ya, Confirm</button>
+      </form>
+    </div>
+  </div></div>
+</div>
+<div class="modal fade" id="confirmBookModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header bg-primary text-white">
+      <h5 class="modal-title">Book to Carrier</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <form action="{% url 'shipments:shipment_book' shipment.pk %}" method="post">
+      {% csrf_token %}
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Carrier</label>
+          <div class="form-control-plaintext">{{ shipment.carrier.name|default:"-" }}</div>
+        </div>
+        <div class="mb-3">
+          <label for="booking_number" class="form-label">Booking Number</label>
+          <input type="text" class="form-control" id="booking_number" name="booking_number" required>
+          <div class="form-text">Diisi nomor booking yang diterbitkan carrier.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Batal</button>
+        <button class="btn btn-primary" type="submit">Simpan & Book</button>
+      </div>
+    </form>
+  </div></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('#confirmConfirmModal form, #confirmBookModal form').forEach(function(f){
+    f.addEventListener('submit', function(){
+      const btn = f.querySelector('button[type="submit"]');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Memproses...'; }
+    });
+  });
+});
+</script>
+
+{% endblock %}

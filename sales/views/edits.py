@@ -43,52 +43,14 @@ class FreightQuotationEditView(UpdateView):
         kwargs["user"] = self.request.user
         return kwargs
 
-    def get_context_data_old(self, **kwargs):
+    def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["mode"] = "edit"
         ctx["lock_number"] = True
-        ctx["formset"] = LineFormSet(instance=self.object, prefix="lines")  # ✅ di sini tempatnya
-
+        ctx["formset"] = LineFormSet(instance=self.object)
         # Jika template butuh daftar uoms di <template id="tpl-line">
         # ctx["uoms"] = m.UoM.objects.all().order_by("name")
-        
         return ctx
-    
-
-    from decimal import Decimal, ROUND_HALF_UP
-    from django.db.models import Sum
-
-    def get_context_data(self, **kwargs):
-            ctx = super().get_context_data(**kwargs)
-            ctx["mode"] = "edit"
-            ctx["lock_number"] = True
-            ctx["formset"] = LineFormSet(instance=self.object, prefix="lines")
-
-            # --- HITUNG NILAI DARI LINES YANG SUDAH ADA DI DB ---
-            # kalau kolom amount sudah tersimpan per line, tinggal sum('amount')
-            subtotal = self.object.salesquotationline_set.aggregate(
-                s=Sum('amount')
-            )['s'] or Decimal('0')
-
-            # kalau kamu lebih yakin hitung ulang: qty * price
-            # from django.db.models import F, DecimalField, ExpressionWrapper
-            # subtotal = (self.object.salesquotationline_set
-            #   .aggregate(s=Sum(ExpressionWrapper(F('qty')*F('price'),
-            #                                      output_field=DecimalField(max_digits=18, decimal_places=2))))['s']
-            #   or Decimal('0'))
-
-            tax_rate = Decimal(self.object.tax_rate or 0)        # asumsi ada field tax_rate (%) di header
-            tax_amount = (subtotal * tax_rate / Decimal('100')).quantize(Decimal('0.01'), ROUND_HALF_UP)
-            grand_total = (subtotal + tax_amount).quantize(Decimal('0.01'), ROUND_HALF_UP)
-
-            ctx.update({
-                "init_subtotal":    subtotal.quantize(Decimal('0.01'), ROUND_HALF_UP),
-                "init_tax_rate":    tax_rate,
-                "init_tax_amount":  tax_amount,
-                "init_grand_total": grand_total,
-            })
-            return ctx
-
 
     @transaction.atomic
     def form_valid(self, form):

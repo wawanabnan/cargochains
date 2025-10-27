@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Edit Parties & Cargo — <span class="text-muted">{{ shipment.number }}</span></h4>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'shipments:shipment_details' shipment.pk %}">Back to Detail</a>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-header fw-bold">Shipper</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Shipper</label>
+              <div class="input-group">
+                {{ form.shipper }}
+                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#modalNewPartner" data-target-field-id="{{ form.shipper.id_for_label }}">+ New</button>
+              </div>
+              <div class="form-text">Default mengikuti Customer dari Sales Order. Ubah jika shipper berbeda.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-header fw-bold">Consignee</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Consignee</label>
+              <div class="input-group">
+                {{ form.consignee }}
+                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#modalNewPartner" data-target-field-id="{{ form.consignee.id_for_label }}">+ New</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-header fw-bold">Carrier & Agency</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Carrier</label>
+              {{ form.carrier }}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Agency</label>
+              {{ form.agency }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-header fw-bold">Cargo</div>
+          <div class="card-body">
+            <label class="form-label">Cargo Description</label>
+            {{ form.cargo_description }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-3 d-flex gap-2">
+      <button class="btn btn-primary" type="submit">Save</button>
+      <a class="btn btn-outline-secondary" href="{% url 'shipments:shipment_details' shipment.pk %}">Cancel</a>
+    </div>
+  </form>
+</div>
+
+{# ===== Modal Add New Partner ===== #}
+<div class="modal fade" id="modalNewPartner" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Add New Partner</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <form id="formNewPartner">
+      <div class="modal-body">
+        <div class="mb-2"><label class="form-label">Name</label><input name="name" class="form-control" required></div>
+        <div class="mb-2"><label class="form-label">Address</label><textarea name="address" class="form-control" rows="2"></textarea></div>
+        <div class="mb-2"><label class="form-label">Phone</label><input name="phone" class="form-control"></div>
+        <div class="mb-2"><label class="form-label">Email</label><input name="email" type="email" class="form-control"></div>
+        <input type="hidden" id="partnerTargetFieldId">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+        <button class="btn btn-primary" type="submit">Save</button>
+      </div>
+    </form>
+  </div></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  // init select2 ajax (jika dipakai)
+  if (window.jQuery && $.fn.select2) {
+    $('.select2-partner').each(function(){
+      const $el = $(this);
+      const url = $el.data('url') || '/partners/autocomplete/';
+      $el.select2({
+        theme: 'bootstrap-5',
+        allowClear: true,
+        placeholder: 'Search partner…',
+        ajax: {
+          url: url, dataType: 'json', delay: 250,
+          data: params => ({ q: params.term }),
+          processResults: data => ({ results: data })
+        }
+      });
+    });
+  }
+
+  // simpan target field id ketika klik +New
+  const modal = document.getElementById('modalNewPartner');
+  modal.addEventListener('show.bs.modal', function (e) {
+    const btn = e.relatedTarget;
+    const fieldId = btn?.getAttribute('data-target-field-id');
+    document.getElementById('partnerTargetFieldId').value = fieldId || '';
+    document.getElementById('formNewPartner').reset();
+  });
+
+  // submit create partner → inject ke select
+  document.getElementById('formNewPartner').addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    const fd = new FormData(this);
+    const resp = await fetch('/partners/create-minimal/', { method:'POST', body: fd, headers: {'X-CSRFToken': getCsrfToken()} });
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) { alert('Gagal membuat partner.'); return; }
+
+    const fieldId = document.getElementById('partnerTargetFieldId').value;
+    const sel = document.getElementById(fieldId);
+    if (window.jQuery && $.fn.select2) {
+      const $sel = $(sel);
+      const option = new Option(data.name, data.id, true, true);
+      $sel.append(option).trigger('change');
+    } else {
+      const opt = document.createElement('option');
+      opt.value = data.id; opt.textContent = data.name; opt.selected = true;
+      sel.appendChild(opt);
+    }
+    bootstrap.Modal.getInstance(modal).hide();
+  });
+
+  function getCsrfToken(){
+    const el = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return el ? el.value : '';
+  }
+});
+</script>
+{% endblock %}

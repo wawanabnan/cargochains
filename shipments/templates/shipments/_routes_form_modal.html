@@ -1,0 +1,110 @@
+<div class="modal-header">
+  <h5 class="modal-title">{{ route.id|yesno:"Edit Route,Add Route" }}</h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<form id="route-form" method="post" action="">
+  <div class="modal-body">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-3">{{ form.order.label_tag }} {{ form.order }}</div>
+
+      <div class="col-9"></div>
+
+      <div class="col-6 position-relative">
+        <label class="form-label">Origin</label>
+        {{ form.origin }} {{ form.origin_text }}
+        <div class="ac-menu d-none"></div>
+        {% for e in form.origin_text.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="col-6 position-relative">
+        <label class="form-label">Destination</label>
+        {{ form.destination }} {{ form.destination_text }}
+        <div class="ac-menu d-none"></div>
+        {% for e in form.destination_text.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="col-6">{{ form.planned_departure.label_tag }} {{ form.planned_departure }}</div>
+      <div class="col-6">{{ form.planned_arrival.label_tag }} {{ form.planned_arrival }}</div>
+
+      <div class="col-6">{{ form.transportation_type.label_tag }} {{ form.transportation_type }}</div>
+      <div class="col-6">{{ form.transportation_asset.label_tag }} {{ form.transportation_asset }}</div>
+
+      <div class="col-6">{{ form.distance_km.label_tag }} {{ form.distance_km }}</div>
+      <div class="col-6">{{ form.status.label_tag }} {{ form.status }}</div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+    <button type="submit" class="btn btn-success">Save</button>
+  </div>
+</form>
+
+<style>
+.table td, .table th { border:0 !important; }
+.form-control, .form-select { border:0 !important; box-shadow:none !important; }
+.form-control:focus, .form-select:focus { box-shadow:none !important; }
+.ac-menu { position:absolute; z-index:1060; background:#fff; width:100%; max-height:240px; overflow:auto; border:1px solid #e5e7eb; border-radius:.5rem; }
+.ac-item { padding:.375rem .5rem; cursor:pointer; }
+.ac-item:hover { background:#f3f4f6; }
+</style>
+
+<script>
+(function(){
+  const AUTOCOMPLETE_URL = "/geo/locations/autocomplete/"; // ganti dengan endpoint kamu
+  const form = document.getElementById('route-form');
+
+  // AJAX submit
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    const resp = await fetch(window.location.href, {method:'POST', body: new FormData(form)});
+    if(resp.ok){
+      const data = await resp.json();
+      if(data.ok){
+        // replace table
+        const wrap = document.getElementById('routes-table-wrap');
+        wrap.innerHTML = data.html;
+        bootstrap.Modal.getInstance(document.getElementById('routeModal')).hide();
+        window.initRouteTableHandlers && window.initRouteTableHandlers(); // rebind handlers
+      }
+    }else{
+      // re-render modal (validation errors)
+      const html = await resp.text();
+      document.querySelector('#routeModal .modal-content').innerHTML = html;
+    }
+  });
+
+  // Autocomplete
+  function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+  async function fetchLocations(q){
+    if(!q || q.trim().length<2) return [];
+    const r = await fetch(AUTOCOMPLETE_URL + "?q=" + encodeURIComponent(q.trim()));
+    if(!r.ok) return [];
+    const data = await r.json();
+    return data.map(o=>({id:o.id, label:o.full_name||o.name}));
+  }
+  function wireAC(cell){
+    const input = cell.querySelector('input.ac-location');
+    if(!input) return;
+    const target = input.dataset.target; // origin/destination
+    const hidden = form.querySelector(`input[name="route-${target}"]`);
+    const menu = cell.querySelector('.ac-menu');
+    const show = (items)=>{
+      menu.innerHTML='';
+      if(!items.length){ menu.classList.add('d-none'); return; }
+      items.forEach(it=>{
+        const d=document.createElement('div'); d.className='ac-item'; d.textContent=it.label;
+        d.onclick=()=>{ input.value=it.label; hidden.value=it.id; menu.classList.add('d-none'); };
+        menu.appendChild(d);
+      });
+      menu.classList.remove('d-none');
+    };
+    const search = debounce(async ()=> show(await fetchLocations(input.value)), 250);
+    input.addEventListener('input', ()=>{ hidden.value=''; search(); });
+    input.addEventListener('blur', ()=> setTimeout(()=> menu.classList.add('d-none'), 120));
+    input.addEventListener('focus', ()=> input.dispatchEvent(new Event('input')));
+  }
+  document.querySelectorAll('#route-form .position-relative').forEach(wireAC);
+})();
+</script>

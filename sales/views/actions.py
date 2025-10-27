@@ -177,3 +177,22 @@ def quotation_generate_so(request, pk):
     messages.success(request, f"Sales Order {so.number} berhasil dibuat.")
     return redirect("sales:order_details", pk=so.pk)  # atau ke quotation_detail, terserah kamu
 
+
+# sales/views/so_to_shipment.py
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
+
+from sales import models as sm
+from shipments.services.generators import create_shipment_from_sales_order
+
+
+@login_required
+@transaction.atomic
+def order_generate_shipment(request, pk):
+    so = get_object_or_404(sm.SalesOrder, pk=pk)
+    shp = create_shipment_from_sales_order(so, user=request.user)
+    messages.success(request, f"Shipment {shp.number} dibuat dari SO {so.number}.")
+    # sesuaikan nama url detail shipment
+    return redirect("shipments:shipment_details", pk=shp.pk)

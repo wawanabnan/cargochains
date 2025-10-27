@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* border nol 100% */
+.table td, .table th { border:0 !important; }
+.form-control, .form-select { border:0 !important; box-shadow:none !important; }
+.form-control:focus, .form-select:focus { box-shadow:none !important; }
+.ac-menu { position:absolute; z-index:1030; background:#fff; width:100%; max-height:240px; overflow:auto; border:1px solid #e5e7eb; border-radius:.5rem; }
+.ac-item { padding:.375rem .5rem; cursor:pointer; }
+.ac-item:hover { background:#f3f4f6; }
+.position-relative { position:relative; }
+</style>
+
+<section class="content">
+  <div class="container-fluid">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">Edit Routes — {{ shipment.number }}</h3>
+        <a href="{{ shipment.get_absolute_url }}" class="btn btn-sm btn-secondary">Back</a>
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="card-body p-0">
+          {{ formset.management_form }}
+          <div class="table-responsive">
+            <table class="table table-sm table-borderless align-middle mb-0" id="routes-table">
+              <thead class="table-light">
+                <tr>
+                  <th style="width:70px">Order</th>
+                  <th>Origin</th>
+                  <th>Destination</th>
+                  <th style="min-width:140px">ETD</th>
+                  <th style="min-width:140px">ETA</th>
+                  <th style="min-width:140px">Type</th>
+                  <th style="min-width:140px">Asset</th>
+                  <th style="width:140px">Status</th>
+                  <th style="width:60px"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for form in formset.forms %}
+                <tr class="route-row">
+                  <td class="align-middle">{{ form.order }}</td>
+
+                  <td class="position-relative">
+                    {{ form.origin }}  {# hidden id #}
+                    {{ form.origin_text }} {# user types here #}
+                    {% if form.origin_text.errors %}<div class="text-danger small">{{ form.origin_text.errors|join:", " }}</div>{% endif %}
+                    <div class="ac-menu d-none"></div>
+                  </td>
+
+                  <td class="position-relative">
+                    {{ form.destination }}  {# hidden id #}
+                    {{ form.destination_text }}
+                    {% if form.destination_text.errors %}<div class="text-danger small">{{ form.destination_text.errors|join:", " }}</div>{% endif %}
+                    <div class="ac-menu d-none"></div>
+                  </td>
+
+                  <td>{{ form.planned_departure }}</td>
+                  <td>{{ form.planned_arrival }}</td>
+                  <td>{{ form.transportation_type }}</td>
+                  <td>{{ form.transportation_asset }}</td>
+                  <td>{{ form.status }}</td>
+                  <td class="text-end">
+                    <div class="form-check">
+                      {{ form.DELETE }} <label class="form-check-label small">hapus</label>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-between">
+          <button type="button" id="add-row" class="btn btn-outline-primary btn-sm"><i class="fa fa-plus"></i> Tambah Route</button>
+          <button type="submit" class="btn btn-success"><i class="fa fa-check"></i> Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const AUTOCOMPLETE_URL = "/geo/locations/autocomplete/"; // ganti dgn URL kamu
+  const tbody = document.querySelector('#routes-table tbody');
+  const totalForms = document.getElementById('id_routes-TOTAL_FORMS');
+  const addBtn = document.getElementById('add-row');
+
+  function debounce(fn, ms){ let t; return function(...args){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), ms); } }
+
+  function buildMenu(items, onPick){
+    const menu = document.createElement('div');
+    menu.className = 'ac-menu';
+    items.forEach(it=>{
+      const div = document.createElement('div');
+      div.className = 'ac-item';
+      div.textContent = it.label || it.name;
+      div.onclick = () => onPick(it);
+      menu.appendChild(div);
+    });
+    return menu;
+  }
+
+  async function fetchLocations(q){
+    if(!q || q.trim().length < 2) return [];
+    const resp = await fetch(AUTOCOMPLETE_URL + "?q=" + encodeURIComponent(q.trim()));
+    if(!resp.ok) return [];
+    const data = await resp.json();
+    // ekspektasi: [{id, name, code, country, full_name}]
+    return data.map(o=>({ id:o.id, label: o.full_name || o.name }));
+  }
+
+  function attachAutocomplete(cell){
+    const input = cell.querySelector('input.ac-location');
+    if(!input) return;
+    const targetKind = input.dataset.target; // "origin" / "destination"
+    const hidden = cell.parentElement.querySelector(`input[name$="-${targetKind}"]`); // hidden PK
+
+    const menu = cell.querySelector('.ac-menu');
+    const showMenu = (items)=>{
+      menu.innerHTML = '';
+      if(!items.length){ menu.classList.add('d-none'); return; }
+      items.forEach(it=>{
+        const div = document.createElement('div');
+        div.className = 'ac-item';
+        div.textContent = it.label;
+        div.addEventListener('click', ()=>{
+          input.value = it.label;
+          hidden.value = it.id;      // set PK ke field hidden
+          menu.classList.add('d-none');
+        });
+        menu.appendChild(div);
+      });
+      menu.classList.remove('d-none');
+    };
+
+    const search = debounce(async ()=>{
+      const items = await fetchLocations(input.value);
+      showMenu(items);
+    }, 250);
+
+    input.addEventListener('input', ()=>{
+      hidden.value = ''; // reset ketika user mengubah teks
+      search();
+    });
+    input.addEventListener('blur', ()=> setTimeout(()=> menu.classList.add('d-none'), 150));
+    input.addEventListener('focus', ()=> input.dispatchEvent(new Event('input')));
+  }
+
+  // init pada rows yang sudah ada
+  tbody.querySelectorAll('td.position-relative').forEach(attachAutocomplete);
+
+  // tambah row kosong (sederhana, gunakan empty formset idx)
+  addBtn?.addEventListener('click', ()=>{
+    const idx = parseInt(totalForms.value || '0', 10);
+    const tr = document.createElement('tr');
+    tr.className = 'route-row';
+    tr.innerHTML = `
+      <td><input type="number" class="form-control form-control-sm" name="routes-${idx}-order" value="${idx+1}"></td>
+
+      <td class="position-relative">
+        <input type="hidden" name="routes-${idx}-origin">
+        <input type="text" name="routes-${idx}-origin_text" class="form-control form-control-sm ac-location" data-target="origin" placeholder="Type to search origin...">
+        <div class="ac-menu d-none"></div>
+      </td>
+
+      <td class="position-relative">
+        <input type="hidden" name="routes-${idx}-destination">
+        <input type="text" name="routes-${idx}-destination_text" class="form-control form-control-sm ac-location" data-target="destination" placeholder="Type to search destination...">
+        <div class="ac-menu d-none"></div>
+      </td>
+
+      <td><input type="datetime-local" class="form-control form-control-sm" name="routes-${idx}-planned_departure"></td>
+      <td><input type="datetime-local" class="form-control form-control-sm" name="routes-${idx}-planned_arrival"></td>
+      <td><select class="form-select form-select-sm" name="routes-${idx}-transportation_type"></select></td>
+      <td><select class="form-select form-select-sm" name="routes-${idx}-transportation_asset"></select></td>
+      <td><input type="number" step="0.01" class="form-control form-control-sm" name="routes-${idx}-distance_km"></td>
+      <td>
+        <select class="form-select form-select-sm" name="routes-${idx}-status">
+          <option value="PLANNED">PLANNED</option>
+          <option value="IN_TRANSIT">IN_TRANSIT</option>
+          <option value="COMPLETED">COMPLETED</option>
+        </select>
+      </td>
+      <td class="text-end"><input type="checkbox" name="routes-${idx}-DELETE"></td>
+    `;
+    tbody.appendChild(tr);
+    totalForms.value = idx + 1;
+
+    // pasang autocomplete untuk dua kolom lokasi
+    tr.querySelectorAll('td.position-relative').forEach(attachAutocomplete);
+  });
+})();
+</script>
+{% endblock %}
