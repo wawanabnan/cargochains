@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-3">
+  <h5 class="mb-3">{{ route|default:"New Route" }}</h5>
+  {% include "shipments/_routes_form.html" %}
+</div>
+{% endblock %}

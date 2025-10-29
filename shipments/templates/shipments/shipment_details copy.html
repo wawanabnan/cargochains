@@ -1,96 +1,329 @@
 {% extends "base.html" %}
+{% load shipment_extras %}
+
+
+
 {% block content %}
+
 <div class="container py-3">
-  <h3 class="mb-3">Shipment {{ shipment.number }}</h3>
+{# ====== STATUS PROGRESS (tanpa custom filter) ====== #}
+{# Cancelled: tampilkan bar merah penuh #}
+{% if shipment.status == "CANCELLED" %}
+  <div class="mb-2">
+    <div class="progress" style="height:10px;">
+      <div class="progress-bar bg-danger" role="progressbar" style="width:100%"></div>
+    </div>
+    <div class="d-flex justify-content-between small mt-1 text-muted">
+      <span>Draft</span><span>Confirmed</span><span>Booked</span><span>In Transit</span><span>Arrived</span><span>Closed</span>
+    </div>
+  </div>
+{% else %}
+  {# Segmen hijau jika status sudah mencapai/melewati step-nya #}
+  <div class="mb-2 d-flex" style="gap:4px;">
+    {# DRAFT: selalu aktif (start) #}
+    <div class="flex-fill" style="height:10px;border-radius:4px;background:#198754;"></div>
 
-  <div class="row g-3">
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-body">
-          <dl class="row mb-0">
-            <dt class="col-4">Status</dt>
-              <dd class="col-8">
-                 <span class="badge text-bg-{{ shipment.status_badge_class }}">
-                  {{ shipment.status_label }}
-                </span>
-              </dd>
-              <dt class="col-4">Shipper</dt><dd class="col-8">{{ shipment.shipper_name }}</dd>
-            <dt class="col-4">Consignee</dt><dd class="col-8">{{ shipment.consignee_name }}</dd>
-            <dt class="col-4">Carrier</dt><dd class="col-8">{{ shipment.carrier_name }}</dd>
-
-
-            <dt class="col-4">Origin</dt><dd class="col-8">{{ shipment.origin_text }}</dd>
-            <dt class="col-4">Destination</dt><dd class="col-8">{{ shipment.destination_text }}</dd>
-            <dt class="col-4">Booking No</dt><dd class="col-8">{{ shipment.booking_number|default:"-" }}</dd>
-            <dt class="col-4">BL/AWB</dt><dd class="col-8">
-              {{ shipment.bill_of_lading_no|default:shipment.airwaybill_no|default:"-" }}
-            </dd>
-          </dl>
-        </div>
-      </div>
+    {# CONFIRMED #}
+    <div class="flex-fill"
+         style="height:10px;border-radius:4px;
+                {% if shipment.status == 'CONFIRMED' or shipment.status == 'BOOKED' or shipment.status == 'IN_TRANSIT' or shipment.status == 'ARRIVED' or shipment.status == 'CLOSED' %}background:#198754;{% else %}background:#e9ecef;{% endif %}">
     </div>
 
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-body">
-          <dl class="row mb-0">
-            <dt class="col-4">Shipper</dt><dd class="col-8">{{ shipment.shipper_name }}</dd>
-            <dt class="col-4">Consignee</dt><dd class="col-8">{{ shipment.consignee_name }}</dd>
-            <dt class="col-4">Carrier</dt><dd class="col-8">{{ shipment.carrier_name }}</dd>
-            <dt class="col-4">ETD / ETA</dt><dd class="col-8">{{ shipment.etd|date:"Y-m-d"|default:"-" }} / {{ shipment.eta|date:"Y-m-d"|default:"-" }}</dd>
-          </dl>
+    {# BOOKED #}
+    <div class="flex-fill"
+         style="height:10px;border-radius:4px;
+                {% if shipment.status == 'BOOKED' or shipment.status == 'IN_TRANSIT' or shipment.status == 'ARRIVED' or shipment.status == 'CLOSED' %}background:#198754;{% else %}background:#e9ecef;{% endif %}">
+    </div>
+
+    {# IN_TRANSIT #}
+    <div class="flex-fill"
+         style="height:10px;border-radius:4px;
+                {% if shipment.status == 'IN_TRANSIT' or shipment.status == 'ARRIVED' or shipment.status == 'CLOSED' %}background:#198754;{% else %}background:#e9ecef;{% endif %}">
+    </div>
+
+    {# ARRIVED #}
+    <div class="flex-fill"
+         style="height:10px;border-radius:4px;
+                {% if shipment.status == 'ARRIVED' or shipment.status == 'CLOSED' %}background:#198754;{% else %}background:#e9ecef;{% endif %}">
+    </div>
+
+    {# CLOSED #}
+    <div class="flex-fill"
+         style="height:10px;border-radius:4px;
+                {% if shipment.status == 'CLOSED' %}background:#198754;{% else %}background:#e9ecef;{% endif %}">
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between small mt-1 text-muted">
+    <span>Draft</span><span>Confirmed</span><span>Booked</span><span>In Transit</span><span>Arrived</span><span>Closed</span>
+  </div>
+{% endif %}
+
+
+<div class="  py-3">
+    <div class="row">
+      <div class="col-md-6">
+          <h3 >Shipment <span class="text-muted">{{ shipment.number }}</span></h3>
+      </div>
+      <div class="col-md-6 text-end">
+         <a class="btn btn-primary btn-sm" href="{% url 'shipments:shipment_update_parties' shipment.pk %}">Edit Parties & Cargo</a>
+          {% if shipment.status == "DRAFT" and perms.shipments.can_confirm_shipment %}
+          <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#confirmConfirmModal">
+            Confirm
+          </button>
+        {% endif %}
+        {% if shipment.status == "CONFIRMED" and perms.shipments.can_book_shipment %}
+          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#confirmBookModal">
+            Book to Carrier
+          </button>
+        {% endif %}      
+     
+      </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <!-- KIRI: Info Utama (Lokasi, Jadwal, Cargo) -->
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <div class="small text-muted">Origin</div>
+            <div class="fw-semibold">{{ shipment.origin_name }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="small text-muted">Destination</div>
+            <div class="fw-semibold">{{ shipment.destination_name }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="small text-muted">ETD / ETA</div>
+            <div>{{ shipment.etd|date:"Y-m-d"|default:"-" }} / {{ shipment.eta|date:"Y-m-d"|default:"-" }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="small text-muted">Sales Order</div>
+            <div>
+              {% if shipment.sales_order_id %}
+                {# Ubah 'sales:order_details' ke nama URL detail SO di app 'sales' mu #}
+                <a href="{% url 'sales:order_details' shipment.sales_order_id %}">
+                  {{ shipment.sales_order.number }}
+                </a>
+              {% else %}
+                {{ shipment.so_number|default:"-" }}
+              {% endif %}
+            </div>
+          </div>
         </div>
+
+        <hr class="my-3">
+
+        <div class="row g-2">
+          <div class="col-md-6">
+            <div class="small text-muted">Cargo Description</div>
+            <div>{{ shipment.cargo_description|default:"-" }}</div>
+          </div>
+          <div class="col-md-2">
+            <div class="small text-muted">Qty</div>
+            <div>{{ shipment.qty|default_if_none:"-" }}</div>
+          </div>
+          <div class="col-md-2">
+            <div class="small text-muted">Weight</div>
+            <div>
+              {% if shipment.weight is not None %}{{ shipment.weight }}{% else %}-{% endif %}
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="small text-muted">Volume</div>
+            <div>
+              {% if shipment.volume is not None %}{{ shipment.volume }}{% else %}-{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer d-flex flex-wrap gap-3 small text-muted">
+        <div>Created: {{ shipment.created_at|date:"Y-m-d H:i" }}</div>
+        <div>Updated: {{ shipment.updated_at|date:"Y-m-d H:i" }}</div>
       </div>
     </div>
   </div>
 
-  <h5 class="mt-4">Routes</h5>
-  <table class="table table-sm align-middle">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Route</th>
-        <th>Planned</th>
-        <th>Actual</th>
-        <th>Transport</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for r in shipment.routes.all %}
-      <tr>
-        <td>{{ r.order }}</td>
-        <td><strong>{{ r.origin_text }}</strong> → <strong>{{ r.destination_text }}</strong></td>
-        <td>{{ r.planned_departure|date:"Y-m-d H:i"|default:"-" }} → {{ r.planned_arrival|date:"Y-m-d H:i"|default:"-" }}</td>
-        <td>{{ r.actual_departure|date:"Y-m-d H:i"|default:"-" }} → {{ r.actual_arrival|date:"Y-m-d H:i"|default:"-" }}</td>
-        <td><strong>{{ r.route_label }}</strong></td>
-        <td>{{ r.transportation_type_name }}</td>
-        <td>{{ r.transportation_asset_identifier }}</td>
-         <!-- 
-        <td>
-        
-                 </td>
-      -->
-        <td><span class="badge text-bg-secondary">{{ r.get_status_display }}</span></td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="6" class="text-center text-muted">Belum ada route.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <!-- KANAN: Customer & Carrier -->
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-12">
+            <div class="small text-muted">Customer</div>
+            <div class="fw-semibold">{{ shipment.customer_name }}</div>
+          </div>
+          <div class="col-12">
+            <div class="small text-muted">Carrier</div>
+            <div class="fw-semibold">{{ shipment.carrier_name }}</div>
+          </div>
+          <div class="col-12">
+            <div class="small text-muted">Booking Number</div>
+            <div>{{ shipment.booking_number|default:"-" }}</div>
+          </div>
+          <div class="col-12">
+            <div class="small text-muted">BL / AWB</div>
+            <div>
+              {% if shipment.bill_of_lading_no %}{{ shipment.bill_of_lading_no }}
+              {% elif shipment.airwaybill_no %}{{ shipment.airwaybill_no }}
+              {% else %}-{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# Tombol aksi kalau mau ditaruh di summary #}
+      <div class="card-footer d-flex gap-2">
+       
+      </div>
+    </div>
+  </div>
 </div>
-<div class="d-flex gap-2 mb-3">
-  {% if shipment.status == "DRAFT" and perms.shipments.can_confirm_shipment %}
-    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#confirmConfirmModal">
-      Confirm Shipment
-    </button>
-  {% endif %}
-  {% if shipment.status == "CONFIRMED" and perms.shipments.can_book_shipment %}
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmBookModal">
-      Book to Carrier
-    </button>
-  {% endif %}
+  <!-- ===== TABS ===== -->
+<ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-parties" type="button" role="tab">Shipper & Consignee</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-routes" type="button" role="tab">Shipment Routes</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-attachments" type="button" role="tab">Attachments</button></li>
+</ul>
+
+<div class="tab-content border-start border-end border-bottom p-3 bg-body">
+<!-- TAB: PARTIES -->
+    <div class="tab-pane fade show active" id="tab-parties" role="tabpanel">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header fw-bold"><i class="fas fa-user me-1"></i> Shipper</div>
+            <div class="card-body">
+              <div class="fw-semibold mb-1">{{ shipment.shipper_name }}</div>
+              <div class="text-muted small">
+                {% if shipment.shipper_snap and shipment.shipper_snap.address %}
+                  {{ shipment.shipper_snap.address }}
+                {% elif shipment.shipper and shipment.shipper.address %}
+                  {{ shipment.shipper.address }}
+                {% else %}
+                  <em>- alamat belum diisi -</em>
+                {% endif %}
+              </div>
+              {% if shipment.shipper_snap and shipment.shipper_snap.phone %}
+                <div class="text-muted small mt-2">Phone: {{ shipment.shipper_snap.phone }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header fw-bold"><i class="fas fa-user-check me-1"></i> Consignee</div>
+            <div class="card-body">
+              <div class="fw-semibold mb-1">{{ shipment.consignee_name }}</div>
+              <div class="text-muted small">
+                {% if shipment.consignee_snap and shipment.consignee_snap.address %}
+                  {{ shipment.consignee_snap.address }}
+                {% elif shipment.consignee and shipment.consignee.address %}
+                  {{ shipment.consignee.address }}
+                {% else %}
+                  <em>- alamat belum diisi -</em>
+                {% endif %}
+              </div>
+              {% if shipment.consignee_snap and shipment.consignee_snap.phone %}
+                <div class="text-muted small mt-2">Phone: {{ shipment.consignee_snap.phone }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: ROUTES -->
+<div class="tab-pane fade" id="tab-routes" role="tabpanel">
+
+     {% include "shipments/_routes_table.html" %}
 </div>
+  <!-- Modal container -->
+  <div class="modal fade" id="routeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <!-- dinamically filled -->
+      </div>
+    </div>
+  </div>
+
+</div>
+  </div>
+
+    <!-- TAB: ATTACHMENTS -->
+    <div class="tab-pane fade" id="tab-attachments" role="tabpanel">
+      {% if perms.shipments.add_shipmentattachment %}
+        <form action="{% url 'shipments:shipment_attach' shipment.pk %}" method="post" enctype="multipart/form-data" class="mb-3">
+          {% csrf_token %}
+          <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label">File</label>
+              <input type="file" name="file" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Label / Notes</label>
+              <input type="text" name="label" class="form-control" placeholder="e.g. Booking Confirmation, BL Draft">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Category</label>
+              <select name="category" class="form-select">
+                <option value="">-</option>
+                <option>Booking</option>
+                <option>BL</option>
+                <option>Manifest</option>
+                <option>Invoice</option>
+                <option>Others</option>
+              </select>
+            </div>
+            <div class="col-md-1 d-grid">
+              <button type="submit" class="btn btn-primary">Upload</button>
+            </div>
+          </div>
+        </form>
+      {% endif %}
+
+      <table class="table table-sm align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>File</th>
+            <th>Label</th>
+            <th>Category</th>
+            <th>Uploaded</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in shipment.attachments.all %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td><a href="{{ a.file.url }}" target="_blank" rel="noopener">{{ a.filename }}</a></td>
+            <td>{{ a.label|default:"-" }}</td>
+            <td>{{ a.category|default:"-" }}</td>
+            <td class="text-muted small">{{ a.created_at|date:"Y-m-d H:i" }}</td>
+            <td class="text-end">
+              {% if perms.shipments.delete_shipmentattachment %}
+                <form action="{% url 'shipments:shipment_detach' shipment.pk a.pk %}" method="post" onsubmit="return confirm('Hapus lampiran ini?');">
+                  {% csrf_token %}
+                  <button class="btn btn-link text-danger btn-sm">Remove</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted">Belum ada dokumen.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODALS: Confirm / Book -->
 <div class="modal fade" id="confirmConfirmModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
     <div class="modal-header bg-success text-white">
@@ -109,6 +342,7 @@
     </div>
   </div></div>
 </div>
+
 <div class="modal fade" id="confirmBookModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
     <div class="modal-header bg-primary text-white">
@@ -118,14 +352,11 @@
     <form action="{% url 'shipments:shipment_book' shipment.pk %}" method="post">
       {% csrf_token %}
       <div class="modal-body">
-        <div class="mb-3">
-          <label class="form-label">Carrier</label>
-          <div class="form-control-plaintext">{{ shipment.carrier.name|default:"-" }}</div>
-        </div>
+        <div class="mb-2 small text-muted">Carrier</div>
+        <div class="fw-semibold mb-2">{{ shipment.carrier_name }}</div>
         <div class="mb-3">
           <label for="booking_number" class="form-label">Booking Number</label>
           <input type="text" class="form-control" id="booking_number" name="booking_number" required>
-          <div class="form-text">Diisi nomor booking yang diterbitkan carrier.</div>
         </div>
       </div>
       <div class="modal-footer">
@@ -136,19 +367,67 @@
   </div></div>
 </div>
 
-{% endblock %}
-
+{% endblock%}
 {% block extra_js %}
-
 <script>
+window.initRouteTableHandlers = function(){
+  const wrap = document.getElementById('routes-table-wrap');
+  const modalEl = document.getElementById('routeModal');
+  const modal = new bootstrap.Modal(modalEl);
+
+  // ADD
+  const addBtn = wrap.querySelector('#btn-add-route');
+  if(addBtn){
+    addBtn.onclick = async ()=>{
+      const url = addBtn.dataset.url;
+      const html = await (await fetch(url)).text();
+      modalEl.querySelector('.modal-content').innerHTML = html;
+      modal.show();
+    };
+  }
+
+  // EDIT
+  wrap.querySelectorAll('.js-edit-route').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const html = await (await fetch(btn.dataset.url)).text();
+      modalEl.querySelector('.modal-content').innerHTML = html;
+      modal.show();
+    };
+  });
+
+  // DELETE
+  wrap.querySelectorAll('.js-del-route').forEach(btn=>{
+    btn.onclick = async ()=>{
+      if(!confirm('Delete this route?')) return;
+      const resp = await fetch(btn.dataset.url, {method:'POST', headers: {'X-CSRFToken': getCsrf()}});
+      if(resp.ok){
+        const data = await resp.json();
+        if(data.ok){
+          wrap.innerHTML = data.html;
+          window.initRouteTableHandlers(); // rebind
+        }
+      }
+    };
+  });
+
+  function getCsrf(){
+    const name = 'csrftoken';
+    const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return m ? m[2] : '';
+  }
+};
+
+document.addEventListener('DOMContentLoaded', window.initRouteTableHandlers);
+</script>
+<script>
+alert("Test")
 document.addEventListener('DOMContentLoaded', function(){
-  document.querySelectorAll('#confirmConfirmModal form, #confirmBookModal form').forEach(function(f){
-    f.addEventListener('submit', function(){
-      const btn = f.querySelector('button[type="submit"]');
-      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Memproses...'; }
+  document.querySelectorAll('#confirmConfirmModal form, #confirmBookModal form').forEach(f=>{
+    f.addEventListener('submit', ()=>{
+      const btn=f.querySelector('button[type="submit"]');
+      if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner-border spinner-border-sm me-2"></span>Memproses...';}
     });
   });
 });
 </script>
-
 {% endblock %}

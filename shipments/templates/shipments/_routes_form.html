@@ -1,0 +1,71 @@
+<div class="modal-header bg-primary text-white">
+  <h5 class="modal-title">
+    {% if route %}
+      Edit Route #{{ route.id }}
+    {% else %}
+      Add New Route
+    {% endif %}
+  </h5>
+  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<form id="route-form" method="post" novalidate>
+  <div class="modal-body">
+    {% csrf_token %}
+
+    <div class="row g-3">
+      <div class="col-md-3">
+        {{ form.order.label_tag }} {{ form.order }}
+      </div>
+
+      <div class="col-md-4 position-relative">
+        <label class="form-label">Origin</label>
+        {{ form.origin }} {{ form.origin_text }}
+        <div class="ac-menu d-none"></div>
+        {% for e in form.origin_text.errors %}
+          <div class="text-danger small">{{ e }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="col-md-5 position-relative">
+        <label class="form-label">Destination</label>
+        {{ form.destination }} {{ form.destination_text }}
+        <div class="ac-menu d-none"></div>
+        {% for e in form.destination_text.errors %}
+          <div class="text-danger small">{{ e }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="col-md-6">
+        {{ form.planned_departure.label_tag }} {{ form.planned_departure }}
+      </div>
+      <div class="col-md-6">
+        {{ form.planned_arrival.label_tag }} {{ form.planned_arrival }}
+      </div>
+
+      <div class="col-md-6">
+        {{ form.transportation_type.label_tag }} {{ form.transportation_type }}
+      </div>
+      <div class="col-md-6">
+          {{ form.transportation_asset.label_tag }}
+{{ form.transportation_asset }}
+      </div>
+
+      <div class="col-md-12" id="driver-info-wrap" style="display:none">
+        <label class="form-label">Driver / Vehicle</label>
+        {{ form.driver_info }}
+        {% for e in form.driver_info.errors %}
+          <div class="text-danger small">{{ e }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="col-md-6">{{ form.distance_km.label_tag }} {{ form.distance_km }}</div>
+      <div class="col-md-6">{{ form.status.label_tag }} {{ form.status }}</div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+    <button type="submit" class="btn btn-primary">Save</button>
+  </div>
+</form>

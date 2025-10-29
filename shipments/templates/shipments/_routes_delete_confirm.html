@@ -1,0 +1,18 @@
+<div class="modal-header bg-danger text-white">
+  <h5 class="modal-title">Delete Route</h5>
+  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+  <p class="mb-1">Hapus route berikut?</p>
+  <ul class="mb-0">
+    <li><strong>Shipment:</strong> {{ shipment.number }}</li>
+    <li><strong>Route:</strong> {{ route.route_label }}</li>
+  </ul>
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+  <form id="route-delete-form" method="post" action="{% url 'shipments:shipment_route_delete' shipment.id route.id %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Delete</button>
+  </form>
+</div>

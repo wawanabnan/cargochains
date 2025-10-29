@@ -22,7 +22,7 @@ class Shipment(models.Model):
     confirmed_by = models.ForeignKey('auth.User', null=True, blank=True, on_delete=models.SET_NULL, related_name='confirmed_shipments')
     booked_at    = models.DateTimeField(null=True, blank=True)
     booked_by    = models.ForeignKey('auth.User', null=True, blank=True, on_delete=models.SET_NULL, related_name='booked_shipments')
-
+    
     #
     # --- Identifiers ---
     number = models.CharField(max_length=30, unique=True, db_index=True)   # internal running number
@@ -47,6 +47,12 @@ class Shipment(models.Model):
         snap = self.sales_order_snap or {}
         return snap.get("customer_name") or "-"
 
+    @property
+    def booking_ref(self):
+        so = getattr(self, "sales_order", None)
+        if so:
+            return getattr(so, "booking_number", None) or getattr(so, "number", None)
+        return getattr(self, "so_number", None)
 
     # Booking dari carrier (CNTR/Flight/Vessel booking no). Diterbitkan carrier saat confirm.
     booking_number = models.CharField(max_length=50, blank=True, db_index=True)
@@ -295,6 +301,7 @@ class ShipmentRoute(models.Model):
     ]
 
     shipment = models.ForeignKey('shipments.Shipment', on_delete=models.CASCADE, related_name='routes')
+    driver_info = models.CharField(max_length=150, blank=True)  # contoh: "Budi – B 9123 KQ"
 
     # Lokasi (FK ketat sesuai pilihan A) + snapshot untuk stabilitas tampilan
     origin = models.ForeignKey(Location, on_delete=models.PROTECT, related_name='route_origins', db_column='origin_id')
@@ -446,11 +453,4 @@ class ShipmentAttachment(models.Model):
         ]
         pass
 
-class Shipment(models.Model):
-    # ...
-    @property
-    def booking_ref(self):
-        so = getattr(self, "sales_order", None)
-        if so:
-            return getattr(so, "booking_number", None) or getattr(so, "number", None)
-        return getattr(self, "so_number", None)
+   

@@ -9,6 +9,7 @@
 .form-control:focus, .form-select:focus { box-shadow:none !important; }
 </style>
 
+
 <section class="content">
   <div class="container-fluid">
     <div class="card shadow-sm">
@@ -61,12 +62,13 @@
               <th>Type</th>
               <th>Asset</th>
               <th>Status</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {% for r in page_obj.object_list %}
             <tr>
-              <td>{{ r.shipment.sales_order.booking_number|default:r.shipment.sales_order.number|default:r.shipment.so_number|default:"-" }}</td>
+              <td>{% firstof r.shipment.booking_ref "-" %}</td>              
               <td><a href="{{ r.shipment.get_absolute_url }}">{{ r.shipment.number }}</a></td>
               <td>{{ r.shipment.shipper.name|default:"-" }}</td>
               <td class="text-muted">{{ r.order|default:"-" }}</td>
@@ -77,6 +79,19 @@
               <td>{% firstof r.transportation_type_text r.transportation_type.name "-" %}</td>
               <td>{% firstof r.transportation_asset_text r.transportation_asset.identifier "-" %}</td>
               <td>{{ r.status|default:"-" }}</td>
+              <td>
+ <!-- tombol edit dan delete -->
+         <button class="btn btn-outline-secondary btn-sm js-edit-route"
+        data-url="{% url 'shipments:shipment_route_edit_modal' r.shipment_id r.id %}">
+  Edit
+</button>
+
+
+<button class="btn btn-outline-danger btn-sm js-del-route"
+        data-url="{% url 'shipments:shipment_route_delete' r.shipment_id r.id %}">
+  Del
+</button>
+              </td>
             </tr>
             {% empty %}
             <tr><td colspan="11" class="text-muted fst-italic">No routes found.</td></tr>
@@ -101,4 +116,165 @@
     </div>
   </div>
 </section>
+
+
+<button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#routeModal">
+  Launch demo modal
+</button>
+
+
+
+<div class="modal fade" id="routeModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content"><!-- filled by JS --></div>
+  </div>
+</div>
+
+<!-- Button trigger modal -->
+<button type="button" class="btn  btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+  Launch demo modal
+</button>
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        ...
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="page-loading" class="position-fixed top-0 start-0 w-100 h-100 d-none"
+     style="background:rgba(255,255,255,.6); z-index:2000;">
+  <div class="d-flex justify-content-center align-items-center h-100">
+    <div class="spinner-border" role="status" aria-label="Loading"></div>
+  </div>
+</div>
 {% endblock %}
+{% block extra_css %}
+<style>
+  /* dropdown autocomplete & gaya borderless */
+  .ac-menu{position:absolute;z-index:2000;background:#fff;width:100%;max-height:240px;overflow:auto;border:1px solid #e5e7eb;border-radius:.5rem}
+  .ac-item{padding:.375rem .5rem;cursor:pointer}
+  .ac-item:hover,.ac-item.is-active{background:#f3f4f6}
+  .table td,.table th{border:0!important}
+  .form-control,.form-select{border:0!important;box-shadow:none!important}
+</style>
+<style>
+#route-form .form-label {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #0d6efd;
+}
+
+#route-form .form-control,
+#route-form .form-select {
+  border: 1px solid #dee2e6 !important;
+  border-radius: 0.375rem;
+  box-shadow: none !important;
+  font-size: 0.9rem;
+  padding: 0.45rem 0.65rem;
+}
+
+#route-form .form-control:focus,
+#route-form .form-select:focus {
+  border-color: #0d6efd !important;
+  box-shadow: 0 0 0 .15rem rgba(13,110,253,.25) !important;
+}
+
+.ac-menu {
+  position: absolute;
+  z-index: 1050;
+  background: #fff;
+  width: 100%;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid #ced4da;
+  border-radius: .375rem;
+  box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,.05);
+}
+
+.ac-item {
+  padding: 0.4rem 0.65rem;
+  cursor: pointer;
+  transition: background-color .15s;
+}
+.ac-item:hover,
+.ac-item.is-active {
+  background-color: #f1f3f5;
+}
+</style>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+(function(){
+  // GET partial form (modal)
+  async function getHTML(url){
+    const r = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+    if(!r.ok) throw new Error('HTTP '+r.status+' '+url);
+    return r.text();
+  }
+
+  // Buka modal dan bind submit
+  async function openRouteModal(url){
+    const modal = document.getElementById('routeModal');
+    if(!modal){ alert('#routeModal belum ada di halaman'); return; }
+
+    try{
+      // load form ke modal
+      modal.querySelector('.modal-content').innerHTML = await getHTML(url);
+      bootstrap.Modal.getOrCreateInstance(modal).show();
+
+      // optional: aktifkan autocomplete/behaviour lain jika memang ada
+      window.initRouteFormBehaviors && window.initRouteFormBehaviors(modal);
+
+      // submit form (POST) → sukses: reload penuh halaman
+      const form = modal.querySelector('#route-form');
+      form?.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const res = await fetch(url, {method:'POST', body:new FormData(form)});
+        // jika server balas JSON {ok:true,...} atau apapun yang menandakan sukses → reload saja
+        try{
+          const j = await res.clone().json();
+          if (j && j.ok){ window.location.reload(); return; }
+        }catch(_){}
+        // kalau invalid → server balas HTML form ber-error, render ulang
+        modal.querySelector('.modal-content').innerHTML = await res.text();
+        window.initRouteFormBehaviors && window.initRouteFormBehaviors(modal);
+      });
+
+    }catch(err){
+      console.error('[routes_schedule] openRouteModal error:', err);
+      alert('Gagal memuat form. Cek Console/Network.');
+    }
+  }
+
+  // Delegasi klik: pakai tombol yang sudah ada
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('#btn-add-route, .js-edit-route');
+    if(!btn) return;
+    e.preventDefault();
+    const url = btn.dataset.url;
+    if(!url){ alert('data-url kosong pada tombol'); return; }
+    openRouteModal(url);
+  });
+
+  // helper manual dari console: _route(8, null) atau _route(8, 5)
+  window._route = (sid, rid)=> openRouteModal(rid ? `/shipments/${sid}/routes/${rid}/modal/`
+                                              : `/shipments/${sid}/routes/modal/`);
+})();
+</script>
+{% endblock %}
+

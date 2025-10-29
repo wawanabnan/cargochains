@@ -1,7 +1,7 @@
 # geo/urls.py
 from django.urls import path
-from .views.adds import LocationAutocompleteView  # ⬅️ arahkan ke submodule adds.py
-from .views.adds import LocationAjaxView  # ⬅️ arahkan ke submodule adds.py
+from .views.locations import LocationAutocompleteView  # ⬅️ arahkan ke submodule adds.py
+from .views.locations import LocationAjaxView  # ⬅️ arahkan ke submodule adds.py
 
 
 app_name = "geo"

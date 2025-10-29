@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="m-0">Project Costs</h3>
+    <div class="d-flex gap-2">
+      <a href="{% url 'projects:cost_add_global' %}" class="btn btn-primary">Add Cost</a>
+      <a href="{% url 'projects:project_list' %}" class="btn btn-outline-secondary">Projects</a>
+    </div>
+  </div>
+
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-md-3">
+      <input type="text" name="q" class="form-control" placeholder="Search title/notes/project"
+             value="{{ q }}">
+    </div>
+    <div class="col-md-3">
+      <select name="project" class="form-select">
+        <option value="">All Projects</option>
+        {% for p in projects %}
+          <option value="{{ p.id }}" {% if p.id|stringformat:"s" == project_selected %}selected{% endif %}>
+            {{ p.number }} — {{ p.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="category" class="form-select">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+          <option value="{{ cat.id }}" {% if cat.id|stringformat:"s" == category_selected %}selected{% endif %}>
+            {{ cat.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-1">
+      <input type="date" name="date_from" class="form-control" placeholder="From" value="{{ date_from }}">
+    </div>
+    <div class="col-md-1">
+      <input type="date" name="date_to" class="form-control" placeholder="To" value="{{ date_to }}">
+    </div>
+    <div class="col-md-1">
+      <button class="btn btn-outline-secondary w-100">Filter</button>
+    </div>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table table-striped align-middle">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Project</th>
+          <th>Category</th>
+          <th>Title</th>
+          <th>Ref</th>
+          <th class="text-end">Amount</th>
+          <th>Cur</th>
+          <th class="text-center" style="width:90px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in page_obj %}
+        <tr>
+          <td>{{ c.cost_date|date:"Y-m-d" }}</td>
+          <td>
+            <div class="fw-semibold">{{ c.project.number }}</div>
+            <div class="text-muted small">{{ c.project.name }}</div>
+          </td>
+          <td>{{ c.category.name }}</td>
+           <td>
+            {{ c.title }}
+            {% if c.attachment %}
+              <a href="{{ c.attachment.url }}" class="ms-2" title="Attachment" target="_blank">📎</a>
+            {% endif %}
+          </td>
+          <td class="text-end">{{ c.amount|floatformat:2 }}</td>
+          <td>{{ c.currency_code }}</td>
+          <td class="text-center">
+            <a href="{% url 'projects:cost_edit' c.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-muted p-3">No costs found.</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th colspan="4" class="text-end">Total</th>
+          <th class="text-end">{{ total_amount|floatformat:2 }}</th>
+          <th colspan="2"></th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mt-2">
+    <div>Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</div>
+    <nav>
+      <ul class="pagination mb-0">
+        {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&project={{ project_selected }}&category={{ category_selected }}&date_from={{ date_from }}&date_to={{ date_to }}">«</a></li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">«</span></li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if num == page_obj.number %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}&q={{ q }}&project={{ project_selected }}&category={{ category_selected }}&date_from={{ date_from }}&date_to={{ date_to }}">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&project={{ project_selected }}&category={{ category_selected }}&date_from={{ date_from }}&date_to={{ date_to }}">»</a></li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">»</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+
+</div>
+{% endblock %}

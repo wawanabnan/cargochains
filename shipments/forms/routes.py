@@ -1,11 +1,34 @@
-# shipments/forms_routes.py
+# shipments/forms/routes.py
 from django import forms
-from django.forms import BaseInlineFormSet
-from .. import models as m
+from django.db.models import Max
+from shipments.models import ShipmentRoute, TransportationAsset
 
+
+# ✅ 1️⃣ Tambahkan ini SEBELUM ShipmentRouteForm
+class AssetChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        parts = [obj.identifier]
+        if getattr(obj, "type", None):
+            parts.append(getattr(obj.type, "code", None) or getattr(obj.type, "name", None))
+        if getattr(obj, "carrier", None) and getattr(obj.carrier, "name", None):
+            parts.append(obj.carrier.name)
+        return " — ".join([p for p in parts if p])
+
+
+# ✅ 2️⃣ Baru class ShipmentRouteForm
 class ShipmentRouteForm(forms.ModelForm):
+    transportation_asset = AssetChoiceField(
+        queryset=TransportationAsset.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={
+            "class": "form-select form-select-sm",
+            "id": "id_transportation_asset",
+        }),
+        label="Transportation Asset",
+    )
+
     class Meta:
-        model = m.ShipmentRoute
+        model = ShipmentRoute
         fields = [
             "order",
             "origin", "origin_text",
@@ -13,54 +36,70 @@ class ShipmentRouteForm(forms.ModelForm):
             "planned_departure", "planned_arrival",
             "transportation_type", "transportation_asset",
             "distance_km", "status",
+            "driver_info",
         ]
         widgets = {
-            # FK disembunyikan -> akan diisi lewat autocomplete JS
             "origin": forms.HiddenInput(),
             "destination": forms.HiddenInput(),
-
-            # Teks yang diketik user untuk cari lokasi (autocomplete)
             "origin_text": forms.TextInput(attrs={
-                "placeholder": "Type to search origin...",
                 "class": "form-control form-control-sm ac-location",
                 "data-target": "origin",
+                "placeholder": "Type & pick…",
             }),
             "destination_text": forms.TextInput(attrs={
-                "placeholder": "Type to search destination...",
                 "class": "form-control form-control-sm ac-location",
                 "data-target": "destination",
+                "placeholder": "Type & pick…",
             }),
-
-            "planned_departure": forms.DateTimeInput(attrs={"type": "datetime-local", "class": "form-control form-control-sm"}),
-            "planned_arrival": forms.DateTimeInput(attrs={"type": "datetime-local", "class": "form-control form-control-sm"}),
-            "transportation_type": forms.Select(attrs={"class": "form-select form-select-sm"}),
-            "transportation_asset": forms.Select(attrs={"class": "form-select form-select-sm"}),
-            "distance_km": forms.NumberInput(attrs={"step": "0.01", "class": "form-control form-control-sm"}),
+            "planned_departure": forms.DateTimeInput(attrs={
+                "type": "datetime-local",
+                "class": "form-control form-control-sm"
+            }),
+            "planned_arrival": forms.DateTimeInput(attrs={
+                "type": "datetime-local",
+                "class": "form-control form-control-sm"
+            }),
+            "transportation_type": forms.Select(attrs={
+                "class": "form-select form-select-sm",
+                "id": "route-transportation-type"
+            }),
+            "distance_km": forms.NumberInput(attrs={
+                "step": "0.01",
+                "class": "form-control form-control-sm"
+            }),
             "status": forms.Select(attrs={"class": "form-select form-select-sm"}),
-            "order": forms.NumberInput(attrs={"class": "form-control form-control-sm"}),
+            "driver_info": forms.TextInput(attrs={
+                "class": "form-control form-control-sm",
+                "placeholder": "Nama sopir & no. kendaraan"
+            }),
         }
 
-    def clean(self):
-        cleaned = super().clean()
-        # Modal: kita wajibkan origin/destination (ID) harus terisi (dipilih dari hasil autocomplete)
-        if not cleaned.get("origin"):
-            raise forms.ValidationError("Origin tidak dikenali. Pilih dari hasil pencarian.")
-        if not cleaned.get("destination"):
-            raise forms.ValidationError("Destination tidak dikenali. Pilih dari hasil pencarian.")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        etd = cleaned.get("planned_departure")
-        eta = cleaned.get("planned_arrival")
-        if etd and eta and etd > eta:
-            raise forms.ValidationError("ETD tidak boleh lebih besar dari ETA.")
-        return cleaned
+        # Default kosong: tunggu type dipilih
+        self.fields["transportation_asset"].queryset = TransportationAsset.objects.none()
+
+        # Ambil type dari POST (ADD/invalid) atau dari instance (EDIT)
+        type_id = (self.data.get("transportation_type")
+                   or getattr(getattr(self.instance, "transportation_type", None), "id", None))
+
+        if type_id:
+            self.fields["transportation_asset"].queryset = (
+                TransportationAsset.objects.filter(type_id=type_id, active=True).order_by("identifier")
+            )
+        else:
+            # EDIT tanpa type terdeteksi → minimal tampilkan asset yang sedang dipakai
+            cur = getattr(self.instance, "transportation_asset", None)
+            if cur:
+                self.fields["transportation_asset"].queryset = TransportationAsset.objects.filter(pk=cur.pk)
 
 
-class ShipmentRouteFormSet(BaseInlineFormSet):
-    def clean(self):
-        super().clean()
-        active = [f for f in self.forms if not f.cleaned_data.get("DELETE", False)]
-        if not active:
-            raise forms.ValidationError("Minimal satu rute harus diisi.")
-        # nomori otomatis
-        for i, f in enumerate(active, start=1):
-            f.cleaned_data["order"] = i
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        if not obj.order:
+            last = ShipmentRoute.objects.filter(shipment=obj.shipment).aggregate(m=Max("order"))["m"] or 0
+            obj.order = last + 1
+        if commit:
+            obj.save()
+        return obj

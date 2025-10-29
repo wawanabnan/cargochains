@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% load shipment_extras %}
 
+
+
 {% block content %}
 
 <div class="container py-3">
@@ -249,66 +251,7 @@
   </div>
 
 </div>
-
-
-
-
-
-{% block extra_js %}
-<script>
-window.initRouteTableHandlers = function(){
-  const wrap = document.getElementById('routes-table-wrap');
-  const modalEl = document.getElementById('routeModal');
-  const modal = new bootstrap.Modal(modalEl);
-
-  // ADD
-  const addBtn = wrap.querySelector('#btn-add-route');
-  if(addBtn){
-    addBtn.onclick = async ()=>{
-      const url = addBtn.dataset.url;
-      const html = await (await fetch(url)).text();
-      modalEl.querySelector('.modal-content').innerHTML = html;
-      modal.show();
-    };
-  }
-
-  // EDIT
-  wrap.querySelectorAll('.js-edit-route').forEach(btn=>{
-    btn.onclick = async ()=>{
-      const html = await (await fetch(btn.dataset.url)).text();
-      modalEl.querySelector('.modal-content').innerHTML = html;
-      modal.show();
-    };
-  });
-
-  // DELETE
-  wrap.querySelectorAll('.js-del-route').forEach(btn=>{
-    btn.onclick = async ()=>{
-      if(!confirm('Delete this route?')) return;
-      const resp = await fetch(btn.dataset.url, {method:'POST', headers: {'X-CSRFToken': getCsrf()}});
-      if(resp.ok){
-        const data = await resp.json();
-        if(data.ok){
-          wrap.innerHTML = data.html;
-          window.initRouteTableHandlers(); // rebind
-        }
-      }
-    };
-  });
-
-  function getCsrf(){
-    const name = 'csrftoken';
-    const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-    return m ? m[2] : '';
-  }
-};
-
-document.addEventListener('DOMContentLoaded', window.initRouteTableHandlers);
-</script>
-{% endblock %}
-
-
-    </div>
+  </div>
 
     <!-- TAB: ATTACHMENTS -->
     <div class="tab-pane fade" id="tab-attachments" role="tabpanel">
@@ -424,9 +367,60 @@ document.addEventListener('DOMContentLoaded', window.initRouteTableHandlers);
   </div></div>
 </div>
 
-{% endblock %}
-
+{% endblock%}
+{% block extra_js %}
 <script>
+window.initRouteTableHandlers = function(){
+  const wrap = document.getElementById('routes-table-wrap');
+  const modalEl = document.getElementById('routeModal');
+  const modal = new bootstrap.Modal(modalEl);
+
+  // ADD
+  const addBtn = wrap.querySelector('#btn-add-route');
+  if(addBtn){
+    addBtn.onclick = async ()=>{
+      const url = addBtn.dataset.url;
+      const html = await (await fetch(url)).text();
+      modalEl.querySelector('.modal-content').innerHTML = html;
+      modal.show();
+    };
+  }
+
+  // EDIT
+  wrap.querySelectorAll('.js-edit-route').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const html = await (await fetch(btn.dataset.url)).text();
+      modalEl.querySelector('.modal-content').innerHTML = html;
+      modal.show();
+    };
+  });
+
+  // DELETE
+  wrap.querySelectorAll('.js-del-route').forEach(btn=>{
+    btn.onclick = async ()=>{
+      if(!confirm('Delete this route?')) return;
+      const resp = await fetch(btn.dataset.url, {method:'POST', headers: {'X-CSRFToken': getCsrf()}});
+      if(resp.ok){
+        const data = await resp.json();
+        if(data.ok){
+          wrap.innerHTML = data.html;
+          window.initRouteTableHandlers(); // rebind
+        }
+      }
+    };
+  });
+
+  function getCsrf(){
+    const name = 'csrftoken';
+    const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return m ? m[2] : '';
+  }
+};
+
+document.addEventListener('DOMContentLoaded', window.initRouteTableHandlers);
+</script>
+<script>
+alert("Test")
 document.addEventListener('DOMContentLoaded', function(){
   document.querySelectorAll('#confirmConfirmModal form, #confirmBookModal form').forEach(f=>{
     f.addEventListener('submit', ()=>{
@@ -436,3 +430,4 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 });
 </script>
+{% endblock %}

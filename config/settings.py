@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'partners',
     "shipments.apps.ShipmentsConfig",
     'geo',
+    'projects',
 ]
 
 MIDDLEWARE = [

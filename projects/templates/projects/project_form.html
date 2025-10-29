@@ -1,0 +1,122 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="app-wrapper">
+  <section class="content-header">
+    <div class="container-fluid">
+      <h1 class="mb-2">{{ form.instance.pk|yesno:"Edit Project,Add Project" }}</h1>
+      {% if messages %}
+        {% for m in messages %}
+          <div class="alert alert-{{ m.tags }} mt-2">{{ m }}</div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="content">
+    <div class="container-fluid">
+      <div class="card card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Number</label>
+              <input type="text" class="form-control" value="{{ form.instance.number|default:'(auto on save)' }}" readonly>
+              <div class="form-text">Nomor internal di-generate otomatis.</div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Ref Number</label>
+              {{ form.ref_number }}
+              <div class="form-text">Opsional — nomor referensi dari klien/sistem lain.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Project Name</label>
+              {{ form.name }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Category</label>
+              {{ form.category }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Status</label>
+              {{ form.status }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Start Date</label>
+              {{ form.start_date }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">End Date</label>
+              {{ form.end_date }}
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              {{ form.description }}
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <button type="submit" class="btn btn-success">
+              <i class="fas fa-save"></i> Save
+            </button>
+            {% if form.instance.pk %}
+              <a href="{% url 'projects:cost_add' form.instance.pk %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Cost
+              </a>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+
+      {% if form.instance.pk %}
+      <div id="costs" class="card mt-3">
+        <div class="card-header">
+          <strong>Costs</strong>
+          <a class="btn btn-sm btn-primary float-end" href="{% url 'projects:cost_add' form.instance.pk %}">
+            <i class="fas fa-plus"></i> Add Cost
+          </a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-striped mb-0">
+              <thead>
+                <tr>
+                  <th>Date</th><th>Category</th><th>Title</th><th class="text-end">Amount</th><th>Cur</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for c in form.instance.costs.all %}
+                <tr>
+                  <td>{{ c.cost_date|date:"Y-m-d" }}</td>
+                  <td>{{ c.category.name }}</td>
+                  <td>{{ c.title }}</td>
+                  <td class="text-end">{{ c.amount }}</td>
+                  <td>{{ c.currency_code }}</td>
+                  <td class="text-end">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'projects:cost_edit' c.pk %}">Edit</a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted p-3">Belum ada biaya.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.querySelectorAll("form input, form select, form textarea").forEach(function(el){
+    el.addEventListener("invalid", function(){ el.classList.add("is-invalid"); });
+    el.addEventListener("input", function(){ el.classList.remove("is-invalid"); });
+  });
+</script>
+{% endblock %}

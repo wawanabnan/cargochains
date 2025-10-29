@@ -6,17 +6,9 @@ from django.db import transaction
 
 from shipments import models as m
 from shipments.forms.shipment_parties import ShipmentPartiesForm
-from shipments.forms.routes import ShipmentRouteForm, ShipmentRouteFormSet
+from shipments.forms.routes import ShipmentRouteForm
 
 
-RouteFormSet = inlineformset_factory(
-    parent_model=m.Shipment,
-    model=m.ShipmentRoute,
-    form=ShipmentRouteForm,
-    formset=ShipmentRouteFormSet,
-    extra=1,            # tampilkan 1 baris kosong default
-    can_delete=True,
-)
 
 @transaction.atomic
 def edit_routes(request, shipment_id):

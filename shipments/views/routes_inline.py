@@ -1,65 +1,56 @@
-from django.http import JsonResponse, Http404
+# shipments/views/routes_inline.py
 from django.shortcuts import get_object_or_404, render
-from django.views.decorators.http import require_http_methods
-from django.db import transaction
-from shipments import models as m
+from django.http import JsonResponse, HttpResponseBadRequest
+from django.db.models import Max
+from django.views.decorators.http import require_POST
+
+from shipments.models import Shipment, ShipmentRoute
 from shipments.forms.routes import ShipmentRouteForm
 
-def _render_routes_table(request, shipment: m.Shipment):
-    return render(request, "shipments/_routes_table.html", {"shipment": shipment}).content.decode("utf-8")
+TEMPLATE_PARTIAL = "shipments/_routes_form.html"
+TEMPLATE_WRAPPER = "shipments/routes_form_wrapper.html"
+TEMPLATE_DELETE_CONFIRM = "shipments/_routes_delete_confirm.html"
 
-def _next_order(shipment: m.Shipment) -> int:
-    last = shipment.routes.order_by("-order").first()
-    return (last.order + 1) if last and last.order else shipment.routes.count() + 1
+def route_modal(request, shipment_id, route_id=None):
+    shipment = get_object_or_404(Shipment, pk=shipment_id)
+    instance = ShipmentRoute.objects.filter(pk=route_id, shipment=shipment).first()
 
-@require_http_methods(["GET", "POST"])
-@transaction.atomic
-def route_modal(request, shipment_id: int, route_id: int | None = None):
-    shipment = get_object_or_404(m.Shipment, pk=shipment_id)
+    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+    force_wrapper = request.GET.get("debug") == "1"
 
-    if route_id:
-        route = get_object_or_404(m.ShipmentRoute, pk=route_id, shipment=shipment)
-    else:
-        route = m.ShipmentRoute(shipment=shipment, order=_next_order(shipment))
+    if request.method == "POST":
+        form = ShipmentRouteForm(request.POST, instance=instance)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.shipment = shipment
+            obj.save()
+            html = render(request, "shipments/_routes_table.html", {"shipment": shipment}).content.decode("utf-8")
+            return JsonResponse({"ok": True, "html": html})
+        tpl = TEMPLATE_PARTIAL if (is_ajax and not force_wrapper) else TEMPLATE_WRAPPER
+        return render(request, tpl, {"form": form, "route": instance, "shipment": shipment}, status=400)
 
-    if request.method == "GET":
-        form = ShipmentRouteForm(instance=route, prefix="route")
-        return render(request, "shipments/_routes_form_modal.html", {"shipment": shipment, "form": form, "route": route})
+    # GET
+    form = ShipmentRouteForm(instance=instance)
+    next_order = (shipment.routes.aggregate(m=Max("order"))["m"] or 0) + 1
+    ctx = {"form": form, "route": instance, "shipment": shipment, "next_order": next_order}
+    tpl = TEMPLATE_PARTIAL if (is_ajax and not force_wrapper) else TEMPLATE_WRAPPER
+    return render(request, tpl, ctx)
 
-    # POST
-    form = ShipmentRouteForm(request.POST, instance=route, prefix="route")
-    if form.is_valid():
-        saved = form.save(commit=False)
-        saved.shipment = shipment
-        if not saved.order:
-            saved.order = _next_order(shipment)
-        saved.save()
-        # update flags di header
-        shipment.is_multimodal = shipment.routes.count() > 1
-        first = shipment.routes.filter(transportation_type__isnull=False).order_by("order").first()
-        if first and hasattr(first.transportation_type, "mode"):
-            shipment.mode = first.transportation_type.mode
-        shipment.save(update_fields=["is_multimodal", "mode"])
-        html = _render_routes_table(request, shipment)
-        return JsonResponse({"ok": True, "html": html})
-    else:
-        return render(request, "shipments/_route_form_modal.html", {"shipment": shipment, "form": form, "route": route}, status=400)
 
-@require_http_methods(["POST"])
-@transaction.atomic
-def route_delete(request, shipment_id: int, route_id: int):
-    shipment = get_object_or_404(m.Shipment, pk=shipment_id)
-    route = get_object_or_404(m.ShipmentRoute, pk=route_id, shipment=shipment)
+def route_delete_confirm(request, shipment_id, route_id):
+    """GET modal konfirmasi delete."""
+    shipment = get_object_or_404(Shipment, pk=shipment_id)
+    route = get_object_or_404(ShipmentRoute, pk=route_id, shipment=shipment)
+    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+    tpl = TEMPLATE_DELETE_CONFIRM if is_ajax else TEMPLATE_WRAPPER
+    return render(request, tpl, {"shipment": shipment, "route": route})
+
+
+@require_POST
+def route_delete(request, shipment_id, route_id):
+    """POST hapus route lalu kembalikan tabel terbaru (JSON)."""
+    shipment = get_object_or_404(Shipment, pk=shipment_id)
+    route = get_object_or_404(ShipmentRoute, pk=route_id, shipment=shipment)
     route.delete()
-    # rapikan order 1..n
-    for i, r in enumerate(shipment.routes.order_by("order"), start=1):
-        if r.order != i:
-            r.order = i
-            r.save(update_fields=["order"])
-    shipment.is_multimodal = shipment.routes.count() > 1
-    first = shipment.routes.filter(transportation_type__isnull=False).order_by("order").first()
-    if first and hasattr(first.transportation_type, "mode"):
-        shipment.mode = first.transportation_type.mode
-    shipment.save(update_fields=["is_multimodal", "mode"])
-    html = _render_routes_table(request, shipment)
+    html = render(request, "shipments/_routes_table.html", {"shipment": shipment}).content.decode("utf-8")
     return JsonResponse({"ok": True, "html": html})

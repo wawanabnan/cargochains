@@ -1,0 +1,139 @@
+[
+  {
+    "model": "shipments.transportationtype",
+    "pk": 1,
+    "fields": {
+      "code": "FCL20",
+      "name": "Container 20'",
+      "mode": "SEA",
+      "notes": "Standard 20ft container"
+    }
+  },
+  {
+    "model": "shipments.transportationtype",
+    "pk": 2,
+    "fields": {
+      "code": "FCL40",
+      "name": "Container 40'",
+      "mode": "SEA",
+      "notes": "Standard 40ft container"
+    }
+  },
+  {
+    "model": "shipments.transportationtype",
+    "pk": 3,
+    "fields": {
+      "code": "BARGE300",
+      "name": "Barge 300 ft",
+      "mode": "SEA",
+      "notes": "Flat-top barge 300 feet"
+    }
+  },
+  {
+    "model": "shipments.transportationtype",
+    "pk": 4,
+    "fields": {
+      "code": "TRUCK10R",
+      "name": "Truck 10 Roda",
+      "mode": "LAND",
+      "notes": "10-wheel cargo truck"
+    }
+  },
+  {
+    "model": "shipments.transportationtype",
+    "pk": 5,
+    "fields": {
+      "code": "PICKUP",
+      "name": "Pickup Truck",
+      "mode": "LAND",
+      "notes": "Pickup for small cargo"
+    }
+  },
+  {
+    "model": "shipments.transportationtype",
+    "pk": 6,
+    "fields": {
+      "code": "AIRCARGO",
+      "name": "Air Cargo",
+      "mode": "AIR",
+      "notes": "Standard air freight cargo"
+    }
+  },
+  {
+    "model": "shipments.transportationtype",
+    "pk": 7,
+    "fields": {
+      "code": "AIREXP",
+      "name": "Air Express",
+      "mode": "AIR",
+      "notes": "Express air shipment"
+    }
+  },
+  {
+    "model": "shipments.transportationtype",
+    "pk": 8,
+    "fields": {
+      "code": "RAILBOX",
+      "name": "Rail Boxcar",
+      "mode": "RAIL",
+      "notes": "Standard rail cargo"
+    }
+  },
+
+  // --- TransportationAsset ---
+  {
+    "model": "shipments.transportationasset",
+    "pk": 1,
+    "fields": {
+      "type": 1,
+      "carrier": null,
+      "identifier": "MV DAKARASH 01",
+      "active": true,
+      "notes": "Company owned vessel"
+    }
+  },
+  {
+    "model": "shipments.transportationasset",
+    "pk": 2,
+    "fields": {
+      "type": 3,
+      "carrier": null,
+      "identifier": "BARGE SEA 300-A",
+      "active": true,
+      "notes": "Barge for coal & bulk"
+    }
+  },
+  {
+    "model": "shipments.transportationasset",
+    "pk": 3,
+    "fields": {
+      "type": 4,
+      "carrier": null,
+      "identifier": "B 9123 KQ",
+      "active": true,
+      "notes": "10-wheel truck owned by vendor"
+    }
+  },
+  {
+    "model": "shipments.transportationasset",
+    "pk": 4,
+    "fields": {
+      "type": 6,
+      "carrier": null,
+      "identifier": "GA-402 / PK-GAK",
+      "active": true,
+      "notes": "Garuda Air Cargo flight"
+    }
+  },
+  {
+    "model": "shipments.transportationasset",
+    "pk": 5,
+    "fields": {
+      "type": 7,
+      "carrier": null,
+      "identifier": "JT-550 / PK-LJT",
+      "active": true,
+      "notes": "Lion Air Express"
+    }
+  }
+]
