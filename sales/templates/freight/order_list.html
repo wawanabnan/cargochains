@@ -3,41 +3,53 @@
 {% load querystring %}
 
 {% block content %}
-<div class="container-fluid py-3">
-  <div class="row">
-    <div class="col-md-3 text-left">
-      <h4> Freight Orders </h4>      
-    </div>
-    <div class="col-md-6 text-center">
-      <div class="input-group"id="searchInput">
-        <input type="text" class="form-control" placeholder="search" aria-label="Username" aria-describedby="basic-addon1">
-         <span class="input-group-text" id="basic-addon1"><i class="fas fa-search"></i></span>
+
+
+<div class="d-flex justify-content-between bd-highlight mb-3">
+    <div class="p-2 bd-highlight"> <h3 class="page-title">Freight Orders</h3></div>
+    <div class="p-2 bd-highlight">Flex item</div>
+    <div class="p-2 bd-highlight">Flex item</div>
+  </div>
+
+
+
+<div class="card">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-3 text-left">
+          
       </div>
-      
-      <div id="action-bar" class="d-none">
-            <button class="btn btn-primary btn-sm">Report</button>
-            <button type="submit" id="btn-bulk-delete" class="btn btn-danger btn-sm" disabled>
-              <i class="fas fa-trash"></i> Delete 
+      <div class="col-md-6 text-center">
+        <div class="input-group"id="searchInput">
+          <input type="text" class="form-control" placeholder="search" aria-label="Username" aria-describedby="basic-addon1">
+          <span class="input-group-text" id="basic-addon1"><i class="fa fa-search"></i></span>
+        </div>
+        
+        <div id="action-bar" class="d-none">
+              <button class="btn btn-primary btn-sm">Report</button>
+              <button type="submit" id="btn-bulk-delete" class="btn btn-danger btn-sm" disabled>
+                <i class="fa fa-trash"></i> Delete 
+              </button>
+        </div>
+    </div>
+    <div class="col-md-3 text-end">          
+            <button class="btn btn-sm btn-outline-secondary" id="btn-toggle-filters" title="Show filters">
+                <i class="fa fa-filter"></i>
             </button>
+        
       </div>
-  </div>
-  <div class="col-md-3 text-end">          
-          <button class="btn btn-sm btn-outline-secondary" id="btn-toggle-filters" title="Show filters">
-              <i class="fas fa-filter"></i>
-          </button>
-      
     </div>
-  </div>
-</div>
 
-
-<div class="container-fluid">
-  <div class="row">
+    <div class="row">
       <div class="cold-md-12">
         {% include 'freight/quotation_list_filter.html' %}
       </div>
   </div>
+
+
+  </div>
 </div>
+
 
 <div id="msg">
     {% if messages %}
@@ -143,6 +155,7 @@
 {% block extra_js %}
 <script>
 (function(){
+
   const btn = document.getElementById('btn-toggle-filters');
   const panel = document.getElementById('filters-panel');
   if(!btn || !panel) return;
