@@ -32,15 +32,17 @@
               <td>{{ r.status|default:"-" }}</td>
               <td>
  <!-- tombol edit dan delete -->
-         <button class="btn btn-outline-secondary btn-sm js-edit-route"
+         <button class="btn btn-sm js-edit-route"
         data-url="{% url 'shipments:shipment_route_edit_modal' r.shipment_id r.id %}">
-  Edit
+       <i class="bi bi-pencil-square"></i>
+
 </button>
 
 
-<button class="btn btn-outline-danger btn-sm js-del-route"
+<button class="btn  btn-sm js-del-route"
         data-url="{% url 'shipments:shipment_route_delete' r.shipment_id r.id %}">
-  Del
+        <i class="bi bi-trash3"></i>
+
 </button>
               </td>
             </tr>
