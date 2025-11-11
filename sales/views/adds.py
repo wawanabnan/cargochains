@@ -80,7 +80,10 @@ def _get_tax_rate() -> Decimal:
 # ────────────────────────────────────────────────────────────────────────────
 # View
 # ────────────────────────────────────────────────────────────────────────────
-class FreightQuotationAddView(View):
+from ..auth import SalesAccessRequiredMixin, sales_queryset_for_user, is_sales_supervisor
+from django.views.generic import  CreateView
+
+class FreightQuotationAddView(SalesAccessRequiredMixin,  CreateView):
     template_name = "freight/quotation_add.html"
 
     # ---- dummy formset agar tombol & blok template tampil ----

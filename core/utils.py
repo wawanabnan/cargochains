@@ -49,9 +49,37 @@ def get_next_number(app_label: str, code: str, today: date | None = None) -> str
         # render output dari format di DB
         fmt = getattr(seq, "format", None) or "{prefix}-{month:02d}{yy:02d}-{seq:04d}"
 
-        # Jika admin lupa kasih {:0Nd} di {seq}, hormati padding secara manual
-        if "{seq:" not in fmt:
-            seq_str = str(seq.last_number).zfill(seq.padding or 0)
-            return fmt.format(prefix=seq.prefix or "", year=year, yy=yy, month=month, day=day, seq=seq_str)
+        if "prefix}" in fmt and "{prefix}" not in fmt:
+            fmt = fmt.replace("prefix}", "{prefix}")
+        # kurung kurawal tidak seimbang
+        if fmt.count("{") != fmt.count("}"):
+            fmt = "{prefix}-{month:02d}{yy:02d}-{seq:04d}"
+        # hilang token wajib {seq}
 
-        return fmt.format(prefix=seq.prefix or "", year=year, yy=yy, month=month, day=day, seq=seq.last_number)
+        # Jika admin lupa kasih {:0Nd} di {seq}, hormati padding secara manual
+        if "{seq" not in fmt:
+            # tetap hormati padding manual
+            seq_str = str(seq.last_number).zfill(seq.padding or 0)
+            try:
+                return fmt.format(prefix=seq.prefix or "", year=year, yy=yy, month=month, day=day, seq=seq_str)
+            except Exception:
+                # fallback terakhir
+                safe_fmt = "{prefix}-{month:02d}{yy:02d}-{seq:04d}"
+                return safe_fmt.format(prefix=seq.prefix or "", year=year, yy=yy, month=month, day=day, seq=seq_str)
+
+        # Normal path: ada {seq:...}
+        try:
+            return fmt.format(
+                prefix=seq.prefix or "",
+                year=year, yy=yy, month=month, day=day,
+                seq=seq.last_number,
+            )
+        except Exception:
+            # Fallback terakhir jika format masih bermasalah
+            safe_fmt = "{prefix}-{month:02d}{yy:02d}-{seq:04d}"
+            return safe_fmt.format(
+                prefix=seq.prefix or "",
+                year=year, yy=yy, month=month, day=day,
+                seq=seq.last_number,
+            )
+

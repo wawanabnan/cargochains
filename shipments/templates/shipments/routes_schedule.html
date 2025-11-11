@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "adminbase.html" %}
 
 {% block title %}Shipment Routes Schedule{% endblock %}
 
@@ -10,117 +10,32 @@
 </style>
 
 
-<section class="content">
+
+<div class="app-content-header">
   <div class="container-fluid">
-    <div class="card shadow-sm">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h3 class="card-title mb-0">Shipment Routes Schedule</h3>
-        <a class="btn btn-sm btn-outline-secondary"
-           href="{% url 'shipments:routes_schedule_export' %}?customer_id={{filters.customer_id}}&customer_q={{filters.customer_q}}&booking={{filters.booking}}&date_from={{filters.date_from}}&date_to={{filters.date_to}}">
-          Export CSV
-        </a>
+    <div class="row">
+      <div class="col-sm-6">
+        <h3 class="mb-0">Shipment Routes Schedule</h3>
       </div>
-
-      <div class="card-body">
-        <form method="get" class="row g-2 align-items-end">
-          <div class="col-sm-3">
-            <label class="form-label">Customer</label>
-            <input type="hidden" name="customer_id" id="id_customer_id" value="{{ filters.customer_id }}">
-            <input type="text" name="customer_q" id="id_customer_q" value="{{ filters.customer_q }}" placeholder="Type name/code..."
-                   class="form-control form-control-sm">
-          </div>
-          <div class="col-sm-3">
-            <label class="form-label">Booking No</label>
-            <input type="text" name="booking" value="{{ filters.booking }}" class="form-control form-control-sm" placeholder="Booking/SO number">
-          </div>
-          <div class="col-sm-2">
-            <label class="form-label">From (ETD ≥)</label>
-            <input type="date" name="date_from" value="{{ filters.date_from }}" class="form-control form-control-sm">
-          </div>
-          <div class="col-sm-2">
-            <label class="form-label">To (ETA ≤)</label>
-            <input type="date" name="date_to" value="{{ filters.date_to }}" class="form-control form-control-sm">
-          </div>
-          <div class="col-sm-2">
-            <button class="btn btn-success btn-sm w-100">Filter</button>
-          </div>
-        </form>
-      </div>
-
-      <div class="table-responsive">
-        <table class="table table-sm table-borderless align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>Booking</th>
-              <th>Shipment</th>
-              <th>Customer</th>
-              <th>#</th>
-              <th>Origin</th>
-              <th>Destination</th>
-              <th>ETD</th>
-              <th>ETA</th>
-              <th>Type</th>
-              <th>Asset</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for r in page_obj.object_list %}
-            <tr>
-              <td>{% firstof r.shipment.booking_ref "-" %}</td>              
-              <td><a href="{{ r.shipment.get_absolute_url }}">{{ r.shipment.number }}</a></td>
-              <td>{{ r.shipment.shipper.name|default:"-" }}</td>
-              <td class="text-muted">{{ r.order|default:"-" }}</td>
-              <td>{% firstof r.origin_text r.origin.name "-" %}</td>
-              <td>{% firstof r.destination_text r.destination.name "-" %}</td>
-              <td>{{ r.planned_departure|date:"Y-m-d H:i" }}</td>
-              <td>{{ r.planned_arrival|date:"Y-m-d H:i" }}</td>
-              <td>{% firstof r.transportation_type_text r.transportation_type.name "-" %}</td>
-              <td>{% firstof r.transportation_asset_text r.transportation_asset.identifier "-" %}</td>
-              <td>{{ r.status|default:"-" }}</td>
-              <td>
- <!-- tombol edit dan delete -->
-         <button class="btn btn-outline-secondary btn-sm js-edit-route"
-        data-url="{% url 'shipments:shipment_route_edit_modal' r.shipment_id r.id %}">
-  Edit
-</button>
-
-
-<button class="btn btn-outline-danger btn-sm js-del-route"
-        data-url="{% url 'shipments:shipment_route_delete' r.shipment_id r.id %}">
-  Del
-</button>
-              </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="11" class="text-muted fst-italic">No routes found.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-
-      <div class="card-footer">
-        <nav>
-          <ul class="pagination pagination-sm mb-0">
-            {% if page_obj.has_previous %}
-            <li class="page-item"><a class="page-link" href="?{% if filters.customer_id %}customer_id={{filters.customer_id}}&{% endif %}{% if filters.customer_q %}customer_q={{filters.customer_q}}&{% endif %}{% if filters.booking %}booking={{filters.booking}}&{% endif %}{% if filters.date_from %}date_from={{filters.date_from}}&{% endif %}{% if filters.date_to %}date_to={{filters.date_to}}&{% endif %}page={{ page_obj.previous_page_number }}">«</a></li>
-            {% else %}<li class="page-item disabled"><span class="page-link">«</span></li>{% endif %}
-            <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
-            {% if page_obj.has_next %}
-            <li class="page-item"><a class="page-link" href="?{% if filters.customer_id %}customer_id={{filters.customer_id}}&{% endif %}{% if filters.customer_q %}customer_q={{filters.customer_q}}&{% endif %}{% if filters.booking %}booking={{filters.booking}}&{% endif %}{% if filters.date_from %}date_from={{filters.date_from}}&{% endif %}{% if filters.date_to %}date_to={{filters.date_to}}&{% endif %}page={{ page_obj.next_page_number }}">»</a></li>
-            {% else %}<li class="page-item disabled"><span class="page-link">»</span></li>{% endif %}
-          </ul>
-        </nav>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-end">
+          <li class="breadcrumb-item"><a href="#">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">New</li>
+        </ol>
       </div>
     </div>
   </div>
-</section>
+</div>
 
 
-<button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#routeModal">
-  Launch demo modal
-</button>
+<div class="app-content"> 
+  <div class="container-fluid">
+     
+  </div>
+  <div class="container-fluid">
+    {% include 'shipments/tables/route-tbl.html' %}
+  </div>
+ </div> 
 
 
 
@@ -129,11 +44,6 @@
     <div class="modal-content"><!-- filled by JS --></div>
   </div>
 </div>
-
-<!-- Button trigger modal -->
-<button type="button" class="btn  btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
-  Launch demo modal
-</button>
 
 <!-- Modal -->
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">

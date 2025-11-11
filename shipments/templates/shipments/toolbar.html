@@ -1,0 +1,22 @@
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+  <button class="btn btn-outline-secondary btn-sm"
+          type="button"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#filtersOffcanvas"
+          aria-controls="filtersOffcanvas">
+    <i class="fa fa-filter me-1"></i>
+    Filters
+    {% if filters_count %}
+      <span class="badge text-bg-primary ms-1">{{ filters_count }}</span>
+    {% endif %}
+  </button>
+
+  <form method="get" class="input-group input-group-sm rounded-pill overflow-hidden border shadow-sm" style="max-width:420px;">
+    <input type="search" name="q" value="{{ q }}" class="form-control ps-3 border-0 bg-body"
+           placeholder="Search shipments..." autocomplete="off">
+    <button class="btn btn-outline-secondary border-0 bg-body" type="submit" title="Search">
+      <i class="fa fa-search"></i>
+    </button>
+  </form>
+</div>
+ {% include 'shipments/panel_filter.html' %}

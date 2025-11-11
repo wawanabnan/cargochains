@@ -3,6 +3,8 @@ from django.db import models
 from django.db.models import Q, CheckConstraint, F
 from geo.models import Location
 from partners.models import Partner
+from core.models import SalesService 
+from django.db.models import PROTECT, CASCADE, F, Sum
 
 class Shipment(models.Model):
 
@@ -31,6 +33,13 @@ class Shipment(models.Model):
     )
     so_number = models.CharField(max_length=30, null=True, blank=True)     # sales order/customer order (opsional)
     sales_order_snap = models.JSONField(null=True, blank=True)  # snapshot ringan (customer, nilai, dll.)
+    sales_service = models.ForeignKey(
+        SalesService,
+        db_column="sales_service_id",
+        on_delete=PROTECT,
+        null=False,blank=False,
+        related_name="shipmen_services",
+    )
 
     @property
     def sales_order_number(self):
@@ -95,6 +104,11 @@ class Shipment(models.Model):
     agency = models.ForeignKey(
         Partner, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='as_agency_shipments', db_column='agency_id'
+    )
+
+    customer = models.ForeignKey(
+        Partner, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='as_customer_shipments', db_column='customer_id'
     )
 
     # Snapshot pihak (opsional, sangat berguna untuk dokumen historis)

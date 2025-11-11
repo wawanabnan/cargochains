@@ -1,47 +1,196 @@
-{% extends "base.html" %}
+{% extends "adminbase.html" %}
 {% block content %}
-<div class="container py-3">
-  <h3 class="mb-3">Daftar Shipment</h3>
 
-  <table class="table table-sm table-striped align-middle">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Nomor</th>
-        <th>Status</th>
-        <th>Origin</th>
-        <th>Destination</th>
-        <th>Created</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for s in shipments %}
-        <tr>
-          <td>{{ forloop.counter }}</td>
-          <td><a href="{% url 'shipments:shipment_details' s.pk %}">{{ s.number }}</a></td>
-          <td><span class="badge text-bg-secondary">{{ s.get_status_display }}</span></td>
-          <td>{{ s.origin_text }}</td>
-          <td>{{ s.destination_text }}</td>
-          <td>{{ s.created_at|date:"Y-m-d" }}</td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="6" class="text-center text-muted">Belum ada shipment.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
-  {% if is_paginated %}
-    <nav>
-      <ul class="pagination justify-content-center">
-        {% if page_obj.has_previous %}
-          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">«</a></li>
-        {% endif %}
-        <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
-        {% if page_obj.has_next %}
-          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">»</a></li>
-        {% endif %}
-      </ul>
-    </nav>
-  {% endif %}
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-6">
+        <h3 class="mb-0">Shipments</h3>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-end">
+          <li class="breadcrumb-item"><a href="#">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">New</li>
+        </ol>
+      </div>
+    </div>
+  </div>
 </div>
+
+<div class="app-content"> 
+
+  <div class="container-fluid">
+      {% include 'shipments/toolbar.html' %}
+  </div>
+  <div class="container-fluid">
+    {% include 'shipments/shipment-tbl.html' %}
+  </div>
+</div> 
+
+
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  // ---------- URLs (Django URL names) ----------
+  
+  const BULK_DELETE_URL = "#";
+  const BULK_PRINT_URL  = "#";
+
+  // ---------- Elements ----------
+  const panel          = document.getElementById('filters-panel');
+  const btnFilters     = document.getElementById('btn-toggle-filters');
+
+  const toolbar        = document.getElementById('shipments-toolbar');
+  const searchForm     = document.getElementById('search-form');
+  const bulkActions    = document.getElementById('bulk-actions');
+  const selCountEl     = document.getElementById('sel-count');
+  const bulkIdsInput   = document.getElementById('bulk-ids');
+  const bulkForm       = document.getElementById('bulk-form');
+
+  const btnDel         = document.getElementById('btn-bulk-delete');
+  const btnPrint       = document.getElementById('btn-bulk-print');
+
+  const checkAll       = document.getElementById('check-all');
+  const table          = document.getElementById('shipment-list');
+
+  // ---------- Helpers ----------
+  const rowChecks = () => Array.from(document.querySelectorAll('.row-check'));
+  const getSelectedIds = () => rowChecks().filter(c => c.checked).map(c => c.value);
+
+  function updateToolbar(){
+    const checks = rowChecks();
+    const selIds = getSelectedIds();
+    const hasSel = selIds.length > 0;
+
+    // badge & hidden field
+    if (selCountEl)  selCountEl.textContent = selIds.length;
+    if (bulkIdsInput) bulkIdsInput.value = selIds.join(',');
+
+    // toggle Search vs Bulk actions (center area)
+    if (bulkActions) bulkActions.classList.toggle('d-none', !hasSel);
+    if (searchForm)  searchForm.classList.toggle('d-none',  hasSel);
+
+    // enable/disable delete button
+    if (btnDel) btnDel.disabled = !hasSel;
+
+    // header checkbox state
+    if (checkAll) {
+      checkAll.checked = hasSel && selIds.length === checks.length;
+      checkAll.indeterminate = hasSel && selIds.length < checks.length;
+    }
+  }
+
+  // ---------- 1) Toggle Filters Panel ----------
+  if (btnFilters && panel){
+    btnFilters.addEventListener('click', () => {
+      panel.classList.toggle('d-none');
+    });
+  }
+
+  // ---------- 2) Format Total (IDR) ----------
+  try {
+    const nf = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (table) {
+      table.querySelectorAll('tr').forEach(tr => {
+        const raw  = tr.getAttribute('data-total') || '0';
+        const cell = tr.querySelector('.total-id');
+        if (cell) {
+          const val = Number(String(raw).replace(',', '.'));
+          cell.textContent = nf.format(isNaN(val) ? 0 : val);
+        }
+      });
+    }
+  } catch(e) { /* noop */ }
+
+  // ---------- 3) Row click -> open detail (skip checkbox) ----------
+  if (table) {
+    table.querySelectorAll('tr.clickable-row').forEach(tr => {
+      
+      tr.addEventListener('click', (e) => {
+     
+        if (e.target.closest('input[type="checkbox"]')) return;
+        const url = tr.getAttribute('data-href');
+        if (url) window.location = url;
+      });
+    });
+  }
+
+  // Stop propagation on row checkboxes
+  document.addEventListener('click', (e) => {
+    if (e.target.classList && e.target.classList.contains('row-check')) {
+      e.stopPropagation();
+    }
+  });
+
+  // ---------- 4) Selection handling ----------
+  if (checkAll) {
+    checkAll.addEventListener('change', () => {
+      rowChecks().forEach(c => { c.checked = checkAll.checked; });
+      updateToolbar();
+    });
+  }
+  document.addEventListener('change', (e) => {
+    if (e.target.classList && e.target.classList.contains('row-check')) {
+      updateToolbar();
+    }
+  });
+
+  // ---------- 5) Bulk Delete (POST) + Guard Status ----------
+  if (btnDel && bulkForm) {
+    btnDel.addEventListener('click', () => {
+      const ids = getSelectedIds();
+      if (!ids.length) return;
+
+      // status guard: only draft / canceled / cancelled
+      const rows = rowChecks().filter(c => c.checked).map(c => c.closest('tr'));
+      const blocked = rows.filter(tr => {
+        const st = (tr.getAttribute('data-status') || 'draft').toLowerCase().trim();
+        return !(st === 'draft' || st === 'canceled' || st === 'cancelled');
+      });
+      if (blocked.length) {
+        const allowed = rows.length - blocked.length;
+        const msg = `Only draft/canceled can be deleted.\nAllowed: ${allowed}\nBlocked: ${blocked.length}\nContinue?`;
+        if (!confirm(msg)) return;
+      } else {
+        if (!confirm(`Delete ${ids.length} quotation(s)?`)) return;
+      }
+
+      bulkForm.action = BULK_DELETE_URL;
+      bulkForm.method = 'post';
+      bulkForm.submit();
+    });
+  }
+
+  // ---------- 6) Bulk Print (GET -> new tab) ----------
+  if (btnPrint) {
+    btnPrint.addEventListener('click', () => {
+      const ids = getSelectedIds();
+      if (!ids.length) return;
+      const url = new URL(BULK_PRINT_URL, window.location.origin);
+      url.searchParams.set('ids', ids.join(','));
+      window.open(url.toString(), '_blank');
+    });
+  }
+
+  // ---------- 7) Initial state ----------
+  updateToolbar();
+})();
+</script>
+<script>
+  (function(){
+    const off = document.getElementById('filtersOffcanvas');
+    if (!off) return;
+    const form = off.querySelector('form');
+    off.addEventListener('change', (e) => {
+      if (e.target.matches('select, input[type="date"]')) {
+        form.requestSubmit();
+      }
+    });
+  })();
+</script>
+
 {% endblock %}

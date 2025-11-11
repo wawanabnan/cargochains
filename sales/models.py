@@ -190,6 +190,7 @@ class SalesOrder(models.Model):
         related_name="orders"
     )
 
+
     customer = models.ForeignKey(Partner, on_delete=PROTECT, related_name="orders")
     date = models.DateField(null=True, blank=True)
 
@@ -205,6 +206,11 @@ class SalesOrder(models.Model):
     vat = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))           # pajak (amount)
     grand_total = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))   # total + vat
 
+    project = models.OneToOneField(
+        "projects.Project", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="sales_order"
+    )
+    
     # --- STATUS constants ---
     STATUS_DRAFT     = "DRAFT"
     STATUS_CONFIRMED = "CONFIRMED"

@@ -93,7 +93,7 @@ class SalesAccessRequiredMixin(LoginRequiredMixin, PermissionRequiredMixin):
       * punya permission 'sales.access_sales'
     """
     permission_required = ("sales.access_sales",)
-    raise_exception = True  # biar 403 (PermissionDenied) daripada redirect
+    raise_exception = False  # biar 403 (PermissionDenied) daripada redirect
 
     def has_permission(self):
         u = self.request.user

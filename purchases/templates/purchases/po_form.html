@@ -1,0 +1,243 @@
+{% extends "main.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+
+  <h3 class="mb-3">{% if po %}Edit Purchase Order{% else %}Add Purchase Order{% endif %}</h3>
+
+  {% if messages %}
+    {% for m in messages %}
+      <div class="alert alert-{{ m.tags }}">{{ m }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Number</label>
+        <input type="text" class="form-control" value="{{ po.number|default:'(auto on save)' }}" readonly>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Ref Number</label>
+        {{ form.ref_number }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Vendor (Role: Vendor)</label>
+        {{ form.vendor }}
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Order Date</label>
+        {{ form.order_date }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Expected Date</label>
+        {{ form.expected_date }}
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Currency</label>
+        {{ form.currency }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Discount</label>
+        {{ form.discount_amount }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Tax %</label>
+        {{ form.tax_percent }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Status</label>
+        {{ form.status }}
+      </div>
+    </div>
+
+    <hr class="my-4">
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs" id="poTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="lines-tab" data-bs-toggle="tab" data-bs-target="#tab-lines" type="button" role="tab">PO Lines</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#tab-notes" type="button" role="tab">Notes</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="attach-tab" data-bs-toggle="tab" data-bs-target="#tab-attach" type="button" role="tab">Attachment</button>
+      </li>
+    </ul>
+
+    <div class="tab-content border-start border-end border-bottom p-3" id="poTabsContent" style="border-top:0;">
+      <!-- Tab 1: Lines -->
+      <div class="tab-pane fade show active" id="tab-lines" role="tabpanel" aria-labelledby="lines-tab">
+
+        {{ formset.management_form }}
+
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width:80px;">#</th>
+                <th style="width:220px;">Product</th>
+                <th>Description</th>
+                <th style="width:120px;">UOM</th>
+                <th style="width:120px;" class="text-end">Qty</th>
+                <th style="width:150px;" class="text-end">Unit Price</th>
+                <th style="width:150px;" class="text-end">Line Disc</th>
+                <th style="width:150px;" class="text-end">Subtotal</th>
+                <th style="width:80px;">Del</th>
+              </tr>
+            </thead>
+            <tbody id="line-rows">
+              {% for f in formset %}
+              <tr class="line-row">
+                <td>{{ f.line_no }}</td>
+                <td>{{ f.product_name }}</td>
+                <td>{{ f.description }}</td>
+                <td>{{ f.uom }}</td>
+                <td class="text-end">{{ f.qty }}</td>
+                <td class="text-end">{{ f.unit_price }}</td>
+                <td class="text-end">{{ f.line_discount }}</td>
+                <td class="text-end"><span class="text-muted small">(calc)</span></td>
+                <td class="text-center">
+                  {% if f.instance.pk %}
+                    <div class="form-check m-0">
+                      {{ f.DELETE }} <label class="form-check-label small">del</label>
+                    </div>
+                  {% else %}
+                    <span class="text-muted">–</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <button type="button" class="btn btn-outline-secondary" id="add-row">Add Row</button>
+      </div>
+
+      <!-- Tab 2: Notes -->
+      <div class="tab-pane fade" id="tab-notes" role="tabpanel" aria-labelledby="notes-tab">
+        <div class="mb-3">
+          <label class="form-label">Notes</label>
+          {{ form.notes }}
+        </div>
+      </div>
+
+      <!-- Tab 3: Attachment -->
+      <div class="tab-pane fade" id="tab-attach" role="tabpanel" aria-labelledby="attach-tab">
+        <div class="mb-2">
+          <label class="form-label">Attachment</label>
+          {{ form.attachment }}
+        </div>
+        {% if po and po.attachment %}
+          <div class="form-text">Current: <a href="{{ po.attachment.url }}" target="_blank">Download</a></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between mt-3">
+      <div></div>
+      <div class="text-end">
+        <div>Subtotal: <strong>{{ po.subtotal_amount|default:0|floatformat:2 }}</strong></div>
+        <div>Tax: <strong>{{ po.tax_amount|default:0|floatformat:2 }}</strong></div>
+        <div>Total: <strong class="fs-5">{{ po.total_amount|default:0|floatformat:2 }}</strong></div>
+      </div>
+    </div>
+
+    <div class="mt-3">
+      <button type="submit" class="btn btn-success">Save</button>
+      <a href="{% url 'purchases:po_list' %}" class="btn btn-outline-secondary">Back to List</a>
+    </div>
+
+    <!-- Hidden row template for JS add -->
+    <template id="row-template">
+      <tr class="line-row">
+        <td>__line_no__</td>
+        <td>__product_name__</td>
+        <td>__description__</td>
+        <td>__uom__</td>
+        <td class="text-end">__qty__</td>
+        <td class="text-end">__unit_price__</td>
+        <td class="text-end">__line_discount__</td>
+        <td class="text-end"><span class="text-muted small">(calc)</span></td>
+        <td class="text-center"><span class="text-muted">–</span></td>
+      </tr>
+    </template>
+
+    <!-- Hidden field widgets prototype -->
+    <div id="empty-form-prototype" class="d-none">
+      {# Render setiap field empty_form agar punya HTML siap diganti __prefix__ #}
+      {{ formset.empty_form.line_no }}
+      {{ formset.empty_form.product_name }}
+      {{ formset.empty_form.description }}
+      {{ formset.empty_form.uom }}
+      {{ formset.empty_form.qty }}
+      {{ formset.empty_form.unit_price }}
+      {{ formset.empty_form.line_discount }}
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  // Helper: clone a widget by id, replace __prefix__ with index, and return outerHTML
+  function cloneWidget(id, idx) {
+    const src = document.getElementById(id);
+    if (!src) return "";
+    const html = src.outerHTML.replaceAll("__prefix__", idx);
+    // remove duplicated id on the new node by setting a temp id (browser will ignore on innerHTML append)
+    return html.replace(/id="([^"]+)"/, (m, g1) => `id="${g1}__${idx}"`);
+  }
+
+  function addRow() {
+    const totalForms = document.getElementById('id_lines-TOTAL_FORMS');
+    const idx = parseInt(totalForms.value, 10);
+
+    // ambil widget as rendered dari prototype (sudah punya __prefix__)
+    const proto = document.getElementById('empty-form-prototype');
+    // cari masing-masing input berdasarkan id pola Django: id_lines-__prefix__-field
+    function widget(field) {
+      const id = `id_lines-__prefix__-${field}`;
+      const el = proto.querySelector(`#${CSS.escape(id)}`);
+      if (!el) return "";
+      // Ambil element beserta label? di sini cukup input/selectnya saja:
+      let outer = el.outerHTML;
+      outer = outer.replaceAll("__prefix__", idx);
+      // rapikan class
+      if (!outer.includes('class=')) {
+        outer = outer.replace('<input', '<input class="form-control"')
+                     .replace('<select', '<select class="form-select"');
+      }
+      return outer;
+    }
+
+    // isi template row
+    const tpl = document.getElementById('row-template').innerHTML
+      .replace('__line_no__', widget('line_no'))
+      .replace('__product_name__', widget('product_name'))
+      .replace('__description__', widget('description'))
+      .replace('__uom__', widget('uom'))
+      .replace('__qty__', widget('qty'))
+      .replace('__unit_price__', widget('unit_price'))
+      .replace('__line_discount__', widget('line_discount'));
+
+    const tbody = document.getElementById('line-rows');
+    const temp = document.createElement('tbody');
+    temp.innerHTML = tpl.trim();
+    tbody.appendChild(temp.firstElementChild);
+
+    // increment TOTAL_FORMS
+    totalForms.value = idx + 1;
+  }
+
+  const addBtn = document.getElementById('add-row');
+  addBtn?.addEventListener('click', addRow);
+})();
+</script>
+{% endblock %}

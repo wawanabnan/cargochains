@@ -1,0 +1,80 @@
+/* Matikan efek collapse bawaan di ≥ lg (desktop) */
+@media (min-width: 992px){
+  body.sidebar-collapse .app-sidebar{
+    transform: none !important;
+    visibility: visible !important;
+  }
+  body.sidebar-collapse .app-wrapper .app-main{
+    margin-left: var(--cc-sidebar-width) !important;
+  }
+}
+
+:root{
+  --cc-sidebar-width: 220px;  /* sidebar normal */
+  --cc-sidebar-mini:  72px;   /* sidebar mini (ikon saja) */
+}
+
+/* Pastikan layout AdminLTE tetap: sidebar di kiri, konten margin-left */
+body.layout-fixed .app-sidebar{
+  width: var(--cc-sidebar-width) !important;
+}
+body.layout-fixed .app-wrapper .app-main{
+  margin-left: var(--cc-sidebar-width) !important;
+  width: auto !important;   /* cegah hitungan width yang bikin konten “menciut” */
+  min-width: 0 !important;  /* fix wrap/flex shrink */
+}
+
+/* Mode MINI (shrink) – aktif saat body.sidebar-mini */
+@media (min-width: 992px){
+  body.layout-fixed.sidebar-mini .app-sidebar{
+    width: var(--cc-sidebar-mini) !important;
+  }
+  body.layout-fixed.sidebar-mini .app-wrapper .app-main{
+    margin-left: var(--cc-sidebar-mini) !important;
+  }
+
+  /* Hanya ikon, sembunyikan label teks menu */
+  body.layout-fixed.sidebar-mini .nav-sidebar .nav-link p{ display: none !important; }
+  body.layout-fixed.sidebar-mini .nav-sidebar .nav-link .nav-icon{ margin-right: 0 !important; }
+  body.layout-fixed.sidebar-mini .brand-text{ display: none !important; }
+
+  /* (Opsional) flyout submenu saat hover pada mini */
+  body.layout-fixed.sidebar-mini .nav-sidebar .nav-item:hover > .nav-treeview{
+    display:block; position:absolute; left: var(--cc-sidebar-mini); top:0; min-width: 200px;
+    background: var(--bs-body-bg); z-index:1030; box-shadow:0 4px 24px rgba(0,0,0,.08);
+    border:1px solid rgba(0,0,0,.06);
+  }
+}
+
+
+<!-- tombol di navbar -->
+<button id="ccSidebarToggler" class="nav-link btn btn-link p-0" type="button" aria-label="Toggle">
+  <i class="fas fa-bars"></i>
+</button>
+
+<script>
+(function(){
+  const KEY='cc:sidebar-mini', lg=992;
+
+  // Hilangkan efek collapse kalau pernah kepicu (desktop)
+  if (window.innerWidth >= lg){
+    document.body.classList.remove('sidebar-collapse');
+  }
+
+  // Restore state mini (desktop only)
+  if (localStorage.getItem(KEY)==='1' && window.innerWidth>=lg){
+    document.body.classList.add('sidebar-mini');
+  }
+
+  // Toggle MINI (bukan collapse)
+  const btn = document.getElementById('ccSidebarToggler');
+  btn?.addEventListener('click', function(e){
+    e.preventDefault(); e.stopPropagation();
+    if (window.innerWidth < lg) return; // biarkan offcanvas di mobile
+    document.body.classList.toggle('sidebar-mini');
+    localStorage.setItem(KEY, document.body.classList.contains('sidebar-mini') ? '1' : '0');
+    // pastikan tidak ada collapse aktif di desktop
+    document.body.classList.remove('sidebar-collapse');
+  }, true);
+})();
+</script>

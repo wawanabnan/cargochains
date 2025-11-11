@@ -1,0 +1,49 @@
+<div class="card border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-striped align-middle">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Ref</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th class="text-end">Total Cost</th>
+                <th class="text-center" style="width:100px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in page_obj %}
+              <tr>
+                <td>{{ p.number }}</td>
+                <td>{{ p.ref_number|default:"-" }}</td>
+                <td>{{ p.name }}</td>
+                <td>{{ p.category.name }}</td>
+                <td>
+                  <span class="badge text-bg-light border">{{ p.get_status_display }}</span>
+                </td>
+                <td class="text-end">{{ p.total_cost|floatformat:2 }}</td>
+                <td class="text-center">
+                  <a href="{% url 'projects:project_edit' p.pk %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-pen"></i>
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center text-muted p-3">No projects found.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div> 
+    </div>
+    <div class="card-footer">
+   
+        {% include 'partials/pagination.html' %}
+   
+  </div>
+    
+</div>
+

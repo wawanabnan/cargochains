@@ -1,8 +1,4 @@
-{% extends "main.html" %}
-{% load shipment_extras %}
-
-
-
+{% extends "adminbase.html" %}
 {% block content %}
 
 <div class="container py-3">
@@ -251,76 +247,6 @@
   </div>
 
 </div>
-  </div>
-
-    <!-- TAB: ATTACHMENTS -->
-    <div class="tab-pane fade" id="tab-attachments" role="tabpanel">
-      {% if perms.shipments.add_shipmentattachment %}
-        <form action="{% url 'shipments:shipment_attach' shipment.pk %}" method="post" enctype="multipart/form-data" class="mb-3">
-          {% csrf_token %}
-          <div class="row g-2 align-items-end">
-            <div class="col-md-4">
-              <label class="form-label">File</label>
-              <input type="file" name="file" class="form-control" required>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Label / Notes</label>
-              <input type="text" name="label" class="form-control" placeholder="e.g. Booking Confirmation, BL Draft">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Category</label>
-              <select name="category" class="form-select">
-                <option value="">-</option>
-                <option>Booking</option>
-                <option>BL</option>
-                <option>Manifest</option>
-                <option>Invoice</option>
-                <option>Others</option>
-              </select>
-            </div>
-            <div class="col-md-1 d-grid">
-              <button type="submit" class="btn btn-primary">Upload</button>
-            </div>
-          </div>
-        </form>
-      {% endif %}
-
-      <table class="table table-sm align-middle">
-        <thead class="table-light">
-          <tr>
-            <th>#</th>
-            <th>File</th>
-            <th>Label</th>
-            <th>Category</th>
-            <th>Uploaded</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for a in shipment.attachments.all %}
-          <tr>
-            <td>{{ forloop.counter }}</td>
-            <td><a href="{{ a.file.url }}" target="_blank" rel="noopener">{{ a.filename }}</a></td>
-            <td>{{ a.label|default:"-" }}</td>
-            <td>{{ a.category|default:"-" }}</td>
-            <td class="text-muted small">{{ a.created_at|date:"Y-m-d H:i" }}</td>
-            <td class="text-end">
-              {% if perms.shipments.delete_shipmentattachment %}
-                <form action="{% url 'shipments:shipment_detach' shipment.pk a.pk %}" method="post" onsubmit="return confirm('Hapus lampiran ini?');">
-                  {% csrf_token %}
-                  <button class="btn btn-link text-danger btn-sm">Remove</button>
-                </form>
-              {% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="6" class="text-center text-muted">Belum ada dokumen.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-  </div>
 </div>
 
 <!-- MODALS: Confirm / Book -->
@@ -420,7 +346,7 @@ window.initRouteTableHandlers = function(){
 document.addEventListener('DOMContentLoaded', window.initRouteTableHandlers);
 </script>
 <script>
-alert("Test")
+//alert("Test")
 document.addEventListener('DOMContentLoaded', function(){
   document.querySelectorAll('#confirmConfirmModal form, #confirmBookModal form').forEach(f=>{
     f.addEventListener('submit', ()=>{

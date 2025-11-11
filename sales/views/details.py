@@ -3,7 +3,7 @@ from django.views.generic import DetailView
 from ..models import SalesQuotation, SalesOrder
 from ..auth import SalesAccessRequiredMixin, sales_queryset_for_user
 
-class QuotationDetailView(SalesAccessRequiredMixin, DetailView):
+class FreightQuotationDetailView(SalesAccessRequiredMixin, DetailView):
     model = SalesQuotation
     template_name = "freight/quotation_details.html"
     context_object_name = "quotation"
@@ -20,7 +20,7 @@ class QuotationDetailView(SalesAccessRequiredMixin, DetailView):
         ctx["lines"] = self.object.lines.all()  # kompatibel dgn template lama
         return ctx
 
-class OrderDetailView(SalesAccessRequiredMixin, DetailView):
+class FreightOrderDetailView(SalesAccessRequiredMixin, DetailView):
     model = SalesOrder
     template_name = "freight/order_details.html"
     context_object_name = "order"

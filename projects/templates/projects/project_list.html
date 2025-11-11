@@ -1,116 +1,31 @@
-{% extends "base.html" %}
+{% extends "adminbase.html" %}
 {% load static %}
 
 {% block content %}
 
-  <div class="container-fluid mt-2">
-<div class="d-flex bd-highlight">
-  <div class="p-2 flex-grow-1 bd-highlight"><h3>Projects</h3></div>
-  <div class="p-2 bd-highlight"><button class="btn btn-sm btn-primary">New</button></div>
- 
-</div>
-</div>
-
-    <div class="container-fluid mt-2">
-      <div class="card">
-        <div class="card-body pb-1">
-          <form method="get" class="row g-2">
-            <div class="col-md-3">
-              <input type="text" name="q" class="form-control" placeholder="Search name/ref number" value="{{ q }}">
-            </div>
-            <div class="col-md-2">
-              <select name="status" class="form-select">
-                <option value="">All Status</option>
-                {% for code,label in statuses %}
-                  <option value="{{ code }}" {% if code == status_selected %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-3">
-              <select name="category" class="form-select">
-                <option value="">All Categories</option>
-                {% for cat in categories %}
-                  <option value="{{ cat.id }}" {% if cat.id|stringformat:"s" == category_selected %}selected{% endif %}>
-                    {{ cat.name }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-2">
-              <button class="btn btn-sm   btn-secondary w-60"><i class="fas fa-filter"></i> Filter</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="table-responsive">
-          <table class="table table-striped align-middle">
-            <thead>
-              <tr>
-                <th>Number</th>
-                <th>Ref</th>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Status</th>
-                <th class="text-end">Total Cost</th>
-                <th class="text-center" style="width:100px;">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for p in page_obj %}
-              <tr>
-                <td>{{ p.number }}</td>
-                <td>{{ p.ref_number|default:"-" }}</td>
-                <td>{{ p.name }}</td>
-                <td>{{ p.category.name }}</td>
-                <td>
-                  <span class="badge text-bg-light border">{{ p.get_status_display }}</span>
-                </td>
-                <td class="text-end">{{ p.total_cost|floatformat:2 }}</td>
-                <td class="text-center">
-                  <a href="{% url 'projects:project_edit' p.pk %}" class="btn btn-sm btn-outline-secondary">
-                    <i class="fas fa-pen"></i>
-                  </a>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="7" class="text-center text-muted p-3">No projects found.</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-
-        <div class="card-footer d-flex justify-content-between align-items-center">
-          <div>
-            Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}
-          </div>
-          <nav>
-            <ul class="pagination mb-0">
-              {% if page_obj.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status_selected }}&category={{ category_selected }}">«</a></li>
-              {% else %}
-                <li class="page-item disabled"><span class="page-link">«</span></li>
-              {% endif %}
-
-              {% for num in page_obj.paginator.page_range %}
-                {% if num == page_obj.number %}
-                  <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
-                  <li class="page-item"><a class="page-link" href="?page={{ num }}&q={{ q }}&status={{ status_selected }}&category={{ category_selected }}">{{ num }}</a></li>
-                {% endif %}
-              {% endfor %}
-
-              {% if page_obj.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status_selected }}&category={{ category_selected }}">»</a></li>
-              {% else %}
-                <li class="page-item disabled"><span class="page-link">»</span></li>
-              {% endif %}
-            </ul>
-          </nav>
-        </div>
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-6">
+        <h3 class="mb-0">Projects</h3>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-end">
+          <li class="breadcrumb-item"><a href="#">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">New</li>
+        </ol>
       </div>
     </div>
-  </section>
+  </div>
 </div>
+
+<div class="app-content"> 
+
+  <div class="container-fluid">
+    {% include 'projects/filter.html' %}
+  </div>
+  <div class="container-fluid">
+     {% include 'projects/prj-table.html' %}
+  </div>
+</div> 
 {% endblock %}

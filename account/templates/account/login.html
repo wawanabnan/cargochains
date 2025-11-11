@@ -91,7 +91,8 @@
           <form action="{% url 'account:login' %}" method="post">
             {% csrf_token %}
             <div class="input-group mb-3">
-              <input type="hidden" name="next" value="{{ request.GET.next }}">
+                        <input type="hidden" name="{{ redirect_field_name|default:'next' }}" value="{{ next }}">
+
               <input type="text" name="username" class="form-control" placeholder="Username" />
               <div class="input-group-text">
                 <span class="bi bi-envelope"></span>

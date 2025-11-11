@@ -2,6 +2,8 @@
 from django.db import models
 from django.utils import timezone
 from core.utils import get_next_number
+from core.models import Currency
+from django.db.models import PROTECT, CASCADE, F, Sum
 
 
 class TimeStampedModel(models.Model):
@@ -10,14 +12,6 @@ class TimeStampedModel(models.Model):
 
     class Meta:
         abstract = True
-
-
-class ProjectStatus(models.TextChoices):
-    PLANNED = "planned", "Planned"
-    IN_PROGRESS = "in_progress", "In Progress"
-    ON_HOLD = "on_hold", "On Hold"
-    COMPLETED = "completed", "Completed"
-    CANCELLED = "cancelled", "Cancelled"
 
 
 class ProjectCategory(TimeStampedModel):
@@ -33,15 +27,44 @@ class ProjectCategory(TimeStampedModel):
 
 
 class Project(TimeStampedModel):
+    STATUS_DRAFT     = "DRAFT"
+    STATUS_CONFIRMED = "CONFIRMED"
+    STATUS_PROGRESS  = "ON_PROGRESS"
+    STATUS_COMPLETED = "COMPLETED"
+    STATUS_CANCELLED = "CANCELLED"
+    STATUS_HOLD      = "ON_HOLD"
+
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, "Draft"),
+        (STATUS_CONFIRMED, "Confirmed"),
+        (STATUS_PROGRESS, "On Progress"),
+        (STATUS_COMPLETED, "Completed"),
+        (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_HOLD, "On Hold"),
+    ]
+
+    # --- allowed transitions (disamakan dengan Sales) ---
+    _ALLOWED_TRANSITIONS = {
+        STATUS_DRAFT:     {STATUS_CONFIRMED, STATUS_CANCELLED},
+        STATUS_CONFIRMED: {STATUS_PROGRESS, STATUS_CANCELLED, STATUS_HOLD},
+        STATUS_PROGRESS:  {STATUS_COMPLETED, STATUS_CANCELLED, STATUS_HOLD},
+        STATUS_HOLD:      {STATUS_PROGRESS, STATUS_CANCELLED},
+        STATUS_COMPLETED: set(),
+        STATUS_CANCELLED: set(),
+    }
+
     number = models.CharField(max_length=50, unique=True, null=True, blank=True, editable=False)
     ref_number = models.CharField(max_length=50, null=True, blank=True)
     name = models.CharField(max_length=200)
     category = models.ForeignKey(ProjectCategory, on_delete=models.PROTECT, related_name="projects")
-    status = models.CharField(max_length=20, choices=ProjectStatus.choices, default=ProjectStatus.PLANNED)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     description = models.TextField(blank=True)
 
+    value_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    value_currency_code = models.CharField(max_length=3, default="IDR")
+    
     class Meta:
         db_table = "projects"
         indexes = [
@@ -94,3 +117,14 @@ class ProjectCost(TimeStampedModel):
 
     def __str__(self):
         return f"{self.title} ({self.amount} {self.currency_code})"
+
+
+class ProjectStatus:
+    DRAFT       = Project.STATUS_DRAFT
+    CONFIRMED   = Project.STATUS_CONFIRMED
+    ON_PROGRESS = Project.STATUS_PROGRESS
+    COMPLETED   = Project.STATUS_COMPLETED
+    CANCELLED   = Project.STATUS_CANCELLED
+    ON_HOLD     = Project.STATUS_HOLD
+
+    choices = Project.STATUS_CHOICES

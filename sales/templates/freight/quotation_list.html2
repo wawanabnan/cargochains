@@ -1,0 +1,239 @@
+{% extends "adminbase.html" %}
+{% block title %}Freight Quotations{% endblock %}
+{% block content %}
+
+
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-6">
+        <h3 class="mb-0">Freight Quotations</h3>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-end">
+          <li class="breadcrumb-item"><a href="#">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">New</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app-content"> 
+  <div class="container-fluid">
+      <div class="row">
+         {% include 'freight/quotation_list_filter.html' %}
+       </div>
+  </div>      
+</div>
+
+
+
+
+<div class="card ">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-border table-striped mb-0" id="quotationTbl">
+        <thead class="table-light2">
+          <tr>
+            <th style="width:42px;"><input type="checkbox" id="check-all" class="form-check-input"></th>
+            <th style="width: 140px;">Number</th>
+            <th>Customer</th>
+            <th style="width: 130px;">Valid Until</th>
+            <th style="width: 140px;">Service</th>
+            
+            {% if perms.sales.view_all_sales %}
+            <th style="width: 140px;">Sales</th>
+            {% endif %}
+            <th style="width: 140px;">Pay. Term</th>
+            <th style="width: 60px;">Curr</th>
+            <th class="text-end" style="width: 120px;">Total</th>
+            <th style="width: 70px;">Status</th>
+          </tr>
+        </thead>
+        <tbody id="fq-list">
+        {% if quotations %}
+          {% for r in quotations %}
+          <tr class="clickable-row"
+            data-href="{% url 'sales:quotation_detail' r.id %}"
+            data-total="{{ r.total |default:'0.00' }}"
+            data-status="{{ r.status|default:'draft'|lower }}">
+            <td>
+              <input type="checkbox" class="form-check-input row-check" name="ids[]" value="{{ r.id }}" aria-label="Select {{ r.number }}">
+              </td>
+            <td><span class="">{{ r.number }}</span></td>
+            <td>{{ r.customer }}</td>
+            <td>{{ r.valid_until|date:"Y-m-d"|default:"—" }}</td>
+            <td>{{ r.sales_service.code }}</td>
+            {% if perms.sales.view_all_sales %}
+            <td>{{ r.sales_user.username }}</td>
+            {% endif %}
+            <td style="text-align:center">{{ r.payment_term|default:"—" }}</td>
+            <td>{{ r.currency }}</td>
+            <td class="text-end  total-id">0,00</td>
+            <td>{% with s=r.status|default:"draft"|lower %}
+                  {% if s == "accepted" %}
+                  <span class="badge bg-success">Accepted</span>
+                  {% elif s == "cancelled" %}
+                  <span class="badge bg-danger">Cancelled</span>
+                  {% elif s == "expired" %}
+                  <span class="badge bg-warning text-dark">Exipred</span>
+                  {% elif s == "draft" %}
+                  <span class="badge bg-secondary">Draft</span>
+                  {% elif s == "sent" %}
+                  <span class="badge bg-info">Sent</span>
+                  {% elif s == "ordered" %}
+                  <span class="badge bg-info">Ordered</span>
+                  {% else %}
+                  <span class="badge bg-warning">{{ s|title }}</span>
+                  {% endif %}
+                  {% endwith %}
+                    </td>
+            </tr>
+          {% endfor %}
+          {% else %}
+           <tr><td colspan="9" class="text-center text-muted py-4">No data.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  #odoo-like-table tbody tr.clickable-row { cursor: pointer; }
+  #odoo-like-table tbody tr.clickable-row:hover { background: rgba(0,0,0,.03); }
+ .table-responsive {border:1px solid #ddd}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const btn = document.getElementById('btn-toggle-filters');
+  const panel = document.getElementById('filters-panel');
+  if(!btn || !panel) return;
+  const key = 'orders_filters_open';
+  try { if(localStorage.getItem(key)==='1') panel.classList.remove('d-none'); } catch(e){}
+  btn.addEventListener('click', function(){
+    panel.classList.toggle('d-none');
+    try { localStorage.setItem(key, panel.classList.contains('d-none') ? '0' : '1'); } catch(e){}
+  });
+   const nf = new Intl.NumberFormat('id-ID', {minimumFractionDigits:2, maximumFractionDigits:2});
+    document.querySelectorAll('#fq-list tr').forEach(tr=>{
+      const raw = tr.getAttribute('data-total') || '0';
+      const cell = tr.querySelector('.total-id');
+      if (cell) cell.textContent = nf.format(Number(raw.toString().replace(',', '.')) || 0);
+    });
+
+  document.querySelectorAll('#fq-list tr.clickable-row').forEach(tr=>{
+  tr.addEventListener('click', (e)=>{
+        if (e.target.closest('input[type="checkbox"]')) return;
+        const url = tr.getAttribute('data-href');
+        if (url) window.location = url;
+  });
+});  
+})();
+
+
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const sidebarLinks = document.querySelectorAll(".app-sidebar a[href], .main-sidebar a[href]");
+  sidebarLinks.forEach(link => {
+    link.addEventListener("click", (e) => {
+      // hilangkan fokus
+      e.currentTarget.blur();
+
+      // tunggu event internal AdminLTE selesai dulu
+      setTimeout(() => {
+        const body = document.body;
+        const wrapper = document.querySelector(".app-wrapper") || document.querySelector(".wrapper");
+
+        if (window.innerWidth < 992) {
+          body.classList.remove("sidebar-open");
+          body.classList.add("sidebar-collapse");
+          wrapper?.classList.remove("sidebar-open");
+        }
+      }, 200);
+    });
+  });
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const table     = document.getElementById('quotationTbl');
+  const checkAll  = document.getElementById('check-all');
+  const actionBar = document.getElementById('action-bar');
+  const tbody     = table.querySelector('tbody');
+
+  function getRowCheckboxes() {
+    return Array.from(tbody.querySelectorAll('.row-check:not(:disabled)'));
+  }
+
+  function updateActionBar() {
+    const anyChecked = tbody.querySelector('.row-check:checked') !== null;
+    actionBar.classList.toggle('d-none', !anyChecked);
+  // Toggle search input
+     const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.classList.toggle('d-none', anyChecked);
+    }
+  }
+
+  function updateMaster() {
+    const rows = getRowCheckboxes();
+    const total = rows.length;
+    const checked = rows.filter(cb => cb.checked).length;
+
+    checkAll.checked = (total > 0 && checked === total);
+    checkAll.indeterminate = (checked > 0 && checked < total);
+  }
+
+  
+  // Master toggle
+  checkAll.addEventListener('change', () => {
+    const rows = getRowCheckboxes();
+    rows.forEach(cb => { cb.checked = checkAll.checked; });
+    updateActionBar();
+    updateMaster();
+  });
+
+  // Per-row toggle (event delegation)
+  tbody.addEventListener('change', (e) => {
+    if (e.target && e.target.classList.contains('row-check')) {
+      updateActionBar();
+      updateMaster();
+    }
+  });
+
+  // Klik baris untuk toggle checkbox
+  tbody.addEventListener('click', (e) => {
+    // Abaikan klik pada elemen interaktif
+    const interactiveSelector = 'input, label, a, button, .btn, [data-no-row-toggle]';
+    if (e.target.closest(interactiveSelector)) return;
+
+    const tr = e.target.closest('tr');
+    if (!tr) return;
+
+    const cb = tr.querySelector('.row-check:not(:disabled)');
+    if (cb) {
+      cb.checked = !cb.checked;
+      // Trigger handler manual
+      updateActionBar();
+      updateMaster();
+    }
+  });
+
+  // Init awal
+  updateMaster();
+  updateActionBar();
+});
+
+
+</script>
+{% endblock %}

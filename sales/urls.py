@@ -4,8 +4,8 @@ from django.views.generic import RedirectView
 from django.contrib.auth.decorators import login_required
 
 # CBV: Lists & Details
-from .views.lists import QuotationListView, OrderListView
-from .views.details import QuotationDetailView, OrderDetailView
+from .views.lists import FreightQuotationListView, FreightOrderListView
+from .views.details import FreightQuotationDetailView, FreightOrderDetailView
 
 # FBV: Add / Edit / Print / PDF / Actions
 #from .views.adds import quotation_add_header, quotation_add_lines
@@ -26,8 +26,8 @@ app_name = "sales"
 
 urlpatterns = [
     # ===== QUOTATIONS =====
-    path("freight/quotations/",                      QuotationListView.as_view(),   name="quotation_list"),
-    path("freight/quotations/<int:pk>/",             QuotationDetailView.as_view(), name="quotation_details"),  # ← pakai nama plural 'details'
+    path("freight/quotations/",                   FreightQuotationListView.as_view(),   name="quotation_list"),
+    path("freight/quotations/<int:pk>/",          FreightQuotationDetailView.as_view(), name="quotation_details"),  # ← pakai nama plural 'details'
  
     path("freight/quotations/add/",               FreightQuotationAddView.as_view(),  name="quotation_add"),
     path("freight/quotations/<int:pk>/edit/",     FreightQuotationEditView.as_view(),  name="quotation_edit"),
@@ -41,8 +41,8 @@ urlpatterns = [
     path("freight/quotations/<int:pk>/pdf/",         login_required(quotation_pdf,        login_url="account:login"), name="quotation_pdf"),
 
     # ===== ORDERS =====
-    path("freight/orders/",                          OrderListView.as_view(),       name="order_list"),
-    path("freight/orders/<int:pk>/",                 OrderDetailView.as_view(),     name="order_details"),     # ← pakai nama plural 'details'
+    path("freight/orders/",                          FreightOrderListView.as_view(),       name="order_list"),
+    path("freight/orders/<int:pk>/",                 FreightOrderDetailView.as_view(),     name="order_details"),     # ← pakai nama plural 'details'
     path("freight/orders/<int:pk>/status/",          login_required(order_change_status,   login_url="account:login"), name="order_change_status"),
     path("freight/orders/<int:pk>/print/",           login_required(order_print,    login_url="account:login"),      name="order_print"),
     path("freight/orders/<int:pk>/pdf/",             login_required(order_pdf,      login_url="account:login"),      name="order_pdf"),
@@ -50,8 +50,8 @@ urlpatterns = [
  
 
     # ===== LEGACY ALIASES (biar reverse lama '..._detail' tetap hidup) =====
-    path("freight/quotations/<int:pk>/",             QuotationDetailView.as_view(), name="quotation_detail"),
-    path("freight/orders/<int:pk>/",                 OrderDetailView.as_view(),     name="order_detail"),
+    path("freight/quotations/<int:pk>/",             FreightQuotationDetailView.as_view(), name="quotation_detail"),
+    path("freight/orders/<int:pk>/",                 FreightOrderDetailView.as_view(),     name="order_detail"),
 
     # ===== LEGACY REDIRECTS (singular → plural) =====
     path("freight/quotation/",                       RedirectView.as_view(pattern_name="sales:quotation_list",  permanent=False)),

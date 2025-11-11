@@ -1,0 +1,64 @@
+body {
+    font-size: 0.9rem !important;
+    font-family: "Open Sans", sans-serif;
+    font-weight: initial;
+    
+    -webkit-font-smoothing: antialiased;
+}
+
+
+.sidebar-menu .nav-link > p > .nav-arrow {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+}
+
+.sidebar-menu .nav-link > p > .nav-icon-right {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+}
+
+
+.sidebar-menu .nav-header {
+    padding: 0.5rem 20px !important;
+    font-size: 0.9rem !important;
+   
+}
+
+
+.table > :not(caption) > * > * {
+  padding-top: .4rem;   /* default: .5rem */
+  padding-bottom: .4rem;
+  font-size: 90%;
+}
+
+.app-content-header h3 {
+
+  font-size:22px
+}
+
+/* ubah kursor dan efek hover */
+tr.clickable-row {
+  cursor: pointer;
+}
+
+tr.clickable-row:hover {
+  background-color: rgba(var(--bs-primary-rgb), 0.08); /* efek hover lembut */
+  transition: background-color .15s ease-in-out;
+}
+
+.form-control {
+  font-size: 0.8rem;
+}
+
+.sidebar-menu .nav-link,
+.sidebar-menu .nav-item
+ {
+  font-size:0.75rem;
+
+} 
+
+.card-body.p-0 .table thead > tr > th:first-of-type, .card-body.p-0 .table thead > tr > td:first-of-type, .card-body.p-0 .table tfoot > tr > th:first-of-type, .card-body.p-0 .table tfoot > tr > td:first-of-type, .card-body.p-0 .table tbody > tr > th:first-of-type, .card-body.p-0 .table tbody > tr > td:first-of-type {
+    padding-left: 1rem;
+}

@@ -1,0 +1,81 @@
+{# ===== Optional: Offcanvas filter skeleton ===== #}
+<div class="offcanvas offcanvas-end" tabindex="-1" id="filterSheet">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">Filters2</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <form class="offcanvas-body" method="get">
+  <div class="mb-3">
+    <label class="form-label small">Status</label>
+    <select name="status" class="form-select form-select-sm" multiple>
+      {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if value in flt_statuses %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <div class="form-text">Gunakan Ctrl/Cmd untuk pilih lebih dari satu.</div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label small">Currency</label>
+    <select name="currency" class="form-select form-select-sm" multiple>
+      {% for c in currencies %}
+        <option value="{{ c.pk }}" {% if c.pk in flt_currencies %}selected{% endif %}>
+          {{ c.code|default:c }}  {# jika model punya .code tampilkan code, fallback ke str(obj) #}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label small">Service</label>
+    <select name="service" class="form-select form-select-sm" multiple>
+      {% for s in services %}
+        <option value="{{ s.pk }}" {% if s.pk in flt_services %}selected{% endif %}>{{ s.name|default:s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+ <div class="mb-3">
+  <label class="form-label small">Sales Agent</label>
+  <select name="agent" class="form-select form-select-sm" multiple>
+    {% for a in agents %}
+      <option value="{{ a.pk }}" {% if a.pk in flt_agents %}selected{% endif %}>
+        {{ a.name }}
+      </option>
+    {% endfor %}
+  </select>
+</div>
+
+
+  <div class="mb-3">
+    <label class="form-label small">Payment Term</label>
+    <select name="payment_term" class="form-select form-select-sm" multiple>
+      {% for p in paymentterms %}
+        <option value="{{ p.pk }}" {% if p.pk in flt_paymentterms %}selected{% endif %}>{{ p.name|default:p }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  {# Pertahankan parameter lain #}
+  <input type="hidden" name="q"    value="{{ q }}">
+  <input type="hidden" name="sort" value="{{ sort }}">
+  <input type="hidden" name="dir"  value="{{ dir }}">
+  <input type="hidden" name="sp"   value="{{ sp }}">
+
+  <div class="d-flex justify-content-end gap-2 mt-3">
+    <button class="btn btn-primary btn-sm" type="submit"><i class="fa fa-check me-1"></i> Apply</button>
+    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-reset-filters">
+      <i class="fa fa-undo me-1"></i> Reset
+    </button>
+  </div>
+</form>
+
+</div>
+
+{# ===== Bulk form (POST) untuk delete; print via GET (ids di query) ===== #}
+<form id="bulk-form" method="post" class="d-none">
+  {% csrf_token %}
+  <input type="hidden" name="ids" id="bulk-ids">
+</form>
+</div>
+</div>

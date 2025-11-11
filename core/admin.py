@@ -51,3 +51,13 @@ class NumberSequenceAdmin(admin.ModelAdmin):
 class CoreSettingAdmin(admin.ModelAdmin):
     list_display = ("code", "int_value", "char_value", "notes")
     search_fields = ("code",)
+
+@admin.register(UOM)
+class UOMdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "category", "is_active")
+    search_fields = ("code",)
+
+@admin.register(PaymentTerm)
+class PaymentTermdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "days", "description")
+    search_fields = ("code",)

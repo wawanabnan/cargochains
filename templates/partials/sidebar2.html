@@ -1,0 +1,201 @@
+    <!--begin::Sidebar Brand-->
+        <div class="sidebar-brand">
+          <!--begin::Brand Link-->
+          <a href="" class="brand-link">
+            <!--begin::Brand Image-->
+            <img
+              src=""
+              alt=""
+              class="brand-image opacity-75 shadow"
+            />
+            <!--end::Brand Image-->
+            <!--begin::Brand Text-->
+            <span class="brand-text fw-light">CARGO CHAINS</span>
+            <!--end::Brand Text-->
+          </a>
+          <!--end::Brand Link-->
+        </div>
+        <!--end::Sidebar Brand-->
+
+
+        <!--begin::Sidebar Wrapper-->
+         <div class="sidebar-wrapper">
+          <nav class="mt-2">
+            <!--begin::Sidebar Menu-->
+            <ul
+              class="nav sidebar-menu flex-column"
+              data-lte-toggle="treeview"
+              role="navigation"
+              aria-label="Main navigation"
+              data-accordion="false"
+              id="navigation"
+            >
+              <li class="nav-item menu-open">
+                <a href="{% url 'account:dashboard' %}" class="nav-link active">
+                  <i class="nav-icon bi bi-speedometer"></i>
+                  <p>
+                    DASHBOARD
+                  
+                  </p>
+                </a>
+                
+              </li>
+            
+              <li class="nav-header"></i>SALES</li>
+              <li class="nav-item">
+                <a href="#" class="nav-link">
+                   <i class="nav-icon bi bi-table"></i>
+                  <p>
+                    QUOTATION
+                  </p>
+                </a>
+                <ul class="nav nav-treeview">
+                  <li class="nav-item">
+                     <a href="{% url 'sales:quotation_list' %}" class="nav-link active">
+                      <i class="nav-icon bi bi-box-arrow-in-right"></i>
+                      <p>Freights  </p>
+                    </a>
+                    
+                  </li>
+                   <li class="nav-item">
+                    <a href="#" class="nav-link">
+                      <i class="nav-icon bi bi-box-arrow-in-right"></i>
+                      <p>
+                        Ship Charters
+                       
+                      </p>
+                    </a>
+                    
+                  </li>
+                  <li class="nav-item">
+                    <a href="#" class="nav-link">
+                      <i class="nav-icon bi bi-box-arrow-in-right"></i>
+                      <p>
+                        Customers
+                       
+                      </p>
+                    </a>
+                    
+                  </li>
+                 
+                 
+                </ul>
+              </li>
+
+                <li class="nav-item">
+                  <a href="#" class="nav-link">
+
+                   <i class="nav-icon bi bi-table"></i>
+                  <p>
+                    ORDERS
+                  </p>
+                </a>
+                <ul class="nav nav-treeview">
+                  <li class="nav-item">
+                    <a href="{% url 'sales:order_list' %}" class="nav-link">
+
+                      <i class="nav-icon bi bi-box-arrow-in-right"></i>
+                      <p>
+                        Freights                        
+                      </p>
+                    </a>
+                    
+                  </li>
+                   <li class="nav-item">
+                    <a href="#" class="nav-link">
+                      <i class="nav-icon bi bi-box-arrow-in-right"></i>
+                      <p>
+                        Ship Charters
+                       
+                      </p>
+                    </a>
+                    
+                  </li>
+                  <li class="nav-item">
+                    <a href="#" class="nav-link">
+                      <i class="nav-icon bi bi-box-arrow-in-right"></i>
+                      <p>
+                        Customers
+                       
+                      </p>
+                    </a>
+                    
+                  </li>
+                 
+                 
+                </ul>
+              </li>
+
+
+
+              
+              <li class="nav-header">PURCHASES</li>
+               <li class="nav-item">
+                <a href="#" class="nav-link">
+                   <i class="nav-icon bi bi-table"></i>
+                  <p>
+                    Orders
+                  </p>
+                </a>
+               </li>
+              <li class="nav-item">
+                <a href="#" class="nav-link">
+                   <i class="nav-icon bi bi-table"></i>
+                  <p>
+                   Vendors
+                  </p>
+                </a>
+               </li>
+
+              <li class="nav-header">SHIPMENTS</li>
+               <li class="nav-item">
+                <a href="{% url 'shipments:shipment_list' %}" class="nav-link active">
+                   <i class="nav-icon bi bi-table"></i>
+                  <p>
+                    LIST
+                  </p>
+                </a>
+               </li>
+                <li class="nav-item">
+                <a href="#" class="nav-link">
+                   <i class="nav-icon bi bi-table"></i>
+                  <p>
+                    ROUTES
+                  </p>
+                </a>
+               </li>
+
+              <li class="nav-header">PROJECTS</li>
+                <li class="nav-item">
+                <a href="{% url 'projects:project_list' %}" class="nav-link active">
+                   <i class="nav-icon bi bi-table"></i>
+                  <p>
+                    LIST
+                  </p>
+                </a>
+               
+              </li>
+               <li class="nav-item">
+                <a href="#" class="nav-link">
+                   <i class="nav-icon bi bi-table"></i>
+                  <p>
+                    CATEGORIES
+                  </p>
+                </a>
+               
+              </li>
+               <li class="nav-item">
+                <a href="#" class="nav-link">
+                   <i class="nav-icon bi bi-table"></i>
+                  <p>
+                    COSTS
+                  </p>
+                </a>
+               
+              </li>
+
+            </ul>
+            <!--end::Sidebar Menu-->
+          </nav>
+        </div>
+        <!--end::Sidebar Wrapper-->

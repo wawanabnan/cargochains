@@ -1,265 +1,235 @@
-{% extends "base.html" %}
-{% load static %}
+{% extends "adminbase.html" %}
 {% block title %}Freight Quotations{% endblock %}
+
 {% block content %}
 
-
-
-<div class="page-header">
-  <h3 class="page-title"> Freight Quotations </h3>
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="#">Tables</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Basic tables</li>
-    </ol>
-  </nav>
-            
-</div>
-
-<div class="card border-success mb-3">
-  <div class="card-body">
-  <div class="row">
-    <div class="col-md-3 text-left">
-      <h4> Freight Quotations </h4>      
-    </div>
-    <div class="col-md-6 text-center">
-      <div class="input-group"id="searchInput">
-        <input type="text" class="form-control" placeholder="search" aria-label="Username" aria-describedby="basic-addon1">
-         <span class="input-group-text" id="basic-addon1"><i class="fas fa-search"></i></span>
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-6">
+        <h3 class="mb-0">Freight Quotations</h3>
       </div>
-      
-      <div id="action-bar" class="d-none">
-            <button class="btn btn-primary btn-sm">Report</button>
-            <button type="submit" id="btn-bulk-delete" class="btn btn-danger btn-sm" disabled>
-              <i class="fas fa-trash"></i> Delete 
-            </button>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-end">
+          <li class="breadcrumb-item"><a href="#">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">New</li>
+        </ol>
       </div>
-  </div>
-  <div class="col-md-3 text-end">          
-          <button class="btn btn-sm btn-outline-secondary" id="btn-toggle-filters" title="Show filters">
-              <i class="fas fa-filter"></i>
-          </button>
-      
     </div>
   </div>
+</div>
+
+   
+
+
+<div class="app-content"> 
+
+  <div class="container-fluid">
+     {% include 'freight/filters/fq-filter-2.html' %}
   </div>
-</div>
-
-
-<div class="container-fluid">
-  <div class="row">
-      <div class="cold-md-12">
-        {% include 'freight/quotation_list_filter.html' %}
-      </div>
+  <div class="container-fluid">
+    {% include 'freight/tables/quotation-tbl.html' %}
   </div>
-</div>
+ </div> 
 
-<div id="msg">
-    {% if messages %}
-    <div class="px-3 pt-3">
-      {% for m in messages %}
-        <div class="alert alert-{{ m.tags|default:'info' }} mb-2">{{ m }}</div>
-      {% endfor %}
-    </div>
-  {% endif %}
-
-</div>
-
-
-<div class="container-fluid p-0">
-  <div class="table-responsive">
-    <table class="table table-hover table-border table-striped mb-0" id="quotationTbl">
-      <thead class="table-light2">
-        <tr>
-          <th style="width:42px;"><input type="checkbox" id="check-all" class="form-check-input"></th>
-          <th style="width: 140px;">Number</th>
-          <th>Customer</th>
-          <th style="width: 130px;">Valid Until</th>
-          <th style="width: 140px;">Service</th>
-          <th style="width: 100px;">Pay. Term</th>
-          <th style="width: 60px;">Curr</th>
-          <th class="text-end" style="width: 120px;">Total</th>
-          <th style="width: 70px;">Status</th>
-        </tr>
-      </thead>
-      <tbody id="fq-list">
-      {% if quotations %}
-        {% for r in quotations %}
-        <tr class="clickable-row"
-          data-href="{% url 'sales:quotation_detail' r.id %}"
-          data-total="{{ r.total |default:'0.00' }}"
-          data-status="{{ r.status|default:'draft'|lower }}">
-          <td>
-            <input type="checkbox" class="form-check-input row-check" name="ids[]" value="{{ r.id }}" aria-label="Select {{ r.number }}">
-            </td>
-          <td><span class="fw-semibold">{{ r.number }}</span></td>
-          <td>{{ r.customer }}</td>
-          <td>{{ r.valid_until|date:"Y-m-d"|default:"—" }}</td>
-          <td>{{ r.sales_service.only_name }}</td>
-          <td style="text-align:center">{{ r.payment_term|default:"—" }}</td>
-          <td>{{ r.currency }}</td>
-          <td class="text-end fw-semibold total-id">0,00</td>
-          <td>{% with s=r.status|default:"draft"|lower %}
-                {% if s == "accepted" %}
-                <span class="badge bg-success">Accepted</span>
-                {% elif s == "cancelled" %}
-                <span class="badge bg-danger">Cancelled</span>
-                {% elif s == "expired" %}
-                <span class="badge bg-warning text-dark">Exipred</span>
-                {% elif s == "draft" %}
-                <span class="badge bg-secondary">Draft</span>
-                {% elif s == "sent" %}
-                <span class="badge bg-info">Sent</span>
-                {% elif s == "ordered" %}
-                <span class="badge bg-info">Ordered</span>
-                {% else %}
-                <span class="badge bg-warning">{{ s|title }}</span>
-                {% endif %}
-                {% endwith %}
-                  </td>
-          </tr>
-        {% endfor %}
-      {% else %}
-                <tr><td colspan="9" class="text-center text-muted py-4">No data.</td></tr>
-      {% endif %}
-      </tbody>
-    </table>
-  </div>
-</div>
-{% endblock %}
+  {% endblock %}
 
 {% block extra_css %}
 <style>
   #odoo-like-table tbody tr.clickable-row { cursor: pointer; }
   #odoo-like-table tbody tr.clickable-row:hover { background: rgba(0,0,0,.03); }
+ .pagination .page-link {
+  border-radius: .375rem;
+  padding: .4rem .75rem;
+}
+
+/* Samakan tinggi badge dengan btn-sm */
+.badge.btn-sm-match {
+  font-size: 0.875rem;       /* sama seperti btn-sm */
+  padding: 0.4rem 0.5rem;   /* atas-bawah sama dengan tombol kecil */
+  line-height: 1.3;
+  border-radius: 0.375rem;   /* tombol kecil biasanya 0.375 */
+  display: inline-flex;
+  align-items: center;
+}
+
+.input-group.rounded-pill input.form-control {
+  box-shadow: none !important;
+  padding: 8px 15;
+}
+.input-group.rounded-pill input.form-control:focus {
+  box-shadow: 0 0 0 .15rem rgba(13,110,253,.15);
+  background-color: var(--bs-body-bg);
+}
+.input-group.rounded-pill .btn {
+  color: var(--bs-secondary-color);
+}
  
+.app-content {
+  padding:0px
+}
+
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 (function(){
-  const btn = document.getElementById('btn-toggle-filters');
-  const panel = document.getElementById('filters-panel');
-  if(!btn || !panel) return;
-  const key = 'orders_filters_open';
-  try { if(localStorage.getItem(key)==='1') panel.classList.remove('d-none'); } catch(e){}
-  btn.addEventListener('click', function(){
-    panel.classList.toggle('d-none');
-    try { localStorage.setItem(key, panel.classList.contains('d-none') ? '0' : '1'); } catch(e){}
-  });
-   const nf = new Intl.NumberFormat('id-ID', {minimumFractionDigits:2, maximumFractionDigits:2});
-    document.querySelectorAll('#fq-list tr').forEach(tr=>{
-      const raw = tr.getAttribute('data-total') || '0';
-      const cell = tr.querySelector('.total-id');
-      if (cell) cell.textContent = nf.format(Number(raw.toString().replace(',', '.')) || 0);
-    });
+  // ---------- URLs (Django URL names) ----------
+  
+  const BULK_DELETE_URL = "#";
+  const BULK_PRINT_URL  = "#";
 
-  document.querySelectorAll('#fq-list tr.clickable-row').forEach(tr=>{
-  tr.addEventListener('click', (e)=>{
+  // ---------- Elements ----------
+  const panel          = document.getElementById('filters-panel');
+  const btnFilters     = document.getElementById('btn-toggle-filters');
+
+  const toolbar        = document.getElementById('quotations-toolbar');
+  const searchForm     = document.getElementById('search-form');
+  const bulkActions    = document.getElementById('bulk-actions');
+  const selCountEl     = document.getElementById('sel-count');
+  const bulkIdsInput   = document.getElementById('bulk-ids');
+  const bulkForm       = document.getElementById('bulk-form');
+
+  const btnDel         = document.getElementById('btn-bulk-delete');
+  const btnPrint       = document.getElementById('btn-bulk-print');
+
+  const checkAll       = document.getElementById('check-all');
+  const table          = document.getElementById('fq-list');
+
+  // ---------- Helpers ----------
+  const rowChecks = () => Array.from(document.querySelectorAll('.row-check'));
+  const getSelectedIds = () => rowChecks().filter(c => c.checked).map(c => c.value);
+
+  function updateToolbar(){
+    const checks = rowChecks();
+    const selIds = getSelectedIds();
+    const hasSel = selIds.length > 0;
+
+    // badge & hidden field
+    if (selCountEl)  selCountEl.textContent = selIds.length;
+    if (bulkIdsInput) bulkIdsInput.value = selIds.join(',');
+
+    // toggle Search vs Bulk actions (center area)
+    if (bulkActions) bulkActions.classList.toggle('d-none', !hasSel);
+    if (searchForm)  searchForm.classList.toggle('d-none',  hasSel);
+
+    // enable/disable delete button
+    if (btnDel) btnDel.disabled = !hasSel;
+
+    // header checkbox state
+    if (checkAll) {
+      checkAll.checked = hasSel && selIds.length === checks.length;
+      checkAll.indeterminate = hasSel && selIds.length < checks.length;
+    }
+  }
+
+  // ---------- 1) Toggle Filters Panel ----------
+  if (btnFilters && panel){
+    btnFilters.addEventListener('click', () => {
+      panel.classList.toggle('d-none');
+    });
+  }
+
+  // ---------- 2) Format Total (IDR) ----------
+  try {
+    const nf = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (table) {
+      table.querySelectorAll('tr').forEach(tr => {
+        const raw  = tr.getAttribute('data-total') || '0';
+        const cell = tr.querySelector('.total-id');
+        if (cell) {
+          const val = Number(String(raw).replace(',', '.'));
+          cell.textContent = nf.format(isNaN(val) ? 0 : val);
+        }
+      });
+    }
+  } catch(e) { /* noop */ }
+
+  // ---------- 3) Row click -> open detail (skip checkbox) ----------
+  if (table) {
+    table.querySelectorAll('tr.clickable-row').forEach(tr => {
+      tr.addEventListener('click', (e) => {
         if (e.target.closest('input[type="checkbox"]')) return;
         const url = tr.getAttribute('data-href');
         if (url) window.location = url;
-  });
-});  
-})();
-
-
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  const sidebarLinks = document.querySelectorAll(".app-sidebar a[href], .main-sidebar a[href]");
-  sidebarLinks.forEach(link => {
-    link.addEventListener("click", (e) => {
-      // hilangkan fokus
-      e.currentTarget.blur();
-
-      // tunggu event internal AdminLTE selesai dulu
-      setTimeout(() => {
-        const body = document.body;
-        const wrapper = document.querySelector(".app-wrapper") || document.querySelector(".wrapper");
-
-        if (window.innerWidth < 992) {
-          body.classList.remove("sidebar-open");
-          body.classList.add("sidebar-collapse");
-          wrapper?.classList.remove("sidebar-open");
-        }
-      }, 200);
+      });
     });
+  }
+
+  // Stop propagation on row checkboxes
+  document.addEventListener('click', (e) => {
+    if (e.target.classList && e.target.classList.contains('row-check')) {
+      e.stopPropagation();
+    }
   });
-});
+
+  // ---------- 4) Selection handling ----------
+  if (checkAll) {
+    checkAll.addEventListener('change', () => {
+      rowChecks().forEach(c => { c.checked = checkAll.checked; });
+      updateToolbar();
+    });
+  }
+  document.addEventListener('change', (e) => {
+    if (e.target.classList && e.target.classList.contains('row-check')) {
+      updateToolbar();
+    }
+  });
+
+  // ---------- 5) Bulk Delete (POST) + Guard Status ----------
+  if (btnDel && bulkForm) {
+    btnDel.addEventListener('click', () => {
+      const ids = getSelectedIds();
+      if (!ids.length) return;
+
+      // status guard: only draft / canceled / cancelled
+      const rows = rowChecks().filter(c => c.checked).map(c => c.closest('tr'));
+      const blocked = rows.filter(tr => {
+        const st = (tr.getAttribute('data-status') || 'draft').toLowerCase().trim();
+        return !(st === 'draft' || st === 'canceled' || st === 'cancelled');
+      });
+      if (blocked.length) {
+        const allowed = rows.length - blocked.length;
+        const msg = `Only draft/canceled can be deleted.\nAllowed: ${allowed}\nBlocked: ${blocked.length}\nContinue?`;
+        if (!confirm(msg)) return;
+      } else {
+        if (!confirm(`Delete ${ids.length} quotation(s)?`)) return;
+      }
+
+      bulkForm.action = BULK_DELETE_URL;
+      bulkForm.method = 'post';
+      bulkForm.submit();
+    });
+  }
+
+  // ---------- 6) Bulk Print (GET -> new tab) ----------
+  if (btnPrint) {
+    btnPrint.addEventListener('click', () => {
+      const ids = getSelectedIds();
+      if (!ids.length) return;
+      const url = new URL(BULK_PRINT_URL, window.location.origin);
+      url.searchParams.set('ids', ids.join(','));
+      window.open(url.toString(), '_blank');
+    });
+  }
+
+  // ---------- 7) Initial state ----------
+  updateToolbar();
+})();
 </script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const table     = document.getElementById('quotationTbl');
-  const checkAll  = document.getElementById('check-all');
-  const actionBar = document.getElementById('action-bar');
-  const tbody     = table.querySelector('tbody');
-
-  function getRowCheckboxes() {
-    return Array.from(tbody.querySelectorAll('.row-check:not(:disabled)'));
+(function(){
+  // Tombol reset filter
+  const btnReset = document.getElementById('btn-reset-filters');
+  if (btnReset) {
+    btnReset.addEventListener('click', function() {
+      const baseUrl = window.location.pathname; // hanya path, tanpa querystring
+      window.location.href = baseUrl; // redirect ulang tanpa parameter
+    });
   }
-
-  function updateActionBar() {
-    const anyChecked = tbody.querySelector('.row-check:checked') !== null;
-    actionBar.classList.toggle('d-none', !anyChecked);
-  // Toggle search input
-     const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-      searchInput.classList.toggle('d-none', anyChecked);
-    }
-  }
-
-  function updateMaster() {
-    const rows = getRowCheckboxes();
-    const total = rows.length;
-    const checked = rows.filter(cb => cb.checked).length;
-
-    checkAll.checked = (total > 0 && checked === total);
-    checkAll.indeterminate = (checked > 0 && checked < total);
-  }
-
-  
-  // Master toggle
-  checkAll.addEventListener('change', () => {
-    const rows = getRowCheckboxes();
-    rows.forEach(cb => { cb.checked = checkAll.checked; });
-    updateActionBar();
-    updateMaster();
-  });
-
-  // Per-row toggle (event delegation)
-  tbody.addEventListener('change', (e) => {
-    if (e.target && e.target.classList.contains('row-check')) {
-      updateActionBar();
-      updateMaster();
-    }
-  });
-
-  // Klik baris untuk toggle checkbox
-  tbody.addEventListener('click', (e) => {
-    // Abaikan klik pada elemen interaktif
-    const interactiveSelector = 'input, label, a, button, .btn, [data-no-row-toggle]';
-    if (e.target.closest(interactiveSelector)) return;
-
-    const tr = e.target.closest('tr');
-    if (!tr) return;
-
-    const cb = tr.querySelector('.row-check:not(:disabled)');
-    if (cb) {
-      cb.checked = !cb.checked;
-      // Trigger handler manual
-      updateActionBar();
-      updateMaster();
-    }
-  });
-
-  // Init awal
-  updateMaster();
-  updateActionBar();
-});
-
-
+})();
 </script>
+
+
 {% endblock %}

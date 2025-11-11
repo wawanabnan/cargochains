@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Halaman Tidak Ditemukan</title>
+    <link rel="stylesheet" href="{% static 'adminlte/css/adminlte.css' %}">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            text-align: center;
+            padding: 60px;
+        }
+        .error-code {
+            font-size: 72px;
+            font-weight: 700;
+            color: #dc3545;
+        }
+        .message {
+            font-size: 24px;
+            margin-top: 20px;
+        }
+        a.btn {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-code">404</div>
+    <div class="message">
+        Halaman yang Anda cari tidak ditemukan.<br>
+        Mungkin tautannya sudah tidak berlaku atau ada kesalahan penulisan URL.
+    </div>
+    <a href="/" class="btn btn-primary">Kembali ke Beranda</a>
+    <a href="javascript:history.back()" class="btn btn-primary mt-3">
+    ← Kembali ke Halaman Sebelumnya
+</a>
+</body>
+</html>

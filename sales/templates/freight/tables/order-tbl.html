@@ -1,0 +1,72 @@
+<div class="card border-0">
+  <div class="card-body p-0">
+        <div class="table-responsive">
+        <table id="ordertbl" class="table  table-striped table-hovered align-middle">
+          <thead class="">
+            <tr>
+              <th style="width:42px;"><input type="checkbox" id="check-all" class="form-check-input"></th>
+              <th class="text-nowrap text-left" style="width: 120px;">Number</th>
+              <th style="width: 120px;" >Date</th>
+              <th>Customer</th>  
+               {% if perms.sales.view_all_sales %}
+               <th style="width: 120px;">Sales</th>
+              {% endif %}    
+              <th>Service</th>
+              <th>Pay. Term</th>
+              <th>Currency</th>                       
+              <th class="text-end">Total</th>
+              <th>Status</th>
+              
+            </tr>
+          </thead>
+           <tbody id="fo-list">
+            {% for o in orders %}
+              {% with s=o.status|default:"-"|lower %}
+             
+              <tr class="clickable-row"
+                data-href="{% url 'sales:order_detail' o.id %}"
+                data-total="{{ o.total_amount|default:'0.00' }}"
+                data-status="{{ o.status|default:'draft'|lower }}">
+
+                  <td>
+                  <input type="checkbox" class="form-check-input row-check" name="ids[]" value="{{ o.id }}" aria-label="Select {{ o.number }}">
+                </td>
+                <td class="text-nowrap">{{ o.number }} </td>
+                <td class="text-nowrap">{{ o.created_at|date:"Y-m-d" }}</td>
+                <td>{{ o.customer.name|default:"—" }}</td>
+              
+                {% if perms.sales.view_all_sales %}
+                <td class="text-nowrap">{{ r.sales_user.username }}</td>
+                {% endif %}
+
+                <td>{{ o.sales_service.only_name }}</td>
+                <td>{{ o.payment_term|default:"—" }}</td>
+                 <td>{{ o.currency }}</td>                
+                <td class="text-end text-nowrap">{{ o.grand_total|default:o.total|floatformat:2 }}</td>
+
+                <td>
+                  {% if s == 'draft' or s == 'open' %}<span class="badge bg-secondary text-uppercase">{{ o.status|default:"-" }}</span>
+                  {% elif s == 'confirmed' %}<span class="badge bg-info text-uppercase">{{ o.status }}</span>
+                  {% elif s == 'processed' or s == 'in progress' %}<span class="badge bg-primary text-uppercase">{{ o.status }}</span>
+                  {% elif s == 'done' or s == 'completed' %}<span class="badge bg-success text-uppercase">{{ o.status }}</span>
+                  {% elif s == 'canceled' or s == 'cancelled' %}<span class="badge bg-danger text-uppercase">{{ o.status }}</span>
+                  {% else %}<span class="badge bg-light text-dark text-uppercase">{{ o.status|default:"-" }}</span>
+                  {% endif %}
+                </td>  
+              </tr>
+              {% endwith %}
+            {% endfor %}
+          </tbody>
+        </table>
+        
+        </div>
+  </div>
+  <div class="card-footer">
+
+  
+        {% include 'freight/pagination.html' %}
+  
+  </div>
+
+</div>
+    

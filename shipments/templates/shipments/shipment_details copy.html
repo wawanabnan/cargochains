@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "adminbase.html" %}
 {% load shipment_extras %}
 
 
@@ -420,7 +420,7 @@ window.initRouteTableHandlers = function(){
 document.addEventListener('DOMContentLoaded', window.initRouteTableHandlers);
 </script>
 <script>
-alert("Test")
+//alert("Test")
 document.addEventListener('DOMContentLoaded', function(){
   document.querySelectorAll('#confirmConfirmModal form, #confirmBookModal form').forEach(f=>{
     f.addEventListener('submit', ()=>{

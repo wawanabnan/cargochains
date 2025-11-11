@@ -1,0 +1,58 @@
+<div class="card border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle" id="shipment-list">
+        <thead>
+        <tr>
+            <th style="width:42px;"><input type="checkbox" id="check-all" class="form-check-input"></th>
+            <th>NUMBER`</th>
+            <th>CUSTOMER</th>
+            
+            <th>ORI - DEST</th>
+           <th>FRE. MODE</th>
+            <th>BOOKING#</th>
+            <th>ETD</th>
+            <th>ETA</th>
+            <th width="100px">STATUS</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for s in shipments %}
+             <tr class="clickable-row"
+                      data-href="{% url 'shipments:shipment_details' s.id %}"
+                      data-status="{{ S.status|default:'draft'|lower }}">
+            <td>
+                <input type="checkbox" class="form-check-input row-check" name="ids[]" value="{{ s.id }}" aria-label="Select {{ s.number }}">
+            </td>
+            <td>{{ s.number }}</td>
+            <td>{{ s.customer }}</td>
+            <td>{{ s.origin_text }} - {{ s.destination_text }}</td>
+            <td>{{ s.mode }}</td>
+            <td>{{ s.booking_number }}</td>
+            <td>{{ s.etd|date:"Y-m-d" }}</td>
+            <td>{{ s.eta|date:"Y-m-d" }}</td>
+            
+            <td><span class="badge text-bg-secondary">{{ s.get_status_display }}</span></td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="6" class="text-center text-muted">Belum ada shipment.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% if is_paginated %}
+        <nav>
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">«</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">»</a></li>
+            {% endif %}
+        </ul>
+        </nav>
+    {% endif %}
+        </div>
+    </div>    
+</div>

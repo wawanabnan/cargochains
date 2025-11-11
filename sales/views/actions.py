@@ -137,6 +137,8 @@ def quotation_generate_so(request, pk):
         currency=q.currency,
         payment_term=getattr(q, "payment_term", None),
         sales_service=getattr(q, "sales_service", None),
+        sales_user=getattr(q, "sales_user", None),
+        sales_agency=getattr(q, "sales_agency", None),
         total=getattr(q, "total", 0),
         vat=getattr(q, "vat", 0),
         grand_total=getattr(q, "grand_total", 0),

@@ -1,0 +1,55 @@
+<div class="card border-0 mb-3">
+    <div class="card-body  ">   
+
+        {# ===== Toolbar: place ABOVE the table ===== #}
+        <div id="projects-toolbar" class="d-flex justify-content-between align-items-center gap-2 mb-2">
+
+        {# Left: New #}
+        <div class="d-flex align-items-center gap-2">
+            <a href="#" class="btn btn-primary btn-sm">
+            <i class="fa fa-plus me-1"></i> New
+            </a>
+        </div>
+
+        {# Center: Search (default) OR Bulk Actions (when rows checked) #}
+        <div class="flex-grow-1 d-flex justify-content-center">
+            {# Search form (default visible) #}
+            <form method="get" class="input-group input-group-sm rounded-pill overflow-hidden shadow-sm border"
+                style="max-width:500px;">
+                    <input type="search" name="p" value="{{ p }}"
+                            class="form-control ps-3 border-0 bg-body"
+                            placeholder="Search projects.." autocomplete="off">
+                    <button class="btn btn-outline-secondary border-0 bg-body" type="submit">
+                        <i class="fa fa-search"></i>
+                    </button>
+
+                    {# pertahankan parameter lain #}
+                    <input type="hidden" name="sort" value="{{ sort }}">
+                    <input type="hidden" name="dir"  value="{{ dir }}">
+                    <input type="hidden" name="sp"   value="{{ sp }}">
+            </form>
+
+
+            {# Bulk actions (hidden by default; show when any row is checked) #}
+            <div id="bulk-actions" class="d-none">
+            <span class="badge text-bg-secondary me-2 btn-sm-match">
+                <span id="sel-count">0</span> selected
+            </span>
+            <button type="button" class="btn btn-danger btn-sm me-2" id="btn-bulk-delete">
+                <i class="fa fa-trash me-1"></i> Delete
+            </button>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="btn-bulk-print">
+                <i class="fa fa-print me-1"></i> Print
+            </button>
+            </div>
+        </div>
+
+        {# Right: Filter button (offcanvas) #}
+        <div>
+            <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="offcanvas" data-bs-target="#filterSheet">
+            <i class="fa fa-filter me-1"></i> Filter
+            </button>
+        </div>
+        </div>
+    </div>
+</div>

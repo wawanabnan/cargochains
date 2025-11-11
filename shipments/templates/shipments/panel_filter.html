@@ -1,0 +1,79 @@
+{# shipments/partials/filter_offcanvas.html #}
+<div class="offcanvas offcanvas-end" tabindex="-1" id="filtersOffcanvas" aria-labelledby="filtersOffcanvasLabel">
+  <div class="offcanvas-header">
+    <h6 class="offcanvas-title" id="filtersOffcanvasLabel">Filters</h6>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+
+  <div class="offcanvas-body">
+    <form method="get" class="vstack gap-3">
+
+      {# bawa semua query lain kecuali pagination supaya tidak hilang #}
+      {% for key, val in request.GET.items %}
+        {% if key != 'page' and key not in 'status customer service etd_start etd_end eta_start eta_end' %}
+          <input type="hidden" name="{{ key }}" value="{{ val }}">
+        {% endif %}
+      {% endfor %}
+
+      <div>
+        <label class="form-label small">Status</label>
+        <select name="status" class="form-select form-select-sm" multiple size="6">
+          {% for val, label in status_choices %}
+            <option value="{{ val }}" {% if val in flt_statuses %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Ctrl/⌘ untuk multi pilih</div>
+      </div>
+
+      <div>
+        <label class="form-label small">Customer</label>
+        <select name="customer" class="form-select form-select-sm" multiple size="8">
+          {% for c in customers %}
+            <option value="{{ c.pk }}" {% if c.pk in flt_customers %}selected{% endif %}>
+              {{ c.name|default:c }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label small">Service</label>
+        <select name="service" class="form-select form-select-sm" multiple size="8">
+          {% for s in services %}
+            <option value="{{ s.pk }}" {% if s.pk in flt_services %}selected{% endif %}>
+              {{ s.name|default:s }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="row g-2">
+        <div class="col-6">
+          <label class="form-label small">ETD From</label>
+          <input type="date" name="etd_start" value="{{ etd_start }}" class="form-control form-control-sm">
+        </div>
+        <div class="col-6">
+          <label class="form-label small">ETD To</label>
+          <input type="date" name="etd_end" value="{{ etd_end }}" class="form-control form-control-sm">
+        </div>
+        <div class="col-6">
+          <label class="form-label small">ETA From</label>
+          <input type="date" name="eta_start" value="{{ eta_start }}" class="form-control form-control-sm">
+        </div>
+        <div class="col-6">
+          <label class="form-label small">ETA To</label>
+          <input type="date" name="eta_end" value="{{ eta_end }}" class="form-control form-control-sm">
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary btn-sm" type="submit">
+          <i class="fa fa-filter me-1"></i> Apply
+        </button>
+        <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm">
+          Reset
+        </a>
+      </div>
+    </form>
+  </div>
+</div>

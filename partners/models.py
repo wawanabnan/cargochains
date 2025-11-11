@@ -14,9 +14,9 @@ class Partner(models.Model):
     email = models.CharField(max_length=120, null=True, blank=True)
     phone = models.CharField(max_length=60,  null=True, blank=True)
     mobile = models.CharField(max_length=30, null=True, blank=True)
-    websites = models.JSONField(null=True, blank=True, help_text="Daftar URL (list of strings). Kosongkan jika tidak ada.")
+    websites =  models.CharField(max_length=30, null=True, blank=True)
     company_name = models.CharField(
-        max_length=255,
+        max_length=100,
         verbose_name="Company Name",
         blank=True,
         null=True
@@ -57,6 +57,9 @@ class Partner(models.Model):
         indexes = [models.Index(fields=["name"], name="partners_name_idx")]
 
     def __str__(self): return self.name
+    #def __str__(self): 
+    #    return f"{self.partner.name} → {self.role_type}"  # bukan self.role
+
 
 class PartnerRoleTypes(models.Model):
     code = models.CharField(max_length=50, unique=True,blank=True);
@@ -92,5 +95,17 @@ class PartnerRole(models.Model):
         verbose_name_plural = "Partner Roles"
 
     def __str__(self): return f"{self.partner.name} → {self.role}"
+    
+    @property
+    def role(self):
+        return self.role_type
+    
+    def roles_display(self, obj):
+        qs = (PartnerRole.objects
+          .filter(partner=obj)
+          .select_related("role_type")
+          .values_list("role_type__name", flat=True))
+        names = sorted(set(qs))
+        return ", ".join(names) if names else "-"
 
 

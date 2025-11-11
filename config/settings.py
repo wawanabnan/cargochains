@@ -30,7 +30,11 @@ INSTALLED_APPS = [
     "shipments.apps.ShipmentsConfig",
     'geo',
     'projects',
+    'purchases'
 ]
+
+INSTALLED_APPS += ["rest_framework", "corsheaders"]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -42,6 +46,17 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
 
+]
+
+MIDDLEWARE = ["corsheaders.middleware.CorsMiddleware", *MIDDLEWARE]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://cargochains.test",   # origin WordPress lokal-mu
+]
+
+# CSRF tidak diperlukan untuk GET autocomplete, tapi aman kalau ditambah juga
+CSRF_TRUSTED_ORIGINS = [
+    "http://cargochains.test",
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -148,3 +163,17 @@ JAZZMIN_SETTINGS = {
     "site_brand": "Cargochains",
     "login_logo": "adminlte/img/logo_small.png",
 }
+
+
+SESSION_COOKIE_AGE = 10 * 60
+
+# Jika ingin timeout diperpanjang setiap request (idle/sliding timeout)
+SESSION_SAVE_EVERY_REQUEST = True   # ← perpanjang saat user aktif
+
+# Kalau mau logout saat browser ditutup (opsional)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # True = habis saat browser ditutup
+
+# Keamanan (disarankan)
+SESSION_COOKIE_SECURE = True         # aktifkan di produksi (HTTPS)
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"      # atau "Strict" sesuai kebutuhan
