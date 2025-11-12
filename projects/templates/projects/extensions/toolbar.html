@@ -1,0 +1,60 @@
+
+{# === TOOLBAR HYBRID === #}
+<div class="card">
+    <div class="card-body">
+      <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+
+  {# Left: NEW #}
+  <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#costAddModal">
+  <i class="fa fa-plus me-1"></i> New
+</button>
+
+  {# Center: SEARCH (default visible) #}
+  <form id="search-box" method="get"
+        class="ms-auto me-auto input-group input-group-sm rounded-pill overflow-hidden border shadow-sm"
+        style="max-width:560px;">
+    {% for key,val in request.GET.items %}
+      {% if key != 'q' and key != 'page' %}
+        <input type="hidden" name="{{ key }}" value="{{ val }}">
+      {% endif %}
+    {% endfor %}
+    <input type="search" name="q" value="{{ q }}" class="form-control ps-3 border-0 bg-body"
+           placeholder="Search title/ref/project/category..." autocomplete="off">
+    <button class="btn btn-outline-secondary border-0 bg-body" type="submit" title="Search">
+      <i class="fa fa-search"></i>
+    </button>
+  </form>
+
+  {# Center: ACTION BAR (shown when rows selected) #}
+  <form id="bulk-form" method="post" action="{% url 'projects:cost_bulk' %}"
+        class="ms-auto me-auto d-none">
+    {% csrf_token %}
+    <input type="hidden" name="action" id="bulk-action" value="">
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge text-bg-primary" id="sel-count">0</span>
+      <span class="small text-muted">selected</span>
+      <button type="button" class="btn btn-outline-danger btn-sm" id="btn-bulk-delete" disabled>
+        <i class="fa fa-trash me-1"></i> Delete
+      </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-bulk-print" disabled>
+        <i class="fa fa-print me-1"></i> Print
+      </button>
+      <button type="button" class="btn btn-link btn-sm" id="btn-cancel-select">Cancel</button>
+    </div>
+  </form>
+
+  {# Right: FILTERS #}
+  <button class="btn btn-outline-secondary btn-sm ms-auto"
+          type="button"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#filtersOffcanvas"
+          aria-controls="filtersOffcanvas">
+    <i class="fa fa-filter me-1"></i> Filters
+    {% if filters_count %}
+      <span class="badge text-bg-primary ms-1">{{ filters_count }}</span>
+    {% endif %}
+  </button>
+</div>
+
+    </div>
+</div>

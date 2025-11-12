@@ -1,126 +1,278 @@
 {% extends "adminbase.html" %}
+
 {% block content %}
-<div class="container-fluid py-3">
 
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="m-0">Project Costs</h3>
-    <div class="d-flex gap-2">
-      <a href="{% url 'projects:cost_add_global' %}" class="btn btn-primary">Add Cost</a>
-      <a href="{% url 'projects:project_list' %}" class="btn btn-outline-secondary">Projects</a>
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-6">
+        <h3 class="mb-0">Project Costs</h3>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-end">
+          <li class="breadcrumb-item"><a href="#">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">New</li>
+        </ol>
+      </div>
     </div>
   </div>
-
-  <form method="get" class="row g-2 mb-3">
-    <div class="col-md-3">
-      <input type="text" name="q" class="form-control" placeholder="Search title/notes/project"
-             value="{{ q }}">
-    </div>
-    <div class="col-md-3">
-      <select name="project" class="form-select">
-        <option value="">All Projects</option>
-        {% for p in projects %}
-          <option value="{{ p.id }}" {% if p.id|stringformat:"s" == project_selected %}selected{% endif %}>
-            {{ p.number }} — {{ p.name }}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-3">
-      <select name="category" class="form-select">
-        <option value="">All Categories</option>
-        {% for cat in categories %}
-          <option value="{{ cat.id }}" {% if cat.id|stringformat:"s" == category_selected %}selected{% endif %}>
-            {{ cat.name }}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-1">
-      <input type="date" name="date_from" class="form-control" placeholder="From" value="{{ date_from }}">
-    </div>
-    <div class="col-md-1">
-      <input type="date" name="date_to" class="form-control" placeholder="To" value="{{ date_to }}">
-    </div>
-    <div class="col-md-1">
-      <button class="btn btn-outline-secondary w-100">Filter</button>
-    </div>
-  </form>
-
-  <div class="table-responsive">
-    <table class="table table-striped align-middle">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Project</th>
-          <th>Category</th>
-          <th>Title</th>
-          <th>Ref</th>
-          <th class="text-end">Amount</th>
-          <th>Cur</th>
-          <th class="text-center" style="width:90px;">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for c in page_obj %}
-        <tr>
-          <td>{{ c.cost_date|date:"Y-m-d" }}</td>
-          <td>
-            <div class="fw-semibold">{{ c.project.number }}</div>
-            <div class="text-muted small">{{ c.project.name }}</div>
-          </td>
-          <td>{{ c.category.name }}</td>
-           <td>
-            {{ c.title }}
-            {% if c.attachment %}
-              <a href="{{ c.attachment.url }}" class="ms-2" title="Attachment" target="_blank">📎</a>
-            {% endif %}
-          </td>
-          <td class="text-end">{{ c.amount|floatformat:2 }}</td>
-          <td>{{ c.currency_code }}</td>
-          <td class="text-center">
-            <a href="{% url 'projects:cost_edit' c.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
-          </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="7" class="text-center text-muted p-3">No costs found.</td></tr>
-        {% endfor %}
-      </tbody>
-      <tfoot>
-        <tr>
-          <th colspan="4" class="text-end">Total</th>
-          <th class="text-end">{{ total_amount|floatformat:2 }}</th>
-          <th colspan="2"></th>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
-
-  <div class="d-flex justify-content-between align-items-center mt-2">
-    <div>Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</div>
-    <nav>
-      <ul class="pagination mb-0">
-        {% if page_obj.has_previous %}
-          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&project={{ project_selected }}&category={{ category_selected }}&date_from={{ date_from }}&date_to={{ date_to }}">«</a></li>
-        {% else %}
-          <li class="page-item disabled"><span class="page-link">«</span></li>
-        {% endif %}
-
-        {% for num in page_obj.paginator.page_range %}
-          {% if num == page_obj.number %}
-            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-          {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
-            <li class="page-item"><a class="page-link" href="?page={{ num }}&q={{ q }}&project={{ project_selected }}&category={{ category_selected }}&date_from={{ date_from }}&date_to={{ date_to }}">{{ num }}</a></li>
-          {% endif %}
-        {% endfor %}
-
-        {% if page_obj.has_next %}
-          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&project={{ project_selected }}&category={{ category_selected }}&date_from={{ date_from }}&date_to={{ date_to }}">»</a></li>
-        {% else %}
-          <li class="page-item disabled"><span class="page-link">»</span></li>
-        {% endif %}
-      </ul>
-    </nav>
-  </div>
-
 </div>
+
+
+<div class="app-content">
+  <div class="container-fluid">
+    {% include "projects/extensions/toolbar.html" %}
+  </div>
+  <div class="container-fluid">
+    {% include "projects/extensions/cost-table.html" %}
+  </div>
+</div>
+
+{% with p=page_obj %}
+  {% if p and p.paginator.num_pages > 1 %}
+    {% include "partials/pagination.html" %}
+  {% endif %}
+{% endwith %}
+
+{% include "projects/extensions/panel-filter.html" %}
+
+
+{# Modal Add Project Cost #}
+<div class="modal fade" id="costAddModal" tabindex="-1" aria-labelledby="costAddModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <form id="costAddForm" method="post" enctype="multipart/form-data" action="{% url 'projects:cost_add' %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h6 class="modal-title" id="costAddModalLabel">Add Project Cost</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div id="costAddErrors" class="alert alert-danger py-2 px-3 d-none small"></div>
+
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label small">Project</label>
+              <select name="project" class="form-select form-select-sm" required>
+                {% for p in projects %}
+                  <option value="{{ p.id }}">{{ p.number }} — {{ p.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">Category</label>
+              <select name="category" class="form-select form-select-sm" required>
+                {% for cat in categories %}
+                  <option value="{{ cat.id }}">{{ cat.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-8">
+              <label class="form-label small">Cost Description</label>
+              <input type="text" name="title" class="form-control form-control-sm" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small">Cost Date</label>
+              <input type="date" name="cost_date" class="form-control form-control-sm">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small">Amount</label>
+              <input type="number" step="0.01" name="amount" class="form-control form-control-sm" required>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small">CCY</label>
+              <input type="text" name="currency_code" class="form-control form-control-sm" value="IDR" maxlength="3">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">Reference</label>
+              <input type="text" name="ref" class="form-control form-control-sm" placeholder="Invoice/PO/Ref">
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small">Notes</label>
+              <textarea name="notes" rows="3" class="form-control form-control-sm"></textarea>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small">Attachment</label>
+              <input type="file" name="attachment" class="form-control form-control-sm">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-link btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="fa fa-save me-1"></i> Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  // ---------- Row click ----------
+  document.querySelectorAll('#pcost-list tr.clickable-row').forEach(tr=>{
+    tr.addEventListener('click', (e)=>{
+      if (e.target.closest('input, a, button, label')) return; // ignore controls
+      const url = tr.getAttribute('data-href');
+      if (url) window.location = url;
+    });
+  });
+
+  // ---------- Amount format ----------
+  document.querySelectorAll('#pcost-list tr').forEach(tr=>{
+    const cell = tr.querySelector('.amount-idr');
+    if (!cell) return;
+    const raw = tr.getAttribute('data-amount');
+    const num = Number((raw || '0').toString().replace(',', '.')) || 0;
+    try {
+      const nf = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      cell.textContent = nf.format(num);
+    } catch(e){ cell.textContent = num.toFixed(2); }
+  });
+
+  // ---------- Selection / Toolbar toggle ----------
+  const checkAll   = document.getElementById('check-all');
+  const checks     = Array.from(document.querySelectorAll('.row-check'));
+  const bulkForm   = document.getElementById('bulk-form');
+  const searchBox  = document.getElementById('search-box');
+  const selCountEl = document.getElementById('sel-count');
+  const btnDelete  = document.getElementById('btn-bulk-delete');
+  const btnPrint   = document.getElementById('btn-bulk-print');
+  const btnCancel  = document.getElementById('btn-cancel-select');
+  const bulkAction = document.getElementById('bulk-action');
+
+  function updateToolbar(){
+    const selected = checks.filter(c=>c.checked);
+    const n = selected.length;
+    selCountEl.textContent = n;
+    const showAction = n > 0;
+    bulkForm.classList.toggle('d-none', !showAction);
+    searchBox.classList.toggle('d-none', showAction);
+    btnDelete.disabled = n === 0;
+    btnPrint.disabled  = n === 0;
+    if (checkAll) {
+      checkAll.indeterminate = (n > 0 && n < checks.length);
+      checkAll.checked = (n > 0 && n === checks.length);
+    }
+  }
+
+  checks.forEach(c=>{
+    c.addEventListener('click', e => e.stopPropagation());
+    c.addEventListener('change', updateToolbar);
+  });
+
+  if (checkAll){
+    checkAll.addEventListener('change', ()=>{
+      checks.forEach(c => c.checked = checkAll.checked);
+      updateToolbar();
+    });
+  }
+
+  btnCancel?.addEventListener('click', ()=>{
+    checks.forEach(c => c.checked = false);
+    updateToolbar();
+  });
+
+  // ---------- Bulk actions ----------
+  btnDelete?.addEventListener('click', ()=>{
+    const n = checks.filter(c=>c.checked).length;
+    if (!n) return;
+    if (!confirm(`Delete ${n} selected cost(s)?`)) return;
+    bulkAction.value = 'delete';
+    bulkForm.submit();
+  });
+
+  btnPrint?.addEventListener('click', ()=>{
+    const n = checks.filter(c=>c.checked).length;
+    if (!n) return;
+    bulkAction.value = 'print';
+    bulkForm.submit();
+  });
+
+  updateToolbar();
+})();
+</script>
+
+<script>
+(function(){
+  const form   = document.getElementById('costAddForm');
+  const errors = document.getElementById('costAddErrors');
+  const modalEl = document.getElementById('costAddModal');
+  const bsModal = modalEl ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+
+  if (form){
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      errors?.classList.add('d-none');
+      errors && (errors.innerHTML = "");
+
+      const url = form.getAttribute('action');
+      const fd  = new FormData(form);
+
+      // fetch AJAX
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: fd,
+      });
+
+      if (res.ok){
+        // success → close & reload
+        bsModal && bsModal.hide();
+        // optional: reset form supaya modal bersih
+        form.reset();
+        // reload halaman supaya row baru muncul
+        window.location.reload();
+        return;
+      }
+
+      // error → tampilkan daftar error
+      try {
+        const data = await res.json();
+        if (data && data.errors){
+          const msgs = [];
+          for (const [field, arr] of Object.entries(data.errors)){
+            arr.forEach(msg => msgs.push(`<div>• <strong>${field}</strong>: ${msg}</div>`));
+          }
+          errors.innerHTML = msgs.join("");
+          errors.classList.remove('d-none');
+          return;
+        }
+      } catch(e){}
+      errors.innerHTML = "Failed to save. Please check your input.";
+      errors.classList.remove('d-none');
+    });
+
+    // optional: reset error saat modal dibuka
+    modalEl?.addEventListener('show.bs.modal', ()=>{
+      errors?.classList.add('d-none');
+      if (errors) errors.innerHTML = "";
+    });
+  }
+})();
+</script>
+
 {% endblock %}

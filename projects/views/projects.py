@@ -7,8 +7,8 @@ from django.views import View
 from django.views.generic import CreateView, UpdateView
 from django.db import transaction
 
-from . import models as m
-from .forms import ProjectForm, ProjectCostForm
+from .. import models as m
+from ..forms import ProjectForm, ProjectCostForm
 
 
 class ProjectCreateView(CreateView):
