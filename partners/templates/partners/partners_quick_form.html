@@ -1,0 +1,74 @@
+{# templates/partners/partials/partner_quick_form.html #}
+<form method="post" action="{% url 'partners:quick_add' %}" id="partnerQuickForm">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      {{ form.name.label_tag }} {{ form.name }}
+      {{ form.name.errors }}
+    </div>
+    <div class="col-md-6">
+      {{ form.company_name.label_tag }} {{ form.company_name }}
+      {{ form.company_name.errors }}
+    </div>
+
+    <div class="col-md-6">
+      {{ form.company_type.label_tag }} {{ form.company_type }}
+      {{ form.company_type.errors }}
+    </div>
+    <div class="col-md-6">
+      {{ form.tax.label_tag }} {{ form.tax }}
+      {{ form.tax.errors }}
+    </div>
+
+    <div class="col-md-6">
+      {{ form.email.label_tag }} {{ form.email }}
+      {{ form.email.errors }}
+    </div>
+    <div class="col-md-6">
+      {{ form.phone.label_tag }} {{ form.phone }}
+      {{ form.phone.errors }}
+    </div>
+
+    <div class="col-md-6">
+      {{ form.mobile.label_tag }} {{ form.mobile }}
+      {{ form.mobile.errors }}
+    </div>
+    <div class="col-md-6">
+      {{ form.websites.label_tag }} {{ form.websites }}
+      {{ form.websites.errors }}
+    </div>
+
+    <div class="col-12">
+      {{ form.address.label_tag }} {{ form.address }}
+      {{ form.address.errors }}
+    </div>
+
+    <div class="col-md-4">
+      {{ form.country.label_tag }} {{ form.country }}
+      {{ form.country.errors }}
+    </div>
+    <div class="col-md-4">
+      {{ form.city.label_tag }} {{ form.city }}
+      {{ form.city.errors }}
+    </div>
+    <div class="col-md-4">
+      {{ form.post_code.label_tag }} {{ form.post_code }}
+      {{ form.post_code.errors }}
+    </div>
+
+    <div class="col-md-6 form-check mt-2">
+      {{ form.is_individual }} {{ form.is_individual.label_tag }}
+      {{ form.is_individual.errors }}
+    </div>
+    <div class="col-md-6 form-check mt-2">
+      {{ form.is_pkp }} {{ form.is_pkp.label_tag }}
+      {{ form.is_pkp.errors }}
+    </div>
+  </div>
+
+  <div class="mt-3 text-end">
+    <button type="submit" class="btn btn-primary">Simpan Partner</button>
+  </div>
+</form>

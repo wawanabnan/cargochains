@@ -11,7 +11,7 @@ from .views.routes_schedule import routes_schedule, routes_schedule_export
 from .views import routes_api
 from shipments.views.routes_inline import route_modal, route_delete, route_delete_confirm
 
-
+from .views.create import ShipmentCreateView
 
 app_name = "shipments"
 
@@ -40,6 +40,8 @@ urlpatterns = [
     path("routes/schedule/export/", routes_schedule_export, name="routes_schedule_export"),  # opsional CSV
 
     path("api/assets/by-type/<int:type_id>/", routes_api.assets_by_type, name="assets_by_type"),
-    
+
+    path("create/", ShipmentCreateView.as_view(), name="create"),
+
 
 ]

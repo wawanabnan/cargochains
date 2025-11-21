@@ -5,3 +5,8 @@ body {
     line-height: normal;
     -webkit-font-smoothing: antialiased;
 }
+
+.form-control {
+    padding:8px 5px;
+    margin-bottom:20px
+}

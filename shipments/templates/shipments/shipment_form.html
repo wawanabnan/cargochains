@@ -1,0 +1,189 @@
+{# templates/shipments/shipment_form.html #}
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <h1 class="mb-3">Create Shipment (PLAN)</h1>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="card mb-3">
+      <div class="card-header">Service & Parties</div>
+      <div class="card-body row g-3">
+        <div class="col-md-3">
+          {{ form.service.label_tag }} {{ form.service }}
+          {{ form.service.errors }}
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Customer</label>
+          <div class="input-group">
+            {{ form.customer }}
+            <button type="button"
+                    class="btn btn-outline-secondary js-open-partner-modal"
+                    data-target-field="{{ form.customer.auto_id }}"
+                    data-role-code="CUSTOMER">
+              +
+            </button>
+          </div>
+          {{ form.customer.errors }}
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Shipper</label>
+          <div class="input-group">
+            {{ form.shipper }}
+            <button type="button"
+                    class="btn btn-outline-secondary js-open-partner-modal"
+                    data-target-field="{{ form.shipper.auto_id }}"
+                    data-role-code="SHIPPER">
+              +
+            </button>
+          </div>
+          {{ form.shipper.errors }}
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Consignee</label>
+          <div class="input-group">
+            {{ form.consignee }}
+            <button type="button"
+                    class="btn btn-outline-secondary js-open-partner-modal"
+                    data-target-field="{{ form.consignee.auto_id }}"
+                    data-role-code="CONSIGNEE">
+              +
+            </button>
+          </div>
+          {{ form.consignee.errors }}
+        </div>
+      </div>
+    </div>
+
+  <div class="card mb-3">
+  <div class="card-header">Service & Parties</div>
+  <div class="card-body row g-3">
+    <div class="col-md-3">
+      {{ form.sales_service.label_tag }} {{ form.sales_service }}
+      {{ form.sales_service.errors }}
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Customer</label>
+      <div class="input-group">
+        {{ form.customer }}
+        <button type="button"
+                class="btn btn-outline-secondary js-open-partner-modal"
+                data-target-field="{{ form.customer.auto_id }}"
+                data-role-code="CUSTOMER">
+          +
+        </button>
+      </div>
+      {{ form.customer.errors }}
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Shipper</label>
+      <div class="input-group">
+        {{ form.shipper }}
+        <button type="button"
+                class="btn btn-outline-secondary js-open-partner-modal"
+                data-target-field="{{ form.shipper.auto_id }}"
+                data-role-code="SHIPPER">
+          +
+        </button>
+      </div>
+      {{ form.shipper.errors }}
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Consignee</label>
+      <div class="input-group">
+        {{ form.consignee }}
+        <button type="button"
+                class="btn btn-outline-secondary js-open-partner-modal"
+                data-target-field="{{ form.consignee.auto_id }}"
+                data-role-code="CONSIGNEE">
+          +
+        </button>
+      </div>
+      {{ form.consignee.errors }}
+    </div>
+  </div>
+</div>
+
+
+    {# Tambah section cargo kalau diperlukan #}
+
+    <div class="d-flex justify-content-end gap-2">
+      <a href="{% url 'shipments:shipment_list' %}" class="btn btn-secondary">Batal</a>
+      <button type="submit" class="btn btn-primary">Simpan</button>
+    </div>
+  </form>
+</div>
+
+{# Modal #}
+<div class="modal fade" id="partnerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Tambah Partner</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="partnerModalBody">
+        <!-- form quick-add akan dimuat via AJAX -->
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  $(function() {
+    let $partnerModal = $('#partnerModal');
+    let $partnerModalBody = $('#partnerModalBody');
+    let targetSelectId = null;
+    let roleCode = null;
+
+    // Klik tombol "+"
+    $('.js-open-partner-modal').on('click', function() {
+      targetSelectId = $(this).data('target-field');
+      roleCode = $(this).data('role-code');
+
+      let url = "{% url 'partners:quick_add' %}";
+      if (roleCode) {
+        url += "?role=" + encodeURIComponent(roleCode);
+      }
+
+      $.get(url, function(html) {
+        $partnerModalBody.html(html);
+        $partnerModal.modal('show');
+      });
+    });
+
+    // Submit form di dalam modal via AJAX
+    $partnerModal.on('submit', '#partnerQuickForm', function(e) {
+      e.preventDefault();
+      const $form = $(this);
+
+      $.ajax({
+        url: $form.attr('action'),
+        method: $form.attr('method'),
+        data: $form.serialize(),
+        success: function(data) {
+          const $select = $('#' + targetSelectId);
+          const newOption = new Option(data.name, data.id, true, true);
+          $select.append(newOption).trigger('change'); // kalau pakai select2
+
+          $partnerModal.modal('hide');
+        },
+        error: function(xhr) {
+          $partnerModalBody.html(xhr.responseText);
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

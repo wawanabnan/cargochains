@@ -20,6 +20,17 @@ from .views.actions import (
 
 from .auth import sales_access_required
 from .views import actions as action_views
+from .views import freight  # pastikan __init__.py di views sudah import freight, atau pakai from .views.freight import ...
+
+
+
+from .views.freight import (
+    FqListView,
+    FqCreateView,
+    FqUpdateView,
+    FqDetailView,
+)
+
 
 
 app_name = "sales"
@@ -64,9 +75,18 @@ urlpatterns = [
     #path("freight/quotations/<int:pk>/generate-so/", sales_access_required(quotation_generate_so), name="quotation_generate_so"),
     #path("freight/orders/<int:pk>/status/", action_views.order_set_status, name="order_set_status"),
 
-    
-
+    # sales/urls.py
+    path("freight-quotations/", FqListView.as_view(), name="fq_list"),
+    path("freight-quotations/add/", FqCreateView.as_view(), name="fq_add"),
+    path("freight-quotations/<int:pk>/edit/", FqUpdateView.as_view(), name="fq_edit"),
+    path(
+        "freight=quotations/<int:pk>/",
+        FqDetailView.as_view(),
+        name="freight_quotation_detail",
+    ),
+   
 ]
+
 
 
 

@@ -1,0 +1,115 @@
+{% extends "main.html" %}
+
+{% block content %}
+<section class="content">
+  <div class="container-fluid">
+
+    <h3>Test Origin / Destination Autocomplete</h3>
+
+    <form method="post">
+      {% csrf_token %}
+
+      {% if form.errors %}
+        <div class="alert alert-danger">
+          Ada kesalahan pada form.
+        </div>
+      {% endif %}
+
+      <div class="row">
+        <div class="col-md-6">
+          {{ form.origin_name.label_tag }}
+          {{ form.origin_name }}
+          {{ form.origin_id }}
+        </div>
+        <div class="col-md-6">
+          {{ form.destination_name.label_tag }}
+          {{ form.destination_name }}
+          {{ form.destination_id }}
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary mt-3">Simpan (Test)</button>
+    </form>
+
+    {% if result %}
+      <hr>
+      <h5>Hasil cleaned_data (bukan simpan ke DB)</h5>
+      <p><strong>Origin:</strong>
+        {% if result.origin %}
+          [{{ result.origin.id }}] {{ result.origin.name }}
+        {% else %}
+          (kosong / tidak valid)
+        {% endif %}
+      </p>
+      <p><strong>Destination:</strong>
+        {% if result.destination %}
+          [{{ result.destination.id }}] {{ result.destination.name }}
+        {% else %}
+          (kosong / tidak valid)
+        {% endif %}
+      </p>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}:
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+{% endblock %}
+
+
+{% block content_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+<script>
+  $(function() {
+
+    function initLocationAutocomplete(textSelector, hiddenSelector) {
+      var $text = $(textSelector);
+      var $hidden = $(hiddenSelector);
+
+      if (!$text.length || !$hidden.length) {
+        console.warn("Selector tidak ketemu:", textSelector, hiddenSelector);
+        return;
+      }
+
+      $text.autocomplete({
+        source: function(request, response) {
+          $.getJSON(
+            "{% url 'geo:locations_autocomplete' %}",
+            { q: request.term || "" },
+            function(data) {
+              var mapped = $.map(data, function(item) {
+                return {
+                  label: item.label, // contoh: Tebet → Jakarta Selatan → DKI Jakarta
+                  value: item.label,
+                  id: item.id
+                };
+              });
+              response(mapped);
+            }
+          );
+        },
+        minLength: 2,
+        select: function(event, ui) {
+          $text.val(ui.item.label);
+          $hidden.val(ui.item.id);
+          return false;
+        },
+        change: function(event, ui) {
+          if (!ui.item) {
+            $hidden.val("");
+          }
+        }
+      });
+    }
+
+    initLocationAutocomplete("#id_origin_name", "#id_origin_id");
+    initLocationAutocomplete("#id_destination_name", "#id_destination_id");
+  });
+</script>
+
+{% endblock %}

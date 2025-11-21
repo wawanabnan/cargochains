@@ -1,0 +1,10 @@
+py manage.py seed_id_airport  --file  data/id-airport/airports.csv    
+python manage.py seed_id_port  --file data/unlocode/code-list.csv
+python manage.py seed_id_jetty --file data/osm/id-jetty/export.geojson
+
+
+py manage.py seed_id_location ^
+    --provinces data/id-region/provinces.csv ^
+    --regencies data/id-region/regencies.csv ^
+    --districts data/id-region/districts.csv ^
+    --villages data/id-region/villages.csv

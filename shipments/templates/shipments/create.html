@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Create Shipment</h4>
+    <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">Back</a>
+  </div>
+
+  <form method="post" class="card shadow-sm">
+    {% csrf_token %}
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Status</label>
+          {{ form.status }}
+        </div>
+        <div class="col-md-9">
+          <label class="form-label">Sales Order (opsional)</label>
+          {{ form.sales_order }}
+          <div class="form-text">Jika dipilih, beberapa field akan otomatis terisi.</div>
+        </div>
+
+        <div class="col-md-6 position-relative">
+          <label class="form-label">Origin</label>
+          {{ form.origin }} {{ form.origin_text }}
+          <div class="ac-menu d-none"></div>
+          {% for e in form.origin_text.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6 position-relative">
+          <label class="form-label">Destination</label>
+          {{ form.destination }} {{ form.destination_text }}
+          <div class="ac-menu d-none"></div>
+          {% for e in form.destination_text.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Shipper</label>
+          {{ form.shipper }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Consignee</label>
+          {{ form.consignee }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Carrier</label>
+          {{ form.carrier }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Agency</label>
+          {{ form.agency }}
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Cargo Description</label>
+          {{ form.cargo_description }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Qty</label>
+          {{ form.qty }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Weight</label>
+          {{ form.weight }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Volume</label>
+          {{ form.volume }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Package Type</label>
+          {{ form.package_type }}
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">ETD</label>
+          {{ form.etd }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">ETA</label>
+          {{ form.eta }}
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Mode</label>
+          {{ form.mode }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Service Level</label>
+          {{ form.service_level }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Incoterm</label>
+          {{ form.inco_term }}
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Vessel Name</label>
+          {{ form.vessel_name }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Voyage No</label>
+          {{ form.voyage_no }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Flight No</label>
+          {{ form.flight_no }}
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Currency</label>
+          {{ form.currency }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Total</label>
+          {{ form.total }}
+        </div>
+      </div>
+    </div>
+    <div class="card-footer d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Create</button>
+      <a href="javascript:history.back()" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<style>
+.ac-menu{position:absolute;z-index:1060;background:#fff;width:100%;max-height:240px;overflow:auto;border:1px solid #e5e7eb;border-radius:.5rem}
+.ac-item{padding:.375rem .5rem;cursor:pointer}
+.ac-item:hover{background:#f3f4f6}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const AUTOCOMPLETE_URL = "/geo/locations/autocomplete/"; // endpoint kamu yg sudah ada
+
+  function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+
+  async function fetchLocations(q){
+    if(!q || q.trim().length<2) return [];
+    const r = await fetch(AUTOCOMPLETE_URL + "?q=" + encodeURIComponent(q.trim()));
+    if(!r.ok) return [];
+    const data = await r.json();
+    return data.map(o=>({id:o.id, label:o.label || o.name}));
+  }
+
+  function wireAC(cell, formEl){
+    const input = cell.querySelector('input.ac-location');
+    if(!input) return;
+    const target = input.dataset.target; // origin/destination
+    const hidden = formEl.querySelector(`input[name="${target}"]`);
+    const menu = cell.querySelector('.ac-menu');
+    const show = (items)=>{
+      menu.innerHTML='';
+      if(!items.length){ menu.classList.add('d-none'); return; }
+      items.forEach(it=>{
+        const d=document.createElement('div'); d.className='ac-item'; d.textContent=it.label;
+        d.onclick=()=>{ input.value=it.label; hidden.value=it.id; menu.classList.add('d-none'); };
+        menu.appendChild(d);
+      });
+      menu.classList.remove('d-none');
+    };
+    const search = debounce(async ()=> show(await fetchLocations(input.value)), 250);
+    input.addEventListener('input', ()=>{ hidden.value=''; search(); });
+    input.addEventListener('blur', ()=> setTimeout(()=> menu.classList.add('d-none'), 120));
+    input.addEventListener('focus', ()=> input.dispatchEvent(new Event('input')));
+  }
+
+  // aktifkan AC untuk kedua field
+  const formEl = document.querySelector('form');
+  document.querySelectorAll('.position-relative').forEach(cell=> wireAC(cell, formEl));
+})();
+</script>
+{% endblock %}

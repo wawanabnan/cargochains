@@ -1,0 +1,164 @@
+# geo/views/adds.py
+from django.http import JsonResponse
+from django.views import View
+from django.db.models import Q
+from geo.models import Location  # sesuaikan kalau model-nya beda
+from ..models import Location
+from django.core.cache import cache  # optional, tapi aman
+
+
+class LocationAutocompleteView(View):
+    """
+    Autocomplete untuk geo.Location.
+    Mencari berdasarkan nama (village/district/regency/province).
+    Menampilkan label lengkap (desa → kecamatan → kabupaten → provinsi).
+    """
+
+    def get(self, request):
+        q = (request.GET.get("q") or "").strip()
+        if not q:
+            return JsonResponse([], safe=False)
+
+        # Prioritas pencarian:
+        # (1) nama lokasi mengandung q
+        # (2) lokasi parent juga mengandung q
+        qs = (
+            Location.objects.filter(
+                Q(name__icontains=q) |
+                Q(parent__name__icontains=q) |
+                Q(parent__parent__name__icontains=q)
+            )
+            .filter(kind__in=["village", "district", "regency", "province"])
+            .select_related("parent", "parent__parent", "parent__parent__parent")
+            .order_by("kind", "name")[:20]
+        )
+
+        results = []
+        for loc in qs:
+            # Build full hierarchy path
+            parts = [loc.name]
+            p = loc.parent
+            while p:
+                parts.append(p.name)
+                p = p.parent
+
+            full_label = " → ".join(parts)  # reversed later
+
+            results.append({
+                "id": loc.id,
+                "name": loc.name,
+                "kind": loc.kind,
+                "label": " → ".join(reversed(parts)),  # Village → District → Regency …
+            })
+
+        return JsonResponse(results, safe=False)
+
+
+class LocationAjaxView(View):
+    """
+    Autocomplete untuk Location
+    - Menerima ?q= (vanilla) atau ?term= (jQuery UI)
+    - Output: list[ {id, label, value, name, kind} ]
+    """
+    limit = 10
+
+    def get_queryset(self, q: str):
+        qs = Location.objects.all()
+        if q:
+            qs = qs.filter(Q(name__icontains=q))
+        return qs.order_by("name")[: self.limit]
+
+    def normalize(self, loc):
+        kind = getattr(loc, "kind", "") or ""
+        suffix = f" [{kind}]" if kind else ""
+        return {
+            "id": loc.id,                 # dipakai vanilla & untuk hidden ID
+            "label": f"{loc.name}{suffix}",  # ditampilkan di dropdown
+            "value": loc.name,            # jQuery UI pakai 'value'
+            "name": loc.name,             # optional/informasi ekstra
+            "kind": kind,                 # optional
+        }
+
+    def get(self, request, *args, **kwargs):
+        q = (request.GET.get("q") or request.GET.get("term") or "").strip()
+        items = [self.normalize(loc) for loc in self.get_queryset(q)]
+        return JsonResponse(items, safe=False)  # LIST → safe=False
+    
+
+class ProvincesView(View):
+    def get(self, request):
+        qs = Location.objects.filter(kind="province").order_by("name")
+        data = [{"id": obj.id, "name": obj.name} for obj in qs]
+        return JsonResponse(data, safe=False)
+
+
+class RegenciesView(View):
+    def get(self, request):
+        pid = request.GET.get("province_id")
+        qs = Location.objects.filter(parent_id=pid, kind__in=["regency", "city"]).order_by("name")
+        return JsonResponse([{"id": x.id, "name": x.name} for x in qs], safe=False)
+
+
+class DistrictsView(View):
+    def get(self, request):
+        rid = request.GET.get("regency_id")
+        qs = Location.objects.filter(parent_id=rid, kind="district").order_by("name")
+        return JsonResponse([{"id": x.id, "name": x.name} for x in qs], safe=False)
+
+
+class VillagesView(View):
+    def get(self, request):
+        did = request.GET.get("district_id")
+        qs = Location.objects.filter(parent_id=did, kind="village").order_by("name")
+        return JsonResponse([{"id": x.id, "name": x.name} for x in qs], safe=False)
+
+
+class LocationChildrenView(View):
+    def get(self, request):
+        parent_id = request.GET.get("parent")
+        if not parent_id:
+            return JsonResponse([], safe=False)
+
+        cache_key = f"geo_children_v3:{parent_id}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return JsonResponse(cached, safe=False)
+
+        parent = (
+            Location.objects
+            .filter(pk=parent_id)
+            .only("id", "kind")
+            .first()
+        )
+        if not parent:
+            return JsonResponse([], safe=False)
+
+        # base queryset: semua anak berdasarkan parent_id
+        qs = Location.objects.filter(parent_id=parent.id)
+
+        # aturan cascade wilayah Indonesia
+        if parent.kind == "country":
+            qs = qs.filter(kind="province")
+
+        elif parent.kind == "province":
+            # kabupaten + kota (biarkan tanpa filter kind)
+            pass
+
+        elif parent.kind in ("regency", "city"):
+            # regency → district
+            # city → district   (UNTUK KOTA ADM. JAKARTA!)
+            qs = qs.filter(kind="district")
+
+        elif parent.kind == "district":
+            qs = qs.filter(kind="village")
+
+        else:
+            qs = Location.objects.none()
+
+        qs = qs.only("id", "name").order_by("name")
+
+        data = [{"id": obj.id, "name": obj.name} for obj in qs]
+
+        cache.set(cache_key, data, 3600)
+
+        return JsonResponse(data, safe=False)

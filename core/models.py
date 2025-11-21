@@ -5,6 +5,13 @@ from django.utils import timezone
 # core/models.py
 from django.db import models
 
+class TimeStampedModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+        
 class NumberSequence(models.Model):
     RESET_NONE = "none"
     RESET_MONTHLY = "monthly"
@@ -84,6 +91,56 @@ class SalesService(models.Model):
     @property
     def only_name(self):
         return self.name
+    
+    @property
+    def is_door_to_door(self) -> bool:
+        """
+        Return True jika service adalah Door to Door,
+        berdasarkan prefix kode: D2D_...
+        """
+        return self.code.startswith("D2D_")
+
+    @property
+    def is_door_to_port(self) -> bool:
+        """
+        True jika layanan Door to Port, contoh kode:
+        D2P_SEA, D2P_AIR, dll.
+        """
+        return self.code.upper().startswith("D2P_")
+
+    @property
+    def is_port_to_door(self) -> bool:
+        """
+        True jika layanan Port to Door, contoh kode:
+        P2D_SEA, P2D_AIR, dll. (kalau nanti om pakai prefix ini)
+        """
+        return self.code.upper().startswith("P2D_")
+
+    @property
+    def is_port_to_port(self) -> bool:
+        """
+        True jika layanan Port to Port, contoh kode:
+        P2P_SEA, P2P_AIR, dll.
+        """
+        return self.code.upper().startswith("P2P_")
+
+    @property
+    def service_mode(self) -> str:
+        """
+        Ringkasan mode service: 'D2D', 'D2P', 'P2D', 'P2P', atau 'OTHER'
+        Bisa dipakai di template / UI untuk badge/color.
+        """
+        code = self.code.upper()
+        if code.startswith("D2D_"):
+            return "D2D"
+        if code.startswith("D2P_"):
+            return "D2P"
+        if code.startswith("P2D_"):
+            return "P2D"
+        if code.startswith("P2P_"):
+            return "P2P"
+        return "OTHER"
+
                     
 class PaymentTerm(models.Model):
     code = models.CharField(max_length=30, unique=True)

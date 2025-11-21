@@ -1,0 +1,602 @@
+{% extends "main.html" %}
+{% load static %}
+
+{% block content %}
+<section class="content">
+  <div class="container-fluid">
+
+    <h3 class="mb-3">
+      {% if object %}
+        Edit Freight Quotation {{ object.number }}
+      {% else %}
+        Tambah Freight Quotation
+      {% endif %}
+    </h3>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      {% if form.errors %}
+        <div class="alert alert-danger">
+          Ada kesalahan pada form. Periksa field yang ditandai merah.
+        </div>
+      {% endif %}
+
+      <div class="row">
+        <!-- ======================
+             KOLOM KIRI
+             ====================== -->
+        <div class="col-md-6">
+
+          <!-- CARD: CUSTOMER & ROUTE -->
+          <div class="card card-primary">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Customer & Route</h3>
+            </div>
+            <div class="card-body">
+
+              <!-- Customer: text autocomplete + select (disembunyikan) -->
+              <div class="mb-3">
+                <label for="id_customer_text" class="form-label">Customer</label>
+                <input type="text"
+                       id="id_customer_text"
+                       name="customer_text"
+                       class="form-control">
+
+                <div class="d-none">
+                  {{ form.customer }}
+                </div>
+
+                {% for err in form.customer.errors %}
+                  <div class="text-danger small">{{ err }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="row">
+                <!-- ORIGIN -->
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="id_origin_text" class="form-label">Origin</label>
+
+                    <input type="text"
+                           id="id_origin_text"
+                           class="form-control js-location"
+                           data-url="/geo/locations/autocomplete/"
+                           value="{% if form.instance.origin %}{{ form.instance.origin.name }}{% endif %}">
+
+                    <!-- hidden id origin -->
+                    <input type="hidden"
+                           id="id_origin"
+                           name="origin"
+                           value="{% if form.instance.origin_id %}{{ form.instance.origin_id }}{% endif %}">
+
+                    {% for err in form.origin.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+
+                <!-- DESTINATION -->
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="id_destination_text" class="form-label">Destination</label>
+
+                    <input type="text"
+                           id="id_destination_text"
+                           class="form-control js-location"
+                           data-url="/geo/locations/autocomplete/"
+                           value="{% if form.instance.destination %}{{ form.instance.destination.name }}{% endif %}">
+
+                    <!-- hidden id destination -->
+                    <input type="hidden"
+                           id="id_destination"
+                           name="destination"
+                           value="{% if form.instance.destination_id %}{{ form.instance.destination_id }}{% endif %}">
+
+                    {% for err in form.destination.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Service -->
+              <div class="mb-3">
+                {{ form.service.label_tag }}
+                {{ form.service }}
+                {% for err in form.service.errors %}
+                  <div class="text-danger small">{{ err }}</div>
+                {% endfor %}
+              </div>
+
+            </div>
+          </div>
+
+          <!-- CARD: SHIPPER -->
+          <div class="card card-secondary mt-3">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Shipper</h3>
+            </div>
+            <div class="card-body">
+
+              <!-- Checkbox: shipper sama dengan customer (logika JS om sendiri) -->
+              <div class="form-check mb-3">
+                <input class="form-check-input"
+                       type="checkbox"
+                       id="id_shipper_same_as_customer"
+                       name="shipper_same_as_customer">
+                <label class="form-check-label" for="id_shipper_same_as_customer">
+                  Shipper sama dengan customer
+                </label>
+              </div>
+
+              <!-- Textbox cari shipper (partner) -->
+              <div class="mb-3">
+                <label for="id_shipper_text" class="form-label">Cari shipper (partner)</label>
+                <input type="text"
+                       id="id_shipper_text"
+                       name="shipper_text"
+                       class="form-control">
+                <input type="hidden"
+                       id="id_shipper"
+                       name="shipper"
+                       value="{% if form.instance.shipper_id %}{{ form.instance.shipper_id }}{% endif %}">
+              </div>
+
+              <!-- Snapshot: kontak, telp, alamat -->
+              <div class="mb-3">
+                <label for="id_shipper_contact_name" class="form-label">Nama / Kontak</label>
+                <input type="text"
+                       id="id_shipper_contact_name"
+                       name="shipper_contact_name"
+                       class="form-control"
+                       value="{{ form.instance.shipper_contact_name|default_if_none:'' }}">
+              </div>
+
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="id_shipper_phone" class="form-label">No. Telp</label>
+                    <input type="text"
+                           id="id_shipper_phone"
+                           name="shipper_phone"
+                           class="form-control"
+                           value="{{ form.instance.shipper_phone|default_if_none:'' }}">
+                  </div>
+                </div>
+                <div class="col-md-8">
+                  <div class="mb-3">
+                    <label for="id_shipper_address" class="form-label">Alamat</label>
+                    <textarea id="id_shipper_address"
+                              name="shipper_address"
+                              rows="3"
+                              class="form-control">{{ form.instance.shipper_address|default_if_none:'' }}</textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- GEO Shipper -->
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="id_shipper_province" class="form-label">Provinsi</label>
+                    <select id="id_shipper_province"
+                            name="shipper_province"
+                            class="form-select">
+                      <option value="">-- Pilih Provinsi --</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="id_shipper_regency" class="form-label">Kab / Kota</label>
+                    <select id="id_shipper_regency"
+                            name="shipper_regency"
+                            class="form-select">
+                      <option value="">-- Pilih Kab/Kota --</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="id_shipper_district" class="form-label">Kecamatan</label>
+                    <select id="id_shipper_district"
+                            name="shipper_district"
+                            class="form-select">
+                      <option value="">-- Pilih Kecamatan --</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="id_shipper_village" class="form-label">Kelurahan / Desa</label>
+                    <select id="id_shipper_village"
+                            name="shipper_village"
+                            class="form-select">
+                      <option value="">-- Pilih Kelurahan/Desa --</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ======================
+             KOLOM KANAN
+             ====================== -->
+        <div class="col-md-6">
+
+          <!-- CARD: HARGA & READY DATE & NOTES -->
+          <div class="card card-secondary">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Harga & Catatan</h3>
+            </div>
+            <div class="card-body">
+
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    {{ form.currency.label_tag }}
+                    {{ form.currency }}
+                    {% for err in form.currency.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    {{ form.amount.label_tag }}
+                    {{ form.amount }}
+                    {% for err in form.amount.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    {{ form.tax_percent.label_tag }}
+                    {{ form.tax_percent }}
+                    {% for err in form.tax_percent.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                {{ form.ready_date.label_tag }}
+                {{ form.ready_date }}
+                {% for err in form.ready_date.errors %}
+                  <div class="text-danger small">{{ err }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="mb-3">
+                {{ form.notes_customer.label_tag }}
+                {{ form.notes_customer }}
+                {% for err in form.notes_customer.errors %}
+                  <div class="text-danger small">{{ err }}</div>
+                {% endfor %}
+              </div>
+
+            </div>
+          </div>
+
+          <!-- CARD: CARGO INFORMATION -->
+          <div class="card card-info mt-3">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Cargo Information</h3>
+            </div>
+            <div class="card-body">
+
+              <div class="mb-3">
+                {{ form.cargo_name.label_tag }}
+                {{ form.cargo_name }}
+                {% for err in form.cargo_name.errors %}
+                  <div class="text-danger small">{{ err }}</div>
+                {% endfor %}
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ form.hs_code.label_tag }}
+                    {{ form.hs_code }}
+                    {% for err in form.hs_code.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ form.commodity.label_tag }}
+                    {{ form.commodity }}
+                    {% for err in form.commodity.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ form.package_count.label_tag }}
+                    {{ form.package_count }}
+                    {% for err in form.package_count.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ form.package_type.label_tag }}
+                    {{ form.package_type }}
+                    {% for err in form.package_type.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ form.gross_weight.label_tag }}
+                    <div class="input-group">
+                      {{ form.gross_weight }}
+                      <span class="input-group-text" style="min-width: 80px;">
+                        {{ form.weight_uom }}
+                      </span>
+                    </div>
+                    {% for err in form.gross_weight.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ form.volume_cbm.label_tag }}
+                    <div class="input-group">
+                      {{ form.volume_cbm }}
+                      <span class="input-group-text" style="min-width: 80px;">
+                        {{ form.volume_uom }}
+                      </span>
+                    </div>
+                    {% for err in form.volume_cbm.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="row align-items-center">
+                <div class="col-md-3">
+                  <div class="form-check mt-2">
+                    {{ form.is_dg }}
+                    {{ form.is_dg.label_tag }}
+                    {% for err in form.is_dg.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+                <div class="col-md-9">
+                  <div class="mb-3">
+                    {{ form.dg_class.label_tag }}
+                    {{ form.dg_class }}
+                    {% for err in form.dg_class.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- CARD: CONSIGNEE -->
+          <div class="card card-warning mt-3">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Consignee</h3>
+            </div>
+            <div class="card-body">
+
+              <!-- Textbox cari consignee (partner) -->
+              <div class="mb-3">
+                <label for="id_consignee_text" class="form-label">
+                  Cari consignee (partner)
+                </label>
+                <input type="text"
+                       id="id_consignee_text"
+                       name="consignee_text"
+                       class="form-control">
+
+                <input type="hidden"
+                       id="id_consignee"
+                       name="consignee"
+                       value="{% if form.instance.consignee_id %}{{ form.instance.consignee_id }}{% endif %}">
+              </div>
+
+              <!-- Snapshot consignee -->
+              <div class="mb-3">
+                <label for="id_consignee_name" class="form-label">
+                  Nama penerima / perusahaan
+                </label>
+                <input type="text"
+                       id="id_consignee_name"
+                       name="consignee_name"
+                       class="form-control"
+                       value="{{ form.instance.consignee_name|default_if_none:'' }}">
+              </div>
+
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="id_consignee_phone" class="form-label">No. Telp</label>
+                    <input type="text"
+                           id="id_consignee_phone"
+                           name="consignee_phone"
+                           class="form-control"
+                           value="{{ form.instance.consignee_phone|default_if_none:'' }}">
+                  </div>
+                </div>
+                <div class="col-md-8">
+                  <div class="mb-3">
+                    <label for="id_consignee_address" class="form-label">Alamat</label>
+                    <textarea id="id_consignee_address"
+                              name="consignee_address"
+                              rows="3"
+                              class="form-control">{{ form.instance.consignee_address|default_if_none:'' }}</textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- GEO Consignee -->
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="id_consignee_province" class="form-label">Provinsi</label>
+                    <select id="id_consignee_province"
+                            name="consignee_province"
+                            class="form-select">
+                      <option value="">-- Pilih Provinsi --</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="id_consignee_regency" class="form-label">Kab / Kota</label>
+                    <select id="id_consignee_regency"
+                            name="consignee_regency"
+                            class="form-select">
+                      <option value="">-- Pilih Kab/Kota --</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="id_consignee_district" class="form-label">Kecamatan</label>
+                    <select id="id_consignee_district"
+                            name="consignee_district"
+                            class="form-select">
+                      <option value="">-- Pilih Kecamatan --</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="id_consignee_village" class="form-label">Kelurahan / Desa</label>
+                    <select id="id_consignee_village"
+                            name="consignee_village"
+                            class="form-select">
+                      <option value="">-- Pilih Kelurahan/Desa --</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Checkbox simpan ke partner -->
+              <div class="form-check mt-2">
+                <input class="form-check-input"
+                       type="checkbox"
+                       id="id_consignee_save_partner"
+                       name="consignee_save_partner">
+                <label class="form-check-label" for="id_consignee_save_partner">
+                  Simpan consignee ini sebagai partner baru
+                </label>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <button type="submit" class="btn btn-primary">Simpan</button>
+        <a href="{% url 'sales:fq_list' %}" class="btn btn-secondary ms-2">Batal</a>
+      </div>
+
+    </form>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet"
+        href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+{% endblock %}
+
+{% block extra_js %}
+  <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+  <script src="{% static 'js/location_autocomplete.js' %}"></script>
+  <script src="{% static 'js/partner_autocomplete.js' %}"></script>
+
+  <script>
+    $(function () {
+      // ============================
+      // PARTNER AUTOCOMPLETE
+      // ============================
+      $("#id_customer_text").data("url", "{% url 'partners:partner_autocomplete' %}?role=customer");
+      $("#id_shipper_text").data("url", "{% url 'partners:partner_autocomplete' %}");
+      $("#id_consignee_text").data("url", "{% url 'partners:partner_autocomplete' %}");
+
+      // helper lama yang sudah jalan
+      initPartnerAutocomplete("#id_customer_text",  "#id_customer",  null);
+      initPartnerAutocomplete("#id_shipper_text",   "#id_shipper",   "#id_shipper_address");
+      initPartnerAutocomplete("#id_consignee_text", "#id_consignee", "#id_consignee_address");
+
+      // kalau partner dipilih, isi snapshot consignee
+      $("#id_consignee_text").on("partner:selected", function (e, item) {
+        var displayName = item.company_name || item.name || "";
+        $("#id_consignee_name").val(displayName);
+
+        var phone = item.phone || item.mobile || "";
+        $("#id_consignee_phone").val(phone);
+
+        $("#id_consignee_address").val(item.address_line1 || "");
+      });
+
+      // shipper copy dari customer (logic detail boleh om sesuaikan sendiri)
+      $("#id_shipper_same_as_customer").on("change", function () {
+        var checked = $(this).is(":checked");
+        if (!checked) {
+          // kalau di-uncheck, biarkan apa adanya (atau kosongkan kalau mau)
+          return;
+        }
+
+        // contoh simple: isi nama shipper dari customer_text
+        var custName = $("#id_customer_text").val() || "";
+        $("#id_shipper_contact_name").val(custName);
+        // phone/address bisa om isi dari data lain sesuai JS lama om
+      });
+
+      // ============================
+      // LOCATION AUTOCOMPLETE: Origin / Destination
+      // ============================
+      initLocationAutocomplete("#id_origin_text", "#id_origin");
+      initLocationAutocomplete("#id_destination_text", "#id_destination");
+
+      // ============================
+      // DG toggle: aktifkan dg_class hanya kalau is_dg dicentang
+      // ============================
+      function toggleDG() {
+        var checked = $("#id_is_dg").is(":checked");
+        $("#id_dg_class").prop("disabled", !checked);
+      }
+      toggleDG();
+      $("#id_is_dg").on("change", toggleDG);
+    });
+  </script>
+{% endblock %}

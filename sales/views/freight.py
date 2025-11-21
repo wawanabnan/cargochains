@@ -1,0 +1,202 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import redirect
+from django.urls import reverse_lazy
+
+from partners.models import Partner
+from django.views.generic import ListView, CreateView, UpdateView, DetailView
+from django.urls import reverse_lazy
+from django.contrib import messages
+
+from ..models import FreightQuotation, FreightQuotationStatus
+from ..forms import FreightQuotationForm
+from geo.models import Location
+
+
+class FqListView(LoginRequiredMixin, ListView):
+    model = FreightQuotation
+    template_name = "sales/quotation_list.html"
+    context_object_name = "quotations"
+    paginate_by = 25
+    ordering = "-created"
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+
+        q = self.request.GET.get("q") or ""
+        status = self.request.GET.get("status") or ""
+
+        if q:
+            # sesuaikan dengan field di model om:
+            qs = qs.filter(number__icontains=q)
+
+        if status:
+            qs = qs.filter(status=status)
+
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["page_title"] = "Freight Quotations"
+        ctx["q"] = self.request.GET.get("q", "")
+        ctx["status_selected"] = self.request.GET.get("status", "")
+        ctx["status_choices"] = FreightQuotationStatus.choices
+        return ctx
+
+
+
+class FqSaveMixin:
+    """
+    Helper untuk ambil data shipper & consignee dari request.POST
+    dan simpan ke field snapshot di FreightQuotation.
+    """
+
+    def _fill_shipper_consignee_from_request(self, obj: FreightQuotation):
+        r = self.request.POST
+
+        # ============ SHIPPER ============
+        obj.shipper_contact_name = (r.get("shipper_contact_name") or "").strip()
+        obj.shipper_phone = (r.get("shipper_phone") or "").strip()
+        obj.shipper_address = (r.get("shipper_address") or "").strip()
+
+        # FK shipper partner (hidden input name="shipper")
+        shipper_id = (r.get("shipper") or "").strip()
+        if shipper_id.isdigit():
+            obj.shipper_id = int(shipper_id)
+        else:
+            obj.shipper = None
+
+        # geo shipper: shipper_province, shipper_regency, shipper_district, shipper_village
+        for part in ["province", "regency", "district", "village"]:
+            key = f"shipper_{part}"
+            val = (r.get(key) or "").strip()
+            field_name = f"shipper_{part}_id"
+            if val.isdigit():
+                setattr(obj, field_name, int(val))
+            else:
+                setattr(obj, field_name, None)
+
+        # ============ CONSIGNEE ============
+        obj.consignee_name = (r.get("consignee_name") or "").strip()
+        obj.consignee_phone = (r.get("consignee_phone") or "").strip()
+        obj.consignee_address = (r.get("consignee_address") or "").strip()
+
+        # geo consignee: consignee_province, consignee_regency, consignee_district, consignee_village
+        for part in ["province", "regency", "district", "village"]:
+            key = f"consignee_{part}"
+            val = (r.get(key) or "").strip()
+            field_name = f"consignee_{part}_id"
+            if val.isdigit():
+                setattr(obj, field_name, int(val))
+            else:
+                setattr(obj, field_name, None)
+
+        # FK consignee partner
+        consignee_id = (r.get("consignee") or "").strip()
+        save_new = r.get("consignee_save_partner")  # checkbox "on" kalau dicentang
+
+        if consignee_id.isdigit():
+            # user pilih dari autocomplete partner
+            obj.consignee_id = int(consignee_id)
+        elif save_new and obj.consignee_name:
+            # user tulis nama + centang "simpan sebagai contact baru"
+            partner = Partner.objects.create(
+                name=obj.consignee_name,
+                company_name=obj.consignee_name,
+                phone=obj.consignee_phone or "",
+                address_line1=obj.consignee_address or "",
+                province_id=obj.consignee_province_id,
+                regency_id=obj.consignee_regency_id,
+                district_id=obj.consignee_district_id,
+                village_id=obj.consignee_village_id,
+                is_individual=False,
+            )
+            obj.consignee = partner
+        else:
+            # tidak pilih partner & tidak minta simpan → FK boleh kosong
+            if not obj.consignee_name:
+                obj.consignee = None
+
+
+
+
+class FqCreateView(LoginRequiredMixin, FqSaveMixin, CreateView):
+    model = FreightQuotation
+    form_class = FreightQuotationForm
+    template_name = "sales/quotation_form.html"
+
+    def form_valid(self, form):
+        if not form.instance.pk:
+            form.instance.sales_user = self.request.user
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["provinces"] = Location.objects.filter(kind="province").order_by("name")
+        return ctx
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        # kalau FreightQuotationForm butuh user:
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        obj: FreightQuotation = form.save(commit=False)
+
+        # default status & sales_person
+        if not obj.status:
+            obj.status = FreightQuotationStatus.DRAFT
+
+        if not obj.sales_person_id:
+            obj.sales_person = self.request.user
+
+        # nomor dokumen (kalau sudah ada helper di model, pakai itu)
+        if not obj.number and hasattr(FreightQuotation, "next_number"):
+            obj.number = FreightQuotation.next_number()
+
+        obj.save()
+        messages.success(self.request, f"Freight quotation {obj.number or obj.pk} berhasil dibuat.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        # setelah buat baru → langsung ke halaman editnya
+        return reverse_lazy("sales:freight_quotation_edit", kwargs={"pk": self.object.pk})
+
+
+class FqUpdateView(LoginRequiredMixin, FqSaveMixin, CreateView):
+    model = FreightQuotation
+    form_class = FreightQuotationForm
+    template_name = "sales/freight_quotation_form.html"
+    context_object_name = "quotation"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        obj: FreightQuotation = form.save()
+        messages.success(self.request, f"Freight quotation {obj.number or obj.pk} berhasil disimpan.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        # tetap di halaman edit yg sama
+        return reverse_lazy("sales:freight_quotation_edit", kwargs={"pk": self.object.pk})
+    
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["provinces"] = Location.objects.filter(kind="province").order_by("name")
+        return ctx
+
+
+class FqDetailView(LoginRequiredMixin, DetailView):
+    model = FreightQuotation
+    template_name = "sales/freight_quotation_detail.html"
+    context_object_name = "quotation"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["page_title"] = f"Freight Quotation {self.object.number}"
+        return ctx
+
+

@@ -49,7 +49,7 @@
     <tbody>
       {% for c in costs %}
       <tr class="clickable-row"
-          data-href="{% url 'projects:cost_detail' c.pk %}"
+          data-href="{% url '#"
           data-amount="{{ c.amount }}"
           data-ccy="{{ c.currency_code }}">
         <td class="text-center">
@@ -57,7 +57,7 @@
         </td>
         <td>{{ c.cost_date|date:"Y-m-d" }}</td>
         <td>
-          <a href="{% url 'projects:project_detail' c.project_id %}" class="badge text-bg-primary badge-sm"
+          <a href="#" class="badge text-bg-primary badge-sm"
              onclick="event.stopPropagation();">
             {{ c.project.number }}
           </a>

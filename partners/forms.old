@@ -1,0 +1,179 @@
+# partners/forms.py
+from django import forms
+
+from geo.models import Location
+from .models import Partner, PartnerRoleTypes, PartnerRole
+
+
+class PartnerForm(forms.ModelForm):
+    # roles (multi choice)
+    roles = forms.ModelMultipleChoiceField(
+        queryset=PartnerRoleTypes.objects.filter(is_active=True),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Roles",
+    )
+
+    # --- 4 field geo: form-only, TIDAK langsung di-mapping ke FK model ---
+    # kita sengaja pakai nama yang sama (province/regency/district/village),
+    # tapi nanti field modelnya di-EXCLUDE di Meta.
+    province = forms.IntegerField(
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select", "id": "id_province"}),
+        label="Province",
+    )
+    regency = forms.IntegerField(
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select", "id": "id_regency"}),
+        label="Regency / City",
+    )
+    district = forms.IntegerField(
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select", "id": "id_district"}),
+        label="District",
+    )
+    village = forms.IntegerField(
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select", "id": "id_village"}),
+        label="Village",
+    )
+
+    class Meta:
+        model = Partner
+        # PENTING:
+        # - Kita EXCLUDE FK geo di sini supaya ModelForm TIDAK menyentuhnya.
+        # - Field province/regency/district/village di atas adalah field FORM saja.
+        exclude = ["province", "regency", "district", "village"]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control"}),
+            "job_title": forms.TextInput(attrs={"class": "form-control"}),
+            "email": forms.EmailInput(attrs={"class": "form-control"}),
+            "phone": forms.TextInput(attrs={"class": "form-control"}),
+            "mobile": forms.TextInput(attrs={"class": "form-control"}),
+            "websites": forms.TextInput(attrs={"class": "form-control"}),
+            "company_name": forms.TextInput(attrs={"class": "form-control"}),
+            "tax": forms.TextInput(attrs={"class": "form-control"}),
+
+            "location": forms.Select(attrs={"class": "form-select select2-location"}),
+
+            "address_line1": forms.TextInput(attrs={"class": "form-control"}),
+            "address_line2": forms.TextInput(attrs={"class": "form-control"}),
+
+            "city": forms.TextInput(attrs={"class": "form-control"}),
+            "post_code": forms.TextInput(attrs={"class": "form-control"}),
+            "country": forms.TextInput(attrs={"class": "form-control"}),
+
+            "company_type": forms.Select(attrs={"class": "form-select"}),
+            "is_individual": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "is_pkp": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "sales_user": forms.Select(attrs={"class": "form-select"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        instance: Partner | None = kwargs.get("instance")
+        super().__init__(*args, **kwargs)
+
+        # Label NPWP lebih jelas
+        if "tax" in self.fields:
+            self.fields["tax"].label = "NPWP"
+
+        # preload roles saat EDIT
+        if instance and instance.pk:
+            self.fields["roles"].initial = (
+                PartnerRole.objects
+                .filter(partner=instance)
+                .values_list("role_type_id", flat=True)
+            )
+
+        # --- Address required? buat longgar dulu supaya nggak menghalangi save ---
+        for fname in [
+            "location",
+            "address_line1",
+            "address_line2",
+            "city",
+            "post_code",
+            "country",
+            "province",
+            "regency",
+            "district",
+            "village",
+        ]:
+            if fname in self.fields:
+                self.fields[fname].required = False
+
+        # =============================
+        #  GEO DROPDOWN: RINGAN & SIMPLE
+        # =============================
+
+        # 1) Province: SELALU load semua provinsi (38 rows, ringan)
+        province_qs = Location.objects.filter(kind="province").order_by("name")
+        province_choices = [("", "---------")] + list(
+            province_qs.values_list("id", "name")
+        )
+        self.fields["province"].widget.choices = province_choices
+
+        # helper untuk bikin choices kecil
+        def simple_choices(qs):
+            return [("", "---------")] + list(qs.values_list("id", "name"))
+
+        # 2) Default: regency/district/village kosong (Add)
+        self.fields["regency"].widget.choices = [("", "---------")]
+        self.fields["district"].widget.choices = [("", "---------")]
+        self.fields["village"].widget.choices = [("", "---------")]
+
+        # 3) Kalau EDIT → isi initial dari instance + 1 pilihan yang sedang dipakai
+        if instance and instance.pk:
+            if instance.province_id:
+                self.fields["province"].initial = instance.province_id
+
+            if instance.regency_id:
+                reg_qs = Location.objects.filter(pk=instance.regency_id)
+                self.fields["regency"].widget.choices = simple_choices(reg_qs)
+                self.fields["regency"].initial = instance.regency_id
+
+            if instance.district_id:
+                dist_qs = Location.objects.filter(pk=instance.district_id)
+                self.fields["district"].widget.choices = simple_choices(dist_qs)
+                self.fields["district"].initial = instance.district_id
+
+            if instance.village_id:
+                vill_qs = Location.objects.filter(pk=instance.village_id)
+                self.fields["village"].widget.choices = simple_choices(vill_qs)
+                self.fields["village"].initial = instance.village_id
+
+        # CATATAN:
+        # - Di Add: opsi regency/district/village akan diisi JS (/geo/children/) di browser.
+        # - Di Edit: minimal user lihat pilihan yang sedang dipakai.
+        # - Dari sisi Django, field ini cuma kirim INTEGER, tidak dicek ke queryset seperti ModelChoiceField.
+
+    def save(self, commit=True):
+        # Jangan biarkan ModelForm menyentuh FK geo (sudah di-exclude),
+        # kita handle sendiri province_id, regency_id, dst.
+        instance: Partner = super().save(commit=False)
+
+        # Mapping dari field form → *_id di model
+        for attr in ["province", "regency", "district", "village"]:
+            val = self.cleaned_data.get(attr)
+            field_name = f"{attr}_id"
+            if val:
+                setattr(instance, field_name, val)
+            else:
+                setattr(instance, field_name, None)
+
+        if commit:
+            instance.save()
+
+            roles = self.cleaned_data.get("roles")
+            if roles is not None:
+                # hapus role yang tidak dipilih
+                PartnerRole.objects.filter(partner=instance).exclude(
+                    role_type__in=roles
+                ).delete()
+                # tambah yang baru
+                for rt in roles:
+                    PartnerRole.objects.get_or_create(
+                        partner=instance,
+                        role_type=rt,
+                    )
+
+        return instance

@@ -1,0 +1,234 @@
+{% extends "main.html" %}
+{% load static %}
+
+{% block content %}
+
+<section class="content">
+  <div class="container-fluid">
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="row">
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        {% if form.errors %}
+          <div class="alert alert-danger">
+            Ada kesalahan pada form. Periksa field yang ditandai merah.
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="row">
+
+        <!-- Left column: identitas & company -->
+        <div class="col-md-6">
+          <div class="card card-primary">
+            <div class="card-body">
+
+              {# BARIS PALING ATAS: Is Personal & Is PKP #}
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    {{ form.is_individual.label_tag }}
+                    {{ form.is_individual }}
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    {{ form.is_pkp }} {{ form.is_pkp.label_tag }}
+                  </div>
+                </div>
+              </div>
+
+              {# Identitas kontak #}
+              {{ form.name.label_tag }} {{ form.name }}
+              {{ form.job_title.label_tag }} {{ form.job_title }}
+              {{ form.email.label_tag }} {{ form.email }}
+
+              {{ form.phone.label_tag }} {{ form.phone }}
+              {{ form.mobile.label_tag }} {{ form.mobile }}
+              {{ form.websites.label_tag }} {{ form.websites }}
+
+              {# Blok perusahaan: hanya untuk perusahaan (disembunyikan kalau individu) #}
+              <div class="row company-section">
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    {{ form.company_type.label_tag }}
+                    {{ form.company_type }}
+                  </div>
+                </div>
+                <div class="col-md-4 company-section">
+                  <div class="mb-3">
+                    {{ form.company_name.label_tag }}
+                    {{ form.company_name }}
+                  </div>
+                </div>
+                <div class="col-md-4 company-section">
+                  <div class="mb-3">
+                    {{ form.tax.label_tag }}
+                    {{ form.tax }}
+                  </div>
+                </div>
+              </div>
+
+              {# Perusahaan induk untuk contact person (muncul kalau individu) #}
+              <div class="row person-company-section">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label" for="{{ form.company.id_for_label }}">
+                      Perusahaan (induk) untuk contact person ini
+                    </label>
+                    {{ form.company }}
+                  </div>
+                </div>
+              </div>
+
+              {# Sales user & Roles diletakkan SETELAH logika individu/perusahaan #}
+              {{ form.sales_user.label_tag }} {{ form.sales_user }}
+              {{ form.roles.label_tag }} {{ form.roles }}
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Right column: alamat & geo -->
+        <div class="col-md-6">
+          <div class="card card-secondary">
+            <div class="card-body">
+
+              <label for="id_province">Provinsi</label>
+              {{ form.province }}
+
+              <label for="id_regency">Kab / Kota</label>
+              {{ form.regency }}
+
+              <label for="id_district">Kecamatan</label>
+              {{ form.district }}
+
+              <label for="id_village">Kelurahan / Desa</label>
+              {{ form.village }}
+
+              {{ form.post_code.label_tag }} {{ form.post_code }}
+              {{ form.address_line1.label_tag }} {{ form.address_line1 }}
+              {{ form.address_line2.label_tag }} {{ form.address_line2 }}
+
+              {{ form.city.label_tag }} {{ form.city }}
+              {{ form.country.label_tag }} {{ form.country }}
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <button type="submit" class="btn btn-primary">Simpan</button>
+      <a href="{% url 'partners:partner_list' %}" class="btn btn-secondary">Batal</a>
+    </form>
+
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // ========== GEO CASCADE ==========
+
+    function resetSelect(selector, placeholder) {
+      const el = document.querySelector(selector);
+      if (!el) return;
+      el.innerHTML = "";
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = placeholder;
+      el.appendChild(opt);
+    }
+
+    function loadChildren(parentId, targetSelector, placeholder) {
+      const target = document.querySelector(targetSelector);
+      if (!target) return;
+
+      resetSelect(targetSelector, "Loading...");
+
+      if (!parentId) {
+        resetSelect(targetSelector, placeholder);
+        return;
+      }
+
+      fetch(`/geo/children/?parent=${parentId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          resetSelect(targetSelector, placeholder);
+          data.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.id;
+            opt.textContent = item.name;
+            target.appendChild(opt);
+          });
+        })
+        .catch(() => {
+          resetSelect(targetSelector, placeholder);
+        });
+    }
+
+    const province = document.getElementById("id_province");
+    const regency  = document.getElementById("id_regency");
+    const district = document.getElementById("id_district");
+    const village  = document.getElementById("id_village");
+
+    if (province) {
+      province.addEventListener("change", function() {
+        const val = this.value || "";
+        loadChildren(val, "#id_regency", "-- Pilih Kab/Kota --");
+        resetSelect("#id_district", "-- Pilih Kecamatan --");
+        resetSelect("#id_village", "-- Pilih Kelurahan/Desa --");
+      });
+    }
+
+    if (regency) {
+      regency.addEventListener("change", function() {
+        const val = this.value || "";
+        loadChildren(val, "#id_district", "-- Pilih Kecamatan --");
+        resetSelect("#id_village", "-- Pilih Kelurahan/Desa --");
+      });
+    }
+
+    if (district) {
+      district.addEventListener("change", function() {
+        const val = this.value || "";
+        loadChildren(val, "#id_village", "-- Pilih Kelurahan/Desa --");
+      });
+    }
+  });
+</script>
+
+<script>
+  // Toggle company vs contact person
+  $(function () {
+    function toggleCompanySection() {
+      const isInd = $('#id_is_individual').is(':checked');
+      if (isInd) {
+        // individu → sembunyikan blok company, tampilkan perusahaan induk
+        $('.company-section').hide();
+        $('.person-company-section').show();
+      } else {
+        // perusahaan → tampilkan blok company, sembunyikan perusahaan induk
+        $('.company-section').show();
+        $('.person-company-section').hide();
+      }
+    }
+
+    // trigger saat halaman pertama kali dibuka
+    toggleCompanySection();
+
+    // trigger tiap kali checkbox diubah
+    $('#id_is_individual').on('change', toggleCompanySection);
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends "main.html" %}
+{% load static %}
+
+{% block content %}
+<section class="content">
+  <div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h4">Freight Quotations</h1>
+      <a href="{% url 'sales:freight_quotation_add' %}" class="btn btn-primary">
+        + New Freight Quotation
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card-body table-responsive p-0">
+        <table class="table table-striped table-hover">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Date</th>
+              <th>Customer</th>
+              <th>Route</th>
+              <th>Service</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th style="width: 180px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for q in quotations %}
+              <tr>
+                <td>
+                  <a href="{% url 'sales:freight_quotation_edit' pk=q.pk %}">
+                    {{ q.number }}
+                  </a>
+                </td>
+                <td>{{ q.quotation_date|date:"d/m/Y" }}</td>
+                <td>{{ q.customer }}</td>
+                <td>{{ q.origin }} → {{ q.destination }}</td>
+                <td>{{ q.service }}</td>
+                <td>
+                  {{ q.currency.code if q.currency }} {{ q.total_amount }}
+                </td>
+                <td>
+                  <span class="badge bg-secondary">
+                    {{ q.get_status_display }}
+                  </span>
+                </td>
+                <td>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <a href="{% url 'sales:freight_quotation_edit' pk=q.pk %}"
+                       class="btn btn-outline-primary">
+                      Edit
+                    </a>
+
+                    {# Tombol status sesuai state #}
+                    {% if q.status == "DRAFT" %}
+                      <a href="{% url 'sales:freight_quotation_set_status' pk=q.pk new_status='SENT' %}"
+                         class="btn btn-outline-info">
+                        Send
+                      </a>
+                    {% elif q.status == "SENT" %}
+                      <a href="{% url 'sales:freight_quotation_set_status' pk=q.pk new_status='ACCEPTED' %}"
+                         class="btn btn-outline-success">
+                        Accept
+                      </a>
+                      <a href="{% url 'sales:freight_quotation_set_status' pk=q.pk new_status='CANCELLED' %}"
+                         class="btn btn-outline-danger">
+                        Cancel
+                      </a>
+                      <a href="{% url 'sales:freight_quotation_set_status' pk=q.pk new_status='EXPIRED' %}"
+                         class="btn btn-outline-secondary">
+                        Expire
+                      </a>
+                    {% elif q.status == "ACCEPTED" %}
+                      <a href="{% url 'sales:freight_quotation_set_status' pk=q.pk new_status='ORDERED' %}"
+                         class="btn btn-outline-success">
+                        Order
+                      </a>
+                      <a href="{% url 'sales:freight_quotation_set_status' pk=q.pk new_status='CANCELLED' %}"
+                         class="btn btn-outline-danger">
+                        Cancel
+                      </a>
+                    {% else %}
+                      {# final state: no action #}
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="8" class="text-center text-muted">
+                  Belum ada freight quotation.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
