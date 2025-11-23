@@ -121,65 +121,62 @@ class FqSaveMixin:
                 obj.consignee = None
 
 
-from django.http import HttpResponse
-from django.urls import reverse
+
 
 class FqCreateView(LoginRequiredMixin, FqSaveMixin, CreateView):
-    
     model = FreightQuotation
     form_class = FreightQuotationForm
     template_name = "sales/quotation_form.html"
 
-    
-    def form_valid(self, form):
-
-        obj: FreightQuotation = form.save(commit=False)
-        today = timezone.now().date()
-
-        # quotation_date: kalau masih kosong → today
-        if not obj.quotation_date:
-            obj.quotation_date = today
-
-        # status: default DRAFT
-        if not obj.status:
-            obj.status = FreightQuotationStatus.DRAFT
-
-        # number: pakai next_number kalau belum di-set
-        if not obj.number and hasattr(FreightQuotation, "next_number"):
-            obj.number = FreightQuotation.next_number()
-
-        # valid_until: +7 hari dari quotation_date kalau kosong
-        if not obj.valid_until:
-            base_date = obj.quotation_date or today
-            obj.valid_until = base_date + timezone.timedelta(days=7)
-
-        # sales_user otomatis dari user login
-        if not obj.sales_user_id:
-            obj.sales_user = self.request.user
-
-        obj.save()
-        self.object = obj
-
-        # sementara: biar kelihatan sukses
-        return HttpResponse(f"OK — SAVED SUCCESSFULLY — ID: {obj.pk}")
-        # atau pakai redirect:
-        # return redirect("sales:fq_detail", pk=obj.pk)
-        # atau:
-        # return super().form_valid(form)
-
-    def form_invalid(self, form):
-        # Debug tetap boleh ke console, tapi RESPON tetap ke template form
-        print("=== FREIGHT FORM INVALID ===", file=sys.stderr)
-        print(form.errors.as_json(), file=sys.stderr)
-        print("================================", file=sys.stderr)
-
-        return super().form_invalid(form)
-    
+   
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["provinces"] = Location.objects.filter(kind="province").order_by("name")
         return ctx
     
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        # kalau FreightQuotationForm butuh user:
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        obj: FreightQuotation = form.save(commit=False)
+
+        obj.sales_user = self.request.user
+
+        if not obj.quotation_date:
+            obj.quotation_date = timezone.now().date()
+
+        if not obj.status:
+            obj.status = FreightQuotationStatus.DRAFT
+
+        if not obj.number and hasattr(FreightQuotation, "next_number"):
+            obj.number = FreightQuotation.next_number()
+
+        obj.save()
+        self.object = obj
+        return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self):
+        return reverse("sales:freight_quotation_detail", args=[self.object.pk])
+
+    def form_invalid(self, form):
+        print("=== FREIGHT QUOTATION ERRORS ===", file=sys.stderr)
+        print(form.errors.as_json(), file=sys.stderr)
+        print("=================================", file=sys.stderr)
+        return super().form_invalid(form) 
+
+    def get_success_url(self):
+        # setelah buat baru → langsung ke halaman editnya
+        return reverse_lazy("sales:freight_quotation_edit", kwargs={"pk": self.object.pk})
+
+    def form_invalid(self, form):
+        # DEBUG: cetak error ke console runserver
+        print("\n=== FREIGHT QUOTATION FORM ERRORS ===", file=sys.stderr)
+        print(form.errors.as_json(), file=sys.stderr)
+        print("=== END ERRORS ===\n", file=sys.stderr)
+        return super().form_invalid(form)
 
 class FqUpdateView(LoginRequiredMixin, FqSaveMixin, CreateView):
     model = FreightQuotation
@@ -205,7 +202,6 @@ class FqUpdateView(LoginRequiredMixin, FqSaveMixin, CreateView):
         ctx = super().get_context_data(**kwargs)
         ctx["provinces"] = Location.objects.filter(kind="province").order_by("name")
         return ctx
-    
 
 
 class FqDetailView(LoginRequiredMixin, DetailView):

@@ -6,7 +6,13 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
+/* Form default tetap sesuai custom */
 .form-control {
-    padding:8px 5px;
-    margin-bottom:20px
+    padding: 8px 5px;
+    margin-bottom: 20px;
+}
+
+/* Tapi kalau form-control ada di dalam input-group → jangan pakai margin-bottom */
+.input-group .form-control {
+    margin-bottom: 0 !important;
 }

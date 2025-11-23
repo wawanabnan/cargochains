@@ -9,7 +9,7 @@ from geo.models import Location
 from django.db import transaction
 from core.models import NumberSequence
 from core.utils import get_next_number
-from core.models import PaymentTerm
+from core.models import PaymentTerm,UOM
 
 
 # ============================
@@ -103,6 +103,17 @@ class FreightQuotation(TimeStampedModel):
         blank=True,
         on_delete=models.PROTECT,
     )
+    quantity = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=1,
+        )
+
+    unit_price = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+    )
     amount = models.DecimalField(
         max_digits=14,
         decimal_places=2,
@@ -138,28 +149,42 @@ class FreightQuotation(TimeStampedModel):
         null=True,
         blank=True,
     )
-    weight_uom = models.CharField(
-        max_length=10,
-        default="KGS",
-        blank=True,
-    )
-
+   
     volume_cbm = models.DecimalField(
         max_digits=12,
         decimal_places=3,
         null=True,
         blank=True,
     )
-    volume_uom = models.CharField(
-        max_length=10,
-        default="CBM",
-        blank=True,
+
+    weight_uom = models.ForeignKey(
+        UOM,
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name="fo_weight",
+        limit_choices_to={"category__iexact": "weight"},
     )
 
-    is_dg = models.BooleanField(default=False)
-    dg_class = models.CharField(max_length=50, blank=True)
+    volume_uom = models.ForeignKey(
+        UOM,
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name="fq_volume",
+        limit_choices_to={"category__iexact": "volume"},
+    )
 
-    ready_date = models.DateField(null=True, blank=True)
+    package_uom = models.ForeignKey(
+        UOM,
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name="fq_package",
+        limit_choices_to={"category__iexact": "count"},
+    )
+
+
+    is_dangerous_goods = models.BooleanField(default=False)
+    dangerous_goods_class = models.CharField(max_length=50, blank=True)
+    shipment_plan_date = models.DateField(null=True, blank=True)
 
     # --- SHIPPER SNAPSHOT (COCOK DB: shipper_contact_name) ---
     shipper = models.ForeignKey(
@@ -318,7 +343,7 @@ class FreightQuotation(TimeStampedModel):
         if not self.number:
             if not self.number:
             # app_label dan code bebas, tapi konsisten dengan NumberSequence
-                self.number = get_next_number("freight", "FREIGHT_QUOTATION")
+                self.number = get_next_number("sales", "FREIGHT_QUOTATION")
         super().save(*args, **kwargs)
 
 # ============================
@@ -413,6 +438,42 @@ class FreightOrder(TimeStampedModel):
         null=True,
         blank=True,
     )
+    volume_cbm = models.DecimalField(
+        max_digits=12,
+        decimal_places=3,
+        null=True,
+        blank=True,
+    )
+
+    weight_uom = models.ForeignKey(
+        UOM,
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name="fq_weight",
+        limit_choices_to={"category__iexact": "weight"},
+    )
+
+    volume_uom = models.ForeignKey(
+        UOM,
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name="fo_volume",
+        limit_choices_to={"category__iexact": "volume"},
+    )
+
+    package_uom = models.ForeignKey(
+        UOM,
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name="fo_package",
+        limit_choices_to={"category__iexact": "count"},
+    )
+
+
+    is_dangerous_goods = models.BooleanField(default=False)
+    dangerous_goods_class = models.CharField(max_length=50, blank=True)
+    shipment_plan_date = models.DateField(null=True, blank=True)
+
 
     sales_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -421,6 +482,39 @@ class FreightOrder(TimeStampedModel):
         null=True,
         blank=True,
     )
+
+    quantity = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=1,
+        )
+
+    unit_price = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+    )
+    amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+    )
+    tax_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+    )
+    tax_amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+    )
+    total_amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+    )
+
 
     notes_internal = models.TextField(blank=True)
 

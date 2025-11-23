@@ -207,3 +207,75 @@ class PartnerAutocompleteView(View):
         qs = self.get_queryset(q, role)
         data = [self.normalize(p) for p in qs]
         return JsonResponse(data, safe=False)
+
+
+
+class PartnerAutocompleteView(View):
+    """
+    Autocomplete untuk Partner.
+    - Default: hanya partner dengan role CUSTOMER
+    - Param optional ?role= untuk role lain (misal vendor, carrier, dll).
+    """
+    limit = 20
+
+    def get_queryset(self, q: str, role: str | None):
+        qs = Partner.objects.all()
+
+        # --- FILTER ROLE PAKAI PartnerRole LANGSUNG (AMAN) ---
+        if role:
+            partner_ids = (
+                PartnerRole.objects
+                .filter(role_type__code__iexact=role)
+                .values_list("partner_id", flat=True)
+            )
+            
+        else:
+            # default: CUSTOMER
+            partner_ids = (
+                PartnerRole.objects
+                .filter(role_type__code__iexact="customer")
+                .values_list("partner_id", flat=True)
+            )
+
+        qs = qs.filter(id__in=partner_ids)
+
+        if q:
+            qs = qs.filter(
+                Q(name__icontains=q) |
+                Q(company_name__icontains=q)
+            )
+
+        return qs.select_related("province", "regency", "district", "village").distinct()[: self.limit]
+
+    def normalize(self, p: Partner):
+        parts = []
+        if getattr(p, "address_line1", None):
+            parts.append(p.address_line1)
+        if getattr(p, "city", None):
+            parts.append(p.city)
+        if getattr(p, "province", None):
+            parts.append(p.province.name)
+        addr = ", ".join(parts)
+
+        return {
+            "id": p.id,
+            "name": p.name,
+            "company_name": p.company_name or "",
+            "label": p.company_name or p.name,
+            "value": p.company_name or p.name,
+            "address": addr,
+             "phone": p.phone or "",
+            "mobile": p.mobile or "",
+            "province_id": p.province_id,
+            "regency_id": p.regency_id,
+            "district_id": p.district_id,
+            "village_id": p.village_id,
+
+        }
+
+    def get(self, request, *args, **kwargs):
+        q = (request.GET.get("q") or "").strip()
+        role = (request.GET.get("role") or "").strip() or None
+        qs = self.get_queryset(q, role)
+        data = [self.normalize(p) for p in qs]
+        return JsonResponse(data, safe=False)

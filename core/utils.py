@@ -2,7 +2,7 @@
 from datetime import date
 from django.db import transaction
 from django.utils import timezone
-from core.models import NumberSequence
+from core.models import NumberSequence, CoreSetting
 
 def get_next_number(app_label: str, code: str, today: date | None = None) -> str:
     """
@@ -83,3 +83,9 @@ def get_next_number(app_label: str, code: str, today: date | None = None) -> str
                 seq=seq.last_number,
             )
 
+def get_valid_days_default():
+    try:
+        rec = CoreSetting.objects.get(key=" quotation_valid_days")
+        return int(rec.value)
+    except:
+        return 7  
