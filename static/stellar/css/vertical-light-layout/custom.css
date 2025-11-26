@@ -16,3 +16,10 @@ body {
 .input-group .form-control {
     margin-bottom: 0 !important;
 }
+
+.content-wrapper {
+    background: #ecf0f4;
+    padding: 2rem 1.5rem 0;
+    
+
+}

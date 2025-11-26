@@ -29,8 +29,12 @@ from .views.freight import (
     FqCreateView,
     FqUpdateView,
     FqDetailView,
+    FqDeleteView,
+    FqBulkDeleteView,
+   
 )
 
+from .views.freight_pdf import  FreightQuotationPdfHtmlView
 
 
 app_name = "sales"
@@ -79,12 +83,31 @@ urlpatterns = [
     path("freight-quotations/", FqListView.as_view(), name="fq_list"),
     path("freight-quotations/add/", FqCreateView.as_view(), name="fq_add"),
     path("freight-quotations/<int:pk>/edit/", FqUpdateView.as_view(), name="fq_edit"),
+    
     path(
         "freight=quotations/<int:pk>/",
         FqDetailView.as_view(),
-        name="freight_quotation_detail",
+        name="fq_detail",
+    ),
+     path(
+        "freight-quotations/<int:pk>/delete/",
+        FqDeleteView.as_view(),
+        name="fq_delete",
+    ),
+
+    # Bulk delete
+    path(
+        "freight-quotations/bulk-delete/",
+        FqBulkDeleteView.as_view(),
+        name="fq_bulk_delete",
     ),
    
+    path(
+        "freight-quotations/<int:pk>/pdf/",
+        FreightQuotationPdfHtmlView.as_view(),
+        name="fq_pdf",
+        )
+    
 ]
 
 

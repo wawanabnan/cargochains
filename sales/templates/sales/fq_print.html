@@ -1,0 +1,374 @@
+{% load static %}
+{% load indo_format %}
+
+{% static 'img/logo.png' as fallback_logo %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Freight Quotation {{ fq.number }}</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 13px;
+      background: #f5f5f5;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 5mm auto;
+      padding: 15mm;
+      background: #fff;
+      /* border: 1px solid #ccc; ← DIBUANG */
+    }
+
+    /* HEADER */
+    .header-table {
+      width: 100%;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      border-bottom: 2px solid #888;
+    }
+    .header-table td {
+      vertical-align: top;
+    }
+
+    .company-info {
+      text-align: right;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 0 0 8px 0;
+    }
+
+    .section-title {
+      font-weight: bold;
+      font-size: 15px;
+      margin-top: 18px;
+      margin-bottom: 6px;
+      padding-bottom: 3px;
+      border-bottom: 1px solid #bbb;
+    }
+
+    .field-label {
+      font-weight: bold;
+      margin-top: 6px;
+    }
+    .field-value {
+      margin-bottom: 4px;
+    }
+
+    /* PRICING TABLE */
+    table.pricing {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    table.pricing th {
+      background: #f0f0f0;
+      padding: 6px;
+      border: 1px solid #ddd;
+      font-weight: bold;
+    }
+    table.pricing td {
+      padding: 6px;
+      border: 1px solid #e2e2e2;
+    }
+
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+
+    .footer-sign {
+      margin-top: 28px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    /* PRINT TOOLBAR (Hanya muncul saat preview) */
+    .print-toolbar {
+      width: 210mm;
+      margin: 5mm auto 0;
+      text-align: right;
+    }
+    .btn {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 4px;
+      border: 1px solid #777;
+      background: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      margin-left: 4px;
+    }
+    .btn-primary {
+      background: #005fcc;
+      color: #fff;
+      border-color: #004fa8;
+    }
+
+    @media print {
+      body { background: #fff; }
+      .page {
+        margin: 0;
+        padding: 12mm;
+      }
+      .print-toolbar { display: none !important; }
+    }
+
+        .notes-table {
+      width: 100%;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    .notes-table td {
+      vertical-align: top;
+      padding-right: 10px;
+    }
+    .notes-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+    .notes-table ul {
+      margin: 0 0 6px 16px;
+      padding: 0;
+    }
+    .notes-table li {
+      margin-bottom: 3px;
+    }
+
+  </style>
+</head>
+
+<body>
+
+{% if not is_pdf %}
+<div class="print-toolbar">
+  <button class="btn" onclick="window.close()">Close</button>
+  <button class="btn btn-primary" onclick="window.print()">Print</button>
+</div>
+{% endif %}
+
+<div class="page">
+
+  <!-- HEADER -->
+  <table class="header-table">
+    <tr>
+      <td style="width: 50%;">
+        <img src="{{ logo_path|default:fallback_logo }}" style="width: 150px;">
+      </td>
+      <td style="width: 50%;">
+        <div class="company-info">
+          <strong>PT Dakara Samudera Hanasta</strong><br>
+          Jl. H. R. Rasuna Said No. 1, Jakarta<br>
+          Phone: +62-21-1234567<br>
+          Email: cs@dakarash.co.id
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- TITLE + INFO -->
+  <h1>FREIGHT QUOTATION</h1>
+  <p style="margin:3px 0 12px 0; line-height:1.5;">
+    Quotation No: <strong>{{ fq.number }}</strong><br>
+    Date: {{ fq.quotation_date|date:"d M Y" }}<br>
+    Valid Until: {{ fq.valid_until|date:"d M Y" }}
+  </p>
+
+  <!-- TO CUSTOMER -->
+  <div class="section-title">To:</div>
+  <div class="field-value" style="line-height:1.5;">
+    <strong>{{ fq.customer.company_name|default:fq.customer.name }}</strong><br>
+    {% if fq.customer_contact %}
+      Attn: {{ fq.customer_contact.name }}<br>
+    {% endif %}
+    {% if fq.customer.address_line1 %}
+      {{ fq.customer.address_line1 }}<br>
+    {% elif fq.customer.address %}
+      {{ fq.customer.address }}<br>
+    {% endif %}
+    {{ fq.customer.city }} {{ fq.customer.province }}
+  </div>
+
+  <!-- SUBJECT -->
+  <div class="section-title">Subject</div>
+  <p style="margin: 3px 0 10px 0;">
+    Freight Quotation No. {{ fq.number }}
+  </p>
+
+  <!-- OPENING -->
+  <p style="line-height:1.6; margin-bottom: 14px;">
+    Dear {{ fq.customer_contact.name|default:"Sir/Madam" }},<br><br>
+    Thank you for the opportunity to submit our quotation.
+    Here is the summary of our freight proposal based on the shipment details provided.
+  </p>
+
+  <!-- SHIPMENT SUMMARY -->
+  <div class="section-title">Shipment Summary</div>
+
+  <div class="field-label">Service</div>
+  <div class="field-value">{{ fq.sales_service.name }}</div>
+
+  <div class="field-label">Route</div>
+  <div class="field-value">{{ fq.route_name }}</div>
+
+  <div class="field-label">Shipment Plan</div>
+  <div class="field-value">{{ fq.shipment_plan_date|date:"d M Y"|default:"-" }}</div>
+
+  <div class="field-label">Cargo</div>
+  <div class="field-value">
+    {{ fq.cargo_name }}{% if fq.hs_code %} (HS: {{ fq.hs_code }}){% endif %}
+  </div>
+
+  <div class="field-label">Package Details</div>
+  <div class="field-value">
+    {{ fq.package_count }} pkg |
+    G.W: {{ fq.gross_weight }} {{ fq.weight_uom.code|default_if_none:"" }} |
+    Volume: {{ fq.volume_cbm }} CBM
+  </div>
+
+  <!-- PRICING -->
+  <div class="section-title">Pricing</div>
+
+ <table class="pricing">
+  <thead>
+    <tr>
+      <th>Description</th>
+      <th class="text-center" style="width:45px;">Qty</th>
+      <th class="text-right"  style="width:95px;">Unit Price</th>
+      <th class="text-right"  style="width:95px;">Amount</th>
+      <th class="text-right"  style="width:95px;">Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- BARIS UTAMA (ITEM) -->
+    <tr>
+      <td>{{ fq.cargo_name }} ({{ fq.route_name }})</td>
+
+      <!-- Qty: angka saja (tanpa mata uang) -->
+      <td class="text-center">
+        {{ fq.quantity|indo_number:0 }}
+      </td>
+
+      <!-- Unit Price -->
+      <td class="text-right">
+        {{ fq.unit_price|indo_currency:fq.currency.code }}
+      </td>
+
+      <!-- Amount = qty x price (gross) -->
+      <td class="text-right">
+        {{ fq.amount|indo_currency:fq.currency.code }}
+      </td>
+
+      <!-- Total (di baris utama) juga gross (qty x price) -->
+      <td class="text-right">
+        {{ fq.amount|indo_currency:fq.currency.code }}
+      </td>
+    </tr>
+
+    <!-- BARIS DISCOUNT -->
+    <tr>
+      <td colspan="4" class="text-right">
+        Disc ({{ fq.discount_percent|indo_number:2 }}%)
+      </td>
+      <td class="text-right">
+        -{{ fq.discount_amount|indo_currency:fq.currency.code }}
+      </td>
+    </tr>
+
+    <!-- BARIS TAX -->
+    <tr>
+      <td colspan="4" class="text-right">
+        Tax ({{ fq.tax_percent|indo_number:2 }}%)
+      </td>
+      <td class="text-right">
+        {{ fq.tax_amount|indo_currency:fq.currency.code }}
+      </td>
+    </tr>
+
+    <!-- BARIS TOTAL AKHIR -->
+    <tr>
+      <td colspan="4" class="text-right"><strong>Total</strong></td>
+      <td class="text-right">
+        <strong>{{ fq.total_amount|indo_currency:fq.currency.code }}</strong>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+
+
+  <!-- NOTES -->
+  {% if fq.notes_customer %}
+    <div class="section-title">Additional Notes</div>
+    <p style="line-height:1.5; margin-bottom:8px;">
+      {{ fq.notes_customer|linebreaksbr }}
+    </p>
+  {% endif %}
+
+  <!-- CLOSING -->
+  <!-- CLOSING -->
+  <p style="line-height:1.6; margin-top:16px;">
+    We hope the above quotation meets your expectations.<br>
+    Please feel free to contact us if you require further clarification.<br><br>
+    Thank you.
+  </p>
+
+  <!-- INTERNAL NOTES (2 kolom) -->
+  <div class="section-title">Internal Notes</div>
+
+  <table class="notes-table">
+    <tr>
+      <td style="width:50%;">
+        <div class="notes-title">Price Includes</div>
+        <ul>
+          <li>Ocean freight from origin port to destination port as per route above.</li>
+          <li>Standard documentation &amp; handling charge.</li>
+          <li>Normal working hour operation (Mon–Fri).</li>
+          <li>Local charges at origin as per current tariff.</li>
+        </ul>
+
+        
+      </td>
+      <td style="width:50%;">
+        <div class="notes-title">Price Excludes</div>
+        <ul>
+          <li>Customs duty, VAT, and other government taxes.</li>
+          <li>Storage, demurrage, detention, and waiting time surcharges.</li>
+          <li>Insurance coverage for cargo (can be arranged upon request).</li>
+          <li>Any other charges not explicitly mentioned in this quotation.</li>
+        </ul>
+
+        <div class="notes-title">Validity &amp; Conditions</div>
+       
+      </td>
+    </tr>
+  
+   
+  </table>
+
+  <!-- SIGN -->
+  <div class="footer-sign">
+    Best regards,<br><br><br>
+    <strong>PT Dakara Samudera Hanasta</strong><br>
+    {{ fq.sales_user.get_full_name|default:fq.sales_user.username }}<br>
+    Sales Department
+  </div>
+ 
+
+</div>
+
+</div>
+
+</body>
+</html>

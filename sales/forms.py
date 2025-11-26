@@ -358,6 +358,23 @@ class FreightQuotationForm(forms.ModelForm):
                     "readonly": "readonly",
                 }
             ),
+            "notes_internal": forms.Textarea(
+                attrs={
+                    "class": "form-control tinymce",  # class untuk inisialisasi TinyMCE
+                    "rows": 4,
+                    "placeholder": "Internal notes (price include / exclude, payment term, conditions, etc.)",
+                }
+            ),
+            "discount_percent": forms.TextInput(
+                attrs={"class": "form-control text-end fq-num-src"}
+            ),
+            "discount_amount": forms.TextInput(
+                attrs={
+                    "class": "form-control text-end fq-num-out",
+                    "readonly": "readonly",
+                }
+            ),
+
         }
 
     
@@ -377,7 +394,10 @@ class FreightQuotationForm(forms.ModelForm):
             "payment_term",
             "currency",
             "origin_id",
-            "destination_id"
+            "destination_id",
+             # CARGO INFO
+            "cargo_name",
+            "shipment_plan_date",
         ]
         for name in REQUIRED_FIELDS:
             if name in self.fields:
@@ -427,73 +447,28 @@ class FreightQuotationForm(forms.ModelForm):
                 self.fields["sales_agency"].queryset = Partner.objects.none()
 
             self.fields["sales_agency"].empty_label = "— pilih agency —"
-    
+  
+  
     def clean(self):
         cleaned = super().clean()
 
-        # === 1) TANGGAL & STATUS OTOMATIS ===
-        today = timezone.now().date()
-
-        if not cleaned.get("quotation_date"):
-            cleaned["quotation_date"] = today
-
-        if not cleaned.get("status"):
-            cleaned["status"] = FreightQuotationStatus.DRAFT
-
-        # number: tetap dari helper next_number kalau kosong
-        if not cleaned.get("number") and hasattr(FreightQuotation, "next_number"):
-            cleaned["number"] = FreightQuotation.next_number()
-
-        # === 2) VALID UNTIL: +7 hari jika kosong ===
-        valid_until = cleaned.get("valid_until")
-        if not valid_until:
-            base_date = cleaned.get("quotation_date") or today
-            cleaned["valid_until"] = base_date + timezone.timedelta(days=7)
-
-        # === 3) HEADER WAJIB (4 FIELD UTAMA) ===
-        # customer kita kasih pesan custom, 3 lainnya cukup pakai required=True default
-        if not cleaned.get("customer"):
-            self.add_error("customer", "Customer wajib diisi.")
-
-        # ORIGIN / DESTINATION sementara tidak dipaksa di sini (sesuai blok test 1)
-        # if not cleaned.get("origin"):
-        #     self.add_error("origin", "Origin wajib diisi.")
-        # if not cleaned.get("destination"):
-        #     self.add_error("destination", "Destination wajib diisi.")
-
-        # === 4) PRICING (qty, price, tax → amount, tax_amount, total) ===
-        TWO = Decimal("0.01")
-
-        qty        = cleaned.get("quantity") or Decimal("1")
-        unit_price = cleaned.get("unit_price") or Decimal("0")
-        tax_pct    = cleaned.get("tax_percent") or Decimal("0")
-
-        # paksa 2 digit
-        qty        = Decimal(qty).quantize(TWO, rounding=ROUND_HALF_UP)
-        unit_price = Decimal(unit_price).quantize(TWO, rounding=ROUND_HALF_UP)
-        tax_pct    = Decimal(tax_pct).quantize(TWO, rounding=ROUND_HALF_UP)
-
-        amount     = (qty * unit_price).quantize(TWO, rounding=ROUND_HALF_UP)
-        tax_amount = (amount * tax_pct / Decimal("100")).quantize(TWO, rounding=ROUND_HALF_UP)
-        total      = (amount + tax_amount).quantize(TWO, rounding=ROUND_HALF_UP)
-
-        cleaned["quantity"]     = qty
-        cleaned["unit_price"]   = unit_price
-        cleaned["tax_percent"]  = tax_pct
-        cleaned["amount"]       = amount
-        cleaned["tax_amount"]   = tax_amount
-        cleaned["total_amount"] = total
-
-               # === 5) BUSINESS RULE: Shipper wajib untuk D2D / D2P (+ detail alamat) ===
+        # -----------------------------
+        # Ambil service & code
+        # -----------------------------
         service = cleaned.get("sales_service")
-        code = (getattr(service, "code", "") or "").upper()
+        code = ""
+        if service:
+            code = (service.code or "").upper()
 
-        # Fallback: kalau checkbox "shipper sama dengan customer" dicentang
-        # dan shipper masih kosong, otomatis set shipper = customer
-        if not cleaned.get("shipper") and cleaned.get("shipper_same_as_customer") and cleaned.get("customer"):
-            cleaned["shipper"] = cleaned["customer"]
+        # flags
+        is_d2d = code.startswith("D2D") or "DOOR TO DOOR" in code
+        is_d2p = code.startswith("D2P") or "DOOR TO PORT" in code
+        has_door_origin = is_d2d or is_d2p  # semua door-service di origin
 
-        if code.startswith(("D2D", "D2P")) or "DOOR" in code:
+        # ============================================================
+        # 1) VALIDASI SHIPPER → WAJIB untuk D2D & D2P
+        # ============================================================
+        if has_door_origin:
             required_shipper_fields = [
                 "shipper_contact_name",
                 "shipper_phone",
@@ -504,21 +479,114 @@ class FreightQuotationForm(forms.ModelForm):
                 "shipper_village",
             ]
 
-            # FK shipper wajib
+            # FK wajib
             if not cleaned.get("shipper"):
-                # supaya tidak dobel, cek dulu apakah sudah ada error dari tempat lain
-                if "shipper" not in self.errors:
-                    self.add_error(
-                        "shipper",
-                        "Shipper wajib diisi untuk Door to Door / Door to Port.",
-                    )
+                self.add_error(
+                    "shipper",
+                    "Shipper wajib diisi untuk layanan Door (D2D / D2P).",
+                )
 
-            # detail alamat shipper juga wajib
+            # detail wajib
             for fname in required_shipper_fields:
                 if not cleaned.get(fname):
                     self.add_error(
                         fname,
-                        "Wajib diisi untuk Door to Door / Door to Port.",
+                        "Wajib diisi untuk layanan Door (D2D / D2P).",
                     )
 
+        # ============================================================
+        # 2) VALIDASI CONSIGNEE untuk D2D → FULL ADDRESS
+        # ============================================================
+        if is_d2d:
+            required_cons_fields = [
+                "consignee_name",
+                "consignee_phone",
+                "consignee_address",
+                "consignee_province",
+                "consignee_regency",
+                "consignee_district",
+                "consignee_village",
+            ]
+
+            if not cleaned.get("consignee"):
+                self.add_error(
+                    "consignee",
+                    "Consignee wajib diisi untuk Door to Door.",
+                )
+
+            for fname in required_cons_fields:
+                if not cleaned.get(fname):
+                    self.add_error(
+                        fname,
+                        "Wajib diisi untuk Door to Door.",
+                    )
+
+        # ============================================================
+        # 3) VALIDASI CONSIGNEE untuk D2P → minimal nama + phone
+        # ============================================================
+        if is_d2p:
+            minimal_cons_fields = [
+                "consignee_name",
+                "consignee_phone",
+            ]
+
+            if not cleaned.get("consignee"):
+                self.add_error(
+                    "consignee",
+                    "Consignee wajib diisi untuk Door to Port.",
+                )
+
+            for fname in minimal_cons_fields:
+                if not cleaned.get(fname):
+                    self.add_error(
+                        fname,
+                        "Wajib diisi untuk Door to Port.",
+                    )
+
+  
+        # === 4) PRICING (qty, price, discount, tax → amount, discount_amount, tax_amount, total) ===
+        TWO = Decimal("0.01")
+
+        qty        = cleaned.get("quantity") or Decimal("1")
+        unit_price = cleaned.get("unit_price") or Decimal("0")
+        disc_pct   = cleaned.get("discount_percent") or Decimal("0")
+        tax_pct    = cleaned.get("tax_percent") or Decimal("0")
+
+        # paksa 2 digit
+        qty        = Decimal(qty).quantize(TWO, rounding=ROUND_HALF_UP)
+        unit_price = Decimal(unit_price).quantize(TWO, rounding=ROUND_HALF_UP)
+        disc_pct   = Decimal(disc_pct).quantize(TWO, rounding=ROUND_HALF_UP)
+        tax_pct    = Decimal(tax_pct).quantize(TWO, rounding=ROUND_HALF_UP)
+
+        # amount = sebelum discount (gross)
+        gross_amount    = (qty * unit_price).quantize(TWO, rounding=ROUND_HALF_UP)
+
+        # discount_amount (rupiah)
+        discount_amount = (gross_amount * disc_pct / Decimal("100")).quantize(
+            TWO, rounding=ROUND_HALF_UP
+        )
+
+        # dasar pajak = setelah diskon
+        tax_base   = (gross_amount - discount_amount).quantize(TWO, rounding=ROUND_HALF_UP)
+        tax_amount = (tax_base * tax_pct / Decimal("100")).quantize(
+            TWO, rounding=ROUND_HALF_UP
+        )
+
+        total = (tax_base + tax_amount).quantize(TWO, rounding=ROUND_HALF_UP)
+
+        cleaned["quantity"]         = qty
+        cleaned["unit_price"]       = unit_price
+        cleaned["discount_percent"] = disc_pct
+        cleaned["discount_amount"]  = discount_amount
+        cleaned["tax_percent"]      = tax_pct
+
+        # amount = gross (sebelum diskon)
+        cleaned["amount"]       = gross_amount
+        cleaned["tax_amount"]   = tax_amount
+        cleaned["total_amount"] = total
+      
         return cleaned
+
+
+
+  

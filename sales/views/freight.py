@@ -14,36 +14,97 @@ from geo.models import Location
 from core.utils import get_valid_days_default
 from django.utils import timezone
 from django.shortcuts import redirect
+from core.models import Currency,SalesService,PaymentTerm
+from django.shortcuts import redirect, get_object_or_404
+from django.views import View
+
 import sys
+
+
+ALLOWED_DELETE_STATUSES = ("DRAFT", "CANCELLED", "EXPIRED")
+
 
 class FqListView(LoginRequiredMixin, ListView):
     model = FreightQuotation
     template_name = "sales/quotation_list.html"
     context_object_name = "quotations"
-    paginate_by = 25
-    ordering = "-created"
+    paginate_by = 20
+    ordering = "-created_at" 
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = (
+            FreightQuotation.objects
+            .select_related("customer", "sales_service", "origin", "destination")
+            .order_by("-created_at")
+        )
 
-        q = self.request.GET.get("q") or ""
-        status = self.request.GET.get("status") or ""
+        request = self.request
 
+        q            = (request.GET.get("q") or "").strip()
+        statuses     = request.GET.getlist("status")
+        currencies   = request.GET.getlist("currency")
+        services     = request.GET.getlist("service")
+        agents       = request.GET.getlist("agent")
+        paymentterms = request.GET.getlist("payment_term")
+
+        # Search
         if q:
-            # sesuaikan dengan field di model om:
-            qs = qs.filter(number__icontains=q)
+            qs = qs.filter(
+                Q(number__icontains=q) |
+                Q(customer__name__icontains=q) |
+                Q(customer__company_name__icontains=q) |
+                Q(origin__name__icontains=q) |
+                Q(destination__name__icontains=q)
+            )
 
-        if status:
-            qs = qs.filter(status=status)
+        if statuses:
+            qs = qs.filter(status__in=statuses)
+
+        if currencies:
+            qs = qs.filter(currency_id__in=currencies)
+
+        if services:
+            qs = qs.filter(sales_service_id__in=services)
+
+        if agents:
+            qs = qs.filter(sales_user_id__in=agents)
+
+        if paymentterms:
+            qs = qs.filter(payment_term_id__in=paymentterms)
 
         return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["page_title"] = "Freight Quotations"
-        ctx["q"] = self.request.GET.get("q", "")
-        ctx["status_selected"] = self.request.GET.get("status", "")
-        ctx["status_choices"] = FreightQuotationStatus.choices
+        request = self.request
+
+        # buat filter value yang dipilih user
+        ctx.update(
+            {
+                # search / sorting param
+                "q": request.GET.get("q", ""),
+                "sort": request.GET.get("sort", ""),
+                "dir": request.GET.get("dir", ""),
+                "sp": request.GET.get("sp", ""),
+
+                # ===== LIST PILIHAN FILTER =====
+                "status_choices": FreightQuotationStatus.choices,
+                "currencies": Currency.objects.order_by("code"),
+                "services": SalesService.objects.filter(is_active=True).order_by("name"),
+                "paymentterms": PaymentTerm.objects.order_by("name"),
+
+                # sales agent: ambil partner individu
+                "agents": Partner.objects.filter(is_individual=True).order_by("name"),
+
+                # ===== NILAI FILTER YANG SEDANG DIPILIH =====
+                "flt_statuses": request.GET.getlist("status"),
+                "flt_currencies": request.GET.getlist("currency"),
+                "flt_services": request.GET.getlist("service"),
+                "flt_agents": request.GET.getlist("agent"),
+                "flt_paymentterms": request.GET.getlist("payment_term"),
+            }
+        )
+
         return ctx
 
 
@@ -161,9 +222,9 @@ class FqCreateView(LoginRequiredMixin, FqSaveMixin, CreateView):
         self.object = obj
 
         # sementara: biar kelihatan sukses
-        return HttpResponse(f"OK — SAVED SUCCESSFULLY — ID: {obj.pk}")
+        #return HttpResponse(f"OK — SAVED SUCCESSFULLY — ID: {obj.pk}")
         # atau pakai redirect:
-        # return redirect("sales:fq_detail", pk=obj.pk)
+        return redirect("sales:fq_detail", pk=obj.pk)
         # atau:
         # return super().form_valid(form)
 
@@ -210,8 +271,8 @@ class FqUpdateView(LoginRequiredMixin, FqSaveMixin, CreateView):
 
 class FqDetailView(LoginRequiredMixin, DetailView):
     model = FreightQuotation
-    template_name = "sales/freight_quotation_detail.html"
-    context_object_name = "quotation"
+    template_name = "sales/quotation_detail.html"
+    context_object_name = "fq"
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -219,3 +280,59 @@ class FqDetailView(LoginRequiredMixin, DetailView):
         return ctx
 
 
+
+class FqDeleteView(LoginRequiredMixin, View):
+
+   def post(self, request, pk, *args, **kwargs):
+        fq = get_object_or_404(FreightQuotation, pk=pk)
+
+        # Hanya boleh delete DRAFT / CANCELLED / EXPIRED
+        if fq.status not in ALLOWED_DELETE_STATUSES:
+            messages.error(
+                request,
+                "Quotation hanya bisa dihapus jika status Draft, Cancelled, atau Expired.",
+            )
+            return redirect("sales:freight_quotation_detail", pk=pk)
+
+        number = fq.number
+        fq.delete()
+        messages.success(request, f"Quotation {number} berhasil dihapus.")
+        return redirect("sales:freight_quotation_list")
+   
+
+class FqBulkDeleteView(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        ids_raw = (request.POST.get("ids") or "").split(",")
+        ids = [i for i in ids_raw if i.strip().isdigit()]
+
+        if not ids:
+            messages.error(request, "Tidak ada data yang dipilih.")
+            return redirect("sales:freight_quotation_list")
+
+        qs = FreightQuotation.objects.filter(pk__in=ids)
+
+        # Boleh delete hanya yang status dalam ALLOWED_DELETE_STATUSES
+        deletable = qs.filter(status__in=ALLOWED_DELETE_STATUSES)
+        blocked = qs.exclude(status__in=ALLOWED_DELETE_STATUSES)
+
+        deleted_count = deletable.count()
+        blocked_count = blocked.count()
+
+        if deleted_count:
+            deletable.delete()
+            messages.success(
+                request,
+                f"{deleted_count} quotation (Draft/Cancelled/Expired) berhasil dihapus.",
+            )
+
+        if blocked_count:
+            messages.warning(
+                request,
+                f"{blocked_count} quotation tidak bisa dihapus (status bukan Draft/Cancelled/Expired).",
+            )
+
+        if not deleted_count and not blocked_count:
+            messages.info(request, "Tidak ada quotation yang dihapus.")
+
+        return redirect("sales:freight_quotation_list")

@@ -1,0 +1,264 @@
+{% extends "adminbase.html" %}
+
+{% block content %}
+<div class="content-wrapper">
+
+  <!-- HEADER -->
+  <section class="content-header">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+      <div>
+        <h1 class="mb-0">
+          Freight Quotation
+          <small class="text-muted">#{{ fq.number }}</small>
+        </h1>
+
+        {% with s=fq.status|lower %}
+          {% if s == "accepted" %}
+            <span class="badge bg-success">Accepted</span>
+          {% elif s == "cancelled" %}
+            <span class="badge bg-danger">Cancelled</span>
+          {% elif s == "expired" %}
+            <span class="badge bg-warning text-dark">Expired</span>
+          {% elif s == "draft" %}
+            <span class="badge bg-secondary">Draft</span>
+          {% elif s == "sent" %}
+            <span class="badge bg-danger">Sent</span>
+          {% elif s == "ordered" %}
+            <span class="badge bg-info">Ordered</span>
+          {% else %}
+            <span class="badge bg-warning">{{ s|title }}</span>
+          {% endif %}
+        {% endwith %}
+      </div>
+
+      <div>
+        <a href="{% url 'sales:fq_edit' fq.pk %}" class="btn btn-primary btn-sm">
+          <i class="fa fa-edit me-1"></i> Edit
+        </a>
+
+        <a href="#" class="btn btn-outline-secondary btn-sm">
+          <i class="fa fa-print me-1"></i> Print
+        </a>
+
+        <a href="{% url 'sales:fq_pdf' fq.pk%}"
+          target="_blank"
+          class="btn btn-outline-secondary btn-sm">
+          <i class="fa fa-file-pdf me-1"></i> PDF
+        </a>
+
+
+       {% with st=fq.status %}
+        {% if st == "DRAFT" or st == "CANCELLED" or st == "EXPIRED" %}
+          <form action="{% url 'sales:fq_delete' fq.pk %}"
+            method="post" class="d-inline">
+        {% csrf_token %}
+        <button class="btn btn-danger btn-sm"
+                onclick="return confirm('Delete this quotation?');">
+          <i class="fa fa-trash me-1"></i> Delete
+        </button>
+      </form>
+        {% endif %}
+      {% endwith %}
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- MAIN CONTENT -->
+  <section class="content">
+    <div class="container-fluid">
+
+      <!-- QUOTATION HEADER -->
+      <div class="card mb-3">
+        <div class="card-header bg-body-secondary">
+          <strong>Quotation Information</strong>
+        </div>
+        <div class="card-body row g-3">
+
+          <div class="col-md-4">
+            <label class="form-label small">Quotation Number</label>
+            <div>{{ fq.number }}</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label small">Quotation Date</label>
+            <div>{{ fq.quotation_date|date:"Y-m-d" }}</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label small">Valid Until</label>
+            <div>{{ fq.valid_until|date:"Y-m-d" }}</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label small">Customer</label>
+            <div>{{ fq.customer.company_name|default:fq.customer.name }}</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label small">Service</label>
+            <div>{{ fq.sales_service.name }}</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label small">Payment Term</label>
+            <div>{{ fq.payment_term.name }}</div>
+          </div>
+
+        </div>
+      </div>
+
+
+      <!-- ROUTE -->
+      <div class="card mb-3">
+        <div class="card-header bg-body-secondary">
+          <strong>Route</strong>
+        </div>
+        <div class="card-body row g-3">
+
+          <div class="col-md-6">
+            <label class="form-label small">Origin</label>
+            <div>{{ fq.origin.name }}</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label small">Destination</label>
+            <div>{{ fq.destination.name }}</div>
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label small">Route</label>
+            <div>{{ fq.route_name }}</div>
+          </div>
+
+        </div>
+      </div>
+
+
+
+      <!-- CARGO INFO -->
+      <div class="card mb-3">
+        <div class="card-header bg-body-secondary">
+          <strong>Cargo Information</strong>
+        </div>
+
+        <div class="card-body row g-3">
+
+          <div class="col-md-4">
+            <label class="form-label small">Cargo Name</label>
+            <div>{{ fq.cargo_name }}</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label small">HS Code</label>
+            <div>{{ fq.hs_code }}</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label small">Plan Date</label>
+            <div>{{ fq.shipment_plan_date|date:"Y-m-d" }}</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label small">Package Count</label>
+            <div>{{ fq.package_count }}</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label small">Gross Weight</label>
+            <div>{{ fq.gross_weight }}</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label small">Volume (CBM)</label>
+            <div>{{ fq.volume_cbm }}</div>
+          </div>
+
+        </div>
+      </div>
+
+
+
+      <!-- SHIPPER & CONSIGNEE -->
+      <div class="card mb-3">
+        <div class="card-header bg-body-secondary">
+          <strong>Shipper & Consignee</strong>
+        </div>
+
+        <div class="card-body row g-3">
+
+          <!-- SHIPPER -->
+          <div class="col-md-6">
+            <h6 class="fw-bold mb-2">Shipper</h6>
+            <div><strong>{{ fq.shipper_contact_name }}</strong></div>
+            <div>{{ fq.shipper_address }}</div>
+            <div>{{ fq.shipper_phone }}</div>
+            <div>
+              {{ fq.shipper_village }} - {{ fq.shipper_district }} -
+              {{ fq.shipper_regency }} - {{ fq.shipper_province }}
+            </div>
+          </div>
+
+          <!-- CONSIGNEE -->
+          <div class="col-md-6">
+            <h6 class="fw-bold mb-2">Consignee</h6>
+            <div><strong>{{ fq.consignee_name }}</strong></div>
+            <div>{{ fq.consignee_address }}</div>
+            <div>{{ fq.consignee_phone }}</div>
+            <div>
+              {{ fq.consignee_village }} - {{ fq.consignee_district }} -
+              {{ fq.consignee_regency }} - {{ fq.consignee_province }}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+
+
+      <!-- PRICING -->
+      <div class="card mb-3">
+        <div class="card-header bg-body-secondary">
+          <strong>Pricing & Tax</strong>
+        </div>
+
+        <div class="card-body row g-3">
+
+          <div class="col-md-3">
+            <label class="form-label small">Quantity</label>
+            <div>{{ fq.quantity }}</div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small">Unit Price</label>
+            <div>{{ fq.unit_price }}</div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small">Tax (%)</label>
+            <div>{{ fq.tax_percent }}</div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small">Amount</label>
+            <div>{{ fq.amount }}</div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small">Tax Amount</label>
+            <div>{{ fq.tax_amount }}</div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small">Total Amount</label>
+            <div>{{ fq.total_amount }}</div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+  <div class="card card my-3">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Consignee</h3>
+            </div>
+            <div class="card-body">
+
+              {% if form.consignee.errors %}
+                <div class="text-danger small mb-2">
+                  {{ form.consignee.errors|striptags }}
+                </div>
+              {% endif %}
+
+              <div class="row">
+                <!-- Kolom kiri: contact & alamat text -->
+                <div class="col-md-6">
+
+                  <div class="mb-3">
+                    <label for="id_consignee_text" class="form-label">Cari consignee (partner)</label>
+                    <input type="text"
+                           id="id_consignee_text"
+                           class="form-control js-partner"
+                           data-url="{% url 'partners:partner_autocomplete' %}"
+                           value="">
+                    <input type="hidden"
+                           id="id_consignee"
+                           name="consignee"
+                           value="">
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_consignee_name" class="form-label">Nama / Kontak</label>
+                    <input type="text" id="id_consignee_name" name="consignee_name"
+                           class="form-control">
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_consignee_phone" class="form-label">No. Telp</label>
+                    <input type="text" id="id_consignee_phone" name="consignee_phone"
+                           class="form-control">
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_consignee_address" class="form-label">Alamat</label>
+                    <textarea id="id_consignee_address" name="consignee_address"
+                              rows="3" class="form-control"></textarea>
+                  </div>
+
+                  <div class="mb-3">
+                    <div class="form-check mt-2">
+                      <input class="form-check-input"
+                             type="checkbox"
+                             id="id_consignee_save_partner"
+                             name="consignee_save_partner">
+                      <label class="form-check-label" for="id_consignee_save_partner">
+                        Simpan consignee ini sebagai partner baru
+                      </label>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- Kolom kanan: dropdown geo -->
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="id_consignee_province" class="form-label">Provinsi</label>
+                    <select id="id_consignee_province" name="consignee_province" class="form-select">
+                      <option value="">---------</option>
+                      {% for prov in provinces %}
+                        <option value="{{ prov.id }}">{{ prov.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_consignee_regency" class="form-label">Kabupaten / Kota</label>
+                    <select id="id_consignee_regency" name="consignee_regency" class="form-select">
+                      <option value="">---------</option>
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_consignee_district" class="form-label">Kecamatan</label>
+                    <select id="id_consignee_district" name="consignee_district" class="form-select">
+                      <option value="">---------</option>
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_consignee_village" class="form-label">Kelurahan / Desa</label>
+                    <select id="id_consignee_village" name="consignee_village" class="form-select">
+                      <option value="">---------</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>

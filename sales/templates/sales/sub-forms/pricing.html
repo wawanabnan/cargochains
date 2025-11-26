@@ -1,0 +1,138 @@
+<div class="card shadow-none mt-3">
+  <div class="card-header">
+    <h3 class="card-title mb-0">Pricing &amp; Tax</h3>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+        <!-- Quantity -->
+        <div class="col-12 col-md-3">
+        <label class="form-label mb-1" for="{{ form.quantity.id_for_label }}">
+                    Quantity
+        </label>
+      <div class="input-group">
+                    {{ form.quantity }}
+                    <span class="input-group-text">x</span>
+      </div>
+      {% if form.quantity.errors %}
+      <div class="text-danger small">
+                      {{ form.quantity.errors|striptags }}
+      </div>
+      {% endif %}
+        </div>
+
+        <!-- Unit Price -->
+        <div class="col-12 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.unit_price.id_for_label }}">
+                    Unit price
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text">Rp</span>
+                    {{ form.unit_price }}
+                  </div>
+                  {% if form.unit_price.errors %}
+                    <div class="text-danger small">
+                      {{ form.unit_price.errors|striptags }}
+                    </div>
+                  {% endif %}
+        </div>
+        <!-- Amount (subtotal) -->
+        <div class="col-12 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.amount.id_for_label }}">
+                    Amount
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text">Rp</span>
+                    {{ form.amount }}
+                  </div>
+                  {% if form.amount.errors %}
+                    <div class="text-danger small">
+                      {{ form.amount.errors|striptags }}
+                    </div>
+                  {% endif %}
+        </div>
+        <!-- Tax Percent -->
+        <div class="col-6 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.tax_percent.id_for_label }}">
+                    Tax %
+                  </label>
+                  <div class="input-group">
+                    {{ form.tax_percent }}
+                    <span class="input-group-text">%</span>
+                  </div>
+                  {% if form.tax_percent.errors %}
+                    <div class="text-danger small">
+                      {{ form.tax_percent.errors|striptags }}
+                    </div>
+                  {% endif %}
+        </div>
+    </div>
+    <div class="row g-3 mt-2">
+      <!-- Discount Percent -->
+      <div class="col-6 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.discount_percent.id_for_label }}">
+                    Discount %
+                  </label>
+                  <div class="input-group">
+                    {{ form.discount_percent }}
+                    <span class="input-group-text">%</span>
+                  </div>
+                  {% if form.discount_percent.errors %}
+                    <div class="text-danger small">
+                      {{ form.discount_percent.errors|striptags }}
+                    </div>
+                  {% endif %}
+      
+      </div>
+
+          <!-- Discount Amount -->
+      <div class="col-6 col-md-3">
+              <label class="form-label mb-1" for="{{ form.discount_amount.id_for_label }}">
+                Discount amount
+              </label>
+              <div class="input-group">
+                <span class="input-group-text">Rp</span>
+                {{ form.discount_amount }}
+              </div>
+              {% if form.discount_amount.errors %}
+                <div class="text-danger small">
+                  {{ form.discount_amount.errors|striptags }}
+                </div>
+              {% endif %}
+      </div>
+
+          <!-- Tax Amount -->
+      <div class="col-6 col-md-3">
+        <label class="form-label mb-1" for="{{ form.tax_amount.id_for_label }}">
+          Tax amount
+        </label>
+        <div class="input-group">
+          <span class="input-group-text">Rp</span>
+          {{ form.tax_amount }}
+        </div>
+        {% if form.tax_amount.errors %}
+          <div class="text-danger small">
+            {{ form.tax_amount.errors|striptags }}
+          </div>
+        {% endif %}
+      </div>
+
+          <!-- Total Amount -->
+      <div class="col-6 col-md-3">
+              <label class="form-label mb-1" for="{{ form.total_amount.id_for_label }}">
+                Total amount
+              </label>
+              <div class="input-group">
+                <span class="input-group-text">Rp</span>
+                {{ form.total_amount }}
+              </div>
+              {% if form.total_amount.errors %}
+                <div class="text-danger small">
+                  {{ form.total_amount.errors|striptags }}
+                </div>
+              {% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>

@@ -1,0 +1,83 @@
+ <div class="card shadow-none">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Customer</h3>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4">
+
+                  <label for="id_customer_text" class="form-label">Customer</label>
+                  <input type="text"
+                         id="id_customer_text"
+                         class="form-control js-partner"
+                         data-url="{% url 'partners:partner_autocomplete' %}?role=customer"
+                         value="{% if form.instance.customer %}{{ form.instance.customer.company_name|default:form.instance.customer.name }}{% endif %}">
+                  <input type="hidden"
+                         id="id_customer"
+                         name="customer"
+                         value="{% if form.instance.customer_id %}{{ form.instance.customer_id }}{% endif %}">
+
+                  {% if form.customer.errors %}
+                    <div class="text-danger small">
+                      {{ form.customer.errors|striptags }}
+                    </div>
+                  {% endif %}
+
+                </div>
+
+                <div class="col-md-4">
+                  {{ form.sales_service.label_tag }}
+                  {{ form.sales_service }}
+                  {% if form.sales_service.errors %}
+                    <div class="text-danger small">
+                      {{ form.sales_service.errors|striptags }}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                  {{ form.sales_agency.label_tag }}
+                  {{ form.sales_agency }}
+                  {% if form.sales_agency.errors %}
+                    <div class="text-danger small">
+                      {{ form.sales_agency.errors|striptags }}
+                    </div>
+                  {% endif %}
+                </div>
+
+              </div>
+
+              <div class="row">
+                <div class="col-md-4">
+                  {{ form.payment_term.label_tag }}
+                  {{ form.payment_term }}
+                  {% if form.payment_term.errors %}
+                    <div class="text-danger small">
+                      {{ form.payment_term.errors|striptags }}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                  {{ form.currency.label_tag }}
+                  {{ form.currency }}
+                  {% if form.currency.errors %}
+                    <div class="text-danger small">
+                      {{ form.currency.errors|striptags }}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                  {{ form.valid_until.label_tag }}
+                  {{ form.valid_until }}
+                  {% if form.valid_until.errors %}
+                    <div class="text-danger small">
+                      {{ form.valid_until.errors|striptags }}
+                    </div>
+                  {% endif %}
+                </div>
+
+              </div>
+            </div>
+          </div>

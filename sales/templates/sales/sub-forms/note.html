@@ -1,0 +1,19 @@
+<div class="card mt-3">
+  <div class="card-header py-2">
+    <strong>Internal Notes</strong>
+    <span class="text-muted small d-block">
+      Hanya untuk catatan internal (tidak dikirim ke customer jika tidak diinginkan).
+    </span>
+  </div>
+  <div class="card-body">
+    <div class="mb-2">
+      {{ form.notes_internal.label_tag }}
+      {{ form.notes_internal }}
+      {% if form.notes_internal.errors %}
+        <div class="text-danger small">
+          {{ form.notes_internal.errors }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>

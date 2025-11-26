@@ -1,0 +1,115 @@
+ <div class="card card mt-3">
+          <div class="card-header">
+          <h3 class="card-title mb-0">Shipper</h3>
+          </div>
+          <div class="card-body">
+            {% if form.shipper.errors %}
+              <div class="text-danger small mb-2">
+                {{ form.shipper.errors|striptags }}
+              </div>
+            {% endif %}
+
+              <div class="form-check mb-3">
+                <input type="checkbox"
+                    class="form-check-input"
+                    id="id_shipper_same_as_customer">
+                <label class="form-check-label" for="id_shipper_same_as_customer">
+                  Shipper sama dengan Customer
+                </label>
+              </div>
+
+              <div class="row">
+                <!-- Kolom kiri: pilih partner + contact & alamat text -->
+                <div class="col-md-6">
+
+                {# AUTOCOMPLETE SHIPPER (PARTNER) #}
+                  <div class="mb-3">
+                    <label for="id_shipper_text" class="form-label">Cari shipper (partner)</label>
+                    <input type="text"
+                        id="id_shipper_text"
+                        class="form-control js-partner"
+                        data-url="{% url 'partners:partner_autocomplete' %}"
+                        
+                        value="{% if form.instance.shipper %}{{ form.instance.shipper.company_name|default:form.instance.shipper.name }}{% endif %}">
+                    <input type="hidden"
+                        id="id_shipper"
+                        name="shipper"
+                        value="{% if form.instance.shipper_id %}{{ form.instance.shipper_id }}{% endif %}">
+                  </div>
+
+                  <div class="mb-3">
+                    {{ form.shipper_contact_name.label_tag }}
+                    {{ form.shipper_contact_name }}
+                    {% for err in form.shipper_contact_name.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+
+                  <div class="mb-3">
+                    {{ form.shipper_phone.label_tag }}
+                    {{ form.shipper_phone }}
+                    {% for err in form.shipper_phone.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                  
+                  <div class="mb-3">
+                    <label for="id_shipper_address" class="form-label">Address</label>
+                    <textarea id="id_shipper_address" name="shipper_address"
+                              rows="3" class="form-control"></textarea>
+                  </div>
+
+                 
+              </div>
+
+              <!-- Kolom kanan: dropdown geo -->
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="id_shipper_province" class="form-label">Provinsi</label>
+                  <select id="id_shipper_province"
+                          name="shipper_province"
+                          class="form-select">
+                    <option value="">---------</option>
+                    {% for prov in provinces %}
+                      <option value="{{ prov.id }}">{{ prov.name }}</option>
+                    {% endfor %}
+                  </select>
+                  {% for err in form.shipper_province.errors %}
+                    <div class="text-danger small">{{ err }}</div>
+                  {% endfor %}
+                </div>
+
+                <div class="mb-3">
+                  <label for="id_shipper_regency" class="form-label">Kabupaten / Kota</label>
+                  <select id="id_shipper_regency" name="shipper_regency" class="form-select">
+                    <option value="">---------</option>
+                  </select>
+                  {% for err in form.shipper_regency.errors %}
+                    <div class="text-danger small">{{ err }}</div>
+                  {% endfor %}
+                </div>
+
+                <div class="mb-3">
+                  <label for="id_shipper_district" class="form-label">Kecamatan</label>
+                  <select id="id_shipper_district" name="shipper_district" class="form-select">
+                    <option value="">---------</option>
+                  </select>
+                  {% for err in form.shipper_district.errors %}
+                    <div class="text-danger small">{{ err }}</div>
+                  {% endfor %}
+                </div>
+
+                <div class="mb-3">
+                  <label for="id_shipper_village" class="form-label">Kelurahan / Desa</label>
+                  <select id="id_shipper_village" name="shipper_village" class="form-select">
+                    <option value="">---------</option>
+                  </select>
+                  {% for err in form.shipper_village.errors %}
+                    <div class="text-danger small">{{ err }}</div>
+                  {% endfor %}
+                </div>
+              </div>
+              </div>
+
+          </div>
+      </div>

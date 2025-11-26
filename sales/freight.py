@@ -129,6 +129,9 @@ class FreightQuotation(TimeStampedModel):
         decimal_places=2,
         default=0,
     )
+    discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    discount_amount  = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+
     total_amount = models.DecimalField(
         max_digits=14,
         decimal_places=2,
@@ -346,6 +349,24 @@ class FreightQuotation(TimeStampedModel):
                 self.number = get_next_number("sales", "FREIGHT_QUOTATION")
         super().save(*args, **kwargs)
 
+    @property
+    def route_name(self):
+        """
+        Return origin - destination (name only, without kind).
+        """
+        if self.origin and self.destination:
+            return f"{self.origin.name} - {self.destination.name}"
+        if self.origin:
+            return self.origin.name
+        if self.destination:
+            return self.destination.name
+        return ""
+    
+    @property
+    def display_name(self):
+        return self.name
+
+
 # ============================
 #   FREIGHT ORDER STATUS
 # ============================
@@ -509,6 +530,9 @@ class FreightOrder(TimeStampedModel):
         decimal_places=2,
         default=0,
     )
+    discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    discount_amount  = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+
     total_amount = models.DecimalField(
         max_digits=14,
         decimal_places=2,

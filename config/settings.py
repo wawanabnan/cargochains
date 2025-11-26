@@ -177,3 +177,9 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # True = habis saat browser ditutup
 SESSION_COOKIE_SECURE = True         # aktifkan di produksi (HTTPS)
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"      # atau "Strict" sesuai kebutuhan
+
+
+WKHTMLTOPDF_CMD = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
+
+
+

@@ -1,0 +1,1911 @@
+{% extends "adminbase.html" %}
+{% load static %}
+
+{% block content %}
+
+{% if form.errors %}
+<div class="alert alert-danger">
+    <strong>DEBUG — form.errors:</strong>
+    <pre>{{ form.errors.as_json }}</pre>
+</div>
+{% endif %}
+
+{% if form.non_field_errors %}
+<div class="alert alert-warning">
+    <strong>Non-field errors:</strong>
+    <ul>
+        {% for err in form.non_field_errors %}
+        <li>{{ err }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+
+<section class="content">
+  <div class="container-fluid">
+
+    <h3 class="mb-3">
+      {% if quotation %}
+        Edit Freight Quotation {{ quotation.number }}
+      {% else %}
+        Tambah Freight Quotation
+      {% endif %}
+    </h3>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      {% if form.errors %}
+        <div class="alert alert-danger">
+          Ada kesalahan pada form. Periksa field yang ditandai merah.
+        </div>
+      {% endif %}
+
+      <div class="row">
+        <div class="col-md-12">
+
+          {# ====================== #}
+          {#  CARD: CUSTOMER        #}
+          {# ====================== #}
+          <div class="card card-primary">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Customer</h3>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4">
+                    
+                      <label for="id_customer_text" class="form-label">Customer 1</label>
+                      <input type="text"
+                            id="id_customer_text"
+                            class="form-control js-partner"
+                            data-url="{% url 'partners:partner_autocomplete' %}?role=customer"
+                            value="{% if form.instance.customer %}{{ form.instance.customer.company_name|default:form.instance.customer.name }}{% endif %}">
+                      <input type="hidden"
+                            id="id_customer"
+                            name="customer"
+                            value="{% if form.instance.customer_id %}{{ form.instance.customer_id }}{% endif %}">               
+                   
+                </div>
+                <div class="col-md-4">
+                    {{ form.sales_service.label_tag }} {{ form.sales_service }}
+                </div>    
+                <div class="col-md-4">
+                    {{ form.sales_agency.label_tag }} {{ form.sales_agency }}
+                </div>
+                              
+              </div>
+              <div class="row">
+                <div class="col-md-4">
+                      
+                        {{ form.payment_term.label_tag }} {{ form.payment_term }}
+                     
+                </div>
+                <div class="col-md-4">
+                      
+                        {{ form.currency.label_tag }} {{ form.currency }}
+                    
+                </div>
+                <div class="col-md-4">
+                     
+                        {{ form.valid_until.label_tag }} {{ form.valid_until }}
+                     
+                </div>
+
+               
+              </div>
+            </div>
+          </div>
+          {# ====================== #}
+          {#  CARD: CARGO           #}
+          {# ====================== #}
+          <div class="card mb-3">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Cargo information</h3>
+            </div>
+
+            <div class="card-body">
+              <!-- Row 1: Cargo name + HS code -->
+              <div class="row g-3">
+                <div class="col-12 col-lg-8">
+                  <label class="form-label mb-1" for="{{ form.cargo_name.id_for_label }}">
+                    Cargo name
+                  </label>
+                  {{ form.cargo_name }}
+                </div>
+
+                <div class="col-12 col-lg-4">
+                  <label class="form-label mb-1" for="{{ form.hs_code.id_for_label }}">
+                    HS code
+                  </label>
+                  {{ form.hs_code }}
+                </div>
+              </div>
+
+              <!-- Row 3: Package count + type -->
+              <div class="row g-3 mt-2">
+                 <div class="col-6 col-md-3">
+                    <label class="form-label mb-1" for="{{ form.package_count.id_for_label }}">
+                      Package count
+                    </label>
+                    {{ form.package_count }}
+                  </div>
+
+                  <!-- Package Type (UOM) -->
+                  <div class="col-6 col-md-3">
+                    <label class="form-label mb-1" for="{{ form.package_uom.id_for_label }}">
+                      Package type
+                    </label>
+                    {{ form.package_uom }}
+                  </div>
+              </div>
+
+              <!-- Row 4: Weight & Volume -->
+              <div class="row g-3 mt-2">
+                <div class="col-6 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.gross_weight.id_for_label }}">
+                    Gross weight
+                  </label>
+                  {{ form.gross_weight }}
+                </div>
+
+                <div class="col-6 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.weight_uom.id_for_label }}">
+                    Weight UOM
+                  </label>
+                  {{ form.weight_uom }}
+                </div>
+
+                <div class="col-6 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.volume_cbm.id_for_label }}">
+                    Volume
+                  </label>
+                  {{ form.volume_cbm }}
+                </div>
+
+                <div class="col-6 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.volume_uom.id_for_label }}">
+                    Volume UOM
+                  </label>
+                  {{ form.volume_uom }}
+                </div>
+              </div>
+
+              <!-- Row 5: DG + Plan date -->
+              <div class="row g-3 mt-2">
+                <div class="col-12 col-md-4 d-flex align-items-center">
+                  <div class="form-check mt-2">
+                    {{ form.is_dangerous_goods }}
+                    <label class="form-check-label ms-1" for="{{ form.is_dangerous_goods.id_for_label }}">
+                      Dangerous goods
+                    </label>
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label mb-1" for="{{ form.dangerous_goods_class.id_for_label }}">
+                    DG class
+                  </label>
+                  {{ form.dangerous_goods_class }}
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label mb-1" for="{{ form.shipment_plan_date.id_for_label }}">
+                    Shipment plan date
+                  </label>
+                  {{ form.shipment_plan_date }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {# ====================== #}
+          {#  CARD: PRICE & AMOUNT  #}
+          {# ====================== #}
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="card-title mb-0">Pricing &amp; Tax</h3>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+
+      <!-- Quantity -->
+      <div class="col-12 col-md-3">
+        <label class="form-label mb-1" for="{{ form.quantity.id_for_label }}">
+          Quantity
+        </label>
+        <div class="input-group">
+          {{ form.quantity }}
+          <span class="input-group-text">x</span>
+        </div>
+      </div>
+
+      <!-- Unit Price -->
+      <div class="col-12 col-md-3">
+        <label class="form-label mb-1" for="{{ form.unit_price.id_for_label }}">
+          Unit price
+        </label>
+        <div class="input-group">
+          <span class="input-group-text">Rp</span>
+          {{ form.unit_price }}
+        </div>
+      </div>
+
+      <!-- Amount (subtotal) -->
+      <div class="col-12 col-md-3">
+        <label class="form-label mb-1" for="{{ form.amount.id_for_label }}">
+          Amount
+        </label>
+        <div class="input-group">
+          <span class="input-group-text">Rp</span>
+          {{ form.amount }}
+        </div>
+      </div>
+
+      <!-- Tax Percent -->
+      <div class="col-6 col-md-3">
+        <label class="form-label mb-1" for="{{ form.tax_percent.id_for_label }}">
+          Tax %
+        </label>
+        <div class="input-group">
+          {{ form.tax_percent }}
+          <span class="input-group-text">%</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="row g-3 mt-2">
+      <!-- Tax Amount -->
+      <div class="col-12 col-md-3">
+        <label class="form-label mb-1" for="{{ form.tax_amount.id_for_label }}">
+          Tax amount
+        </label>
+        <div class="input-group">
+          <span class="input-group-text">Rp</span>
+          {{ form.tax_amount }}
+        </div>
+      </div>
+
+      <!-- Total Amount -->
+      <div class="col-12 col-md-3">
+        <label class="form-label mb-1" for="{{ form.total_amount.id_for_label }}">
+          Total amount
+        </label>
+        <div class="input-group">
+          <span class="input-group-text">Rp</span>
+          {{ form.total_amount }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+          {# ====================== #}
+          {#  CARD: ROUTE           #}
+          {# ====================== #}
+          <div class="card card-primary">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Route</h3>
+            </div>
+            <div class="card-body">
+
+              <div class="row">
+                <!-- ORIGIN -->
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="id_origin_text" class="form-label">Origin</label>
+
+                    <input type="text"
+                           id="id_origin_text"
+                           class="form-control js-location"
+                           data-url="/geo/locations/autocomplete/"
+                           value="{% if form.instance.origin %}{{ form.instance.origin.name }}{% endif %}">
+
+                    <input type="hidden" id="id_origin" name="origin"
+                           value="{% if form.instance.origin_id %}{{ form.instance.origin_id }}{% endif %}">
+
+                    {% for err in form.origin.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+
+                <!-- DESTINATION -->
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="id_destination_text" class="form-label">Destination</label>
+
+                    <input type="text"
+                           id="id_destination_text"
+                           class="form-control js-location"
+                           data-url="/geo/locations/autocomplete/"
+                           value="{% if form.instance.destination %}{{ form.instance.destination.name }}{% endif %}">
+
+                    <input type="hidden" id="id_destination" name="destination"
+                           value="{% if form.instance.destination_id %}{{ form.instance.destination_id }}{% endif %}">
+
+                    {% for err in form.destination.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {# ====================== #}
+          {#  CARD: SHIPPER         #}
+          {# ====================== #}
+          <div class="card card-secondary">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Shipper</h3>
+            </div>
+            <div class="card-body">
+
+              <div class="form-check mb-3">
+                <input type="checkbox"
+                       class="form-check-input"
+                       id="id_shipper_same_as_customer">
+                <label class="form-check-label" for="id_shipper_same_as_customer">
+                  Shipper sama dengan Customer
+                </label>
+              </div>
+
+              <div class="row">
+                <!-- Kolom kiri: contact & alamat text -->
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="id_shipper_contact_name" class="form-label">Nama / Kontak</label>
+                    <input type="text" id="id_shipper_contact_name" name="shipper_contact_name" class="form-control">
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_shipper_phone" class="form-label">No. Telp</label>
+                    <input type="text" id="id_shipper_phone" name="shipper_phone"
+                           class="form-control">
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_shipper_address" class="form-label">Alamat</label>
+                    <textarea id="id_shipper_address" name="shipper_address"
+                              rows="3" class="form-control"></textarea>
+                  </div>
+                </div>
+
+                <!-- Kolom kanan: dropdown geo -->
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="id_shipper_province" class="form-label">Provinsi</label>
+                    <select id="id_shipper_province" name="shipper_province" class="form-select">
+                      <option value="">---------</option>
+                      {% for prov in provinces %}
+                        <option value="{{ prov.id }}">{{ prov.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_shipper_regency" class="form-label">Kabupaten / Kota</label>
+                    <select id="id_shipper_regency" name="shipper_regency" class="form-select">
+                      <option value="">---------</option>
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_shipper_district" class="form-label">Kecamatan</label>
+                    <select id="id_shipper_district" name="shipper_district" class="form-select">
+                      <option value="">---------</option>
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_shipper_village" class="form-label">Kelurahan / Desa</label>
+                    <select id="id_shipper_village" name="shipper_village" class="form-select">
+                      <option value="">---------</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          
+          
+          {# ====================== #}
+          {#  CARD: CONSIGNEE       #}
+          {# ====================== #}
+          <div class="card card-secondary">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Consignee</h3>
+            </div>
+            <div class="card-body">           
+              <div class="row">
+                            <!-- Kolom kiri: contact & alamat text -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                            <label for="id_consignee_text" class="form-label">Cari consignee (partner)</label>
+                            <input type="text"
+                                  id="id_consignee_text"
+                                  class="form-control js-partner"
+                                  data-url="{% url 'partners:partner_autocomplete' %}"
+                                  value="">
+                            <input type="hidden"
+                                  id="id_consignee"
+                                  name="consignee"
+                                  value="">
+                          </div>
+                              <div class="mb-3">
+                                <label for="id_consignee_name" class="form-label">Nama / Kontak</label>
+                                <input type="text" id="id_consignee_name" name="consignee_name"
+                                      class="form-control">
+                              </div>
+
+                              <div class="mb-3">
+                                <label for="id_consignee_phone" class="form-label">No. Telp</label>
+                                <input type="text" id="id_consignee_phone" name="consignee_phone"
+                                      class="form-control">
+                              </div>
+
+                              <div class="mb-3">
+                                <label for="id_consignee_address" class="form-label">Alamat</label>
+                                <textarea id="id_consignee_address" name="consignee_address"
+                                          rows="3" class="form-control"></textarea>
+                              </div>
+                              <div class="mb-3">
+
+                                  <div class="form-check mt-2">
+                                  <input class="form-check-input"
+                                        type="checkbox"
+                                        id="id_consignee_save_partner"
+                                        name="consignee_save_partner">
+                                  <label class="form-check-label" for="id_consignee_save_partner">
+                                    Simpan consignee ini sebagai partner baru
+                                  </label>
+                                </div>
+
+                              </div>
+                              
+                            </div>
+
+                            <!-- Kolom kanan: dropdown geo -->
+                            <div class="col-md-6">
+                              <div class="mb-3">
+                                <label for="id_consignee_province" class="form-label">Provinsi</label>
+                                <select id="id_consignee_province" name="consignee_province" class="form-select">
+                                  <option value="">---------</option>
+                                  {% for prov in provinces %}
+                                    <option value="{{ prov.id }}">{{ prov.name }}</option>
+                                  {% endfor %}
+                                </select>
+                              </div>
+
+                              <div class="mb-3">
+                                <label for="id_consignee_regency" class="form-label">Kabupaten / Kota</label>
+                                <select id="id_consignee_regency" name="consignee_regency" class="form-select">
+                                  <option value="">---------</option>
+                                </select>
+                              </div>
+
+                              <div class="mb-3">
+                                <label for="id_consignee_district" class="form-label">Kecamatan</label>
+                                <select id="id_consignee_district" name="consignee_district" class="form-select">
+                                  <option value="">---------</option>
+                                </select>
+                              </div>
+
+                              <div class="mb-3">
+                                <label for="id_consignee_village" class="form-label">Kelurahan / Desa</label>
+                                <select id="id_consignee_village" name="consignee_village" class="form-select">
+                                  <option value="">---------</option>
+                                </select>
+                              </div>
+                            </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Simpan</button>
+      <a href="{% url 'sales:fq_list' %}" class="btn btn-secondary ms-2">Batal</a>
+    </form>
+
+  </div>
+</section>
+
+{% endblock %}
+
+
+{% block extra_css %}
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+{% endblock %}
+
+<!----------------------------------JS Helper-------------------------------------------------------------------------->
+
+{% block extra_js %}
+  <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+  <script src="{% static 'js/location_autocomplete.js' %}"></script>
+  <script src="{% static 'js/partner_autocomplete.js' %}"></script>
+
+  <script>
+    $(function () {
+      // =======================
+      //  ORIGIN / DESTINATION
+      // =======================
+      initLocationAutocomplete("#id_origin_text", "#id_origin");
+      initLocationAutocomplete("#id_destination_text", "#id_destination");
+
+      // =======================
+      //  CUSTOMER AUTOCOMPLETE
+      // =======================
+      $("#id_customer_text").data("url", "{% url 'partners:partner_autocomplete' %}?role=customer");
+      initPartnerAutocomplete("#id_customer_text", "#id_customer", null);
+
+      // =======================
+      //  SHIPPER: COPY DARI CUSTOMER
+      // =======================
+      function copyShipperFromCustomer() {
+        var name = $("#id_customer_text").val() || "";
+        $("#id_shipper_contact_name").val(name);
+
+        var item = $("#id_customer_text").data("selectedPartner") || null;
+        if (item) {
+          var phone = item.phone || item.mobile || "";
+          $("#id_shipper_phone").val(phone);
+
+          if (item.address) {
+            $("#id_shipper_address").val(item.address);
+          }
+        }
+      }
+
+      $("#id_shipper_same_as_customer").on("change", function() {
+        if (this.checked) {
+          copyShipperFromCustomer();
+          var item = $("#id_customer_text").data("selectedPartner") || null;
+          if (item) {
+            autoFillGeoFromPartner(item, "shipper");
+          }
+        }
+      });
+
+      $("#id_customer_text").on("partner:selected", function(e, item) {
+        if ($("#id_shipper_same_as_customer").is(":checked")) {
+          copyShipperFromCustomer();
+          autoFillGeoFromPartner(item, "shipper");
+        }
+      });
+
+      // =======================
+      //  CONSIGNEE AUTOCOMPLETE
+      // =======================
+      initPartnerAutocomplete("#id_consignee_text", "#id_consignee", "#id_consignee_address");
+
+      $("#id_consignee_text").on("partner:selected", function(e, item) {
+        // nama / kontak
+        var displayName = item.company_name || item.name || "";
+        $("#id_consignee_name").val(displayName);
+
+        // telp
+        var phone = item.phone || item.mobile || "";
+        $("#id_consignee_phone").val(phone);
+
+        // alamat text sudah diisi oleh helper via consignee_address textarea
+        // sekarang isi geo dropdown
+        autoFillGeoFromPartner(item, "consignee");
+      });
+
+      // =======================
+      //  GEO HELPERS (SHIPPER & CONSIGNEE)
+      // =======================
+      function resetSelect(selector, placeholder) {
+        const el = document.querySelector(selector);
+        if (!el) return;
+        el.innerHTML = "";
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = placeholder;
+        el.appendChild(opt);
+      }
+
+      function loadChildren(parentId, targetSelector, placeholder) {
+        return new Promise(function(resolve) {
+          const target = document.querySelector(targetSelector);
+          if (!target) {
+            resolve();
+            return;
+          }
+
+          resetSelect(targetSelector, "Loading...");
+
+          if (!parentId) {
+            resetSelect(targetSelector, placeholder);
+            resolve();
+            return;
+          }
+
+          fetch(`/geo/children/?parent=${parentId}`)
+            .then((res) => res.json())
+            .then((data) => {
+              resetSelect(targetSelector, placeholder);
+              data.forEach(item => {
+                const opt = document.createElement("option");
+                opt.value = item.id;
+                opt.textContent = item.name;
+                target.appendChild(opt);
+              });
+              resolve();
+            })
+            .catch((err) => {
+              console.error("loadChildren error:", err);
+              resetSelect(targetSelector, placeholder);
+              resolve();
+            });
+        });
+      }
+
+      // cascading manual untuk SHIPPER
+      const spProvince  = document.getElementById("id_shipper_province");
+      const spRegency   = document.getElementById("id_shipper_regency");
+      const spDistrict  = document.getElementById("id_shipper_district");
+      const spVillage   = document.getElementById("id_shipper_village");
+
+      if (spProvince) {
+        spProvince.addEventListener("change", function() {
+          const val = this.value || "";
+          loadChildren(val, "#id_shipper_regency", "-- Pilih Kab/Kota --");
+          resetSelect("#id_shipper_district", "-- Pilih Kecamatan --");
+          resetSelect("#id_shipper_village", "-- Pilih Kelurahan/Desa --");
+        });
+      }
+
+      if (spRegency) {
+        spRegency.addEventListener("change", function() {
+          const val = this.value || "";
+          loadChildren(val, "#id_shipper_district", "-- Pilih Kecamatan --");
+          resetSelect("#id_shipper_village", "-- Pilih Kelurahan/Desa --");
+        });
+      }
+
+      if (spDistrict) {
+        spDistrict.addEventListener("change", function() {
+          const val = this.value || "";
+          loadChildren(val, "#id_shipper_village", "-- Pilih Kelurahan/Desa --");
+        });
+      }
+
+      // cascading manual untuk CONSIGNEE
+      const cgProvince  = document.getElementById("id_consignee_province");
+      const cgRegency   = document.getElementById("id_consignee_regency");
+      const cgDistrict  = document.getElementById("id_consignee_district");
+      const cgVillage   = document.getElementById("id_consignee_village");
+
+      if (cgProvince) {
+        cgProvince.addEventListener("change", function() {
+          const val = this.value || "";
+          loadChildren(val, "#id_consignee_regency", "-- Pilih Kab/Kota --");
+          resetSelect("#id_consignee_district", "-- Pilih Kecamatan --");
+          resetSelect("#id_consignee_village", "-- Pilih Kelurahan/Desa --");
+        });
+      }
+
+      if (cgRegency) {
+        cgRegency.addEventListener("change", function() {
+          const val = this.value || "";
+          loadChildren(val, "#id_consignee_district", "-- Pilih Kecamatan --");
+          resetSelect("#id_consignee_village", "-- Pilih Kelurahan/Desa --");
+        });
+      }
+
+      if (cgDistrict) {
+        cgDistrict.addEventListener("change", function() {
+          const val = this.value || "";
+          loadChildren(val, "#id_consignee_village", "-- Pilih Kelurahan/Desa --");
+        });
+      }
+
+      // =======================
+      //  AUTO FILL GEO FROM PARTNER
+      //  prefix: "shipper" atau "consignee"
+      // =======================
+      async function autoFillGeoFromPartner(item, prefix) {
+        if (!item) return;
+
+        const provId = item.province_id || null;
+        const regId  = item.regency_id || null;
+        const distId = item.district_id || null;
+        const villId = item.village_id || null;
+
+        const selProv = "#id_" + prefix + "_province";
+        const selReg  = "#id_" + prefix + "_regency";
+        const selDist = "#id_" + prefix + "_district";
+        const selVill = "#id_" + prefix + "_village";
+
+        // 1) Provinsi
+        if (provId) {
+          $(selProv).val(provId);
+        }
+
+        // 2) Kabupaten
+        if (provId && regId) {
+          await loadChildren(provId, selReg, "-- Pilih Kab/Kota --");
+          $(selReg).val(regId);
+        } else if (provId) {
+          await loadChildren(provId, selReg, "-- Pilih Kab/Kota --");
+        }
+
+        // 3) Kecamatan
+        if (regId && distId) {
+          await loadChildren(regId, selDist, "-- Pilih Kecamatan --");
+          $(selDist).val(distId);
+        } else if (regId) {
+          await loadChildren(regId, selDist, "-- Pilih Kecamatan --");
+        }
+
+        // 4) Kelurahan
+        if (distId && villId) {
+          await loadChildren(distId, selVill, "-- Pilih Kelurahan/Desa --");
+          $(selVill).val(villId);
+        } else if (distId) {
+          await loadChildren(distId, selVill, "-- Pilih Kelurahan/Desa --");
+        }
+      }
+    });
+  </script>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelectorAll('input[type="date"]').forEach(function (el) {
+        el.addEventListener("focus", function () {
+          if (typeof el.showPicker === "function") {
+            // Chrome / Edge: langsung buka date picker
+            el.showPicker();
+          }
+        });
+      });
+    });
+    </script>
+
+<script>
+ // ======================================
+ //  CALCULATION
+ //=======================================
+ // 
+(function($){
+
+  /* ========= Parser canonical & formatter Indonesia ========= */
+
+  window.toCanonical = window.toCanonical || function(raw){
+    if (raw == null) return "0";
+    let s = String(raw).trim();
+    if (!s) return "0";
+    s = s.replace(/\s|\u00A0/g, "").replace(/[Rp$€£¥₫%]/g, "");
+
+    const hasC = s.includes(","), hasD = s.includes(".");
+    if (hasC && hasD) {
+      const lastC = s.lastIndexOf(","), lastD = s.lastIndexOf(".");
+      if (lastC > lastD) s = s.replace(/\./g,"").replace(",",".");
+      else               s = s.replace(/,/g,"");
+    } else if (hasC) {
+      s = s.replace(/\./g,"").replace(",","." );
+    } else if (hasD) {
+      const parts = s.split(".");
+      if (parts.length > 2) {
+        const last = parts.pop();
+        s = parts.join("") + "." + last;
+      } else {
+        s = s.replace(/,/g,"");
+      }
+    }
+    return (/^-?\d+(\.\d+)?$/.test(s)) ? s : "0";
+  };
+
+  const nfID = new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  function toID(n){
+    const x = Number(n);
+    return Number.isFinite(x) ? nfID.format(x) : "0,00";
+  }
+
+  /* ========= Hitung ulang Freight (single-line) ========= */
+
+  function recalcFreight(){
+    const qty    = Number(toCanonical($("#id_quantity").val())) || 0;
+    const price  = Number(toCanonical($("#id_unit_price").val())) || 0;
+    const taxPct = Number(toCanonical($("#id_tax_percent").val())) || 0;
+
+    const amount = qty * price;
+    const tax    = amount * (taxPct / 100.0);
+    const total  = amount + tax;
+
+    $("#id_amount").val(      toID(amount) );
+    $("#id_tax_amount").val(  toID(tax) );
+    $("#id_total_amount").val(toID(total) );
+  }
+
+  /* ========= Binding event ========= */
+
+  $(function(){
+
+    const $qty   = $("#id_quantity");
+    const $price = $("#id_unit_price");
+    const $taxP  = $("#id_tax_percent");
+
+    /* === DEFAULT FORMAT === */
+  // NORMALISASI NILAI AWAL DARI DJANGO → FORMAT INDONESIA
+  [$qty, $price, $taxP].forEach(function($el){
+    if (!$el.length) return;
+    const canon = toCanonical($el.val());   // "1" / "0" / "" → "1" / "0" / "0"
+    $el.val( toID(canon) );                 // → "1,00" / "0,00"
+  });
+
+    /* === Fokus: raw + select === */
+    $(document).on("focus.fq", "#id_quantity, #id_unit_price, #id_tax_percent", function(){
+      const canon = toCanonical($(this).val());
+      const n = Number(canon);
+      $(this).val(Number.isFinite(n) ? String(n) : "");
+      setTimeout(() => this.select(), 10);
+    });
+
+    /* === Input: hitung live === */
+    $(document).on("input.fq", "#id_quantity, #id_unit_price, #id_tax_percent", function(){
+      recalcFreight();
+    });
+
+    /* === Blur: format ke Indonesia === */
+    $(document).on("blur.fq", "#id_quantity, #id_unit_price, #id_tax_percent", function(){
+      const canon = toCanonical($(this).val());
+      $(this).val( toID(canon) );
+      recalcFreight();
+    });
+
+    /* === Hitung awal === */
+    recalcFreight();
+
+    /* === Submit: canonical untuk server === */
+    const $form = $qty.closest("form");
+    if ($form.length){
+      $form.on("submit.fqCanonical", function(){
+        [
+          "#id_quantity",
+          "#id_unit_price",
+          "#id_amount",
+          "#id_tax_percent",
+          "#id_tax_amount",
+          "#id_total_amount",
+        ].forEach(sel =>{
+          const $el = $(sel);
+          if ($el.length){
+            $el.val( toCanonical($el.val()) );
+          }
+        });
+      });
+    }
+  });
+
+})(jQuery);
+</script>
+<script>
+(function($){
+
+  // === AUTO-FILL SAMPLE DATA ===
+  function fillSampleData(){
+
+    // ----- SAMPLE FIELD: Header -----
+    $("#id_customer").val($("#id_customer option:eq(1)").val());   // pilih opsi kedua
+    $("#id_sales_service").val($("#id_sales_service option:eq(1)").val());
+    $("#id_payment_term").val($("#id_payment_term option:eq(1)").val());
+    $("#id_currency").val("IDR");
+    $("#id_sales_agency").val($("#id_sales_agency option:eq(1)").val());
+    $("#id_valid_until").val("2025-12-31");
+
+    // ----- SAMPLE FIELD: Cargo Information -----
+    $("#id_cargo_name").val("Coal");
+    $("#id_hs_code").val("2701");   // HS code coal
+    $("#id_commodity").val("Raw Material");
+    $("#id_package_count").val("1");
+    $("#id_package_type").val("Bulk");
+    $("#id_gross_weight").val("1000");
+    $("#id_weight_uom_fk").val($("#id_weight_uom_fk option:eq(1)").val());
+    $("#id_volume").val("20");
+    $("#id_volume_uom_fk").val($("#id_volume_uom_fk option:eq(1)").val());
+    $("#id_is_dg").prop("checked", false);
+    $("#id_dg_class").val("");
+
+    // ----- SAMPLE FIELD: Pricing -----
+    // Format Indonesia (biar JS kita bisa handle)
+    $("#id_quantity").val("1,00");
+    $("#id_unit_price").val("100000,00");
+    $("#id_tax_percent").val("11,00");
+
+    // Recalculate
+    if (typeof window.recalcFreight === "function"){
+        window.recalcFreight();
+    }
+  }
+
+  // === Saat klik SAVE → isi SAMPLE lalu submit ===
+  $(document).on("click", "#btn-save", function(e){
+    alert ('test');
+      // aktifkan auto-fill
+      fillSampleData();
+      console.log("DEBUG: Sample data filled.");
+
+      // Biarkan proses submit lanjut → agar JS normalisasi jalan → form dikirim
+      return true;
+  });
+
+})(jQuery);
+</script>
+
+{% endblock%}{% extends "main.html" %}
+{% load static %}
+
+{% block content %}
+
+{% if form.errors %}
+<div class="alert alert-danger">
+    <strong>DEBUG — form.errors:</strong>
+    <pre>{{ form.errors.as_json }}</pre>
+</div>
+{% endif %}
+
+{% if form.non_field_errors %}
+<div class="alert alert-warning">
+    <strong>Non-field errors:</strong>
+    <ul>
+        {% for err in form.non_field_errors %}
+        <li>{{ err }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+
+<section class="content">
+  <div class="container-fluid">
+
+    <h3 class="mb-3">
+      {% if quotation %}
+        Edit Freight Quotation {{ quotation.number }}
+      {% else %}
+        Tambah Freight Quotation
+      {% endif %}
+    </h3>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      {% if form.errors %}
+        <div class="alert alert-danger">
+          Ada kesalahan pada form. Periksa field yang ditandai merah.
+        </div>
+      {% endif %}
+
+      <div class="row">
+        <div class="col-md-12">
+
+          {# ====================== #}
+          {#  CARD: CUSTOMER        #}
+          {# ====================== #}
+          <div class="card card-primary">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Customer</h3>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4">
+                    
+                      <label for="id_customer_text" class="form-label">Customer 1</label>
+                      <input type="text"
+                            id="id_customer_text"
+                            class="form-control js-partner"
+                            data-url="{% url 'partners:partner_autocomplete' %}?role=customer"
+                            value="{% if form.instance.customer %}{{ form.instance.customer.company_name|default:form.instance.customer.name }}{% endif %}">
+                      <input type="hidden"
+                            id="id_customer"
+                            name="customer"
+                            value="{% if form.instance.customer_id %}{{ form.instance.customer_id }}{% endif %}">               
+                   
+                </div>
+                <div class="col-md-4">
+                    {{ form.sales_service.label_tag }} {{ form.sales_service }}
+                </div>    
+                <div class="col-md-4">
+                    {{ form.sales_agency.label_tag }} {{ form.sales_agency }}
+                </div>
+                              
+              </div>
+              <div class="row">
+                <div class="col-md-4">
+                      
+                        {{ form.payment_term.label_tag }} {{ form.payment_term }}
+                     
+                </div>
+                <div class="col-md-4">
+                      
+                        {{ form.currency.label_tag }} {{ form.currency }}
+                    
+                </div>
+                <div class="col-md-4">
+                     
+                        {{ form.valid_until.label_tag }} {{ form.valid_until }}
+                     
+                </div>
+
+               
+              </div>
+            </div>
+          </div>
+          {# ====================== #}
+          {#  CARD: CARGO           #}
+          {# ====================== #}
+          <div class="card mb-3">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Cargo information</h3>
+            </div>
+
+            <div class="card-body">
+              <!-- Row 1: Cargo name + HS code -->
+              <div class="row g-3">
+                <div class="col-12 col-lg-8">
+                  <label class="form-label mb-1" for="{{ form.cargo_name.id_for_label }}">
+                    Cargo name
+                  </label>
+                  {{ form.cargo_name }}
+                </div>
+
+                <div class="col-12 col-lg-4">
+                  <label class="form-label mb-1" for="{{ form.hs_code.id_for_label }}">
+                    HS code
+                  </label>
+                  {{ form.hs_code }}
+                </div>
+              </div>
+
+              <!-- Row 3: Package count + type -->
+              <div class="row g-3 mt-2">
+                 <div class="col-6 col-md-3">
+                    <label class="form-label mb-1" for="{{ form.package_count.id_for_label }}">
+                      Package count
+                    </label>
+                    {{ form.package_count }}
+                  </div>
+
+                  <!-- Package Type (UOM) -->
+                  <div class="col-6 col-md-3">
+                    <label class="form-label mb-1" for="{{ form.package_uom.id_for_label }}">
+                      Package type
+                    </label>
+                    {{ form.package_uom }}
+                  </div>
+              </div>
+
+              <!-- Row 4: Weight & Volume -->
+              <div class="row g-3 mt-2">
+                <div class="col-6 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.gross_weight.id_for_label }}">
+                    Gross weight
+                  </label>
+                  {{ form.gross_weight }}
+                </div>
+
+                <div class="col-6 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.weight_uom.id_for_label }}">
+                    Weight UOM
+                  </label>
+                  {{ form.weight_uom }}
+                </div>
+
+                <div class="col-6 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.volume_cbm.id_for_label }}">
+                    Volume
+                  </label>
+                  {{ form.volume_cbm }}
+                </div>
+
+                <div class="col-6 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.volume_uom.id_for_label }}">
+                    Volume UOM
+                  </label>
+                  {{ form.volume_uom }}
+                </div>
+              </div>
+
+              <!-- Row 5: DG + Plan date -->
+              <div class="row g-3 mt-2">
+                <div class="col-12 col-md-4 d-flex align-items-center">
+                  <div class="form-check mt-2">
+                    {{ form.is_dangerous_goods }}
+                    <label class="form-check-label ms-1" for="{{ form.is_dangerous_goods.id_for_label }}">
+                      Dangerous goods
+                    </label>
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label mb-1" for="{{ form.dangerous_goods_class.id_for_label }}">
+                    DG class
+                  </label>
+                  {{ form.dangerous_goods_class }}
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label mb-1" for="{{ form.shipment_plan_date.id_for_label }}">
+                    Shipment plan date
+                  </label>
+                  {{ form.shipment_plan_date }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {# ====================== #}
+          {#  CARD: PRICE & AMOUNT  #}
+          {# ====================== #}
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="card-title mb-0">Pricing &amp; Tax</h3>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+
+      <!-- Quantity -->
+      <div class="col-12 col-md-3">
+        <label class="form-label mb-1" for="{{ form.quantity.id_for_label }}">
+          Quantity
+        </label>
+        <div class="input-group">
+          {{ form.quantity }}
+          <span class="input-group-text">x</span>
+        </div>
+      </div>
+
+      <!-- Unit Price -->
+      <div class="col-12 col-md-3">
+        <label class="form-label mb-1" for="{{ form.unit_price.id_for_label }}">
+          Unit price
+        </label>
+        <div class="input-group">
+          <span class="input-group-text">Rp</span>
+          {{ form.unit_price }}
+        </div>
+      </div>
+
+      <!-- Amount (subtotal) -->
+      <div class="col-12 col-md-3">
+        <label class="form-label mb-1" for="{{ form.amount.id_for_label }}">
+          Amount
+        </label>
+        <div class="input-group">
+          <span class="input-group-text">Rp</span>
+          {{ form.amount }}
+        </div>
+      </div>
+
+      <!-- Tax Percent -->
+      <div class="col-6 col-md-3">
+        <label class="form-label mb-1" for="{{ form.tax_percent.id_for_label }}">
+          Tax %
+        </label>
+        <div class="input-group">
+          {{ form.tax_percent }}
+          <span class="input-group-text">%</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="row g-3 mt-2">
+      <!-- Tax Amount -->
+      <div class="col-12 col-md-3">
+        <label class="form-label mb-1" for="{{ form.tax_amount.id_for_label }}">
+          Tax amount
+        </label>
+        <div class="input-group">
+          <span class="input-group-text">Rp</span>
+          {{ form.tax_amount }}
+        </div>
+      </div>
+
+      <!-- Total Amount -->
+      <div class="col-12 col-md-3">
+        <label class="form-label mb-1" for="{{ form.total_amount.id_for_label }}">
+          Total amount
+        </label>
+        <div class="input-group">
+          <span class="input-group-text">Rp</span>
+          {{ form.total_amount }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+          {# ====================== #}
+          {#  CARD: ROUTE           #}
+          {# ====================== #}
+          <div class="card card-primary">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Route</h3>
+            </div>
+            <div class="card-body">
+
+              <div class="row">
+                <!-- ORIGIN -->
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="id_origin_text" class="form-label">Origin</label>
+
+                    <input type="text"
+                           id="id_origin_text"
+                           class="form-control js-location"
+                           data-url="/geo/locations/autocomplete/"
+                           value="{% if form.instance.origin %}{{ form.instance.origin.name }}{% endif %}">
+
+                    <input type="hidden" id="id_origin" name="origin"
+                           value="{% if form.instance.origin_id %}{{ form.instance.origin_id }}{% endif %}">
+
+                    {% for err in form.origin.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+
+                <!-- DESTINATION -->
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="id_destination_text" class="form-label">Destination</label>
+
+                    <input type="text"
+                           id="id_destination_text"
+                           class="form-control js-location"
+                           data-url="/geo/locations/autocomplete/"
+                           value="{% if form.instance.destination %}{{ form.instance.destination.name }}{% endif %}">
+
+                    <input type="hidden" id="id_destination" name="destination"
+                           value="{% if form.instance.destination_id %}{{ form.instance.destination_id }}{% endif %}">
+
+                    {% for err in form.destination.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {# ====================== #}
+          {#  CARD: SHIPPER         #}
+          {# ====================== #}
+          <div class="card card-secondary">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Shipper</h3>
+            </div>
+            <div class="card-body">
+
+              <div class="form-check mb-3">
+                <input type="checkbox"
+                       class="form-check-input"
+                       id="id_shipper_same_as_customer">
+                <label class="form-check-label" for="id_shipper_same_as_customer">
+                  Shipper sama dengan Customer
+                </label>
+              </div>
+
+              <div class="row">
+                <!-- Kolom kiri: contact & alamat text -->
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="id_shipper_contact_name" class="form-label">Nama / Kontak</label>
+                    <input type="text" id="id_shipper_contact_name" name="shipper_contact_name" class="form-control">
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_shipper_phone" class="form-label">No. Telp</label>
+                    <input type="text" id="id_shipper_phone" name="shipper_phone"
+                           class="form-control">
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_shipper_address" class="form-label">Alamat</label>
+                    <textarea id="id_shipper_address" name="shipper_address"
+                              rows="3" class="form-control"></textarea>
+                  </div>
+                </div>
+
+                <!-- Kolom kanan: dropdown geo -->
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="id_shipper_province" class="form-label">Provinsi</label>
+                    <select id="id_shipper_province" name="shipper_province" class="form-select">
+                      <option value="">---------</option>
+                      {% for prov in provinces %}
+                        <option value="{{ prov.id }}">{{ prov.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_shipper_regency" class="form-label">Kabupaten / Kota</label>
+                    <select id="id_shipper_regency" name="shipper_regency" class="form-select">
+                      <option value="">---------</option>
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_shipper_district" class="form-label">Kecamatan</label>
+                    <select id="id_shipper_district" name="shipper_district" class="form-select">
+                      <option value="">---------</option>
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="id_shipper_village" class="form-label">Kelurahan / Desa</label>
+                    <select id="id_shipper_village" name="shipper_village" class="form-select">
+                      <option value="">---------</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          
+          
+          {# ====================== #}
+          {#  CARD: CONSIGNEE       #}
+          {# ====================== #}
+          <div class="card card-secondary">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Consignee</h3>
+            </div>
+            <div class="card-body">           
+              <div class="row">
+                            <!-- Kolom kiri: contact & alamat text -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                            <label for="id_consignee_text" class="form-label">Cari consignee (partner)</label>
+                            <input type="text"
+                                  id="id_consignee_text"
+                                  class="form-control js-partner"
+                                  data-url="{% url 'partners:partner_autocomplete' %}"
+                                  value="">
+                            <input type="hidden"
+                                  id="id_consignee"
+                                  name="consignee"
+                                  value="">
+                          </div>
+                              <div class="mb-3">
+                                <label for="id_consignee_name" class="form-label">Nama / Kontak</label>
+                                <input type="text" id="id_consignee_name" name="consignee_name"
+                                      class="form-control">
+                              </div>
+
+                              <div class="mb-3">
+                                <label for="id_consignee_phone" class="form-label">No. Telp</label>
+                                <input type="text" id="id_consignee_phone" name="consignee_phone"
+                                      class="form-control">
+                              </div>
+
+                              <div class="mb-3">
+                                <label for="id_consignee_address" class="form-label">Alamat</label>
+                                <textarea id="id_consignee_address" name="consignee_address"
+                                          rows="3" class="form-control"></textarea>
+                              </div>
+                              <div class="mb-3">
+
+                                  <div class="form-check mt-2">
+                                  <input class="form-check-input"
+                                        type="checkbox"
+                                        id="id_consignee_save_partner"
+                                        name="consignee_save_partner">
+                                  <label class="form-check-label" for="id_consignee_save_partner">
+                                    Simpan consignee ini sebagai partner baru
+                                  </label>
+                                </div>
+
+                              </div>
+                              
+                            </div>
+
+                            <!-- Kolom kanan: dropdown geo -->
+                            <div class="col-md-6">
+                              <div class="mb-3">
+                                <label for="id_consignee_province" class="form-label">Provinsi</label>
+                                <select id="id_consignee_province" name="consignee_province" class="form-select">
+                                  <option value="">---------</option>
+                                  {% for prov in provinces %}
+                                    <option value="{{ prov.id }}">{{ prov.name }}</option>
+                                  {% endfor %}
+                                </select>
+                              </div>
+
+                              <div class="mb-3">
+                                <label for="id_consignee_regency" class="form-label">Kabupaten / Kota</label>
+                                <select id="id_consignee_regency" name="consignee_regency" class="form-select">
+                                  <option value="">---------</option>
+                                </select>
+                              </div>
+
+                              <div class="mb-3">
+                                <label for="id_consignee_district" class="form-label">Kecamatan</label>
+                                <select id="id_consignee_district" name="consignee_district" class="form-select">
+                                  <option value="">---------</option>
+                                </select>
+                              </div>
+
+                              <div class="mb-3">
+                                <label for="id_consignee_village" class="form-label">Kelurahan / Desa</label>
+                                <select id="id_consignee_village" name="consignee_village" class="form-select">
+                                  <option value="">---------</option>
+                                </select>
+                              </div>
+                            </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Simpan</button>
+      <a href="{% url 'sales:fq_list' %}" class="btn btn-secondary ms-2">Batal</a>
+    </form>
+
+  </div>
+</section>
+
+{% endblock %}
+
+
+{% block extra_css %}
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+{% endblock %}
+
+<!----------------------------------JS Helper-------------------------------------------------------------------------->
+
+{% block extra_js %}
+  <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+  <script src="{% static 'js/location_autocomplete.js' %}"></script>
+  <script src="{% static 'js/partner_autocomplete.js' %}"></script>
+
+  <script>
+    $(function () {
+      // =======================
+      //  ORIGIN / DESTINATION
+      // =======================
+      initLocationAutocomplete("#id_origin_text", "#id_origin");
+      initLocationAutocomplete("#id_destination_text", "#id_destination");
+
+      // =======================
+      //  CUSTOMER AUTOCOMPLETE
+      // =======================
+      $("#id_customer_text").data("url", "{% url 'partners:partner_autocomplete' %}?role=customer");
+      initPartnerAutocomplete("#id_customer_text", "#id_customer", null);
+
+      // =======================
+      //  SHIPPER: COPY DARI CUSTOMER
+      // =======================
+      function copyShipperFromCustomer() {
+        var name = $("#id_customer_text").val() || "";
+        $("#id_shipper_contact_name").val(name);
+
+        var item = $("#id_customer_text").data("selectedPartner") || null;
+        if (item) {
+          var phone = item.phone || item.mobile || "";
+          $("#id_shipper_phone").val(phone);
+
+          if (item.address) {
+            $("#id_shipper_address").val(item.address);
+          }
+        }
+      }
+
+      $("#id_shipper_same_as_customer").on("change", function() {
+        if (this.checked) {
+          copyShipperFromCustomer();
+          var item = $("#id_customer_text").data("selectedPartner") || null;
+          if (item) {
+            autoFillGeoFromPartner(item, "shipper");
+          }
+        }
+      });
+
+      $("#id_customer_text").on("partner:selected", function(e, item) {
+        if ($("#id_shipper_same_as_customer").is(":checked")) {
+          copyShipperFromCustomer();
+          autoFillGeoFromPartner(item, "shipper");
+        }
+      });
+
+      // =======================
+      //  CONSIGNEE AUTOCOMPLETE
+      // =======================
+      initPartnerAutocomplete("#id_consignee_text", "#id_consignee", "#id_consignee_address");
+
+      $("#id_consignee_text").on("partner:selected", function(e, item) {
+        // nama / kontak
+        var displayName = item.company_name || item.name || "";
+        $("#id_consignee_name").val(displayName);
+
+        // telp
+        var phone = item.phone || item.mobile || "";
+        $("#id_consignee_phone").val(phone);
+
+        // alamat text sudah diisi oleh helper via consignee_address textarea
+        // sekarang isi geo dropdown
+        autoFillGeoFromPartner(item, "consignee");
+      });
+
+      // =======================
+      //  GEO HELPERS (SHIPPER & CONSIGNEE)
+      // =======================
+      function resetSelect(selector, placeholder) {
+        const el = document.querySelector(selector);
+        if (!el) return;
+        el.innerHTML = "";
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = placeholder;
+        el.appendChild(opt);
+      }
+
+      function loadChildren(parentId, targetSelector, placeholder) {
+        return new Promise(function(resolve) {
+          const target = document.querySelector(targetSelector);
+          if (!target) {
+            resolve();
+            return;
+          }
+
+          resetSelect(targetSelector, "Loading...");
+
+          if (!parentId) {
+            resetSelect(targetSelector, placeholder);
+            resolve();
+            return;
+          }
+
+          fetch(`/geo/children/?parent=${parentId}`)
+            .then((res) => res.json())
+            .then((data) => {
+              resetSelect(targetSelector, placeholder);
+              data.forEach(item => {
+                const opt = document.createElement("option");
+                opt.value = item.id;
+                opt.textContent = item.name;
+                target.appendChild(opt);
+              });
+              resolve();
+            })
+            .catch((err) => {
+              console.error("loadChildren error:", err);
+              resetSelect(targetSelector, placeholder);
+              resolve();
+            });
+        });
+      }
+
+      // cascading manual untuk SHIPPER
+      const spProvince  = document.getElementById("id_shipper_province");
+      const spRegency   = document.getElementById("id_shipper_regency");
+      const spDistrict  = document.getElementById("id_shipper_district");
+      const spVillage   = document.getElementById("id_shipper_village");
+
+      if (spProvince) {
+        spProvince.addEventListener("change", function() {
+          const val = this.value || "";
+          loadChildren(val, "#id_shipper_regency", "-- Pilih Kab/Kota --");
+          resetSelect("#id_shipper_district", "-- Pilih Kecamatan --");
+          resetSelect("#id_shipper_village", "-- Pilih Kelurahan/Desa --");
+        });
+      }
+
+      if (spRegency) {
+        spRegency.addEventListener("change", function() {
+          const val = this.value || "";
+          loadChildren(val, "#id_shipper_district", "-- Pilih Kecamatan --");
+          resetSelect("#id_shipper_village", "-- Pilih Kelurahan/Desa --");
+        });
+      }
+
+      if (spDistrict) {
+        spDistrict.addEventListener("change", function() {
+          const val = this.value || "";
+          loadChildren(val, "#id_shipper_village", "-- Pilih Kelurahan/Desa --");
+        });
+      }
+
+      // cascading manual untuk CONSIGNEE
+      const cgProvince  = document.getElementById("id_consignee_province");
+      const cgRegency   = document.getElementById("id_consignee_regency");
+      const cgDistrict  = document.getElementById("id_consignee_district");
+      const cgVillage   = document.getElementById("id_consignee_village");
+
+      if (cgProvince) {
+        cgProvince.addEventListener("change", function() {
+          const val = this.value || "";
+          loadChildren(val, "#id_consignee_regency", "-- Pilih Kab/Kota --");
+          resetSelect("#id_consignee_district", "-- Pilih Kecamatan --");
+          resetSelect("#id_consignee_village", "-- Pilih Kelurahan/Desa --");
+        });
+      }
+
+      if (cgRegency) {
+        cgRegency.addEventListener("change", function() {
+          const val = this.value || "";
+          loadChildren(val, "#id_consignee_district", "-- Pilih Kecamatan --");
+          resetSelect("#id_consignee_village", "-- Pilih Kelurahan/Desa --");
+        });
+      }
+
+      if (cgDistrict) {
+        cgDistrict.addEventListener("change", function() {
+          const val = this.value || "";
+          loadChildren(val, "#id_consignee_village", "-- Pilih Kelurahan/Desa --");
+        });
+      }
+
+      // =======================
+      //  AUTO FILL GEO FROM PARTNER
+      //  prefix: "shipper" atau "consignee"
+      // =======================
+      async function autoFillGeoFromPartner(item, prefix) {
+        if (!item) return;
+
+        const provId = item.province_id || null;
+        const regId  = item.regency_id || null;
+        const distId = item.district_id || null;
+        const villId = item.village_id || null;
+
+        const selProv = "#id_" + prefix + "_province";
+        const selReg  = "#id_" + prefix + "_regency";
+        const selDist = "#id_" + prefix + "_district";
+        const selVill = "#id_" + prefix + "_village";
+
+        // 1) Provinsi
+        if (provId) {
+          $(selProv).val(provId);
+        }
+
+        // 2) Kabupaten
+        if (provId && regId) {
+          await loadChildren(provId, selReg, "-- Pilih Kab/Kota --");
+          $(selReg).val(regId);
+        } else if (provId) {
+          await loadChildren(provId, selReg, "-- Pilih Kab/Kota --");
+        }
+
+        // 3) Kecamatan
+        if (regId && distId) {
+          await loadChildren(regId, selDist, "-- Pilih Kecamatan --");
+          $(selDist).val(distId);
+        } else if (regId) {
+          await loadChildren(regId, selDist, "-- Pilih Kecamatan --");
+        }
+
+        // 4) Kelurahan
+        if (distId && villId) {
+          await loadChildren(distId, selVill, "-- Pilih Kelurahan/Desa --");
+          $(selVill).val(villId);
+        } else if (distId) {
+          await loadChildren(distId, selVill, "-- Pilih Kelurahan/Desa --");
+        }
+      }
+    });
+  </script>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelectorAll('input[type="date"]').forEach(function (el) {
+        el.addEventListener("focus", function () {
+          if (typeof el.showPicker === "function") {
+            // Chrome / Edge: langsung buka date picker
+            el.showPicker();
+          }
+        });
+      });
+    });
+    </script>
+
+<script>
+ // ======================================
+ //  CALCULATION
+ //=======================================
+ // 
+(function($){
+
+  /* ========= Parser canonical & formatter Indonesia ========= */
+
+  window.toCanonical = window.toCanonical || function(raw){
+    if (raw == null) return "0";
+    let s = String(raw).trim();
+    if (!s) return "0";
+    s = s.replace(/\s|\u00A0/g, "").replace(/[Rp$€£¥₫%]/g, "");
+
+    const hasC = s.includes(","), hasD = s.includes(".");
+    if (hasC && hasD) {
+      const lastC = s.lastIndexOf(","), lastD = s.lastIndexOf(".");
+      if (lastC > lastD) s = s.replace(/\./g,"").replace(",",".");
+      else               s = s.replace(/,/g,"");
+    } else if (hasC) {
+      s = s.replace(/\./g,"").replace(",","." );
+    } else if (hasD) {
+      const parts = s.split(".");
+      if (parts.length > 2) {
+        const last = parts.pop();
+        s = parts.join("") + "." + last;
+      } else {
+        s = s.replace(/,/g,"");
+      }
+    }
+    return (/^-?\d+(\.\d+)?$/.test(s)) ? s : "0";
+  };
+
+  const nfID = new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  function toID(n){
+    const x = Number(n);
+    return Number.isFinite(x) ? nfID.format(x) : "0,00";
+  }
+
+  /* ========= Hitung ulang Freight (single-line) ========= */
+
+  function recalcFreight(){
+    const qty    = Number(toCanonical($("#id_quantity").val())) || 0;
+    const price  = Number(toCanonical($("#id_unit_price").val())) || 0;
+    const taxPct = Number(toCanonical($("#id_tax_percent").val())) || 0;
+
+    const amount = qty * price;
+    const tax    = amount * (taxPct / 100.0);
+    const total  = amount + tax;
+
+    $("#id_amount").val(      toID(amount) );
+    $("#id_tax_amount").val(  toID(tax) );
+    $("#id_total_amount").val(toID(total) );
+  }
+
+  /* ========= Binding event ========= */
+
+  $(function(){
+
+    const $qty   = $("#id_quantity");
+    const $price = $("#id_unit_price");
+    const $taxP  = $("#id_tax_percent");
+
+    /* === DEFAULT FORMAT === */
+  // NORMALISASI NILAI AWAL DARI DJANGO → FORMAT INDONESIA
+  [$qty, $price, $taxP].forEach(function($el){
+    if (!$el.length) return;
+    const canon = toCanonical($el.val());   // "1" / "0" / "" → "1" / "0" / "0"
+    $el.val( toID(canon) );                 // → "1,00" / "0,00"
+  });
+
+    /* === Fokus: raw + select === */
+    $(document).on("focus.fq", "#id_quantity, #id_unit_price, #id_tax_percent", function(){
+      const canon = toCanonical($(this).val());
+      const n = Number(canon);
+      $(this).val(Number.isFinite(n) ? String(n) : "");
+      setTimeout(() => this.select(), 10);
+    });
+
+    /* === Input: hitung live === */
+    $(document).on("input.fq", "#id_quantity, #id_unit_price, #id_tax_percent", function(){
+      recalcFreight();
+    });
+
+    /* === Blur: format ke Indonesia === */
+    $(document).on("blur.fq", "#id_quantity, #id_unit_price, #id_tax_percent", function(){
+      const canon = toCanonical($(this).val());
+      $(this).val( toID(canon) );
+      recalcFreight();
+    });
+
+    /* === Hitung awal === */
+    recalcFreight();
+
+    /* === Submit: canonical untuk server === */
+    const $form = $qty.closest("form");
+    if ($form.length){
+      $form.on("submit.fqCanonical", function(){
+        [
+          "#id_quantity",
+          "#id_unit_price",
+          "#id_amount",
+          "#id_tax_percent",
+          "#id_tax_amount",
+          "#id_total_amount",
+        ].forEach(sel =>{
+          const $el = $(sel);
+          if ($el.length){
+            $el.val( toCanonical($el.val()) );
+          }
+        });
+      });
+    }
+  });
+
+})(jQuery);
+</script>
+<script>
+(function($){
+
+  // === AUTO-FILL SAMPLE DATA ===
+  function fillSampleData(){
+
+    // ----- SAMPLE FIELD: Header -----
+    $("#id_customer").val($("#id_customer option:eq(1)").val());   // pilih opsi kedua
+    $("#id_sales_service").val($("#id_sales_service option:eq(1)").val());
+    $("#id_payment_term").val($("#id_payment_term option:eq(1)").val());
+    $("#id_currency").val("IDR");
+    $("#id_sales_agency").val($("#id_sales_agency option:eq(1)").val());
+    $("#id_valid_until").val("2025-12-31");
+
+    // ----- SAMPLE FIELD: Cargo Information -----
+    $("#id_cargo_name").val("Coal");
+    $("#id_hs_code").val("2701");   // HS code coal
+    $("#id_commodity").val("Raw Material");
+    $("#id_package_count").val("1");
+    $("#id_package_type").val("Bulk");
+    $("#id_gross_weight").val("1000");
+    $("#id_weight_uom_fk").val($("#id_weight_uom_fk option:eq(1)").val());
+    $("#id_volume").val("20");
+    $("#id_volume_uom_fk").val($("#id_volume_uom_fk option:eq(1)").val());
+    $("#id_is_dg").prop("checked", false);
+    $("#id_dg_class").val("");
+
+    // ----- SAMPLE FIELD: Pricing -----
+    // Format Indonesia (biar JS kita bisa handle)
+    $("#id_quantity").val("1,00");
+    $("#id_unit_price").val("100000,00");
+    $("#id_tax_percent").val("11,00");
+
+    // Recalculate
+    if (typeof window.recalcFreight === "function"){
+        window.recalcFreight();
+    }
+  }
+
+  // === Saat klik SAVE → isi SAMPLE lalu submit ===
+  $(document).on("click", "#btn-save", function(e){
+    alert ('test');
+      // aktifkan auto-fill
+      fillSampleData();
+      console.log("DEBUG: Sample data filled.");
+
+      // Biarkan proses submit lanjut → agar JS normalisasi jalan → form dikirim
+      return true;
+  });
+
+})(jQuery);
+</script>
+
+{% endblock%}
