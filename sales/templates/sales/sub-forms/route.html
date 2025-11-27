@@ -1,1 +1,51 @@
- 
+
+<div class="card card mt-3">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Route</h3>
+            </div>
+            <div class="card-body">
+
+              <div class="row">
+                <!-- ORIGIN -->
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="id_origin_text" class="form-label">Origin</label>
+
+                    <input type="text"
+                           id="id_origin_text"
+                           class="form-control js-location"
+                           data-url="/geo/locations/autocomplete/"
+                           value="{% if form.instance.origin %}{{ form.instance.origin.name }}{% endif %}">
+
+                    <input type="hidden" id="id_origin" name="origin"
+                           value="{% if form.instance.origin_id %}{{ form.instance.origin_id }}{% endif %}">
+
+                    {% for err in form.origin.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+
+                <!-- DESTINATION -->
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="id_destination_text" class="form-label">Destination</label>
+
+                    <input type="text"
+                           id="id_destination_text"
+                           class="form-control js-location"
+                           data-url="/geo/locations/autocomplete/"
+                           value="{% if form.instance.destination %}{{ form.instance.destination.name }}{% endif %}">
+
+                    <input type="hidden" id="id_destination" name="destination"
+                           value="{% if form.instance.destination_id %}{{ form.instance.destination_id }}{% endif %}">
+
+                    {% for err in form.destination.errors %}
+                      <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+ </div>

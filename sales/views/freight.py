@@ -240,12 +240,12 @@ class FqCreateView(LoginRequiredMixin, FqSaveMixin, CreateView):
         ctx = super().get_context_data(**kwargs)
         ctx["provinces"] = Location.objects.filter(kind="province").order_by("name")
         return ctx
-    
-
-class FqUpdateView(LoginRequiredMixin, FqSaveMixin, CreateView):
+ 
+from django.views.generic import UpdateView  # pastikan ini di-import
+class FqUpdateView(LoginRequiredMixin, FqSaveMixin, UpdateView):
     model = FreightQuotation
     form_class = FreightQuotationForm
-    template_name = "sales/freight_quotation_form.html"
+    template_name = "sales/quotation_form.html"
     context_object_name = "quotation"
 
     def get_form_kwargs(self):
@@ -254,19 +254,39 @@ class FqUpdateView(LoginRequiredMixin, FqSaveMixin, CreateView):
         return kwargs
 
     def form_valid(self, form):
-        obj: FreightQuotation = form.save()
-        messages.success(self.request, f"Freight quotation {obj.number or obj.pk} berhasil disimpan.")
-        return super().form_valid(form)
+        obj = form.save(commit=False)
 
-    def get_success_url(self):
-        # tetap di halaman edit yg sama
-        return reverse_lazy("sales:freight_quotation_edit", kwargs={"pk": self.object.pk})
-    
+        # isi snapshot shipper & consignee dari POST kalau perlu
+        self._fill_shipper_consignee_from_request(obj)
+
+        obj.save()
+        messages.success(self.request, f"Freight quotation {obj.number} berhasil diperbarui.")
+        return redirect("sales:fq_detail", pk=obj.pk)
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+        fq = self.object
+
         ctx["provinces"] = Location.objects.filter(kind="province").order_by("name")
+
+        def children(kind, parent_obj):
+            if not parent_obj:
+                return Location.objects.none()
+            return Location.objects.filter(kind=kind, parent=parent_obj).order_by("name")
+
+        # SHIPPER chain
+        ctx["shipper_regencies"] = children("regency", fq.shipper_province)
+        ctx["shipper_districts"] = children("district", fq.shipper_regency)
+        ctx["shipper_villages"] = children("village", fq.shipper_district)
+
+        # CONSIGNEE chain
+        ctx["consignee_regencies"] = children("regency", fq.consignee_province)
+        ctx["consignee_districts"] = children("district", fq.consignee_regency)
+        ctx["consignee_villages"] = children("village", fq.consignee_district)
+
+        ctx["page_title"] = f"Edit Freight Quotation {fq.number}"
         return ctx
-    
+
 
 
 class FqDetailView(LoginRequiredMixin, DetailView):

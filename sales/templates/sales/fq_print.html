@@ -27,12 +27,16 @@
       /* border: 1px solid #ccc; ← DIBUANG */
     }
 
+    .quotation-header {
+      font-size: 24px;
+      text-align: center;
+    }
     /* HEADER */
     .header-table {
       width: 100%;
       padding-bottom: 10px;
       margin-bottom: 12px;
-      border-bottom: 2px solid #888;
+      border-bottom: 0px solid #888;
     }
     .header-table td {
       vertical-align: top;
@@ -67,25 +71,28 @@
     }
 
     /* PRICING TABLE */
-    table.pricing {
+    table.pricing, table.service {
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
       font-size: 12px;
     }
-    table.pricing th {
+    table.pricing th,
+    table.service th {
       background: #f0f0f0;
       padding: 6px;
       border: 1px solid #ddd;
       font-weight: bold;
     }
-    table.pricing td {
+    table.pricing td,
+    table.service td {
       padding: 6px;
       border: 1px solid #e2e2e2;
     }
 
     .text-right { text-align: right; }
     .text-center { text-align: center; }
+    .text-left { text-align: left; }
 
     .footer-sign {
       margin-top: 28px;
@@ -146,6 +153,35 @@
       margin-bottom: 3px;
     }
 
+  .customer-notes table {
+    width: 100% !important;
+    border:none;
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+    table-layout: fixed; /* supaya kolom stabil */
+    font-size: 12px;
+  }
+
+  .customer-notes colgroup col {
+    width: 50% !important;   /* paksa 2 kolom seimbang */
+  }
+
+  .customer-notes td,
+  .customer-notes th {
+    border: 0px solid #555 !important; 
+    padding: 3px 6px !important;
+    vertical-align: top;
+  }
+
+  .customer-notes p {
+    margin: 0 0 4px 0 !important;  /* hilangin margin besar bawaan TinyMCE */
+  }
+
+  .customer-notes ul,
+  .customer-notes ol {
+    margin: 0 0 4px 16px !important;
+    padding: 0;
+  }
   </style>
 </head>
 
@@ -168,82 +204,61 @@
       </td>
       <td style="width: 50%;">
         <div class="company-info">
-          <strong>PT Dakara Samudera Hanasta</strong><br>
-          Jl. H. R. Rasuna Said No. 1, Jakarta<br>
-          Phone: +62-21-1234567<br>
-          Email: cs@dakarash.co.id
+          
         </div>
       </td>
     </tr>
   </table>
 
-  <!-- TITLE + INFO -->
-  <h1>FREIGHT QUOTATION</h1>
-  <p style="margin:3px 0 12px 0; line-height:1.5;">
-    Quotation No: <strong>{{ fq.number }}</strong><br>
-    Date: {{ fq.quotation_date|date:"d M Y" }}<br>
-    Valid Until: {{ fq.valid_until|date:"d M Y" }}
-  </p>
+  <table style="width:100%">
+    <tr>
+      <td class="text-left" style="width:50%">
+        <div class="customer-address">
+        <strong>To</strong><br>  
+        Mr. mr <br>
+        <strong>{{ fq.customer.company_name|default:fq.customer.name }}</strong><br>
+        {{ fq.customer_address_text|linebreaksbr }}
+      </div>
 
-  <!-- TO CUSTOMER -->
-  <div class="section-title">To:</div>
-  <div class="field-value" style="line-height:1.5;">
-    <strong>{{ fq.customer.company_name|default:fq.customer.name }}</strong><br>
-    {% if fq.customer_contact %}
-      Attn: {{ fq.customer_contact.name }}<br>
-    {% endif %}
-    {% if fq.customer.address_line1 %}
-      {{ fq.customer.address_line1 }}<br>
-    {% elif fq.customer.address %}
-      {{ fq.customer.address }}<br>
-    {% endif %}
-    {{ fq.customer.city }} {{ fq.customer.province }}
-  </div>
+      </td>
+      <td class="text-right" style="vertical-align: top;"><h3 style="margin-bottom: 0px;">QUOTATION</h3>#{{ fq.number }}</td>
 
-  <!-- SUBJECT -->
-  <div class="section-title">Subject</div>
-  <p style="margin: 3px 0 10px 0;">
-    Freight Quotation No. {{ fq.number }}
-  </p>
+    </tr>
 
-  <!-- OPENING -->
-  <p style="line-height:1.6; margin-bottom: 14px;">
-    Dear {{ fq.customer_contact.name|default:"Sir/Madam" }},<br><br>
-    Thank you for the opportunity to submit our quotation.
-    Here is the summary of our freight proposal based on the shipment details provided.
-  </p>
+  </table>
+  <br>
+  <br>
+  <br>
+  <table class="service">
+    <tr>
+      <td style="width:18%">
+         <div class="field-label">Service</div>
+        <div class="field-value">{{ fq.sales_service.name }}</div>
+      </td>
+      <td>
+        <div class="field-label">Route</div>
+        <div class="field-value">{{ fq.route_name }}</div>
+      </td>
+      <td style="width:15%">
+        <div class="field-label">Shipment Plan</div>
+        <div class="field-value">{{ fq.shipment_plan_date|date:"d M Y"|default:"-" }}</div>
+      </td>
+      <td style="width:15%">
+        <div class="field-label">Qoutation Date</div>
+        <div class="field-value">{{ fq.shipment_plan_date|date:"d M Y"|default:"-" }}</div>
+      </td>
+      <td class="text-right" style="width:15%">
+        <div class="field-label">Valid Until</div>
+        <div class="field-value">{{ fq.shipment_plan_date|date:"d M Y"|default:"-" }}</div>
+      </td>
+    </tr>
 
-  <!-- SHIPMENT SUMMARY -->
-  <div class="section-title">Shipment Summary</div>
-
-  <div class="field-label">Service</div>
-  <div class="field-value">{{ fq.sales_service.name }}</div>
-
-  <div class="field-label">Route</div>
-  <div class="field-value">{{ fq.route_name }}</div>
-
-  <div class="field-label">Shipment Plan</div>
-  <div class="field-value">{{ fq.shipment_plan_date|date:"d M Y"|default:"-" }}</div>
-
-  <div class="field-label">Cargo</div>
-  <div class="field-value">
-    {{ fq.cargo_name }}{% if fq.hs_code %} (HS: {{ fq.hs_code }}){% endif %}
-  </div>
-
-  <div class="field-label">Package Details</div>
-  <div class="field-value">
-    {{ fq.package_count }} pkg |
-    G.W: {{ fq.gross_weight }} {{ fq.weight_uom.code|default_if_none:"" }} |
-    Volume: {{ fq.volume_cbm }} CBM
-  </div>
-
-  <!-- PRICING -->
-  <div class="section-title">Pricing</div>
+   </table>
 
  <table class="pricing">
   <thead>
     <tr>
-      <th>Description</th>
+      <th class="text-left">Cargo Description</th>
       <th class="text-center" style="width:45px;">Qty</th>
       <th class="text-right"  style="width:95px;">Unit Price</th>
       <th class="text-right"  style="width:95px;">Amount</th>
@@ -253,7 +268,12 @@
   <tbody>
     <!-- BARIS UTAMA (ITEM) -->
     <tr>
-      <td>{{ fq.cargo_name }} ({{ fq.route_name }})</td>
+      <td>{{ fq.cargo_name }} <br/>
+          {{ fq.package_count }} pkg |
+    G.W: {{ fq.gross_weight }} {{ fq.weight_uom.code|default_if_none:"" }} |
+    Volume: {{ fq.volume_cbm }} CBM
+        
+      </td>
 
       <!-- Qty: angka saja (tanpa mata uang) -->
       <td class="text-center">
@@ -278,7 +298,7 @@
 
     <!-- BARIS DISCOUNT -->
     <tr>
-      <td colspan="4" class="text-right">
+      <td colspan="4" class="text-right" style="border:none">
         Disc ({{ fq.discount_percent|indo_number:2 }}%)
       </td>
       <td class="text-right">
@@ -288,7 +308,7 @@
 
     <!-- BARIS TAX -->
     <tr>
-      <td colspan="4" class="text-right">
+      <td colspan="4" class="text-right" style="border:none">
         Tax ({{ fq.tax_percent|indo_number:2 }}%)
       </td>
       <td class="text-right">
@@ -298,7 +318,7 @@
 
     <!-- BARIS TOTAL AKHIR -->
     <tr>
-      <td colspan="4" class="text-right"><strong>Total</strong></td>
+      <td colspan="4" class="text-right" style="border:none"><strong>Total</strong></td>
       <td class="text-right">
         <strong>{{ fq.total_amount|indo_currency:fq.currency.code }}</strong>
       </td>
@@ -310,54 +330,14 @@
 
   <!-- NOTES -->
   {% if fq.notes_customer %}
-    <div class="section-title">Additional Notes</div>
-    <p style="line-height:1.5; margin-bottom:8px;">
-      {{ fq.notes_customer|linebreaksbr }}
-    </p>
-  {% endif %}
+  <div style="margin:30px 0 30px 0"><strong>TERM & CONDITION</strong></div>
+  <div class="customer-notes">
+    {{ fq.notes_customer|safe }}
+  </div>
+{% endif %}
 
-  <!-- CLOSING -->
-  <!-- CLOSING -->
-  <p style="line-height:1.6; margin-top:16px;">
-    We hope the above quotation meets your expectations.<br>
-    Please feel free to contact us if you require further clarification.<br><br>
-    Thank you.
-  </p>
 
-  <!-- INTERNAL NOTES (2 kolom) -->
-  <div class="section-title">Internal Notes</div>
-
-  <table class="notes-table">
-    <tr>
-      <td style="width:50%;">
-        <div class="notes-title">Price Includes</div>
-        <ul>
-          <li>Ocean freight from origin port to destination port as per route above.</li>
-          <li>Standard documentation &amp; handling charge.</li>
-          <li>Normal working hour operation (Mon–Fri).</li>
-          <li>Local charges at origin as per current tariff.</li>
-        </ul>
-
-        
-      </td>
-      <td style="width:50%;">
-        <div class="notes-title">Price Excludes</div>
-        <ul>
-          <li>Customs duty, VAT, and other government taxes.</li>
-          <li>Storage, demurrage, detention, and waiting time surcharges.</li>
-          <li>Insurance coverage for cargo (can be arranged upon request).</li>
-          <li>Any other charges not explicitly mentioned in this quotation.</li>
-        </ul>
-
-        <div class="notes-title">Validity &amp; Conditions</div>
-       
-      </td>
-    </tr>
-  
-   
-  </table>
-
-  <!-- SIGN -->
+<!-- SIGN -->
   <div class="footer-sign">
     Best regards,<br><br><br>
     <strong>PT Dakara Samudera Hanasta</strong><br>

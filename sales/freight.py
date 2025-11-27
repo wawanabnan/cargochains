@@ -365,6 +365,16 @@ class FreightQuotation(TimeStampedModel):
     @property
     def display_name(self):
         return self.name
+    
+
+    @property
+    def customer_address_lines(self):
+        return self.customer.full_address_lines if self.customer_id else []
+
+    @property
+    def customer_address_text(self):
+        return self.customer.full_address_text if self.customer_id else ""
+    
 
 
 # ============================

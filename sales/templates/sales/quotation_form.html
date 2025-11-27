@@ -77,39 +77,148 @@
           {# ====================== #}
           {#  CARD: CARGO           #}
           {# ====================== #}
-          {% include 'sales/sub-forms/cargo.html' %}
-         
+          <div class="card shaddow-none my-3">
+            <div class="card-header  h-center">
+              <h3 class="card-title mb-0">CARGO & PRICE</h3>
+            </div>
+            <div class="card-body px-0 ">
+               <ul class="nav nav-tabs border-bottom border-primary mt-2" 
+                id="myTab" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" 
+                        id="home-tab" 
+                        data-bs-toggle="tab" data-bs-target="#cargoTab" 
+                        type="button" role="tab" 
+                        aria-controls="home" aria-selected="true">Cargo
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" 
+                        id="profile-tab" 
+                        data-bs-toggle="tab" data-bs-target="#priceTab" 
+                        type="button" role="tab" 
+                        aria-controls="profile" aria-selected="false">Price
+                </button>
+              </li>
+              
+            
+              </ul>
+              <div class="tab-content" id="myCargoPriceTab">
+                <div class="tab-pane fade show active" 
+                    id="cargoTab" 
+                    role="tabpanel" aria-labelledby="cargotab">
+                    {% include 'sales/sub-forms/cargo-nocard.html' %}
+        
+                </div>
+                  <div class="tab-pane fade" 
+                      id="priceTab" 
+                      role="tabpanel" aria-labelledby="price-tab">
+                    {% include 'sales/sub-forms/pricing-nocard.html' %}
+
+                  </div>
+                 
+              </div>
+
+
+            </div>
+          </div>
+
          
           {# ====================== #}
           {#  CARD: PRICE & AMOUNT  #}
           {# ====================== #}
-          {% include 'sales/sub-forms/pricing.html' %}
-
+          
           
           {# ====================== #}
           {#  CARD: ROUTE           #}
           {# ====================== #}
-          {% include 'sales/sub-forms/pricing.html' %}
           {# ====================== #}
           {#  CARD: SHIPPER         #}
           {# ====================== #}
-          {% include 'sales/sub-forms/shipper.html' %}
      
+          
           {# ====================== #}
           {#  CARD: CONSIGNEE       #}
           {# ====================== #}
-          {% include 'sales/sub-forms/shipper.html' %}
-        
+          
+                    {% include 'sales/sub-forms/route.html' %}
 
+        
+          <div class="card shaddow-none my-3">
+            <div class="card-header  h-center">
+              <h3 class="card-title mb-0">Shipper & Consignee</h3>
+            </div>
+            <div class="card-body px-0 ">
+               <ul class="nav nav-tabs border-bottom border-primary mt-2" 
+                id="myTab" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" 
+                        id="home-tab" 
+                        data-bs-toggle="tab" data-bs-target="#shipperTab" 
+                        type="button" role="tab" 
+                        aria-controls="home" aria-selected="true">Shipper
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" 
+                        id="profile-tab" 
+                        data-bs-toggle="tab" data-bs-target="#consigneeTab" 
+                        type="button" role="tab" 
+                        aria-controls="profile" aria-selected="false">Consignee
+                </button>
+              </li>
+               <li class="nav-item" role="presentation">
+                <button class="nav-link" 
+                        id="profile-tab" 
+                        data-bs-toggle="tab" data-bs-target="#customerNoteTab" 
+                        type="button" role="tab" 
+                        aria-controls="profile" aria-selected="false">Customer Notes
+                </button>
+              </li>
+            
+              </ul>
+              <div class="tab-content" id="myTabContent">
+                <div class="tab-pane fade show active" 
+                    id="shipperTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                    {% include 'sales/sub-forms/shipper-nocard.html' %}
+        
+                </div>
+                  <div class="tab-pane fade" 
+                      id="consigneeTab" 
+                      role="tabpanel" aria-labelledby="profile-tab">
+                    {% include 'sales/sub-forms/consignee-nocard.html' %}
+
+                  </div>
+                    <div class="tab-pane fade" 
+                      id="customerNoteTab" 
+                      role="tabpanel" aria-labelledby="customer-note-tab">
+                      
+                        {{ form.notes_customer.label_tag }}
+                        {{ form.notes_customer }}
+                        {% if form.notes_customer.errors %}
+                          <div class="text-danger small">
+                            {{ form.notes_customer.errors }}
+                          </div>
+                        {% endif %}
+    
+                  </div>
+              </div>
+
+
+            </div>
+          </div>
       </div>
     </div>
-
+    
       <button type="submit" class="btn btn-primary" id="btn-save">Simpan</button>
       <a href="{% url 'sales:fq_list' %}" class="btn btn-secondary ms-2">Batal</a>
     </form>
 
   </div>
 
+<!-- Simple tab navigation for a page using Bootstrap 5 -->
+<!-- Note: The HTML container in this pen includes BS5 through <head> tags -->
 
 
 
@@ -120,12 +229,24 @@
 
 
 {% block extra_css %}
+  <style>
+  .nav-tabs .nav-link.active, .nav-tabs .nav-item.show .nav-link {
+    margin-left: 30px !important;
+  }
+  
+  .tab-content {padding:20px}
+  .card-header .h-center {text-align: center;}
+  </style>
+
   <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+  
 {% endblock %}
 
 <!----------------------------------JS Helper-------------------------------------------------------------------------->
 
 {% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
   <script src="{% static 'js/location_autocomplete.js' %}"></script>
   <script src="{% static 'js/partner_autocomplete.js' %}"></script>
@@ -405,14 +526,9 @@
     </script>
 
 <script>
- // ======================================
- //  CALCULATION
- //=======================================
- // 
 (function($){
 
-  /* ========= Parser canonical & formatter Indonesia ========= */
-
+  // helper toCanonical & toID tetap seperti kemarin...
   window.toCanonical = window.toCanonical || function(raw){
     if (raw == null) return "0";
     let s = String(raw).trim();
@@ -425,16 +541,16 @@
       if (lastC > lastD) s = s.replace(/\./g,"").replace(",",".");
       else               s = s.replace(/,/g,"");
     } else if (hasC) {
-      s = s.replace(/\./g,"").replace(",","." );
+      s = s.replace(/\./g,"").replace(",",".");
     } else if (hasD) {
       const parts = s.split(".");
       if (parts.length > 2) {
         const last = parts.pop();
         s = parts.join("") + "." + last;
-      } else {
-        s = s.replace(/,/g,"");
       }
     }
+
+    s = s.replace(/[^\d\.\-]/g, "");
     return (/^-?\d+(\.\d+)?$/.test(s)) ? s : "0";
   };
 
@@ -447,73 +563,99 @@
     return Number.isFinite(x) ? nfID.format(x) : "0,00";
   }
 
-  /* ========= Hitung ulang Freight (single-line) ========= */
-
+  // ======= HITUNG FREIGHT: gross → diskon → tax → total =======
   function recalcFreight(){
     const qty    = Number(toCanonical($("#id_quantity").val())) || 0;
     const price  = Number(toCanonical($("#id_unit_price").val())) || 0;
+    const discP  = Number(toCanonical($("#id_discount_percent").val())) || 0;
     const taxPct = Number(toCanonical($("#id_tax_percent").val())) || 0;
 
-    const amount = qty * price;
-    const tax    = amount * (taxPct / 100.0);
-    const total  = amount + tax;
+    // 1) gross (sebelum diskon & pajak)
+    const gross = qty * price;
 
-    $("#id_amount").val(      toID(amount) );
-    $("#id_tax_amount").val(  toID(tax) );
-    $("#id_total_amount").val(toID(total) );
+    // 2) diskon rupiah
+    const discAmt = gross * (discP / 100.0);
+
+    // 3) dasar pajak = setelah diskon
+    const base = gross - discAmt;
+
+    // 4) pajak dari base
+    const tax = base * (taxPct / 100.0);
+
+    // 5) total = gross - discount + tax
+    const total = gross - discAmt + tax;
+
+    $("#id_amount").val(          toID(gross) );
+    $("#id_discount_amount").val( toID(discAmt) );
+    $("#id_tax_amount").val(      toID(tax) );
+    $("#id_total_amount").val(    toID(total) );
   }
 
-  /* ========= Binding event ========= */
+  window.recalcFreight = recalcFreight;
 
   $(function(){
 
     const $qty   = $("#id_quantity");
     const $price = $("#id_unit_price");
+    const $discP = $("#id_discount_percent");
     const $taxP  = $("#id_tax_percent");
 
-    /* === DEFAULT FORMAT === */
-  // NORMALISASI NILAI AWAL DARI DJANGO → FORMAT INDONESIA
-  [$qty, $price, $taxP].forEach(function($el){
-    if (!$el.length) return;
-    const canon = toCanonical($el.val());   // "1" / "0" / "" → "1" / "0" / "0"
-    $el.val( toID(canon) );                 // → "1,00" / "0,00"
-  });
-
-    /* === Fokus: raw + select === */
-    $(document).on("focus.fq", "#id_quantity, #id_unit_price, #id_tax_percent", function(){
-      const canon = toCanonical($(this).val());
-      const n = Number(canon);
-      $(this).val(Number.isFinite(n) ? String(n) : "");
-      setTimeout(() => this.select(), 10);
+    // format awal
+    [$qty, $price, $discP, $taxP].forEach(function($el){
+      if (!$el.length) return;
+      const canon = toCanonical($el.val());
+      $el.val( toID(canon) );
     });
 
-    /* === Input: hitung live === */
-    $(document).on("input.fq", "#id_quantity, #id_unit_price, #id_tax_percent", function(){
-      recalcFreight();
-    });
+    // focus: tampilkan angka mentah
+    $(document).on(
+      "focus.fq",
+      "#id_quantity, #id_unit_price, #id_discount_percent, #id_tax_percent",
+      function(){
+        const canon = toCanonical($(this).val());
+        const n = Number(canon);
+        $(this).val(Number.isFinite(n) ? String(n) : "");
+        setTimeout(() => this.select(), 10);
+      }
+    );
 
-    /* === Blur: format ke Indonesia === */
-    $(document).on("blur.fq", "#id_quantity, #id_unit_price, #id_tax_percent", function(){
-      const canon = toCanonical($(this).val());
-      $(this).val( toID(canon) );
-      recalcFreight();
-    });
+    // input: hitung live
+    $(document).on(
+      "input.fq",
+      "#id_quantity, #id_unit_price, #id_discount_percent, #id_tax_percent",
+      function(){
+        recalcFreight();
+      }
+    );
 
-    /* === Hitung awal === */
+    // blur: format balik ID
+    $(document).on(
+      "blur.fq",
+      "#id_quantity, #id_unit_price, #id_discount_percent, #id_tax_percent",
+      function(){
+        const canon = toCanonical($(this).val());
+        $(this).val( toID(canon) );
+        recalcFreight();
+      }
+    );
+
+    // hitung pertama kali
     recalcFreight();
 
-    /* === Submit: canonical untuk server === */
+    // submit: kirim canonical ke server
     const $form = $qty.closest("form");
     if ($form.length){
       $form.on("submit.fqCanonical", function(){
         [
           "#id_quantity",
           "#id_unit_price",
+          "#id_discount_percent",
+          "#id_discount_amount",
           "#id_amount",
           "#id_tax_percent",
           "#id_tax_amount",
           "#id_total_amount",
-        ].forEach(sel =>{
+        ].forEach(function(sel){
           const $el = $(sel);
           if ($el.length){
             $el.val( toCanonical($el.val()) );
@@ -525,6 +667,8 @@
 
 })(jQuery);
 </script>
+
+
 <script>
 (function($){
 
@@ -604,6 +748,17 @@
   });
 
 })(jQuery);
+</script>
+<!-- Place the first <script> tag in your HTML's <head> -->
+<script src="https://cdn.tiny.cloud/1/klpop8ud5zsip7zloht3kglaf0it7sau7hlm7yfscb3cjxsq/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
+
+<!-- Place the following <script> and <textarea> tags your HTML's <body> -->
+<script>
+  tinymce.init({
+    selector: '#id_notes_customer',
+    plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
+    toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
+  });
 </script>
 
 {% endblock%}

@@ -1,0 +1,132 @@
+{% if form.consignee.errors %}
+  <div class="text-danger small mb-2">
+    {{ form.consignee.errors|striptags }}
+  </div>
+{% endif %}
+
+<div class="row">
+  <!-- Kolom kiri: contact & alamat text -->
+  <div class="col-md-6">
+
+    <div class="mb-3">
+      <label for="id_consignee_text" class="form-label">Cari consignee (partner)</label>
+      <input type="text"
+             id="id_consignee_text"
+             class="form-control js-partner"
+             data-url="{% url 'partners:partner_autocomplete' %}"
+             value="{% if form.instance.consignee %}
+                      {{ form.instance.consignee.company_name|default:form.instance.consignee.name }}
+                    {% endif %}">
+      <input type="hidden"
+             id="id_consignee"
+             name="consignee"
+             value="{% if form.instance.consignee_id %}{{ form.instance.consignee_id }}{% endif %}">
+    </div>
+
+    <div class="mb-3">
+      {{ form.consignee_name.label_tag }}
+      {{ form.consignee_name }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.consignee_phone.label_tag }}
+      {{ form.consignee_phone }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.consignee_address.label_tag }}
+      {{ form.consignee_address }}
+    </div>
+
+    <div class="mb-3">
+      <div class="form-check mt-2">
+        <input class="form-check-input"
+               type="checkbox"
+               id="id_consignee_save_partner"
+               name="consignee_save_partner">
+        <label class="form-check-label" for="id_consignee_save_partner">
+          Simpan consignee ini sebagai partner baru
+        </label>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Kolom kanan: dropdown geo -->
+  <div class="col-md-6">
+
+    {# Province #}
+    <div class="mb-3">
+      <label for="id_consignee_province" class="form-label">Provinsi</label>
+      {% with selected_prov=form.consignee_province.value|stringformat:"s" %}
+      <select id="id_consignee_province"
+              name="consignee_province"
+              class="form-select">
+        <option value="">---------</option>
+        {% for prov in provinces %}
+          <option value="{{ prov.id }}"
+                  {% if prov.id|stringformat:"s" == selected_prov %}selected{% endif %}>
+            {{ prov.name }}
+          </option>
+        {% endfor %}
+      </select>
+      {% endwith %}
+    </div>
+
+    {# Regency #}
+    <div class="mb-3">
+      <label for="id_consignee_regency" class="form-label">Kabupaten / Kota</label>
+      {% with selected_reg=form.instance.consignee_regency_id|stringformat:"s" %}
+      <select id="id_consignee_regency"
+              name="consignee_regency"
+              class="form-select">
+        <option value="">---------</option>
+        {% for reg in consignee_regencies %}
+          <option value="{{ reg.id }}"
+                  {% if reg.id|stringformat:"s" == selected_reg %}selected{% endif %}>
+            {{ reg.name }}
+          </option>
+        {% endfor %}
+      </select>
+      {% endwith %}
+
+    </div>
+
+    {# District #}
+    <div class="mb-3">
+      <label for="id_consignee_district" class="form-label">Kecamatan</label>
+      {% with selected_dist=form.consignee_district.value|stringformat:"s" %}
+      <select id="id_consignee_district"
+              name="consignee_district"
+              class="form-select">
+        <option value="">---------</option>
+        {% for dst in consignee_districts %}
+          <option value="{{ dst.id }}"
+                  {% if dst.id|stringformat:"s" == selected_dist %}selected{% endif %}>
+            {{ dst.name }}
+          </option>
+        {% endfor %}
+      </select>
+      {% endwith %}
+    </div>
+
+    {# Village #}
+    <div class="mb-3">
+      <label for="id_consignee_village" class="form-label">Kelurahan / Desa</label>
+      {% with selected_vil=form.consignee_village.value|stringformat:"s" %}
+      <select id="id_consignee_village"
+              name="consignee_village"
+              class="form-select">
+        <option value="">---------</option>
+        {% for vil in consignee_villages %}
+          <option value="{{ vil.id }}"
+                  {% if vil.id|stringformat:"s" == selected_vil %}selected{% endif %}>
+            {{ vil.name }}
+          </option>
+        {% endfor %}
+      </select>
+      {% endwith %}
+    </div>
+
+  </div>
+</div>

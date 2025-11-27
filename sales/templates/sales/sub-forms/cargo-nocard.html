@@ -1,0 +1,123 @@
+              <!-- Row 1: Cargo name + HS code -->
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label mb-1" for="{{ form.cargo_name.id_for_label }}">
+                    Cargo name
+                  </label>
+                  {{ form.cargo_name }}
+                  {% if form.cargo_name.errors %}
+                    <div class="text-danger small">
+                      {{ form.cargo_name.errors|striptags }}
+                    </div>
+                  {% endif %}
+                </div>
+
+                
+              </div>
+
+
+              <!-- Row 3: Package count + type -->
+              <div class="row g-3 mt-2">
+                <div class="col-6 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.package_count.id_for_label }}">
+                    Package count
+                  </label>
+                  {{ form.package_count }}
+                  {% if form.package_count.errors %}
+                    <div class="text-danger small">
+                      {{ form.package_count.errors|striptags }}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="col-6 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.gross_weight.id_for_label }}">
+                    Gross weight
+                  </label>
+                  {{ form.gross_weight }}
+                  {% if form.gross_weight.errors %}
+                    <div class="text-danger small">
+                      {{ form.gross_weight.errors|striptags }}
+                    </div>
+                  {% endif %}
+                </div>
+                 <div class="col-6 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.volume_cbm.id_for_label }}">
+                    Volume
+                  </label>
+                  {{ form.volume_cbm }}
+                  {% if form.volume_cbm.errors %}
+                    <div class="text-danger small">
+                      {{ form.volume_cbm.errors|striptags }}
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.hs_code.id_for_label }}">
+                    HS code
+                  </label>
+                  {{ form.hs_code }}
+                  {% if form.hs_code.errors %}
+                    <div class="text-danger small">
+                      {{ form.hs_code.errors|striptags }}
+                    </div>
+                  {% endif %}
+                </div>
+                
+
+              </div>
+
+              <!-- Row 4: Weight & Volume -->
+              <div class="row g-3 mt-2">
+                
+                <!-- Package Type (UOM) -->
+                <div class="col-6 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.package_uom.id_for_label }}">
+                    Package type
+                  </label>
+                  {{ form.package_uom }}
+                  {% if form.package_uom.errors %}
+                    <div class="text-danger small">
+                      {{ form.package_uom.errors|striptags }}
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label mb-1" for="{{ form.weight_uom.id_for_label }}">
+                    Weight UOM
+                  </label>
+                  {{ form.weight_uom }}
+                  {% if form.weight_uom.errors %}
+                    <div class="text-danger small">
+                      {{ form.weight_uom.errors|striptags }}
+                    </div>
+                  {% endif %}
+                </div>
+
+               
+                <div class="col-6 col-md-3">  
+                  <label class="form-label mb-1" for="{{ form.volume_uom.id_for_label }}">
+                    Volume UOM
+                  </label>
+                  {{ form.volume_uom }}
+                  {% if form.volume_uom.errors %}
+                    <div class="text-danger small">
+                      {{ form.volume_uom.errors|striptags }}
+                    </div>
+                  {% endif %}
+                </div>
+                 <div class="col-6 col-md-3">  
+                    <label class="form-label mb-1" for="{{ form.shipment_plan_date.id_for_label }}">
+                    Shipment plan date
+                  </label>
+                  {{ form.shipment_plan_date }}
+                  {% if form.shipment_plan_date.errors %}
+                    <div class="text-danger small">
+                      {{ form.shipment_plan_date.errors|striptags }}
+                    </div>
+                  {% endif %}
+
+                </div>
+                
+              </div>
+          

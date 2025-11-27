@@ -1,8 +1,8 @@
 <div class="card mt-3">
   <div class="card-header py-2">
-    <strong>Internal Notes</strong>
+    <strong>Customer Notes</strong>
     <span class="text-muted small d-block">
-      Hanya untuk catatan internal (tidak dikirim ke customer jika tidak diinginkan).
+    C Catatan untuk customer di print-out Quotation
     </span>
   </div>
   <div class="card-body">
@@ -11,7 +11,7 @@
       {{ form.notes_internal }}
       {% if form.notes_internal.errors %}
         <div class="text-danger small">
-          {{ form.notes_internal.errors }}
+          {{ form.notes_customer.errors }}
         </div>
       {% endif %}
     </div>

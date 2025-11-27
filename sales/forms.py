@@ -358,13 +358,14 @@ class FreightQuotationForm(forms.ModelForm):
                     "readonly": "readonly",
                 }
             ),
-            "notes_internal": forms.Textarea(
+            "notes_customer": forms.Textarea(
                 attrs={
                     "class": "form-control tinymce",  # class untuk inisialisasi TinyMCE
                     "rows": 4,
                     "placeholder": "Internal notes (price include / exclude, payment term, conditions, etc.)",
                 }
             ),
+            
             "discount_percent": forms.TextInput(
                 attrs={"class": "form-control text-end fq-num-src"}
             ),
@@ -545,6 +546,8 @@ class FreightQuotationForm(forms.ModelForm):
 
   
         # === 4) PRICING (qty, price, discount, tax → amount, discount_amount, tax_amount, total) ===
+
+
         TWO = Decimal("0.01")
 
         qty        = cleaned.get("quantity") or Decimal("1")
@@ -552,27 +555,32 @@ class FreightQuotationForm(forms.ModelForm):
         disc_pct   = cleaned.get("discount_percent") or Decimal("0")
         tax_pct    = cleaned.get("tax_percent") or Decimal("0")
 
-        # paksa 2 digit
+        # normalisasi
         qty        = Decimal(qty).quantize(TWO, rounding=ROUND_HALF_UP)
         unit_price = Decimal(unit_price).quantize(TWO, rounding=ROUND_HALF_UP)
         disc_pct   = Decimal(disc_pct).quantize(TWO, rounding=ROUND_HALF_UP)
         tax_pct    = Decimal(tax_pct).quantize(TWO, rounding=ROUND_HALF_UP)
 
-        # amount = sebelum discount (gross)
-        gross_amount    = (qty * unit_price).quantize(TWO, rounding=ROUND_HALF_UP)
+        # 1) gross = qty x price
+        gross = (qty * unit_price).quantize(TWO, rounding=ROUND_HALF_UP)
 
-        # discount_amount (rupiah)
-        discount_amount = (gross_amount * disc_pct / Decimal("100")).quantize(
+        # 2) discount rupiah
+        discount_amount = (gross * disc_pct / Decimal("100")).quantize(
             TWO, rounding=ROUND_HALF_UP
         )
 
-        # dasar pajak = setelah diskon
-        tax_base   = (gross_amount - discount_amount).quantize(TWO, rounding=ROUND_HALF_UP)
+        # 3) dasar pajak = setelah diskon
+        tax_base = (gross - discount_amount).quantize(TWO, rounding=ROUND_HALF_UP)
+
+        # 4) pajak dihitung dari base
         tax_amount = (tax_base * tax_pct / Decimal("100")).quantize(
             TWO, rounding=ROUND_HALF_UP
         )
 
-        total = (tax_base + tax_amount).quantize(TWO, rounding=ROUND_HALF_UP)
+        # 5) total = gross - discount + tax
+        total = (gross - discount_amount + tax_amount).quantize(
+            TWO, rounding=ROUND_HALF_UP
+        )
 
         cleaned["quantity"]         = qty
         cleaned["unit_price"]       = unit_price
@@ -580,13 +588,8 @@ class FreightQuotationForm(forms.ModelForm):
         cleaned["discount_amount"]  = discount_amount
         cleaned["tax_percent"]      = tax_pct
 
-        # amount = gross (sebelum diskon)
-        cleaned["amount"]       = gross_amount
+        cleaned["amount"]       = gross          # amount = qty x price (sebelum diskon)
         cleaned["tax_amount"]   = tax_amount
         cleaned["total_amount"] = total
-      
+
         return cleaned
-
-
-
-  

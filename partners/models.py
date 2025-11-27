@@ -191,6 +191,55 @@ class Partner(models.Model):
         names = sorted(set(qs))
         return ", ".join(names) if names else "-"
 
+    @property
+    def full_address_lines(self) -> list[str]:
+        """
+        Format (setiap bagian satu baris):
+        - address_line1
+        - address_line2
+        - village + " - " + district
+        - regency
+        - province
+        """
+        lines = []
+
+        # Alamat baris 1
+        if self.address_line1:
+            lines.append(self.address_line1)
+
+        # Alamat baris 2 (opsional)
+        if self.address_line2:
+            lines.append(self.address_line2)
+
+        # Village - District
+        vd = []
+        if self.village:
+            vd.append(self.village.name)
+        if self.district:
+            vd.append(self.district.name)
+
+        if vd:
+            # gabungkan jadi "Kelurahan - Kecamatan"
+            lines.append(" - ".join(vd))
+
+        # Regency (Kota/Kabupaten)
+        if self.regency:
+            lines.append(self.regency.name)
+
+        # Province
+        if self.province:
+            lines.append(self.province.name)
+
+        return lines
+
+
+    @property
+    def full_address_text(self) -> str:
+        """Multi-line address using newline."""
+        return "\n".join(self.full_address_lines)
+
+
+
 
 class PartnerRoleTypes(models.Model):
     code = models.CharField(max_length=50, unique=True, blank=True)
