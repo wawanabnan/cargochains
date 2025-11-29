@@ -88,7 +88,18 @@
      
       <main class="app-main">
            
-        
+          {# ========== GLOBAL FLASH MESSAGES ========== #}
+          {% if messages %}
+            <div class="container-fluid pt-2">
+              {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                  {{ message }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+            
           {% block content_header %}{% endblock %}
           {% block content %}
           <!-- Default content -->

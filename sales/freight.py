@@ -374,17 +374,230 @@ class FreightQuotation(TimeStampedModel):
     @property
     def customer_address_text(self):
         return self.customer.full_address_text if self.customer_id else ""
-    
+
+
+    # =========================
+    #  ADDRESS HELPERS
+    # =========================
+    @property
+    def shipper_address_lines(self):
+        """
+        Format:
+        - Contact name
+        - Company (kalau ada)
+        - Phone number
+        - Address
+        - Village - District
+        - Regency
+        - Province
+        """
+        lines = []
+
+        # 1) Contact / person
+        if self.shipper_contact_name:
+            lines.append(self.shipper_contact_name)
+
+        # 2) Company (dari Partner)
+        company = None
+        if self.shipper:
+            company = self.shipper.company_name or self.shipper.name
+        if company:
+            lines.append(company)
+
+        # 3) Phone
+        phone = self.shipper_phone
+        if not phone and self.shipper:
+            phone = self.shipper.phone or self.shipper.mobile
+        if phone:
+            lines.append(phone)
+
+        # 4) Address (free text)
+        if self.shipper_address:
+            lines.append(self.shipper_address)
+
+        # 5) Village - District
+        village_name = getattr(self.shipper_village, "name", None)
+        district_name = getattr(self.shipper_district, "name", None)
+        if village_name or district_name:
+            parts = [p for p in [village_name, district_name] if p]
+            lines.append(" - ".join(parts))
+
+        # 6) Regency
+        regency_name = getattr(self.shipper_regency, "name", None)
+        if regency_name:
+            lines.append(regency_name)
+
+        # 7) Province
+        province_name = getattr(self.shipper_province, "name", None)
+        if province_name:
+            lines.append(province_name)
+
+        return lines
+
+    @property
+    def consignee_address_lines(self):
+        """
+        Format:
+        - Contact name
+        - Company (kalau ada)
+        - Phone number
+        - Address
+        - Village - District
+        - Regency
+        - Province
+        """
+        lines = []
+
+        # 1) Contact / person
+        if self.consignee_name:
+            lines.append(self.consignee_name)
+
+        # 2) Company (dari Partner)
+        company = None
+        if self.consignee:
+            company = self.consignee.company_name or self.consignee.name
+        if company:
+            lines.append(company)
+
+        # 3) Phone
+        phone = self.consignee_phone
+        if not phone and self.consignee:
+            phone = self.consignee.phone or self.consignee.mobile
+        if phone:
+            lines.append(phone)
+
+        # 4) Address (free text)
+        if self.consignee_address:
+            lines.append(self.consignee_address)
+
+        # 5) Village - District
+        village_name = getattr(self.consignee_village, "name", None)
+        district_name = getattr(self.consignee_district, "name", None)
+        if village_name or district_name:
+            parts = [p for p in [village_name, district_name] if p]
+            lines.append(" - ".join(parts))
+
+        # 6) Regency
+        regency_name = getattr(self.consignee_regency, "name", None)
+        if regency_name:
+            lines.append(regency_name)
+
+        # 7) Province
+        province_name = getattr(self.consignee_province, "name", None)
+        if province_name:
+            lines.append(province_name)
+
+        return lines
+
+    def generate_order(self, user=None):
+        """
+        Generate Freight Order (Sales Order) dari quotation ini.
+
+        - Membuat FreightOrder dengan status DRAFT
+        - Menyalin data utama dari quotation
+        - Link balik ke self.freight_order (kalau fieldnya ada)
+        - Tidak mengubah status quotation (status diatur di view)
+        """
+
+        # Kalau sudah pernah generate → jangan bikin dua kali
+        if getattr(self, "freight_order_id", None):
+            return self.freight_order
+
+        # Di file yang sama biasanya sudah ada:
+        # class FreightOrder(models.Model): ...
+        # class FreightOrderStatus(models.TextChoices): ...
+        # Jadi kita bisa pakai langsung nama kelasnya.
+        with transaction.atomic():
+            order = FreightOrder.objects.create(
+                # --- STATUS ORDER SELALU DRAFT ---
+                status=FreightOrderStatus.DRAFT,
+
+                # --- RELASI KE QUOTATION (jika fieldnya ada di FreightOrder) ---
+                # Sesuaikan dengan nama field di model FreightOrder om
+                # misalnya: freight_quotation atau quotation
+                **(
+                    {"freight_quotation": self}
+                    if "freight_quotation" in [f.name for f in FreightOrder._meta.fields]
+                    else {}
+                ),
+
+                # --- SALES / CUSTOMER ---
+                customer=self.customer,
+                sales_user=user or self.sales_user,
+                sales_service=self.sales_service,
+                payment_term=self.payment_term,
+                currency=self.currency,
+
+                # --- ROUTE ---
+                origin=self.origin,
+                destination=self.destination,
+                shipment_plan_date=self.shipment_plan_date,
+
+                # --- CARGO INFO ---
+                cargo_name=self.cargo_name,
+                hs_code=self.hs_code,
+                package_count=self.package_count,
+                gross_weight=self.gross_weight,
+                volume_cbm=self.volume_cbm,
+                # Kalau FreightOrder tidak punya field-field ini,
+                # tinggal hapus barisnya.
+                volume_uom=getattr(self, "volume_uom", None),
+                weight_uom=getattr(self, "weight_uom", None),
+                package_uom=getattr(self, "package_uom", None),
+
+                # --- SHIPPER ---
+                shipper=self.shipper,
+                shipper_contact_name=self.shipper_contact_name,
+                shipper_phone=self.shipper_phone,
+                shipper_address=self.shipper_address,
+                shipper_province=self.shipper_province,
+                shipper_regency=self.shipper_regency,
+                shipper_district=self.shipper_district,
+                shipper_village=self.shipper_village,
+
+                # --- CONSIGNEE ---
+                consignee=self.consignee,
+                consignee_name=self.consignee_name,
+                consignee_phone=self.consignee_phone,
+                consignee_address=self.consignee_address,
+                consignee_province=self.consignee_province,
+                consignee_regency=self.consignee_regency,
+                consignee_district=self.consignee_district,
+                consignee_village=self.consignee_village,
+
+                # --- PRICING & TAX ---
+                quantity=self.quantity,
+                unit_price=self.unit_price,
+                amount=self.amount,
+                discount_percent=getattr(self, "discount_percent", None),
+                discount_amount=getattr(self, "discount_amount", None),
+                tax_percent=self.tax_percent,
+                tax_amount=self.tax_amount,
+                total_amount=self.total_amount,
+
+                # --- NOTES (kalau field ada di FreightOrder) ---
+                notes_customer=getattr(self, "notes_customer", None),
+                notes_internal=getattr(self, "notes_internal", None),
+            )
+
+            # Link balik ke quotation kalau ada field-nya
+            if hasattr(self, "freight_order"):
+                self.freight_order = order
+                self.save(update_fields=["freight_order"])
+
+        return order
 
 
 # ============================
 #   FREIGHT ORDER STATUS
 # ============================
 class FreightOrderStatus(models.TextChoices):
-    DRAFT = "DRAFT", "Draft"
-    CONFIRMED = "CONFIRMED", "Confirmed"
-    CANCELLED = "CANCELLED", "Cancelled"
-    COMPLETED = "COMPLETED", "Completed"
+    DRAFT       = "DRAFT", "Draft"
+    SENT        = "SENT", "Sent"
+    ON_PROGRESS = "ON_PROGRESS", "On Progress"
+    COMPLETED   = "COMPLETED", "Completed"
+    CANCELLED   = "CANCELLED", "Cancelled"
+    HOLDED      = "HOLDED", "Holded"
 
 
 # ============================
@@ -397,7 +610,12 @@ class FreightOrder(TimeStampedModel):
         db_index=True,
     )
     order_date = models.DateField()
-
+    ref_number = models.CharField(
+        max_length=30,
+        blank=True,
+        null=True,
+        db_index=True,
+    )
     status = models.CharField(
         max_length=20,
         choices=FreightOrderStatus.choices,

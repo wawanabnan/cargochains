@@ -1,107 +1,68 @@
 {% extends "adminbase.html" %}
 
 {% block content %}
-
-
 <div class="content-wrapper">
 
-<section class="content-header">
-  <div class="container-fluid">
+  <!-- HEADER -->
+  <section class="content-header">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+      <div>
+        <h1 class="mb-0">
+          Freight Quotation
+          <small class="text-muted">#{{ fq.number }}</small>
+        </h1>
 
-    {# ===== BARIS 1: JUDUL ===== #}
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-      <h3 class="mb-0">
-        Freight Quotation {{ fq.number }}
-      </h3>
-    </div>
+        {% with s=fq.status|lower %}
+          {% if s == "accepted" %}
+            <span class="badge bg-success">Accepted</span>
+          {% elif s == "cancelled" %}
+            <span class="badge bg-danger">Cancelled</span>
+          {% elif s == "expired" %}
+            <span class="badge bg-warning text-dark">Expired</span>
+          {% elif s == "draft" %}
+            <span class="badge bg-secondary">Draft</span>
+          {% elif s == "sent" %}
+            <span class="badge bg-danger">Sent</span>
+          {% elif s == "ordered" %}
+            <span class="badge bg-info">Ordered</span>
+          {% else %}
+            <span class="badge bg-warning">{{ s|title }}</span>
+          {% endif %}
+        {% endwith %}
+      </div>
 
-    {# ===== BARIS 2: KIRI = tombol, KANAN = status ===== #}
-    {% with s=fq.status|default:"DRAFT"|upper %}
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <a href="{% url 'sales:fq_edit' fq.pk %}" class="btn btn-primary btn-sm">
+          <i class="fa fa-edit me-1"></i> Edit
+        </a>
 
-      {# KIRI: Edit, PDF, dan tombol perubahan status (hanya yang valid) #}
-      <div class="d-flex flex-wrap align-items-center gap-2">
+        <a href="#" class="btn btn-outline-secondary btn-sm">
+          <i class="fa fa-print me-1"></i> Print
+        </a>
 
-        {# Edit hanya saat Draft / Sent #}
-        {% if s == "DRAFT" or s == "SENT" %}
-          <a href="{% url 'sales:fq_edit' fq.pk %}"
-             class="btn btn-outline-primary btn-sm">
-            <i class="fa fa-edit me-1"></i> Edit
-          </a>
-        {% endif %}
-
-        {# Print / PDF selalu ada #}
-        <a href="#"
-           class="btn btn-outline-secondary btn-sm">
+        <a href="{% url 'sales:fq_pdf' fq.pk%}"
+          target="_blank"
+          class="btn btn-outline-secondary btn-sm">
           <i class="fa fa-file-pdf me-1"></i> PDF
         </a>
 
-        {# FORM STATUS ACTION #}
-        <form method="post"
-              action="{% url 'sales:fq_change_status' fq.pk %}"
-              class="d-inline">
-          {% csrf_token %}
 
-          {# DRAFT: hanya bisa Sent / Cancel #}
-          {% if s == "DRAFT" %}
-            <div class="btn-group btn-group-sm ms-1">
-              <button type="submit" name="action" value="sent"
-                      class="btn btn-outline-primary">
-                <i class="fa fa-paper-plane me-1"></i> Mark as Sent
-              </button>
-              <button type="submit" name="action" value="cancelled"
-                      class="btn btn-outline-danger">
-                <i class="fa fa-times me-1"></i> Cancel
-              </button>
-            </div>
-
-          {# SENT: Accepted / Cancel / Expired #}
-          {% elif s == "SENT" %}
-            <div class="btn-group btn-group-sm ms-1">
-              <button type="submit" name="action" value="accepted"
-                      class="btn btn-success">
-                <i class="fa fa-check me-1"></i> Mark as Accepted
-              </button>
-              <button type="submit" name="action" value="cancelled"
-                      class="btn btn-outline-danger">
-                <i class="fa fa-times me-1"></i> Cancel
-              </button>
-              <button type="submit" name="action" value="expired"
-                      class="btn btn-outline-warning">
-                <i class="fa fa-clock me-1"></i> Expired
-              </button>
-            </div>
-
-          {# ACCEPTED: cuma bisa Ordered #}
-          
-        </form>
-      </div>
-
-      {# KANAN: badge status #}
-      <div class="text-end">
-        {% if s == "ACCEPTED" %}
-          <span class="badge bg-success">Accepted</span>
-        {% elif s == "CANCELLED" %}
-          <span class="badge bg-danger">Cancelled</span>
-        {% elif s == "EXPIRED" %}
-          <span class="badge bg-warning text-dark">Expired</span>
-        {% elif s == "DRAFT" %}
-          <span class="badge bg-secondary">Draft</span>
-        {% elif s == "SENT" %}
-          <span class="badge bg-primary">Sent</span>
-        {% elif s == "ORDERED" %}
-          <span class="badge bg-info">Ordered</span>
-        {% else %}
-          <span class="badge bg-light text-dark">{{ s|title }}</span>
+       {% with st=fq.status %}
+        {% if st == "DRAFT" or st == "CANCELLED" or st == "EXPIRED" %}
+          <form action="{% url 'sales:fq_delete' fq.pk %}"
+            method="post" class="d-inline">
+        {% csrf_token %}
+        <button class="btn btn-danger btn-sm"
+                onclick="return confirm('Delete this quotation?');">
+          <i class="fa fa-trash me-1"></i> Delete
+        </button>
+      </form>
         {% endif %}
+      {% endwith %}
+
       </div>
-
     </div>
-    {% endwith %}
-
-  </div>
-</section>
- 
+  </section>
 
 
   <!-- MAIN CONTENT -->
@@ -300,33 +261,4 @@
     </div>
   </section>
 </div>
-{% endblock %}
-
-
-{% block extra_js %}
-{{ block.super }}
-
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const form   = document.getElementById("fq-status-form");
-    const hidden = document.getElementById("fq-status-action");
-    if (!form || !hidden) return;
-
-    document.querySelectorAll(".fq-status-btn").forEach(function (btn) {
-      btn.addEventListener("click", function (e) {
-        const action = btn.getAttribute("data-action");
-        if (!action) {
-          // tombol tanpa data-action (misal Draft non-clickable)
-          return;
-        }
-        if (btn.disabled) {
-          return;
-        }
-        hidden.value = action;
-        form.submit();
-      });
-    });
-  });
-</script>
-
 {% endblock %}

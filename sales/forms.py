@@ -449,30 +449,371 @@ class FreightQuotationForm(forms.ModelForm):
 
             self.fields["sales_agency"].empty_label = "— pilih agency —"
   
-  
+
+from decimal import Decimal, ROUND_HALF_UP
+from django import forms
+from django.utils import timezone
+
+from partners.models import Partner, PartnerRole
+from geo.models import Location
+from core.models import Currency, UOM, PaymentTerm
+from .freight import FreightQuotation, FreightQuotationStatus
+
+
+class FreightQuotationForm(forms.ModelForm):
+
+    class Meta:
+        model = FreightQuotation
+        # sales_user diisi otomatis dari request.user di view
+        exclude = ["sales_user"]
+        widgets = {
+            # HEADER
+            "number": forms.HiddenInput(),
+            "quotation_date": forms.HiddenInput(),
+            "status": forms.HiddenInput(),
+
+            "customer": forms.Select(
+                attrs={"class": "form-select", "id": "id_customer"}
+            ),
+            "sales_service": forms.Select(attrs={"class": "form-select"}),
+            "sales_agency": forms.Select(attrs={"class": "form-select"}),
+            "payment_term": forms.Select(attrs={"class": "form-select"}),
+            "currency": forms.Select(attrs={"class": "form-select"}),
+
+            "valid_until": forms.DateInput(
+                attrs={
+                    "class": "form-control",
+                    "type": "date",
+                    "data-role": "date-picker",
+                    "placeholder": "yyyy-mm-dd",
+                }
+            ),
+            "shipment_plan_date": forms.DateInput(
+                attrs={
+                    "class": "form-control",
+                    "type": "date",
+                    "data-role": "date-picker",
+                }
+            ),
+
+            # ORIGIN / DESTINATION (hidden, diisi via autocomplete)
+            "origin": forms.Select(
+                attrs={"class": "form-select d-none", "id": "id_origin"}
+            ),
+            "destination": forms.Select(
+                attrs={"class": "form-select d-none", "id": "id_destination"}
+            ),
+
+            # CARGO
+            "cargo_name": forms.TextInput(attrs={"class": "form-control"}),
+            "hs_code": forms.TextInput(attrs={"class": "form-control"}),
+            "commodity": forms.TextInput(attrs={"class": "form-control"}),
+
+            "package_count": forms.NumberInput(
+                attrs={"class": "form-control", "step": "1", "min": "0"}
+            ),
+            "package_uom": forms.Select(attrs={"class": "form-select"}),
+
+            "gross_weight": forms.NumberInput(
+                attrs={"class": "form-control", "step": "0.01"}
+            ),
+            "weight_uom": forms.Select(attrs={"class": "form-select"}),
+
+            "volume_cbm": forms.NumberInput(
+                attrs={"class": "form-control", "step": "0.001"}
+            ),
+            "volume_uom": forms.Select(attrs={"class": "form-select"}),
+
+            "is_dangerous_goods": forms.CheckboxInput(
+                attrs={"class": "form-check-input"}
+            ),
+            "dangerous_goods_class": forms.TextInput(
+                attrs={"class": "form-control"}
+            ),
+
+            # PRICING
+            "quantity": forms.TextInput(
+                attrs={"class": "form-control text-end fq-num-src"}
+            ),
+            "unit_price": forms.TextInput(
+                attrs={"class": "form-control text-end fq-num-src"}
+            ),
+            "discount_percent": forms.TextInput(
+                attrs={"class": "form-control text-end fq-num-src"}
+            ),
+            "discount_amount": forms.TextInput(
+                attrs={
+                    "class": "form-control text-end",
+                    "readonly": "readonly",
+                }
+            ),
+            "tax_percent": forms.TextInput(
+                attrs={"class": "form-control text-end fq-num-src"}
+            ),
+            "tax_amount": forms.TextInput(
+                attrs={
+                    "class": "form-control text-end",
+                    "readonly": "readonly",
+                }
+            ),
+            "amount": forms.TextInput(
+                attrs={
+                    "class": "form-control text-end",
+                    "readonly": "readonly",
+                }
+            ),
+            "total_amount": forms.TextInput(
+                attrs={
+                    "class": "form-control text-end",
+                    "readonly": "readonly",
+                }
+            ),
+
+            # NOTES
+            "notes_customer": forms.Textarea(
+                attrs={"class": "form-control", "rows": 3}
+            ),
+            "notes_internal": forms.Textarea(
+                attrs={"class": "form-control", "rows": 2}
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        # View boleh kirim user=...
+        self.user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+
+        for name in ["shipper_address", "consignee_address"]:
+            if name in self.fields:
+                self.fields[name].widget.attrs["rows"] = 3
+
+        # ============================
+        #  FIX: JANGAN HAPUS class="form-control"
+        #  Semua TextInput/Textarea/NumberInput dijamin punya form-control
+        # ============================
+        for name, field in self.fields.items():
+            widget = field.widget
+
+            # Tambahkan form-control untuk text/textarea/number
+            if isinstance(widget, (forms.TextInput, forms.Textarea, forms.NumberInput)):
+                existing = widget.attrs.get("class", "")
+                widget.attrs["class"] = (existing + " form-control").strip()
+
+            # Tambahkan class untuk select
+            if isinstance(widget, forms.Select):
+                existing = widget.attrs.get("class", "")
+                widget.attrs["class"] = (existing + " form-select").strip()
+
+            # Checkbox tetap default
+
+        today = timezone.now().date()
+
+        # Hanya untuk CREATE (instance belum ada)
+        if not (self.instance and self.instance.pk):
+            # quotation_date hidden → set ke hari ini kalau belum ada
+            if "quotation_date" in self.fields and not (
+                self.initial.get("quotation_date") or self.fields["quotation_date"].initial
+            ):
+                self.initial["quotation_date"] = today
+
+            # valid_until: quotation_date + 7 hari
+            if "valid_until" in self.fields and not (
+                self.initial.get("valid_until") or self.fields["valid_until"].initial
+            ):
+                self.initial["valid_until"] = today + timezone.timedelta(days=7)
+
+
+
+        # 1) Default: semua optional dulu
+        for f in self.fields.values():
+            f.required = False
+
+        # 2) Field yang wajib (header utama)
+        REQUIRED_FIELDS = [
+            "customer",
+            "sales_service",
+            "payment_term",
+            "currency",
+            "shipment_plan_date",
+            "cargo_name",
+        ]
+        for name in REQUIRED_FIELDS:
+            if name in self.fields:
+                self.fields[name].required = True
+
+        # 3) Filter CUSTOMER by role (kalau ada PartnerRole)
+        if "customer" in self.fields:
+            try:
+                ids = PartnerRole.objects.filter(
+                    role_type__code__iexact="customer"
+                ).values_list("partner_id", flat=True)
+                qs = Partner.objects.filter(id__in=ids).distinct()
+            except Exception:
+                qs = Partner.objects.all()
+            self.fields["customer"].queryset = qs.order_by("name")
+            self.fields["customer"].empty_label = "— pilih customer —"
+
+        # 4) shipper / consignee: queryset penuh dulu (di UI pakai autocomplete)
+        if "shipper" in self.fields:
+            self.fields["shipper"].queryset = Partner.objects.all().order_by("name")
+            self.fields["shipper"].empty_label = "— pilih shipper —"
+        if "consignee" in self.fields:
+            self.fields["consignee"].queryset = Partner.objects.all().order_by("name")
+            self.fields["consignee"].empty_label = "— pilih consignee —"
+
+        # 5) sales_agency → filter Agency jika ada
+        if "sales_agency" in self.fields:
+            try:
+                ids = PartnerRole.objects.filter(
+                    role_type__code__iexact="agency"
+                ).values_list("partner_id", flat=True)
+                qs = Partner.objects.filter(id__in=ids).distinct()
+                self.fields["sales_agency"].queryset = qs.order_by("name")
+            except Exception:
+                self.fields["sales_agency"].queryset = Partner.objects.none()
+
+        # 6) Currency & UOM & PaymentTerm: urut nama
+        if "currency" in self.fields:
+            self.fields["currency"].queryset = Currency.objects.all().order_by("code")
+        for name in ["package_uom", "weight_uom", "volume_uom"]:
+            if name in self.fields:
+                self.fields[name].queryset = UOM.objects.all().order_by("name")
+        if "payment_term" in self.fields:
+            self.fields["payment_term"].queryset = PaymentTerm.objects.all().order_by(
+                "name"
+            )
+
+        # ============================
+        # 7) GEO: SHIPPER & CONSIGNEE
+        # ============================
+        # default: children kosong
+        geo_child_fields = [
+            "shipper_regency",
+            "shipper_district",
+            "shipper_village",
+            "consignee_regency",
+            "consignee_district",
+            "consignee_village",
+        ]
+        for name in geo_child_fields:
+            if name in self.fields:
+                self.fields[name].queryset = Location.objects.none()
+
+        # provinces: isi semua
+        for name in ["shipper_province", "consignee_province"]:
+            if name in self.fields:
+                self.fields[name].queryset = Location.objects.filter(
+                    kind="province"
+                ).order_by("name")
+
+        # kalau EDIT (instance pk ada), isi regency/district/village berdasarkan parent
+        inst = self.instance if getattr(self, "instance", None) and self.instance.pk else None
+        if not inst:
+            return  # ADD mode, cukup provinsi saja
+
+        # ---------- SHIPPER ----------
+        sp_prov_id = getattr(inst, "shipper_province_id", None)
+        sp_reg_id = getattr(inst, "shipper_regency_id", None)
+        sp_dist_id = getattr(inst, "shipper_district_id", None)
+
+        if sp_prov_id and "shipper_regency" in self.fields:
+            self.fields["shipper_regency"].queryset = Location.objects.filter(
+                parent_id=sp_prov_id
+            ).order_by("name")
+
+        if sp_reg_id and "shipper_district" in self.fields:
+            self.fields["shipper_district"].queryset = Location.objects.filter(
+                parent_id=sp_reg_id
+            ).order_by("name")
+
+        if sp_dist_id and "shipper_village" in self.fields:
+            self.fields["shipper_village"].queryset = Location.objects.filter(
+                parent_id=sp_dist_id
+            ).order_by("name")
+
+        # ---------- CONSIGNEE ----------
+        cg_prov_id = getattr(inst, "consignee_province_id", None)
+        cg_reg_id = getattr(inst, "consignee_regency_id", None)
+        cg_dist_id = getattr(inst, "consignee_district_id", None)
+
+        if cg_prov_id and "consignee_regency" in self.fields:
+            self.fields["consignee_regency"].queryset = Location.objects.filter(
+                parent_id=cg_prov_id
+            ).order_by("name")
+
+        if cg_reg_id and "consignee_district" in self.fields:
+            self.fields["consignee_district"].queryset = Location.objects.filter(
+                parent_id=cg_reg_id
+            ).order_by("name")
+
+        if cg_dist_id and "consignee_village" in self.fields:
+            self.fields["consignee_village"].queryset = Location.objects.filter(
+                parent_id=cg_dist_id
+            ).order_by("name")
+
     def clean(self):
         cleaned = super().clean()
 
-        # -----------------------------
-        # Ambil service & code
-        # -----------------------------
+        # === 1) TANGGAL & STATUS OTOMATIS ===
+        today = timezone.now().date()
+
+        if not cleaned.get("quotation_date"):
+            cleaned["quotation_date"] = today
+
+        if not cleaned.get("status"):
+            cleaned["status"] = FreightQuotationStatus.DRAFT
+
+        # === 2) VALID UNTIL: +7 hari jika kosong ===
+        valid_until = cleaned.get("valid_until")
+        if not valid_until:
+            base_date = cleaned.get("quotation_date") or today
+            cleaned["valid_until"] = base_date + timezone.timedelta(days=7)
+
+        # === 3) HEADER WAJIB ===
+        if not cleaned.get("customer"):
+            self.add_error("customer", "Customer wajib diisi.")
+
+        # === 4) PRICING (qty, price, discount, tax → amount, total) ===
+        TWO = Decimal("0.01")
+
+        qty = cleaned.get("quantity") or Decimal("1")
+        unit_price = cleaned.get("unit_price") or Decimal("0")
+        disc_pct = cleaned.get("discount_percent") or Decimal("0")
+        tax_pct = cleaned.get("tax_percent") or Decimal("0")
+
+        qty = Decimal(qty).quantize(TWO, rounding=ROUND_HALF_UP)
+        unit_price = Decimal(unit_price).quantize(TWO, rounding=ROUND_HALF_UP)
+        disc_pct = Decimal(disc_pct).quantize(TWO, rounding=ROUND_HALF_UP)
+        tax_pct = Decimal(tax_pct).quantize(TWO, rounding=ROUND_HALF_UP)
+
+        gross = (qty * unit_price).quantize(TWO, rounding=ROUND_HALF_UP)
+        discount_amount = (gross * disc_pct / Decimal("100")).quantize(
+            TWO, rounding=ROUND_HALF_UP
+        )
+        tax_base = (gross - discount_amount).quantize(TWO, rounding=ROUND_HALF_UP)
+        tax_amount = (tax_base * tax_pct / Decimal("100")).quantize(
+            TWO, rounding=ROUND_HALF_UP
+        )
+        total = (gross - discount_amount + tax_amount).quantize(
+            TWO, rounding=ROUND_HALF_UP
+        )
+
+        cleaned["quantity"] = qty
+        cleaned["unit_price"] = unit_price
+        cleaned["discount_percent"] = disc_pct
+        cleaned["discount_amount"] = discount_amount
+        cleaned["tax_percent"] = tax_pct
+        cleaned["amount"] = gross
+        cleaned["tax_amount"] = tax_amount
+        cleaned["total_amount"] = total
+
+        # === 5) BUSINESS RULE: Shipper wajib untuk D2D / D2P ===
         service = cleaned.get("sales_service")
-        code = ""
-        if service:
-            code = (service.code or "").upper()
+        code = (getattr(service, "code", "") or "").upper()
 
-        # flags
-        is_d2d = code.startswith("D2D") or "DOOR TO DOOR" in code
-        is_d2p = code.startswith("D2P") or "DOOR TO PORT" in code
-        has_door_origin = is_d2d or is_d2p  # semua door-service di origin
-
-        # ============================================================
-        # 1) VALIDASI SHIPPER → WAJIB untuk D2D & D2P
-        # ============================================================
-        if has_door_origin:
+        if code.startswith(("D2D", "D2P")) or "DOOR" in code:
             required_shipper_fields = [
-                "shipper_contact_name",
-                "shipper_phone",
+                "shipper",
                 "shipper_address",
                 "shipper_province",
                 "shipper_regency",
@@ -480,116 +821,17 @@ class FreightQuotationForm(forms.ModelForm):
                 "shipper_village",
             ]
 
-            # FK wajib
-            if not cleaned.get("shipper"):
+            if not cleaned.get("shipper") and "shipper" not in self.errors:
                 self.add_error(
                     "shipper",
-                    "Shipper wajib diisi untuk layanan Door (D2D / D2P).",
+                    "Shipper wajib diisi untuk Door to Door / Door to Port.",
                 )
 
-            # detail wajib
             for fname in required_shipper_fields:
                 if not cleaned.get(fname):
                     self.add_error(
                         fname,
-                        "Wajib diisi untuk layanan Door (D2D / D2P).",
+                        "Wajib diisi untuk Door to Door / Door to Port.",
                     )
-
-        # ============================================================
-        # 2) VALIDASI CONSIGNEE untuk D2D → FULL ADDRESS
-        # ============================================================
-        if is_d2d:
-            required_cons_fields = [
-                "consignee_name",
-                "consignee_phone",
-                "consignee_address",
-                "consignee_province",
-                "consignee_regency",
-                "consignee_district",
-                "consignee_village",
-            ]
-
-            if not cleaned.get("consignee"):
-                self.add_error(
-                    "consignee",
-                    "Consignee wajib diisi untuk Door to Door.",
-                )
-
-            for fname in required_cons_fields:
-                if not cleaned.get(fname):
-                    self.add_error(
-                        fname,
-                        "Wajib diisi untuk Door to Door.",
-                    )
-
-        # ============================================================
-        # 3) VALIDASI CONSIGNEE untuk D2P → minimal nama + phone
-        # ============================================================
-        if is_d2p:
-            minimal_cons_fields = [
-                "consignee_name",
-                "consignee_phone",
-            ]
-
-            if not cleaned.get("consignee"):
-                self.add_error(
-                    "consignee",
-                    "Consignee wajib diisi untuk Door to Port.",
-                )
-
-            for fname in minimal_cons_fields:
-                if not cleaned.get(fname):
-                    self.add_error(
-                        fname,
-                        "Wajib diisi untuk Door to Port.",
-                    )
-
-  
-        # === 4) PRICING (qty, price, discount, tax → amount, discount_amount, tax_amount, total) ===
-
-
-        TWO = Decimal("0.01")
-
-        qty        = cleaned.get("quantity") or Decimal("1")
-        unit_price = cleaned.get("unit_price") or Decimal("0")
-        disc_pct   = cleaned.get("discount_percent") or Decimal("0")
-        tax_pct    = cleaned.get("tax_percent") or Decimal("0")
-
-        # normalisasi
-        qty        = Decimal(qty).quantize(TWO, rounding=ROUND_HALF_UP)
-        unit_price = Decimal(unit_price).quantize(TWO, rounding=ROUND_HALF_UP)
-        disc_pct   = Decimal(disc_pct).quantize(TWO, rounding=ROUND_HALF_UP)
-        tax_pct    = Decimal(tax_pct).quantize(TWO, rounding=ROUND_HALF_UP)
-
-        # 1) gross = qty x price
-        gross = (qty * unit_price).quantize(TWO, rounding=ROUND_HALF_UP)
-
-        # 2) discount rupiah
-        discount_amount = (gross * disc_pct / Decimal("100")).quantize(
-            TWO, rounding=ROUND_HALF_UP
-        )
-
-        # 3) dasar pajak = setelah diskon
-        tax_base = (gross - discount_amount).quantize(TWO, rounding=ROUND_HALF_UP)
-
-        # 4) pajak dihitung dari base
-        tax_amount = (tax_base * tax_pct / Decimal("100")).quantize(
-            TWO, rounding=ROUND_HALF_UP
-        )
-
-        # 5) total = gross - discount + tax
-        total = (gross - discount_amount + tax_amount).quantize(
-            TWO, rounding=ROUND_HALF_UP
-        )
-
-        cleaned["quantity"]         = qty
-        cleaned["unit_price"]       = unit_price
-        cleaned["discount_percent"] = disc_pct
-        cleaned["discount_amount"]  = discount_amount
-        cleaned["tax_percent"]      = tax_pct
-
-        cleaned["amount"]       = gross          # amount = qty x price (sebelum diskon)
-        cleaned["tax_amount"]   = tax_amount
-        cleaned["total_amount"] = total
 
         return cleaned

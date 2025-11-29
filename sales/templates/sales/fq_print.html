@@ -210,6 +210,11 @@
     </tr>
   </table>
 
+  <br>
+  Jakarta, {{ fq.shipment_plan_date|date:"d M Y"|default:"-" }}
+  <br>
+  <br>
+  
   <table style="width:100%">
     <tr>
       <td class="text-left" style="width:50%">
@@ -231,38 +236,87 @@
   <br>
   <table class="service">
     <tr>
-      <td style="width:18%">
-         <div class="field-label">Service</div>
+      <th class="text-left">
+        <div class="field-label">SHIPMENT ROUTE</div>
+      
+      </th>
+      <th class="text-left" style="width:18%">
+         <div class="field-label">SERVICE</div>
+        
+      </th>
+      
+      <th class="text-center" style="width:14%">
+        <div class="field-label">SHIPMENT PLAN</div>
+       
+      </th>
+      <th class="text-center" style="width:12%">
+        <div class="field-label">VALID UNTIL</div>
+        
+      </th>
+       <th class="text-center" style="width:14%">
+        <div class="field-label">PAYMENT TERM</div>
+        
+      </th>
+    </tr>
+    <tr>
+      <td>
+        
+        <div class="field-value ">{{ fq.route_name }}</div>
+      </td>
+      <td style="width:15%">
         <div class="field-value">{{ fq.sales_service.name }}</div>
       </td>
-      <td>
-        <div class="field-label">Route</div>
-        <div class="field-value">{{ fq.route_name }}</div>
-      </td>
-      <td style="width:15%">
-        <div class="field-label">Shipment Plan</div>
+      
+      <td class="text-center">
+       
         <div class="field-value">{{ fq.shipment_plan_date|date:"d M Y"|default:"-" }}</div>
       </td>
-      <td style="width:15%">
-        <div class="field-label">Qoutation Date</div>
-        <div class="field-value">{{ fq.shipment_plan_date|date:"d M Y"|default:"-" }}</div>
+      <td class="text-center">
+       
+        <div class="field-value">{{ fq.valid_until|date:"d M Y"|default:"-" }}</div>
       </td>
-      <td class="text-right" style="width:15%">
-        <div class="field-label">Valid Until</div>
-        <div class="field-value">{{ fq.shipment_plan_date|date:"d M Y"|default:"-" }}</div>
+      <td class="text-center" >
+       
+        <div class="field-value">{{ fq.payment_term }}</div>
       </td>
     </tr>
-
+    
    </table>
+
+<table class="service" style="width:100%">
+  <tr>
+    <th width="50%">SHIPPER</th>
+    <th width="50%">CONSIGNEE</th>
+  </tr>
+  <tr>
+    <td class="text-center">
+      <address class="small mb-3">
+        {% for line in fq.shipper_address_lines %}
+          {{ line }}<br>
+        {% endfor %}
+      </address>
+
+    </td>
+    <td class="text-center">
+      <address class="small mb-3">
+  {% for line in fq.consignee_address_lines %}
+    {{ line }}<br>
+  {% endfor %}
+</address>
+
+
+    </td>
+  </tr>
+</table>
 
  <table class="pricing">
   <thead>
     <tr>
-      <th class="text-left">Cargo Description</th>
-      <th class="text-center" style="width:45px;">Qty</th>
-      <th class="text-right"  style="width:95px;">Unit Price</th>
-      <th class="text-right"  style="width:95px;">Amount</th>
-      <th class="text-right"  style="width:95px;">Total</th>
+      <th class="text-left">CARGO DESCRIPTION</th>
+      <th class="text-center" style="width:45px;">QTY</th>
+      <th class="text-right"  style="width:95px;">PRICE</th>
+      <th class="text-right"  style="width:95px;">AMOUNT</th>
+      <th class="text-right"  style="width:95px;">TOTAL</th>
     </tr>
   </thead>
   <tbody>
@@ -341,6 +395,12 @@
   <div class="footer-sign">
     Best regards,<br><br><br>
     <strong>PT Dakara Samudera Hanasta</strong><br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+
     {{ fq.sales_user.get_full_name|default:fq.sales_user.username }}<br>
     Sales Department
   </div>

@@ -31,7 +31,10 @@ from .views.freight import (
     FqDetailView,
     FqDeleteView,
     FqBulkDeleteView,
-   
+    FqStatusUpdateView,
+     FoListView,
+    FoDetailView,
+    FoStatusUpdateView,
 )
 
 from .views.freight_pdf import  FreightQuotationPdfHtmlView
@@ -85,7 +88,7 @@ urlpatterns = [
     path("freight-quotations/<int:pk>/edit/", FqUpdateView.as_view(), name="fq_edit"),
     
     path(
-        "freight=quotations/<int:pk>/",
+        "freight-quotations/<int:pk>/",
         FqDetailView.as_view(),
         name="fq_detail",
     ),
@@ -106,7 +109,19 @@ urlpatterns = [
         "freight-quotations/<int:pk>/pdf/",
         FreightQuotationPdfHtmlView.as_view(),
         name="fq_pdf",
-        )
+    ),
+
+    path(
+        "freight-quotations/<int:pk>/status/",
+        FqStatusUpdateView.as_view(),
+        name="fq_change_status",
+    ),
+
+    # FREIGHT ORDERS
+    path("freight-orders/", FoListView.as_view(), name="fo_list"),
+    path("freight-orders/<int:pk>/", FoDetailView.as_view(), name="fo_detail"),
+    path("freight-orders/<int:pk>/status/", FoStatusUpdateView.as_view(), name="fo_change_status"),
+
     
 ]
 
