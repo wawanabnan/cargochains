@@ -10,7 +10,7 @@ from partners.models import Partner
 from decimal import Decimal
 
 
-from .freight import FreightQuotation, FreightQuotationStatus
+from .freight import FreightQuotation,  FreightQuotationStatus, FreightOrder
 from geo.models import Location
 from core.models import Currency, CoreSetting
 from core.models import UOM
@@ -835,3 +835,81 @@ class FreightQuotationForm(forms.ModelForm):
                     )
 
         return cleaned
+
+
+class FreightOrderEditForm(forms.ModelForm):
+    class Meta:
+        model = FreightOrder
+        fields = [
+            "payment_term",
+            "down_payment",
+            "reference_type",
+            "reference_number",
+            "reference_date",
+        ]
+        widgets = {
+            "reference_date": forms.DateInput(
+                attrs={"type": "date", "class": "form-control"}
+            ),
+        }
+
+
+# sales/forms.py
+from django import forms
+from decimal import Decimal, InvalidOperation
+
+class GenerateOrderForm(forms.Form):
+    REFERENCE_TYPES = [
+        ("CUSTOMER_PO", "Customer PO"),
+        ("EMAIL", "Email"),
+        ("QUOTATION", "Quotation"),
+    ]
+
+    ref_type = forms.ChoiceField(
+        label="Reference Type",
+        choices=REFERENCE_TYPES,
+        required=True,
+    )
+
+    ref_number = forms.CharField(
+        label="Reference Number",
+        required=True,
+        max_length=100,
+    )
+
+    ref_date = forms.DateField(
+        label="Sales Order Date",
+        required=True,
+        widget=forms.DateInput(attrs={"type": "date"}),
+    )
+
+    down_payment = forms.CharField(
+        label="Down Payment",
+        required=False,
+    )
+
+    
+    def clean_down_payment(self):
+        raw = (self.cleaned_data.get("down_payment") or "").strip()
+
+        # kosong -> anggap 0
+        if not raw:
+            return Decimal("0.00")
+
+        # hapus spasi
+        raw = raw.replace(" ", "")
+
+        # "1.500.000,25" -> "1500000,25" -> "1500000.25"
+        raw = raw.replace(".", "").replace(",", ".")
+
+        try:
+            value = Decimal(raw)
+        except InvalidOperation:
+            raise forms.ValidationError(
+                "Format Down Payment tidak valid. Gunakan contoh: 1.500.000,00"
+            )
+
+        if value < 0:
+            raise forms.ValidationError("Down Payment tidak boleh negatif.")
+
+        return value

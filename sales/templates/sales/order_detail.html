@@ -1,146 +1,155 @@
 {% extends "adminbase.html" %}
 
 {% block content %}
+
 <div class="content-wrapper">
 
+  <!-- HEADER -->
   <section class="content-header">
     <div class="container-fluid">
 
+      {# ===== BARIS 1: JUDUL ===== #}
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
         <h3 class="mb-0">
           Freight Order {{ order.number }}
         </h3>
-
-        {# Badge status kanan #}
-        {% with s=order.status|default:"DRAFT"|upper %}
-          <div>
-            {% if s == "DRAFT" %}
-              <span class="badge bg-secondary">Draft</span>
-            {% elif s == "SENT" %}
-              <span class="badge bg-primary">Sent</span>
-            {% elif s == "ON_PROGRESS" %}
-              <span class="badge bg-warning text-dark">On Progress</span>
-            {% elif s == "COMPLETED" %}
-              <span class="badge bg-success">Completed</span>
-            {% elif s == "CANCELLED" %}
-              <span class="badge bg-danger">Cancelled</span>
-            {% elif s == "HOLDED" %}
-              <span class="badge bg-info">Holded</span>
-            {% else %}
-              <span class="badge bg-light text-dark">{{ s|title }}</span>
-            {% endif %}
-          </div>
-        {% endwith %}
       </div>
 
-      {# Tombol aksi status (kiri) #}
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <div>
-          <a href="{% url 'sales:fo_list' %}" class="btn btn-sm btn-outline-secondary me-2">
-            <i class="fa fa-arrow-left me-1"></i> Kembali ke List
+      {# ===== BARIS 2: KIRI = tombol, KANAN = status ===== #}
+      {% with s=order.status|default:"DRAFT"|upper %}
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+        {# KIRI: Back, Edit (Draft only), Status buttons #}
+        <div class="d-flex flex-wrap align-items-center gap-2">
+
+          <a href="{% url 'sales:fo_list' %}"
+             class="btn btn-outline-secondary btn-sm">
+            <i class="fa fa-arrow-left me-1"></i> Back to List
           </a>
 
+          {# Edit hanya saat Draft dan form tersedia #}
+          {% if edit_form and s == "DRAFT" %}
+            <button type="button"
+                    class="btn btn-outline-primary btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#foEditModal">
+              <i class="fa fa-edit me-1"></i> Edit Payment & Reference
+            </button>
+          {% endif %}
+
+          {# FORM STATUS ACTION #}
           <form method="post"
-                action="{% url 'sales:fo_change_status' order.pk %}"
+                action{% spaceless %}="{% url 'sales:fo_change_status' order.pk %}"{% endspaceless %}
                 class="d-inline">
             {% csrf_token %}
-            {% with s=order.status|default:"DRAFT"|upper %}
-              {% if s == "DRAFT" %}
-                <div class="btn-group btn-group-sm">
-                  <button type="submit" name="action" value="sent"
-                          class="btn btn-outline-primary">
-                    Mark as Sent
-                  </button>
-                  <button type="submit" name="action" value="holded"
-                          class="btn btn-outline-info">
-                    Hold
-                  </button>
-                  <button type="submit" name="action" value="cancelled"
-                          class="btn btn-outline-danger">
-                    Cancel
-                  </button>
-                </div>
 
-              {% elif s == "SENT" %}
-                <div class="btn-group btn-group-sm">
-                  <button type="submit" name="action" value="on_progress"
-                          class="btn btn-outline-warning">
-                    Mark as On Progress
-                  </button>
-                  <button type="submit" name="action" value="holded"
-                          class="btn btn-outline-info">
-                    Hold
-                  </button>
-                  <button type="submit" name="action" value="cancelled"
-                          class="btn btn-outline-danger">
-                    Cancel
-                  </button>
-                </div>
+            {# DRAFT: boleh In Progress, Hold, Cancel #}
+            {% if s == "DRAFT" %}
+              <div class="btn-group btn-group-sm ms-1">
+                <button type="submit" name="action" value="in_progress"
+                        class="btn btn-outline-primary">
+                  <i class="fa fa-play me-1"></i> Mark as In Progress
+                </button>
+                <button type="submit" name="action" value="holded"
+                        class="btn btn-outline-info">
+                  <i class="fa fa-pause me-1"></i> Hold
+                </button>
+                <button type="submit" name="action" value="cancelled"
+                        class="btn btn-outline-danger">
+                  <i class="fa fa-times me-1"></i> Cancel
+                </button>
+              </div>
 
-              {% elif s == "ON_PROGRESS" %}
-                <div class="btn-group btn-group-sm">
-                  <button type="submit" name="action" value="completed"
-                          class="btn btn-outline-success">
-                    Mark as Completed
-                  </button>
-                  <button type="submit" name="action" value="holded"
-                          class="btn btn-outline-info">
-                    Hold
-                  </button>
-                  <button type="submit" name="action" value="cancelled"
-                          class="btn btn-outline-danger">
-                    Cancel
-                  </button>
-                </div>
+            {# IN_PROGRESS: boleh Completed, Hold, Cancel #}
+            {% elif s == "IN_PROGRESS" %}
+              <div class="btn-group btn-group-sm ms-1">
+                <button type="submit" name="action" value="completed"
+                        class="btn btn-outline-success">
+                  <i class="fa fa-check me-1"></i> Mark as Completed
+                </button>
+                <button type="submit" name="action" value="holded"
+                        class="btn btn-outline-info">
+                  <i class="fa fa-pause me-1"></i> Hold
+                </button>
+                <button type="submit" name="action" value="cancelled"
+                        class="btn btn-outline-danger">
+                  <i class="fa fa-times me-1"></i> Cancel
+                </button>
+              </div>
 
-              {% elif s == "HOLDED" %}
-                <div class="btn-group btn-group-sm">
-                  <button type="submit" name="action" value="sent"
-                          class="btn btn-outline-primary">
-                    Back to Sent
-                  </button>
-                  <button type="submit" name="action" value="cancelled"
-                          class="btn btn-outline-danger">
-                    Cancel
-                  </button>
-                </div>
-              {% endif %}
-            {% endwith %}
+            {# HOLDED: boleh balik ke In Progress atau Cancel #}
+            {% elif s == "HOLDED" %}
+              <div class="btn-group btn-group-sm ms-1">
+                <button type="submit" name="action" value="in_progress"
+                        class="btn btn-outline-primary">
+                  <i class="fa fa-play me-1"></i> Back to In Progress
+                </button>
+                <button type="submit" name="action" value="cancelled"
+                        class="btn btn-outline-danger">
+                  <i class="fa fa-times me-1"></i> Cancel
+                </button>
+              </div>
+            {% endif %}
           </form>
+
         </div>
+
+        {# KANAN: badge status #}
+        <div class="text-end">
+          {% if s == "DRAFT" %}
+            <span class="badge bg-secondary">Draft</span>
+          {% elif s == "IN_PROGRESS" %}
+            <span class="badge bg-warning text-dark">In Progress</span>
+          {% elif s == "COMPLETED" %}
+            <span class="badge bg-success">Completed</span>
+          {% elif s == "CANCELLED" %}
+            <span class="badge bg-danger">Cancelled</span>
+          {% elif s == "HOLDED" %}
+            <span class="badge bg-info">Holded</span>
+          {% else %}
+            <span class="badge bg-light text-dark">{{ s|title }}</span>
+          {% endif %}
+        </div>
+
       </div>
+      {% endwith %}
 
     </div>
   </section>
 
+
+  <!-- MAIN CONTENT -->
   <section class="content">
     <div class="container-fluid">
 
-      {# ORDER INFO #}
+      <!-- ORDER HEADER -->
       <div class="card mb-3">
         <div class="card-header bg-body-secondary">
           <strong>Order Information</strong>
         </div>
         <div class="card-body row g-3">
+
           <div class="col-md-4">
             <label class="form-label small">Order Number</label>
             <div>{{ order.number }}</div>
           </div>
+
           <div class="col-md-4">
             <label class="form-label small">Order Date</label>
             <div>{{ order.order_date|date:"Y-m-d" }}</div>
           </div>
+
           <div class="col-md-4">
             <label class="form-label small">Quotation</label>
-            {% if order.quotation %}
-              <div>
+            <div>
+              {% if order.quotation %}
                 <a href="{% url 'sales:fq_detail' order.quotation.pk %}">
                   {{ order.quotation.number }}
                 </a>
-              </div>
-            {% else %}
-              <div>-</div>
-            {% endif %}
+              {% else %}
+                -
+              {% endif %}
+            </div>
           </div>
 
           <div class="col-md-4">
@@ -157,52 +166,94 @@
             <label class="form-label small">Payment Term</label>
             <div>{{ order.payment_term.name }}</div>
           </div>
+
+          <div class="col-md-4">
+            <label class="form-label small">Down Payment</label>
+            <div>{{ order.down_payment }}</div>
+          </div>
+
+          <div class="col-md-8">
+            <label class="form-label small">Reference</label>
+            <div>
+              {% if order.reference_type %}
+                {{ order.get_reference_type_display }}<br>
+              {% endif %}
+              {% if order.reference_number %}
+                No: {{ order.reference_number }}<br>
+              {% endif %}
+              {% if order.reference_date %}
+                Date: {{ order.reference_date|date:"Y-m-d" }}
+              {% endif %}
+              {% if not order.reference_type and not order.reference_number and not order.reference_date %}
+                -
+              {% endif %}
+            </div>
+          </div>
+
         </div>
       </div>
 
-      {# ROUTE #}
+
+      <!-- ROUTE -->
       <div class="card mb-3">
         <div class="card-header bg-body-secondary">
           <strong>Route</strong>
         </div>
         <div class="card-body row g-3">
+
           <div class="col-md-6">
             <label class="form-label small">Origin</label>
             <div>{{ order.origin.name }}</div>
           </div>
+
           <div class="col-md-6">
             <label class="form-label small">Destination</label>
             <div>{{ order.destination.name }}</div>
           </div>
+
           <div class="col-md-4">
             <label class="form-label small">Plan Date</label>
             <div>{{ order.shipment_plan_date|date:"Y-m-d" }}</div>
           </div>
+
         </div>
       </div>
 
-      {# CARGO #}
+
+      <!-- CARGO INFO -->
       <div class="card mb-3">
         <div class="card-header bg-body-secondary">
           <strong>Cargo Information</strong>
         </div>
+
         <div class="card-body row g-3">
+
           <div class="col-md-4">
             <label class="form-label small">Cargo Name</label>
             <div>{{ order.cargo_name }}</div>
           </div>
+
           <div class="col-md-4">
             <label class="form-label small">Package</label>
             <div>{{ order.package_count }} {{ order.package_type }}</div>
           </div>
+
           <div class="col-md-4">
             <label class="form-label small">Gross Weight</label>
-            <div>{{ order.gross_weight }} {{ order.weight_uom }}</div>
+            <div>
+              {{ order.gross_weight }}
+              {% if order.weight_uom %} {{ order.weight_uom.code }}{% endif %}
+            </div>
           </div>
+
           <div class="col-md-4">
             <label class="form-label small">Volume (CBM)</label>
-            <div>{{ order.volume_cbm }} {{ order.volume_uom }}</div>
+            <div>
+              {{ order.volume_cbm }}
+              {% if order.volume_uom %} {{ order.volume_uom.code }}{% endif %}
+            </div>
           </div>
+
           <div class="col-md-4">
             <label class="form-label small">Dangerous Goods</label>
             <div>
@@ -213,66 +264,90 @@
               {% endif %}
             </div>
           </div>
+
         </div>
       </div>
 
-      {# SHIPPER & CONSIGNEE #}
+
+      <!-- SHIPPER & CONSIGNEE -->
       <div class="card mb-3">
         <div class="card-header bg-body-secondary">
           <strong>Shipper & Consignee</strong>
         </div>
+
         <div class="card-body row g-3">
+
+          <!-- SHIPPER -->
           <div class="col-md-6">
             <h6 class="fw-bold mb-2">Shipper</h6>
             <div><strong>{{ order.shipper_name }}</strong></div>
             <div>{{ order.shipper_address|linebreaksbr }}</div>
           </div>
+
+          <!-- CONSIGNEE -->
           <div class="col-md-6">
             <h6 class="fw-bold mb-2">Consignee</h6>
             <div><strong>{{ order.consignee_name }}</strong></div>
             <div>{{ order.consignee_address|linebreaksbr }}</div>
           </div>
+
         </div>
       </div>
 
-      {# PRICING #}
+
+      <!-- PRICING -->
       <div class="card mb-3">
         <div class="card-header bg-body-secondary">
-          <strong>Pricing</strong>
+          <strong>Pricing & Tax</strong>
         </div>
+
         <div class="card-body row g-3">
+
           <div class="col-md-3">
             <label class="form-label small">Quantity</label>
             <div>{{ order.quantity }}</div>
           </div>
+
           <div class="col-md-3">
             <label class="form-label small">Unit Price</label>
             <div>{{ order.unit_price }}</div>
           </div>
+
           <div class="col-md-3">
             <label class="form-label small">Amount</label>
             <div>{{ order.amount }}</div>
           </div>
+
           <div class="col-md-3">
             <label class="form-label small">Discount</label>
             <div>{{ order.discount_percent }} % ({{ order.discount_amount }})</div>
           </div>
+
           <div class="col-md-3">
-            <label class="form-label small">Tax</label>
-            <div>{{ order.tax_percent }} % ({{ order.tax_amount }})</div>
+            <label class="form-label small">Tax (%)</label>
+            <div>{{ order.tax_percent }} %</div>
           </div>
+
+          <div class="col-md-3">
+            <label class="form-label small">Tax Amount</label>
+            <div>{{ order.tax_amount }}</div>
+          </div>
+
           <div class="col-md-3">
             <label class="form-label small">Total Amount</label>
             <div>{{ order.total_amount }}</div>
           </div>
+
         </div>
       </div>
 
-      {# NOTES #}
+
+      <!-- NOTES -->
       <div class="card mb-3">
         <div class="card-header bg-body-secondary">
           <strong>Internal Notes</strong>
         </div>
+
         <div class="card-body">
           <div>{{ order.notes_internal|default:"-"|linebreaksbr }}</div>
         </div>
@@ -282,4 +357,70 @@
   </section>
 
 </div>
+
+
+{# ==================== MODAL EDIT (DRAFT ONLY) ==================== #}
+{% if edit_form %}
+<div class="modal fade" id="foEditModal" tabindex="-1" aria-labelledby="foEditModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="foEditModalLabel">Edit Payment & Reference</h5>
+        <button type="button" class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"></button>
+      </div>
+
+      <form method="post" action="{% url 'sales:fo_edit_fields' order.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="row g-3">
+
+            <div class="col-md-4">
+              <label class="form-label small">Payment Term</label>
+              {{ edit_form.payment_term }}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small">Down Payment</label>
+              {{ edit_form.down_payment }}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small">Reference Type</label>
+              {{ edit_form.reference_type }}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small">Reference Number</label>
+              {{ edit_form.reference_number }}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small">Reference Date</label>
+              {{ edit_form.reference_date }}
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button"
+                  class="btn btn-outline-secondary btn-sm"
+                  data-bs-dismiss="modal">
+            Cancel
+          </button>
+          <button type="submit"
+                  class="btn btn-primary btn-sm">
+            <i class="fa fa-save me-1"></i> Save
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}

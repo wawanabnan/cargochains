@@ -35,6 +35,7 @@ from .views.freight import (
      FoListView,
     FoDetailView,
     FoStatusUpdateView,
+    FoEditFieldsView
 )
 
 from .views.freight_pdf import  FreightQuotationPdfHtmlView
@@ -121,8 +122,8 @@ urlpatterns = [
     path("freight-orders/", FoListView.as_view(), name="fo_list"),
     path("freight-orders/<int:pk>/", FoDetailView.as_view(), name="fo_detail"),
     path("freight-orders/<int:pk>/status/", FoStatusUpdateView.as_view(), name="fo_change_status"),
+    path("freight-orders/<int:pk>/edit-fields/", FoEditFieldsView.as_view(), name="fo_edit_fields"),
 
-    
 ]
 
 

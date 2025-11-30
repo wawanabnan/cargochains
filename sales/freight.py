@@ -10,7 +10,7 @@ from django.db import transaction
 from core.models import NumberSequence
 from core.utils import get_next_number
 from core.models import PaymentTerm,UOM
-
+from datetime import date
 
 # ============================
 #   FREIGHT QUOTATION STATUS
@@ -284,6 +284,25 @@ class FreightQuotation(TimeStampedModel):
 
     notes_internal = models.TextField(blank=True)
     notes_customer = models.TextField(blank=True)
+
+    # === NEW: reference info ===
+    REFERENCE_TYPES = [
+        ("CUSTOMER_PO", "Customer PO"),
+        ("EMAIL", "Email"),
+        ("QUOTATION", "Quotation"),
+    ]
+
+    reference_type = models.CharField(
+        max_length=30,
+        choices=REFERENCE_TYPES,
+        null=True,
+        blank=True,
+    )
+    reference_number = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = "sales_freight_quotations"
@@ -592,13 +611,11 @@ class FreightQuotation(TimeStampedModel):
 #   FREIGHT ORDER STATUS
 # ============================
 class FreightOrderStatus(models.TextChoices):
-    DRAFT       = "DRAFT", "Draft"
-    SENT        = "SENT", "Sent"
-    ON_PROGRESS = "ON_PROGRESS", "On Progress"
-    COMPLETED   = "COMPLETED", "Completed"
-    CANCELLED   = "CANCELLED", "Cancelled"
-    HOLDED      = "HOLDED", "Holded"
-
+    DRAFT        = "DRAFT", "Draft"
+    IN_PROGRESS  = "IN_PROGRESS", "In Progress"
+    COMPLETED    = "COMPLETED", "Completed"
+    CANCELLED    = "CANCELLED", "Cancelled"
+    HOLDED       = "HOLDED", "Holded"
 
 # ============================
 #   FREIGHT ORDER
@@ -753,11 +770,18 @@ class FreightOrder(TimeStampedModel):
         decimal_places=2,
         default=0,
     )
+    
     tax_amount = models.DecimalField(
         max_digits=14,
         decimal_places=2,
         default=0,
     )
+    down_payment = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+    )
+
     discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     discount_amount  = models.DecimalField(max_digits=14, decimal_places=2, default=0)
 
@@ -769,7 +793,28 @@ class FreightOrder(TimeStampedModel):
 
 
     notes_internal = models.TextField(blank=True)
+    notes_customer = models.TextField(blank=True)
 
+    # === NEW: reference info ===
+    REFERENCE_TYPES = [
+        ("CUSTOMER_PO", "Customer PO"),
+        ("EMAIL", "Email"),
+        ("QUOTATION", "Quotation"),
+    ]
+
+    reference_type = models.CharField(
+        max_length=30,
+        choices=REFERENCE_TYPES,
+        null=True,
+        blank=True,
+    )
+    reference_number = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+    )
+    reference_date = models.DateField(default=date.today)
+    
     class Meta:
         db_table = "sales_freight_orders"
         ordering = ["-order_date", "-id"]
