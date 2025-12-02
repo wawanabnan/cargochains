@@ -1,0 +1,90 @@
+{% extends "adminbase.html" %}
+
+{% block content %}
+
+<div class="app-header">
+  <div class="container-fluid py-2 d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Invoices</h5>
+
+    <a href="{% url 'sales:invoice_add' %}" class="btn btn-primary btn-sm">
+      <i class="fa fa-plus me-1"></i> New Invoice
+    </a>
+  </div>
+</div>
+
+<div class="app-content">
+
+  <div class="container-fluid mb-3">
+    <form method="get" class="row g-2">
+      <div class="col-md-3">
+        <label class="form-label mb-1">Search</label>
+        <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label mb-1">Status</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">-- All --</option>
+          {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3 d-flex align-items-end">
+        <button class="btn btn-primary btn-sm me-2"><i class="fa fa-search me-1"></i>Filter</button>
+        <a href="{% url 'sales:invoice_list' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="container-fluid">
+    <div class="card shadow-sm">
+      <div class="card-body p-0">
+
+        <div class="table-responsive">
+          <table class="table table-hover table-sm mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>Invoice No</th>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Total</th>
+                <th>Outstanding</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for inv in invoices %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td>{{ inv.number }}</td>
+                  <td>{{ inv.invoice_date|date:"d M Y" }}</td>
+                  <td>{{ inv.customer.name }}</td>
+                  <td class="text-end">{{ inv.total_amount|floatformat:2 }}</td>
+                  <td class="text-end">{{ inv.amount_outstanding|floatformat:2 }}</td>
+                  <td>
+                    <span class="badge bg-secondary">{{ inv.get_status_display }}</span>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center py-3">No invoices found</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

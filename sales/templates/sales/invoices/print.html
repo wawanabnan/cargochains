@@ -1,0 +1,91 @@
+{# templates/sales/invoice_print.html #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Invoice {{ invoice.number }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; margin: 0; padding: 0; }
+    .page { width: 210mm; min-height: 297mm; padding: 15mm 20mm; box-sizing: border-box; }
+    h1 { font-size: 20px; margin-bottom: 4px; }
+    .header, .footer { width: 100%; }
+    .header { margin-bottom: 20px; }
+    .footer { margin-top: 20px; font-size: 10px; color: #666; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 4px 6px; border-bottom: 1px solid #ddd; }
+    th { text-align: left; background: #f0f0f0; }
+    .text-right { text-align: right; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <table>
+      <tr>
+        <td>
+          <h1>INVOICE</h1>
+          <div>No: {{ invoice.number }}</div>
+          <div>Date: {{ invoice.invoice_date|date:"d M Y" }}</div>
+          <div>Due: {{ invoice.due_date|date:"d M Y" }}</div>
+        </td>
+        <td class="text-right">
+          <strong>{{ invoice.customer.name }}</strong><br>
+          {% if invoice.customer.company_name %}
+            {{ invoice.customer.company_name }}<br>
+          {% endif %}
+          {# tambahkan alamat kalau sudah ada field-nya #}
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <h3>Details</h3>
+  <table>
+    <tr>
+      <th>Description</th>
+      <th class="text-right">Amount</th>
+    </tr>
+    {# nanti kalau sudah pakai InvoiceLine, loop di sini #}
+    <tr>
+      <td>Freight Order
+        {% if invoice.freight_order %}
+          {{ invoice.freight_order.number }}
+        {% endif %}
+      </td>
+      <td class="text-right">
+        {{ invoice.total_amount|floatformat:2 }}
+      </td>
+    </tr>
+  </table>
+
+  <table style="margin-top: 20px;">
+    <tr>
+      <td style="width: 60%;"></td>
+      <td>
+        <table>
+          <tr>
+            <td>Subtotal</td>
+            <td class="text-right">{{ invoice.subtotal_amount|floatformat:2 }}</td>
+          </tr>
+          <tr>
+            <td>Tax</td>
+            <td class="text-right">{{ invoice.tax_amount|floatformat:2 }}</td>
+          </tr>
+          <tr>
+            <td><strong>Total</strong></td>
+            <td class="text-right"><strong>{{ invoice.total_amount|floatformat:2 }}</strong></td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <div class="footer">
+    Notes:<br>
+    {{ invoice.notes_customer|linebreaksbr|default:"" }}
+  </div>
+
+</div>
+</body>
+</html>

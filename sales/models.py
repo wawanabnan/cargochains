@@ -11,6 +11,7 @@ from core.models import UOM
 from core.models import PaymentTerm
 from core.models import Currency
 from .freight import FreightQuotation, FreightOrder,  FreightQuotationStatus
+from .invoice import *
 
 class SalesQuotation(models.Model):
     STATUS_DRAFT     = "DRAFT"

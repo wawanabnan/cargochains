@@ -1,167 +1,173 @@
 {% extends "adminbase.html" %}
 
 {% block content %}
-<div class="content-wrapper">
 
-  {# ======================= #
-     HEADER + STATUS BAR
-     ======================= #}
-  <section class="content-header">
-    <div class="container-fluid">
-      <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+<div class="app-content-header">
+  <div class="container-fluid d-flex justify-content-between align-items-start">
 
-        {# LEFT: Title + status badge + Edit/PDF #}
-        <div>
-          <h3 class="mb-1">
-            Freight Quotation {{ fq.number }}
-          </h3>
+    <!-- LEFT SIDE: Title + Status Badge -->
+    <div>
+      <h3 class="mb-1">Freight Quotation</h3>
 
-          <div class="small text-muted mb-2">
-            Status:
-            {% with s=fq.status|default:"DRAFT"|upper %}
-              {% if s == "ACCEPTED" %}
-                <span class="badge bg-success">Accepted</span>
-              {% elif s == "CANCELLED" %}
-                <span class="badge bg-danger">Cancelled</span>
-              {% elif s == "EXPIRED" %}
-                <span class="badge bg-warning text-dark">Expired</span>
-              {% elif s == "SENT" %}
-                <span class="badge bg-info text-dark">Sent</span>
-              {% elif s == "ORDERED" %}
-                <span class="badge bg-primary">Ordered</span>
-              {% else %}
-                <span class="badge bg-secondary">Draft</span>
-              {% endif %}
-            {% endwith %}
-          </div>
-
-          <div class="d-flex flex-wrap gap-2">
-            {% with s=fq.status|default:"DRAFT"|upper %}
-              {% if s in "DRAFT,SENT,ACCEPTED" %}
-                <a href="{% url 'sales:fq_edit' fq.pk %}"
-                   class="btn btn-outline-primary btn-sm">
-                  <i class="fa fa-edit me-1"></i>Edit
-                </a>
-              {% endif %}
-            {% endwith %}
-            <a href="{% url 'sales:fq_pdf' fq.pk %}"
-               target="_blank"
-               class="btn btn-outline-secondary btn-sm">
-              <i class="fa fa-file-pdf me-1"></i> PDF
-            </a>
-          </div>
-        </div>
-
-        {# RIGHT: Status Actions (Odoo style) #}
-        <div class="d-flex flex-wrap gap-2 justify-content-end">
-
-          {% with s=fq.status|default:"DRAFT"|upper %}
-
-            {# DRAFT: bisa Sent / Cancel #}
-            {% if s == "DRAFT" %}
-              <form method="post"
-                    action="{% url 'sales:fq_change_status' fq.pk %}"
-                    class="d-inline">
-                {% csrf_token %}
-                <button type="submit" name="action" value="sent"
-                        class="btn btn-outline-primary btn-sm">
-                  Mark as Sent
-                </button>
-              </form>
-              <form method="post"
-                    action="{% url 'sales:fq_change_status' fq.pk %}"
-                    class="d-inline">
-                {% csrf_token %}
-                <button type="submit" name="action" value="cancelled"
-                        class="btn btn-outline-danger btn-sm">
-                  Cancel
-                </button>
-              </form>
-
-            {# SENT: bisa Accepted / Expired / Cancel #}
-            {% elif s == "SENT" %}
-              <form method="post"
-                    action="{% url 'sales:fq_change_status' fq.pk %}"
-                    class="d-inline">
-                {% csrf_token %}
-                <button type="submit" name="action" value="accepted"
-                        class="btn btn-outline-success btn-sm">
-                  Mark as Accepted
-                </button>
-              </form>
-              <form method="post"
-                    action="{% url 'sales:fq_change_status' fq.pk %}"
-                    class="d-inline">
-                {% csrf_token %}
-                <button type="submit" name="action" value="expired"
-                        class="btn btn-outline-warning btn-sm">
-                  Expired
-                </button>
-              </form>
-              <form method="post"
-                    action="{% url 'sales:fq_change_status' fq.pk %}"
-                    class="d-inline">
-                {% csrf_token %}
-                <button type="submit" name="action" value="cancelled"
-                        class="btn btn-outline-danger btn-sm">
-                  Cancel
-                </button>
-              </form>
-
-            {# ACCEPTED: Generate Order (modal) + Cancel #}
-            {% elif s == "ACCEPTED" %}
-              <button type="button"
-                      class="btn btn-info btn-sm"
-                      data-bs-toggle="modal"
-                      data-bs-target="#generateOrderModal">
-                <i class="fa fa-share-square me-1"></i> Generate Order
-              </button>
-              <form method="post"
-                    action="{% url 'sales:fq_change_status' fq.pk %}"
-                    class="d-inline">
-                {% csrf_token %}
-                <button type="submit" name="action" value="cancelled"
-                        class="btn btn-outline-danger btn-sm">
-                  Cancel
-                </button>
-              </form>
-
-            {# ORDERED: sudah final #}
-            {% elif s == "ORDERED" %}
-              <span class="badge bg-primary align-self-center">
-                Ordered
-              </span>
-
-            {# CANCELLED #}
-            {% elif s == "CANCELLED" %}
-              <span class="badge bg-danger align-self-center">
-                Cancelled
-              </span>
-
-            {# EXPIRED #}
-            {% elif s == "EXPIRED" %}
-              <span class="badge bg-warning text-dark align-self-center">
-                Expired
-              </span>
-            {% endif %}
-
-          {% endwith %}
-
-        </div>
-
+      {# STATUS BADGE — langsung di bawah judul #}
+      <div class="mt-0">
+        {% with s=fq.status|default:"DRAFT"|upper %}
+          {% if s == "ACCEPTED" %}
+            <span class="badge bg-success">Accepted</span>
+          {% elif s == "CANCELLED" %}
+            <span class="badge bg-danger">Cancelled</span>
+          {% elif s == "EXPIRED" %}
+            <span class="badge bg-warning text-dark">Expired</span>
+          {% elif s == "SENT" %}
+            <span class="badge bg-info text-dark">Sent</span>
+          {% elif s == "ORDERED" %}
+            <span class="badge bg-primary">Ordered</span>
+          {% else %}
+            <span class="badge bg-secondary">Draft</span>
+          {% endif %}
+        {% endwith %}
       </div>
     </div>
-  </section>
 
-  {# ======================= #
-     MAIN CONTENT (DETAIL)
-     ======================= #}
-  <section class="content">
-    <div class="container-fluid">
+    <!-- RIGHT SIDE: Quotation Number -->
+    <div class="text-end">
+      <h4 class="mb-0 fw-bold text-primary">
+        {{ fq.number }}
+      </h4>
+    </div>
 
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+
+    {# TOOLBAR ATAS DETAIL PAGE #}
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+
+      {# KIRI: New | Edit | PDF #}
+      <div class="btn-group" role="group" aria-label="Basic actions">
+        <a href="{% url 'sales:fq_add' %}" class="btn btn-outline-primary btn-sm">
+          <i class="fa fa-plus me-1"></i> New
+        </a>
+
+        {% with s=fq.status|default:"DRAFT"|upper %}
+        {% if s == "DRAFT" or s == "SENT" %}
+          <a href="{% url 'sales:fq_edit' fq.pk %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fa fa-edit me-1"></i> Edit
+          </a>
+        {% endif %}
+      {% endwith %}
+      
+  
+        <a href="{% url 'sales:fq_pdf' fq.pk %}" class="btn btn-outline-dark btn-sm" target="_blank">
+          <i class="fa fa-file-pdf me-1"></i> PDF
+        </a>
+      </div>
+
+      {# KANAN: STATUS ACTIONS #}
+      <div class="text-end">
+        {% with s=fq.status|default:"DRAFT"|upper %}
+
+          {# DRAFT: bisa Sent / Cancel #}
+          {% if s == "DRAFT" %}
+            <form method="post"
+                  action="{% url 'sales:fq_change_status' fq.pk %}"
+                  class="d-inline">
+              {% csrf_token %}
+              <button type="submit" name="action" value="sent"
+                      class="btn btn-outline-primary btn-sm">
+                Mark as Sent
+              </button>
+            </form>
+            <form method="post"
+                  action="{% url 'sales:fq_change_status' fq.pk %}"
+                  class="d-inline">
+              {% csrf_token %}
+              <button type="submit" name="action" value="cancelled"
+                      class="btn btn-outline-danger btn-sm">
+                Cancel
+              </button>
+            </form>
+
+          {# SENT: bisa Accepted / Expired / Cancel #}
+          {% elif s == "SENT" %}
+            <form method="post"
+                  action="{% url 'sales:fq_change_status' fq.pk %}"
+                  class="d-inline">
+              {% csrf_token %}
+              <button type="submit" name="action" value="accepted"
+                      class="btn btn-outline-success btn-sm">
+                Mark as Accepted
+              </button>
+            </form>
+            <form method="post"
+                  action="{% url 'sales:fq_change_status' fq.pk %}"
+                  class="d-inline">
+              {% csrf_token %}
+              <button type="submit" name="action" value="expired"
+                      class="btn btn-outline-warning btn-sm">
+                Expired
+              </button>
+            </form>
+            <form method="post"
+                  action="{% url 'sales:fq_change_status' fq.pk %}"
+                  class="d-inline">
+              {% csrf_token %}
+              <button type="submit" name="action" value="cancelled"
+                      class="btn btn-outline-danger btn-sm">
+                Cancel
+              </button>
+            </form>
+
+          {# ACCEPTED: Generate Order (modal) + Cancel #}
+          {% elif s == "ACCEPTED" %}
+            <button type="button"
+                    class="btn btn-info btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#generateOrderModal">
+              <i class="fa fa-share-square me-1"></i> Generate Order
+            </button>
+            <form method="post"
+                  action="{% url 'sales:fq_change_status' fq.pk %}"
+                  class="d-inline">
+              {% csrf_token %}
+              <button type="submit" name="action" value="cancelled"
+                      class="btn btn-outline-danger btn-sm">
+                Cancel
+              </button>
+            </form>
+
+          {# ORDERED: sudah final #}
+          {% elif s == "ORDERED" %}
+            <span class="badge bg-primary align-self-center">
+              Ordered
+            </span>
+
+          {# CANCELLED #}
+          {% elif s == "CANCELLED" %}
+            <span class="badge bg-danger align-self-center">
+              Cancelled
+            </span>
+
+          {# EXPIRED #}
+          {% elif s == "EXPIRED" %}
+            <span class="badge bg-warning text-dark align-self-center">
+              Expired
+            </span>
+          {% endif %}
+
+        {% endwith %}
+      </div>
+    </div>
+
+  </div>
+
+  <div class="container-fluid">
+  
       {# QUOTATION HEADER #}
-      <div class="card mb-3">
-        <div class="card-header bg-body-secondary">
+      <div class="card mb-3 shadow-none">
+        <div class="card-header ">
           <strong>Quotation Information</strong>
         </div>
         <div class="card-body row g-3">
@@ -200,8 +206,8 @@
       </div>
 
       {# ROUTE #}
-      <div class="card mb-3">
-        <div class="card-header bg-body-secondary">
+      <div class="card mb-3 shadow-none">
+        <div class="card-header ">
           <strong>Route</strong>
         </div>
         <div class="card-body row g-3">
@@ -225,8 +231,8 @@
       </div>
 
       {# CARGO INFO #}
-      <div class="card mb-3">
-        <div class="card-header bg-body-secondary">
+      <div class="card mb-3 shadow-none">
+        <div class="card-header ">
           <strong>Cargo Information</strong>
         </div>
 
@@ -266,8 +272,8 @@
       </div>
 
       {# SHIPPER & CONSIGNEE #}
-      <div class="card mb-3">
-        <div class="card-header bg-body-secondary">
+      <div class="card mb-3 shadow-none">
+        <div class="card-header ">
           <strong>Shipper &amp; Consignee</strong>
         </div>
 
@@ -309,8 +315,8 @@
       </div>
 
       {# PRICING & TAX #}
-      <div class="card mb-3">
-        <div class="card-header bg-body-secondary">
+      <div class="card mb-3 shadow-none">
+        <div class="card-header ">
           <strong>Pricing &amp; Tax</strong>
         </div>
 
@@ -362,8 +368,8 @@
       </div>
 
       {# NOTES (Customer / Internal) #}
-      <div class="card mb-3">
-        <div class="card-header bg-body-secondary">
+      <div class="card mb-3 shadow-none">
+        <div class="card-header ">
           <strong>Notes</strong>
         </div>
         <div class="card-body row g-3">
@@ -383,13 +389,14 @@
       </div>
 
     </div>
-  </section>
+
+  
 </div>
 
-{# ===========================
-   MODAL GENERATE ORDER
-   =========================== #}
-<div class="modal fade"
+
+
+
+   <div class="modal fade"
      id="generateOrderModal"
      tabindex="-1"
      aria-labelledby="generateOrderLabel"
@@ -486,18 +493,19 @@
           <div class="row g-3">
             <div class="col-md-4">
               <label class="form-label small">Down Payment</label>
-              <input type="text"
-                     id="downPaymentInput"
-                     name="down_payment"
-                     class="form-control form-control-sm"
-                     value="{% if generate_order_form.down_payment.value %}
-                                {{ generate_order_form.down_payment.value }}
-                            {% elif fq.down_payment %}
-                                {{ fq.down_payment }}
-                            {% else %}
-                                0,00
-                            {% endif %}"
-                     placeholder="Mis. 1.500.000,00 (opsional)">
+             <input type="text"
+       id="downPaymentInput"
+       name="down_payment"
+       class="form-control form-control-sm text-end"
+       value="{% if generate_order_form.down_payment.value %}
+                      {{ generate_order_form.down_payment.value }}
+                  {% elif fq.down_payment %}
+                      {{ fq.down_payment }}
+                  {% else %}
+                      0,00
+                  {% endif %}"
+           placeholder="Mis. 1.500.000,00 (opsional)">
+
               <div class="form-text">
                 Format Indonesia: <code>1.500.000,00</code>.
               </div>
@@ -572,7 +580,10 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
 <script>
+
   (function () {
+
+    
     var $modal = $("#generateOrderModal");
     var $form  = $("#generate-order-form");
     var $btn   = $("#btn-generate-order");
@@ -580,6 +591,95 @@
     if (!$form.length || !$btn.length) {
       return;
     }
+
+        // ================== DOWN PAYMENT: format Indonesia + auto-select ==================
+    var $dp = $("#downPaymentInput");
+
+    if ($dp.length) {
+      // parse "1.500.000,25" / "1500000,25" / "1500000.25" -> number JS
+      function parseIndo(str) {
+        if (!str) return null;
+        str = String(str).trim();
+        str = str.replace(/\s+/g, "");
+        // buang semua selain angka, titik, koma
+        str = str.replace(/[^0-9.,]/g, "");
+
+        var parts = str.split(",");
+        if (parts.length > 2) {
+          return null; // kebanyakan koma
+        }
+
+        var whole = parts[0].replace(/\./g, ""); // buang titik ribuan
+        var dec = parts.length === 2 ? parts[1] : "";
+
+        var norm = whole + (dec ? "." + dec : "");
+        var num = parseFloat(norm);
+        if (isNaN(num)) return null;
+        return num;
+      }
+
+      // format number JS -> "1.500.000,00"
+      function formatIndo(num) {
+        if (isNaN(num)) return "";
+        var s = num.toFixed(2); // "1500000.25"
+        var parts = s.split(".");
+        var whole = parts[0];
+        var dec = parts[1];
+
+        whole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        return whole + "," + dec;
+      }
+
+      function formatDp() {
+        var raw = $dp.val();
+        if (!raw) {
+          $dp.val("0,00");
+          return;
+        }
+        var num = parseIndo(raw);
+        if (num === null) {
+          // biarkan apa adanya, biar Django yang kasih error
+          return;
+        }
+        $dp.val(formatIndo(num));
+      }
+
+      // 1) Inisialisasi: format nilai awal
+      formatDp();
+
+      // 2) Hanya boleh angka/titik/koma
+      $dp.on("input", function () {
+        var v = $(this).val() || "";
+        v = v.replace(/[^0-9.,]/g, "");
+        $(this).val(v);
+      });
+
+      // 3) Blur / Enter → paksa format Indonesia
+      $dp.on("blur", function () {
+        formatDp();
+      });
+
+      $dp.on("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          formatDp();
+        }
+      });
+
+      // 4) Fokus → auto-select semua
+      $dp.on("focus", function () {
+        var input = this;
+        setTimeout(function () {
+          input.select();
+        }, 0);
+      });
+
+      // cegah mouseup membatalkan seleksi
+      $dp.on("mouseup", function (e) {
+        e.preventDefault();
+      });
+    }
+
 
     // Ambil instance modal Bootstrap 5 (native, bukan jQuery plugin)
     var generateOrderModalEl = document.getElementById("generateOrderModal");
@@ -714,4 +814,5 @@
     }
   })();
 </script>
+
 {% endblock %}

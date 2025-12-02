@@ -1,0 +1,262 @@
+{% load static %}
+{% load indo_format %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Freight Order {{ fo.number }}</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff !important;
+    }
+
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 13px;
+    }
+
+    .page {
+     
+      margin: 0 auto;
+      box-sizing: border-box;
+
+      /* ini area tulis di antara header/footer
+         header/footer sudah dipakai wkhtmltopdf via margin-top/bottom
+         jadi di sini cukup padding kecil saja
+      */
+      padding: 0mm 20mm 0mm 20mm;
+
+      position: relative;
+    }
+
+    .header-table {
+      width: 100%;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      border-bottom: 0;
+    }
+    .header-table td {
+      vertical-align: top;
+    }
+
+    .company-info {
+      text-align: right;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .section-title {
+      font-weight: bold;
+      font-size: 15px;
+      margin-top: 18px;
+      margin-bottom: 6px;
+      padding-bottom: 3px;
+      border-bottom: 1px solid #bbb;
+    }
+
+    .field-label {
+      font-weight: bold;
+      margin-top: 6px;
+    }
+    .field-value {
+      margin-bottom: 4px;
+    }
+
+    table.pricing, table.service {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    table.pricing th,
+    table.service th {
+      background: #f0f0f0;
+      padding: 6px;
+      border: 1px solid #ddd;
+      font-weight: bold;
+    }
+    table.pricing td,
+    table.service td {
+      padding: 6px;
+      border: 1px solid #e2e2e2;
+    }
+
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+    .text-left { text-align: left; }
+
+    .footer-sign {
+      margin-top: 28px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .customer-notes table {
+      width: 100% !important;
+      border:none;
+      border-collapse: collapse !important;
+      border-spacing: 0 !important;
+      table-layout: fixed;
+      font-size: 12px;
+    }
+
+    .customer-notes colgroup col { width: 50% !important; }
+
+    .customer-notes td,
+    .customer-notes th {
+      border: 0 !important;
+      padding: 3px 6px !important;
+      vertical-align: top;
+    }
+
+    .customer-notes p { margin: 0 0 4px 0 !important; }
+
+    .customer-notes ul,
+    .customer-notes ol {
+      margin: 0 0 4px 16px !important;
+      padding: 0;
+    }
+
+    @media print {
+      html, body { background: #ffffff !important; }
+      .page { margin: 0 auto; }
+    }
+
+.left-div {
+  float: left;
+  width: 400px; /* Example width */
+  height: 150px; /* Example height */
+  background-color: #fff;
+  margin-right: 10px; /* Space between left div and content */
+}
+
+.right-div {
+  float: right;
+  width: 300px; /* Example width */
+  height: 100px; /* Example height */
+  background-color: #fff;
+  margin-left: 10px; /* Space between right div and content */
+}
+
+.content {
+  background-color: #fff;
+  padding: 0px;
+  /* If the container collapses due to floats, use clear or overflow: hidden on the parent */
+}
+
+.container {
+  overflow: hidden; /* This helps contain floats within the parent */
+  border: 0px solid gray;
+  padding: 0px;
+}
+
+.bank-div tr td {
+  font-size:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="page">
+    <br>
+    <br>
+    
+  <table class="service">
+    <tr>
+        <td class="text-left" style="width:60%;vertical-align: top;">
+          TO:<br>
+
+        <strong>{{ invoice.customer.name }}</strong><br>
+        {# tambahkan alamat customer kalau sudah ada #}
+      </td>
+      <td>
+        <h1>INVOICE</h1>
+        <div>No: {{ invoice.number }}</div>
+        <div>Date: {{ invoice.invoice_date|date:"d M Y" }}</div>
+        <div>Due: {{ invoice.due_date|date:"d M Y" }}</div>
+      </td>
+      
+    </tr>
+  </table>
+
+  <h3>Details</h3>
+  <table class="service">
+    <tr>
+      <th>Description</th>
+      <th class="text-right">Amount</th>
+    </tr>
+    <tr>
+      <td>
+        {{ invoice.description }}
+      </td>
+      <td class="text-right">{{ invoice.total_amount|floatformat:2 }}</td>    
+    </tr>
+       <tr>
+            <td class="text-right">Subtotal</td>
+            <td class="text-right">{{ invoice.subtotal_amount|floatformat:2 }}</td>
+          </tr>
+          <tr>
+            <td class="text-right"><strong>Total</strong></td>
+            <td class="text-right"><strong>{{ invoice.total_amount|floatformat:2 }}</strong></td>
+          </tr>
+  </table>
+<p><strong>Terbilang:&nbsp;</strong>{{ invoice.total_amount|indo_terbilang|capfirst }} rupiah</p>
+  
+
+  {% if invoice.notes_customer %}
+    <div style="margin-top: 20px;">
+      <strong>Notes:</strong><br>
+      {{ invoice.notes_customer|linebreaksbr }}
+    </div>
+  {% endif %}
+
+  <br>
+  <br>
+  <br>
+  <p>PLEASE TRANSFER TO</p>
+  ACCOUNT 
+
+<div class="container">
+  <div class="left-div">
+    <table class="bank-div" style="width:100%">
+        <tr><td style="width:40%" >BANK</td><td>:</td><td>&nbsp;MANDIRI KCP TG PRIOK JKT UTARA</td></tr>
+        <tr><td>SWIFT CODE</td><td>:</td><td>&nbsp;BMRIIDJA</td></tr>
+        <tr><td>CURRENCY IDR NO</td><td>:</td><td>&nbsp;120.003.45556.77</td></tr>
+  </table>
+   <table class="bank-div" style="width:100%">
+    <tr><td  style="width:40%">BANK</td><td>:</td><td>&nbsp;BCA KCP ARKADIA</td></tr>
+    <tr><td>SWIFT CODE</td><td>:</td><td>&nbsp;CENAIDJA</td></tr>
+    <tr><td>CURRENCY IDR NO</td><td>:</td><td>&nbsp;540.520.0616</td></tr>
+  </table>
+
+  </div>
+  <div class="right-div"> 
+    Jakarta, 06 September 202
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    TEGUH ANDRIANTO<br>
+    DIREKTUR UTAMA
+  </div>
+  <div class="content"></div>
+</div>
+
+
+ 
+  <br>
+
+ 
+
+
+</div>
+</body>
+</html>

@@ -194,11 +194,12 @@ class FqSaveMixin:
 
 class FreightQuotationMixin:
     def _inject_geo_context(self, ctx):
-        fq = None
         form = ctx.get("form")
+        fq = None
         if form is not None and getattr(form, "instance", None):
             fq = form.instance
 
+        # PROVINCE SELALU ADA
         ctx["provinces"] = Location.objects.filter(
             kind="province"
         ).order_by("name")
@@ -208,24 +209,53 @@ class FreightQuotationMixin:
                 return Location.objects.none()
             return Location.objects.filter(parent_id=parent_id).order_by("name")
 
+        # DEFAULT: kosong dulu
+        ctx["shipper_regencies"]   = Location.objects.none()
+        ctx["shipper_districts"]   = Location.objects.none()
+        ctx["shipper_villages"]    = Location.objects.none()
+        ctx["consignee_regencies"] = Location.objects.none()
+        ctx["consignee_districts"] = Location.objects.none()
+        ctx["consignee_villages"]  = Location.objects.none()
+
+        # 1) KASUS FORM BOUND (POST) → pakai data yang dikirim user
+        if form is not None and form.is_bound:
+            sp_prov_id = form.data.get("shipper_province") or None
+            sp_reg_id  = form.data.get("shipper_regency") or None
+            sp_dist_id = form.data.get("shipper_district") or None
+
+            cg_prov_id = form.data.get("consignee_province") or None
+            cg_reg_id  = form.data.get("consignee_regency") or None
+            cg_dist_id = form.data.get("consignee_district") or None
+
+            if sp_prov_id:
+                ctx["shipper_regencies"] = children(sp_prov_id)
+            if sp_reg_id:
+                ctx["shipper_districts"] = children(sp_reg_id)
+            if sp_dist_id:
+                ctx["shipper_villages"] = children(sp_dist_id)
+
+            if cg_prov_id:
+                ctx["consignee_regencies"] = children(cg_prov_id)
+            if cg_reg_id:
+                ctx["consignee_districts"] = children(cg_reg_id)
+            if cg_dist_id:
+                ctx["consignee_villages"] = children(cg_dist_id)
+
+            return ctx
+
+        # 2) KASUS EDIT (GET) → pakai instance yang sudah tersimpan
         if fq and fq.pk:
-            ctx["shipper_regencies"]  = children(getattr(fq, "shipper_province_id", None))
-            ctx["shipper_districts"]  = children(getattr(fq, "shipper_regency_id", None))
-            ctx["shipper_villages"]   = children(getattr(fq, "shipper_district_id", None))
+            ctx["shipper_regencies"]   = children(getattr(fq, "shipper_province_id", None))
+            ctx["shipper_districts"]   = children(getattr(fq, "shipper_regency_id", None))
+            ctx["shipper_villages"]    = children(getattr(fq, "shipper_district_id", None))
 
             ctx["consignee_regencies"] = children(getattr(fq, "consignee_province_id", None))
             ctx["consignee_districts"] = children(getattr(fq, "consignee_regency_id", None))
             ctx["consignee_villages"]  = children(getattr(fq, "consignee_district_id", None))
-        else:
-            # ADD mode → biarin kosong, nanti diisi JS via /geo/children/
-            ctx["shipper_regencies"]   = Location.objects.none()
-            ctx["shipper_districts"]   = Location.objects.none()
-            ctx["shipper_villages"]    = Location.objects.none()
-            ctx["consignee_regencies"] = Location.objects.none()
-            ctx["consignee_districts"] = Location.objects.none()
-            ctx["consignee_villages"]  = Location.objects.none()
 
+        # 3) KASUS ADD (GET pertama) → tetap kosong, nanti diisi JS
         return ctx
+
 
 from django.http import HttpResponse
 from django.urls import reverse
@@ -429,10 +459,11 @@ class FqBulkDeleteView(LoginRequiredMixin, View):
     # ----------------------------------------------------------
     # 2) generate_order (support AJAX + non-AJAX)
     # ----------------------------------------------------------
-    def _handle_generate_order(self, request, fq):
-        current = fq.status or FreightQuotationStatus.DRAFT
-        is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
+    def _handle_generate_order(self, request, fq, is_ajax):
+        current = fq.status or FreightQuotationStatus.DRAFT
+
+        # hanya boleh generate dari ACCEPTED
         if current != FreightQuotationStatus.ACCEPTED:
             msg = "Generate Order hanya bisa dilakukan dari status ACCEPTED."
             if is_ajax:
@@ -441,43 +472,49 @@ class FqBulkDeleteView(LoginRequiredMixin, View):
                     status=400,
                 )
             messages.error(request, msg)
-            return redirect("sales:fq_detail", pk=fq.pk)
+            return redirect(request.META.get("HTTP_REFERER", "/"))
 
         form = GenerateOrderForm(request.POST)
 
-        # ------------ FORM INVALID ------------
+        # FORM INVALID → balas JSON utk modal
         if not form.is_valid():
             if is_ajax:
-                errors = {}
-                for field, field_errors in form.errors.items():
-                    errors[field] = [str(e) for e in field_errors]
+                errors = {
+                    field: [str(e) for e in errs]
+                    for field, errs in form.errors.items()
+                }
                 return JsonResponse(
                     {"success": False, "errors": errors},
                     status=400,
                 )
 
+            # non-AJAX fallback (kalau suatu saat dibuka tanpa modal)
             context = {
                 "fq": fq,
                 "generate_order_form": form,
                 "open_generate_order_modal": True,
             }
-            return render(request, "sales/quotation_detail.html", context)
+            return render(
+                request,
+                "sales/freight_quotation_detail.html",  # sesuaikan jika beda
+                context,
+            )
 
-        # ------------ FORM VALID ------------
-        ref_type = form.cleaned_data["ref_type"]
-        ref_number = form.cleaned_data["ref_number"]
-        ref_date = form.cleaned_data["ref_date"]
-        down_payment = form.cleaned_data["down_payment"]
+        # FORM VALID → buat order
+        cd = form.cleaned_data
+        ref_type = cd["ref_type"]
+        ref_number = cd["ref_number"]
+        ref_date = cd["ref_date"]
+        down_payment = cd["down_payment"]
 
         try:
-            order = self.generate_order_from_fq(
+            order = self._create_order(
                 fq=fq,
-                user=request.user,
-                FreightOrder=FreightOrder,
                 ref_type=ref_type,
                 ref_number=ref_number,
                 ref_date=ref_date,
                 down_payment=down_payment,
+                user=request.user,
             )
         except Exception as exc:
             msg = f"Gagal generate order dari quotation ini: {exc}"
@@ -487,18 +524,19 @@ class FqBulkDeleteView(LoginRequiredMixin, View):
                     status=500,
                 )
             messages.error(request, msg)
-            return redirect("sales:fq_detail", pk=fq.pk)
+            return redirect(request.META.get("HTTP_REFERER", "/"))
 
-        # update quotation
-        if down_payment is not None and hasattr(fq, "down_payment"):
-            fq.down_payment = down_payment
-
+        # update status FQ → ORDERED (+ simpan DP kalau ada field-nya)
         fq.status = FreightQuotationStatus.ORDERED
         update_fields = ["status"]
-        if hasattr(fq, "down_payment"):
+
+        if hasattr(fq, "down_payment") and down_payment is not None:
+            fq.down_payment = down_payment
             update_fields.append("down_payment")
+
         if hasattr(fq, "updated_at"):
             update_fields.append("updated_at")
+
         fq.save(update_fields=update_fields)
 
         display_no = getattr(order, "number", order.pk)
@@ -507,114 +545,121 @@ class FqBulkDeleteView(LoginRequiredMixin, View):
             f"dari quotation {fq.number}."
         )
 
-        messages.success(request, success_msg)
-       
+        # >>> URL DETAIL FREIGHT ORDER (GANTI NAMA URL JIKA PERLU)
+        fo_detail_url = reverse("sales:fo_detail", args=[order.pk])
+
         if is_ajax:
+            # JS di modal akan pakai redirect_url ini
             return JsonResponse(
                 {
                     "success": True,
                     "message": success_msg,
-                    "redirect_url": reverse("sales:fq_detail", args=[fq.pk]),
+                    "order_id": order.pk,
+                    "order_number": getattr(order, "number", ""),
+                    "redirect_url": fo_detail_url,   # <<< penting
                 }
             )
 
-        return redirect("sales:fq_detail", pk=fq.pk)
+        messages.success(request, success_msg)
+        return redirect(fo_detail_url)  # <<< non-AJAX langsung ke FO detail
 
-    # ----------------------------------------------------------
-    # 3) Generator FreightOrder dari FreightQuotation
-    # ----------------------------------------------------------
-    @transaction.atomic
-    def generate_order_from_fq(
-        self,
-        fq,
-        user,
-        FreightOrder,
-        ref_type=None,
-        ref_number=None,
-        ref_date=None,
-        down_payment=None,
-    ):
-        allowed_fields = {
-            f.name
-            for f in FreightOrder._meta.get_fields()
-            if getattr(f, "concrete", False) and not f.auto_created
-        }
 
-        order_date_value = (
-            ref_date
-            or getattr(fq, "quotation_date", None)
-            or timezone.now().date()
-        )
 
-        base_data = {
-            # header
-            "customer": fq.customer,
-            "sales_service": getattr(fq, "sales_service", None),
-            "sales_agency": getattr(fq, "sales_agency", None),
-            "payment_term": fq.payment_term,
-            "sales_user": fq.sales_user or user,
+        # ----------------------------------------------------------
+        # 3) Generator FreightOrder dari FreightQuotation
+        # ----------------------------------------------------------
+        @transaction.atomic
+        def generate_order_from_fq(
+            self,
+            fq,
+            user,
+            FreightOrder,
+            ref_type=None,
+            ref_number=None,
+            ref_date=None,
+            down_payment=None,
+        ):
+            allowed_fields = {
+                f.name
+                for f in FreightOrder._meta.get_fields()
+                if getattr(f, "concrete", False) and not f.auto_created
+            }
 
-            # tanggal order
-            "order_date": order_date_value,
+            order_date_value = (
+                ref_date
+                or getattr(fq, "quotation_date", None)
+                or timezone.now().date()
+            )
 
-            # route
-            "origin": fq.origin,
-            "destination": fq.destination,
-            "shipment_plan_date": fq.shipment_plan_date,
+            base_data = {
+                # header
+                "customer": fq.customer,
+                "sales_service": getattr(fq, "sales_service", None),
+                "sales_agency": getattr(fq, "sales_agency", None),
+                "payment_term": fq.payment_term,
+                "sales_user": fq.sales_user or user,
 
-            # cargo
-            "cargo_name": fq.cargo_name,
-            "package_count": fq.package_count,
-            "package_type": getattr(fq, "package_type", None),
-            "gross_weight": fq.gross_weight,
-            "volume_cbm": fq.volume_cbm,
-            "weight_uom": getattr(fq, "weight_uom", None),
-            "volume_uom": getattr(fq, "volume_uom", None),
+                # tanggal order
+                "order_date": order_date_value,
 
-            # shipper snapshot
-            "shipper_name": getattr(fq, "shipper_contact_name", "") or "",
-            "shipper_address": getattr(fq, "shipper_address", "") or "",
+                # route
+                "origin": fq.origin,
+                "destination": fq.destination,
+                "shipment_plan_date": fq.shipment_plan_date,
 
-            # consignee snapshot
-            "consignee_name": getattr(fq, "consignee_name", "") or "",
-            "consignee_address": getattr(fq, "consignee_address", "") or "",
+                # cargo
+                "cargo_name": fq.cargo_name,
+                "package_count": fq.package_count,
+                "package_type": getattr(fq, "package_type", None),
+                "gross_weight": fq.gross_weight,
+                "volume_cbm": fq.volume_cbm,
+                "weight_uom": getattr(fq, "weight_uom", None),
+                "volume_uom": getattr(fq, "volume_uom", None),
 
-            # pricing
-            "quantity": fq.quantity,
-            "unit_price": fq.unit_price,
-            "amount": fq.amount,
-            "discount_percent": getattr(fq, "discount_percent", 0),
-            "discount_amount": getattr(fq, "discount_amount", 0),
-            "tax_percent": fq.tax_percent,
-            "tax_amount": fq.tax_amount,
-            "down_payment": down_payment if down_payment is not None else getattr(fq, "down_payment", 0),
-            "total_amount": fq.total_amount,
+                # shipper snapshot
+                "shipper_name": getattr(fq, "shipper_contact_name", "") or "",
+                "shipper_address": getattr(fq, "shipper_address", "") or "",
 
-            # reference
-            "reference_type": ref_type or None,
-            "reference_number": ref_number or None,
-            "reference_date": ref_date or None,
-        }
+                # consignee snapshot
+                "consignee_name": getattr(fq, "consignee_name", "") or "",
+                "consignee_address": getattr(fq, "consignee_address", "") or "",
 
-        data = {
-            name: value
-            for name, value in base_data.items()
-            if name in allowed_fields and value is not None
-        }
+                # pricing
+                "quantity": fq.quantity,
+                "unit_price": fq.unit_price,
+                "amount": fq.amount,
+                "discount_percent": getattr(fq, "discount_percent", 0),
+                "discount_amount": getattr(fq, "discount_amount", 0),
+                "tax_percent": fq.tax_percent,
+                "tax_amount": fq.tax_amount,
+                "down_payment": down_payment if down_payment is not None else getattr(fq, "down_payment", 0),
+                "total_amount": fq.total_amount,
 
-        if "number" in allowed_fields and not data.get("number"):
-            data["number"] = get_next_number("sales", "FREIGHT_ORDER")
+                # reference
+                "reference_type": ref_type or None,
+                "reference_number": ref_number or None,
+                "reference_date": ref_date or None,
+            }
 
-        for fk_name in ("freight_quotation", "quotation", "source_quotation"):
-            if fk_name in allowed_fields:
-                data[fk_name] = fq
-                break
+            data = {
+                name: value
+                for name, value in base_data.items()
+                if name in allowed_fields and value is not None
+            }
 
-        if "status" in allowed_fields:
-            data["status"] = FreightOrderStatus.DRAFT
+            if "number" in allowed_fields and not data.get("number"):
+                data["number"] = get_next_number("sales", "FREIGHT_ORDER")
 
-        order = FreightOrder.objects.create(**data)
-        return order
+            for fk_name in ("freight_quotation", "quotation", "source_quotation"):
+                if fk_name in allowed_fields:
+                    data[fk_name] = fq
+                    break
+
+            if "status" in allowed_fields:
+                data["status"] = FreightOrderStatus.DRAFT
+
+            order = FreightOrder.objects.create(**data)
+            return order
     
 #-----------------------------------Status Update--------------------------------
 
@@ -878,6 +923,22 @@ class FqStatusUpdateView(LoginRequiredMixin, View):
         if "down_payment" in allowed and down_payment is not None:
             data["down_payment"] = down_payment
 
+        # 6a) CURRENCY: copy dari quotation kalau field ada & belum ke-set
+        if "currency" in allowed:
+            if not data.get("currency"):
+            # kalau FQ punya currency -> pakai itu
+                currency = getattr(fq, "currency", None)
+                if currency is not None:
+                    data["currency"] = currency
+                else:
+                    # fallback IDR kalau mau (optional, but useful)
+                    try:
+                        from core.models import Currency
+                        data["currency"] = Currency.objects.get(code="IDR")
+                    except Exception:
+                        # kalau master IDR belum ada, biarkan null
+                        pass     
+
         # 7) auto-number kalau perlu
         if "number" in allowed and not data.get("number"):
             data["number"] = get_next_number("sales", "FREIGHT_ORDER")
@@ -991,6 +1052,7 @@ class FoDetailView(LoginRequiredMixin, DetailView):
         ctx["page_title"] = f"Freight Order {order.number}"
         return ctx
 
+
 class FoStatusUpdateView(LoginRequiredMixin, View):
     """
     Ubah status FreightOrder via POST.
@@ -1078,25 +1140,39 @@ class FoStatusUpdateView(LoginRequiredMixin, View):
     def _redirect_url(self, order):
         return reverse("sales:fo_detail", args=[order.pk])
 
-class FoEditFieldsView(LoginRequiredMixin, View):
-    """
-    Terima POST dari modal edit (payment_term, down_payment, reference_*).
-    Hanya boleh jika status DRAFT.
-    """
+
+
+
+# sales/views/freight.py
+from django.views import View
+from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib import messages
+
+from ..forms import FreightOrderEditForm
+from ..freight import FreightOrder, FreightOrderStatus  # sesuaikan import
+
+
+class FoEditFieldsView(View):
+    template_name = "sales/fo_detail.html"
 
     def post(self, request, pk):
         order = get_object_or_404(FreightOrder, pk=pk)
 
         if order.status != FreightOrderStatus.DRAFT:
-            messages.error(request, "Hanya Freight Order Draft yang dapat diedit.")
-            return redirect("sales:fo_detail", pk=pk)
+            messages.error(request, "Freight Order hanya bisa di-edit saat status DRAFT.")
+            return redirect("sales:fo_detail", pk=order.pk)
 
         form = FreightOrderEditForm(request.POST, instance=order)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Freight Order berhasil diperbarui.")
-        else:
-            messages.error(request, "Gagal menyimpan perubahan. Periksa isian form.")
-            # Opsional: bisa simpan errors di session kalau mau tampil di modal lagi
 
-        return redirect("sales:fo_detail", pk=pk)
+        if form.is_valid():
+            form.save()  # ⬅ semua field (termasuk down_payment) disimpan
+            messages.success(request, "Freight Order berhasil diupdate.")
+            return redirect("sales:fo_detail", pk=order.pk)
+
+        messages.error(request, f"Gagal menyimpan: {form.errors.as_text()}")
+        context = {
+            "order": order,
+            "edit_form": form,
+        }
+        return render(request, self.template_name, context)
+

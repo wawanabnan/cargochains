@@ -1,4 +1,4 @@
-# misal: sales/views/fq_pdf_html.py
+# sales/views/fo_pdf_html.py (atau di file views freight om)
 
 import pdfkit
 import tempfile
@@ -12,19 +12,21 @@ from django.template.loader import render_to_string
 from django.templatetags.static import static
 from django.views import View
 
-from sales.freight import FreightQuotation
+from sales.freight import FreightOrder
 
 
-class FreightQuotationPdfHtmlView(LoginRequiredMixin, View):
+class FreightOrderPdfHtmlView(LoginRequiredMixin, View):
     """
-    Generate PDF Freight Quotation pakai wkhtmltopdf (HTML -> PDF),
-    dengan header & footer letterhead yang sama seperti Freight Order.
+    Generate PDF Freight Order pakai wkhtmltopdf (HTML -> PDF)
+    dengan header & footer letterhead.
     """
 
     def get(self, request, pk, *args, **kwargs):
-        fq = get_object_or_404(FreightQuotation, pk=pk)
+        fo = get_object_or_404(FreightOrder, pk=pk)
 
-        # ============ 1) ABSOLUTE URL ke gambar header & footer ============
+        # ============================================
+        # 1) ABSOLUTE URL ke gambar header & footer
+        # ============================================
         header_url = request.build_absolute_uri(
             static("img/letter_header_bg.png")
         )
@@ -32,9 +34,9 @@ class FreightQuotationPdfHtmlView(LoginRequiredMixin, View):
             static("img/letter_footer_bg.png")
         )
 
-        # ============ 2) Render HTML header & footer (pakai template FO) ============
-        # Kalau FO sudah punya: templates/sales/pdf/fo_header.html & fo_footer.html,
-        # kita pakai file yang sama supaya konsisten.
+        # ============================================
+        # 2) Render HTML untuk header & footer
+        # ============================================
         header_html = render_to_string(
             "sales/pdf/header.html",
             {"header_url": header_url},
@@ -44,7 +46,7 @@ class FreightQuotationPdfHtmlView(LoginRequiredMixin, View):
             {"footer_url": footer_url},
         )
 
-        # simpan ke file sementara untuk wkhtmltopdf
+        # simpan ke file sementara (wkhtmltopdf butuh path file)
         tmp_header = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
         tmp_footer = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
 
@@ -54,24 +56,29 @@ class FreightQuotationPdfHtmlView(LoginRequiredMixin, View):
         tmp_header.close()
         tmp_footer.close()
 
-        # ============ 3) Render BODY QUOTATION (konten saja) ============
+        # ============================================
+        # 3) Render BODY FO (konten saja)
+        # ============================================
         body_html = render_to_string(
-            "sales/fq_print.html",
+            "sales/fo_print.html",
             {
-                "fq": fq,
+                "fo": fo,
                 "is_pdf": True,
             },
         )
 
-        # ============ 4) Options wkhtmltopdf (SAMAKAN dengan FO) ============
+        # ============================================
+        # 4) Options wkhtmltopdf
+        # ============================================
         options = {
             "page-size": "A4",
             "encoding": "UTF-8",
 
-            # area header/footer sesuai tinggi strip letterhead
-            "margin-top": "30mm",     # ruang header
-            "margin-bottom": "45mm",  # ruang footer (agak lebih besar)
+            # area header/footer (sesuaikan dengan tinggi gambar)
+            "margin-top": "30mm",     # ruang untuk header image
+            "margin-bottom": "45mm",  # ruang untuk footer image
 
+            # header/footer mau full-bleed: margin kiri/kanan 0
             "margin-left": "0mm",
             "margin-right": "0mm",
 
@@ -97,7 +104,7 @@ class FreightQuotationPdfHtmlView(LoginRequiredMixin, View):
         os.unlink(tmp_header.name)
         os.unlink(tmp_footer.name)
 
-        filename = f"FQ-{fq.number}.pdf" if getattr(fq, "number", None) else "FreightQuotation.pdf"
+        filename = f"SO-{fo.number}.pdf" if getattr(fo, "number", None) else "FreightOrder.pdf"
 
         response = HttpResponse(pdf_data, content_type="application/pdf")
         response["Content-Disposition"] = f'inline; filename="{filename}"'

@@ -63,16 +63,6 @@
         <i class="fa fa-edit me-1"></i> Edit Payment & Reference
       </button>
     {% endif %}
-    <a href="{% url 'sales:fo_pdf' order.pk %}"
-      class="btn btn-danger btn-sm"
-      target="_blank">
-        <i class="fa-solid fa-file-pdf me-1"></i> Export PDF
-    </a>
-    <a href="{% url 'sales:invoice_generate' order.id %}"
-      class="btn btn-primary btn-sm">
-      <i class="fa fa-file-invoice-dollar me-1"></i>
-      Generate Invoice
-    </a>
   </div>
 
   {# KANAN: Status Action Buttons #}
@@ -379,194 +369,69 @@
 
    
 
-{# ===========================
-   MODAL EDIT PAYMENT & REFERENCES
-   =========================== #}
-{# fo_detail.html #}
 
+{# ==================== MODAL EDIT (DRAFT ONLY) ==================== #}
+{% if edit_form %}
 <div class="modal fade" id="foEditModal" tabindex="-1" aria-labelledby="foEditModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
-      <form method="post"
-            action="{% url 'sales:fo_edit_fields' order.pk %}"
-            id="foEditForm">
-        {% csrf_token %}
-        <div class="modal-header">
-          <h5 class="modal-title" id="foEditModalLabel">
-            Edit SO Date, Reference & Down Payment
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
 
+      <div class="modal-header">
+        <h5 class="modal-title" id="foEditModalLabel">Edit Payment & Reference</h5>
+        <button type="button" class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"></button>
+      </div>
+
+      <form method="post" action="{% url 'sales:fo_edit_fields' order.pk %}">
+        {% csrf_token %}
         <div class="modal-body">
           <div class="row g-3">
+
             <div class="col-md-4">
-              <label class="form-label fw-semibold">SO Date <span class="text-danger">*</span></label>
-              {{ edit_form.order_date }}
-              {% if edit_form.order_date.errors %}
-                <div class="text-danger small">{{ edit_form.order_date.errors|striptags }}</div>
-              {% endif %}
+              <label class="form-label small">Payment Term</label>
+              {{ edit_form.payment_term }}
             </div>
 
             <div class="col-md-4">
-              <label class="form-label fw-semibold">Reference Type <span class="text-danger">*</span></label>
+              <label class="form-label small">Down Payment</label>
+              {{ edit_form.down_payment }}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small">Reference Type</label>
               {{ edit_form.reference_type }}
-              {% if edit_form.reference_type.errors %}
-                <div class="text-danger small">{{ edit_form.reference_type.errors|striptags }}</div>
-              {% endif %}
             </div>
 
-            <div class="col-md-4">
-              <label class="form-label fw-semibold">Reference Number <span class="text-danger">*</span></label>
+            <div class="col-md-6">
+              <label class="form-label small">Reference Number</label>
               {{ edit_form.reference_number }}
-              {% if edit_form.reference_number.errors %}
-                <div class="text-danger small">{{ edit_form.reference_number.errors|striptags }}</div>
-              {% endif %}
             </div>
 
-            <div class="col-md-4">
-              <label class="form-label fw-semibold">Down Payment</label>
-               {# Field asli (hidden) yang dipakai form & DB #}
-               {{ edit_form.down_payment }}
-                <input type="text"
-                  id="foDownPaymentInput"
-                  class="form-control text-end"
-                  inputmode="decimal"
-                  autocomplete="off"
-                  value="{{ edit_form.down_payment.value|default_if_none:'' }}">
-              <div class="form-text">
-                Format angka Indonesia (contoh: 10.000,00).
-              </div>
-              {% if edit_form.down_payment.errors %}
-                <div class="text-danger small">{{ edit_form.down_payment.errors|striptags }}</div>
-              {% endif %}
+            <div class="col-md-6">
+              <label class="form-label small">Reference Date</label>
+              {{ edit_form.reference_date }}
             </div>
+
           </div>
         </div>
 
         <div class="modal-footer">
           <button type="button"
-                  class="btn btn-outline-secondary"
+                  class="btn btn-outline-secondary btn-sm"
                   data-bs-dismiss="modal">
             Cancel
           </button>
-          <button type="submit" class="btn btn-primary">
-            <i class="fa fa-save me-1"></i> Save Changes
+          <button type="submit"
+                  class="btn btn-primary btn-sm">
+            <i class="fa fa-save me-1"></i> Save
           </button>
         </div>
       </form>
+
     </div>
   </div>
 </div>
+{% endif %}
 
-
-{% endblock %}
-
-{% block extra_js %}
-
-  <script>
-    // ============================
-    // Helper: parse & format angka Indonesia
-    // ============================
-
-    function parseIndo(str) {
-      if (!str) return null;
-
-      str = String(str).trim();
-      if (!str) return null;
-
-      // hapus spasi
-      str = str.replace(/\s+/g, "");
-      // hapus pemisah ribuan ".", ganti desimal "," -> "."
-      str = str.replace(/\./g, "").replace(",", ".");
-
-      var val = parseFloat(str);
-      if (isNaN(val)) {
-        return null;
-      }
-      return val;
-    }
-
-    function formatIndo(num) {
-      if (num === null || num === undefined) return "";
-
-      var number = Number(num);
-      if (isNaN(number)) return "";
-
-      var fixed = number.toFixed(2);   // "500000.00"
-      var parts = fixed.split(".");
-      var intPart = parts[0];
-      var decPart = parts[1] || "00";
-
-      // thousand separator "."
-      intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-
-      return intPart + "," + decPart;
-    }
-
-    // ============================
-    // Init
-    // ============================
-
-    document.addEventListener("DOMContentLoaded", function () {
-      // --- Down Payment: display + hidden ---
-      var dpHidden = document.getElementById("id_down_payment");      // dari form (hidden)
-      var dpDisplay = document.getElementById("foDownPaymentInput");  // yang kelihatan user
-
-      if (dpHidden && dpDisplay) {
-        // 1) Saat pertama kali tampil → hidden numeric -> tampil Indonesia
-        if (dpHidden.value) {
-          var initNum = parseFloat(dpHidden.value);
-          if (!isNaN(initNum)) {
-            dpDisplay.value = formatIndo(initNum);
-          }
-        }
-
-        // 2) Fokus -> select semua isi
-        dpDisplay.addEventListener("focus", function (e) {
-          e.target.select();
-        });
-
-        // 3) Input: hanya izinkan angka, titik, koma
-        dpDisplay.addEventListener("input", function (e) {
-          var raw = e.target.value || "";
-          raw = raw.replace(/[^\d.,]/g, "");  // buang selain angka, . , 
-          e.target.value = raw;
-        });
-
-        // 4) Blur: tampilan Indonesia + update hidden numeric
-        dpDisplay.addEventListener("blur", function (e) {
-          var num = parseIndo(e.target.value);
-
-          if (num === null) {
-            // kosong / tidak valid -> kosongkan dua-duanya
-            e.target.value = "";
-            dpHidden.value = "";
-            return;
-          }
-
-          // update hidden dengan angka standar (untuk Django)
-          dpHidden.value = num.toFixed(2);  // "500000.00"
-          // update display agar rapi
-          e.target.value = formatIndo(num);
-        });
-      }
-
-      // --- SO Date & Reference Number: auto-select saat fokus ---
-
-      var orderDateInput = document.getElementById("id_order_date");
-      if (orderDateInput) {
-        orderDateInput.addEventListener("focus", function (e) {
-          e.target.select();
-        });
-      }
-
-      var refNumberInput = document.getElementById("id_reference_number");
-      if (refNumberInput) {
-        refNumberInput.addEventListener("focus", function (e) {
-          e.target.select();
-        });
-      }
-    });
-  </script>
 {% endblock %}

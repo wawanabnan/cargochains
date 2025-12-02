@@ -1,0 +1,84 @@
+# sales/views/fo_pdf_html.py
+
+import pdfkit
+from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
+from django.views import View
+from django.contrib.staticfiles import finders
+
+from sales.freight import FreightOrder  # sesuaikan kalau path model beda
+
+
+class FreightOrderPdfHtmlView(LoginRequiredMixin, View):
+    """
+    Generate PDF Freight Order pakai wkhtmltopdf (HTML -> PDF).
+    Layout diambil dari templates/sales/fo_print.html
+    """
+
+    def get(self, request, pk, *args, **kwargs):
+        order = get_object_or_404(FreightOrder, pk=pk)
+
+        # Cari file logo di static (static/img/logo.png)
+        # FILE TOP
+        top_header_file = finders.find("img/letter_top.png")
+        top_header_path = None
+        if top_header_file:
+            top_header_path = "file:///" + top_header_file.replace("\\", "/")
+
+        # FILE BOTTOM
+        bottom_footer_file = finders.find("img/letter_bottom.png")
+        bottom_footer_path = None
+        if bottom_footer_file:
+            bottom_footer_path = "file:///" + bottom_footer_file.replace("\\", "/")
+
+
+
+        logo_file = finders.find("img/logo.png")
+        logo_path = None
+        if logo_file:
+            # wkhtmltopdf butuh format file://
+            logo_path = "file:///" + logo_file.replace("\\", "/")
+
+        # Render HTML dari template surat resmi FO
+        html = render_to_string(
+            "sales/fo_print.html",
+            {
+                "fo": order,
+                "is_pdf": True,      # kalau mau sembunyikan tombol print/close di template
+                "logo_path": logo_path,
+                "top_header_path": top_header_path,
+                "bottom_footer_path": bottom_footer_path,
+            },
+        )
+
+        # Options wkhtmltopdf
+        options = {
+            "page-size": "A4",
+            "encoding": "UTF-8",
+            "margin-top": "10mm",
+            "margin-bottom": "35mm",
+            "margin-left": "5mm",
+            "margin-right": "5mm",
+            # IZINKAN akses file://
+            "enable-local-file-access": None,
+        }
+
+        # Konfigurasi path wkhtmltopdf
+        wkhtml_path = getattr(settings, "WKHTMLTOPDF_CMD", None)
+        config = pdfkit.configuration(wkhtmltopdf=wkhtml_path) if wkhtml_path else None
+
+        pdf_data = pdfkit.from_string(
+            html,
+            False,               # False = return bytes, bukan simpan file
+            options=options,
+            configuration=config,
+        )
+
+        filename = f"SO-{order.number}.pdf" if getattr(order, "number", None) else "FreightOrder.pdf"
+
+        response = HttpResponse(pdf_data, content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="{filename}"'
+        return response

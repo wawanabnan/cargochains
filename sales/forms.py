@@ -459,9 +459,8 @@ from geo.models import Location
 from core.models import Currency, UOM, PaymentTerm
 from .freight import FreightQuotation, FreightQuotationStatus
 
-
+#-----------------------------------
 class FreightQuotationForm(forms.ModelForm):
-
     class Meta:
         model = FreightQuotation
         # sales_user diisi otomatis dari request.user di view
@@ -583,28 +582,23 @@ class FreightQuotationForm(forms.ModelForm):
         self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
 
+        # Tinggi textarea address
         for name in ["shipper_address", "consignee_address"]:
             if name in self.fields:
                 self.fields[name].widget.attrs["rows"] = 3
 
-        # ============================
-        #  FIX: JANGAN HAPUS class="form-control"
-        #  Semua TextInput/Textarea/NumberInput dijamin punya form-control
-        # ============================
+        # Pastikan semua TextInput/Textarea/NumberInput punya form-control,
+        # dan semua Select punya form-select (jaga-jaga kalau ada yang lupa di Meta.widgets)
         for name, field in self.fields.items():
             widget = field.widget
 
-            # Tambahkan form-control untuk text/textarea/number
             if isinstance(widget, (forms.TextInput, forms.Textarea, forms.NumberInput)):
                 existing = widget.attrs.get("class", "")
                 widget.attrs["class"] = (existing + " form-control").strip()
 
-            # Tambahkan class untuk select
             if isinstance(widget, forms.Select):
                 existing = widget.attrs.get("class", "")
                 widget.attrs["class"] = (existing + " form-select").strip()
-
-            # Checkbox tetap default
 
         today = timezone.now().date()
 
@@ -621,8 +615,6 @@ class FreightQuotationForm(forms.ModelForm):
                 self.initial.get("valid_until") or self.fields["valid_until"].initial
             ):
                 self.initial["valid_until"] = today + timezone.timedelta(days=7)
-
-
 
         # 1) Default: semua optional dulu
         for f in self.fields.values():
@@ -672,12 +664,24 @@ class FreightQuotationForm(forms.ModelForm):
             except Exception:
                 self.fields["sales_agency"].queryset = Partner.objects.none()
 
-        # 6) Currency & UOM & PaymentTerm: urut nama
+        # 6) Currency & UOM & PaymentTerm
         if "currency" in self.fields:
             self.fields["currency"].queryset = Currency.objects.all().order_by("code")
-        for name in ["package_uom", "weight_uom", "volume_uom"]:
-            if name in self.fields:
-                self.fields[name].queryset = UOM.objects.all().order_by("name")
+
+        # pakai kategori dari model (weight/volume/count)
+        if "weight_uom" in self.fields:
+            self.fields["weight_uom"].queryset = UOM.objects.filter(
+                category__iexact="weight"
+            ).order_by("name")
+        if "volume_uom" in self.fields:
+            self.fields["volume_uom"].queryset = UOM.objects.filter(
+                category__iexact="volume"
+            ).order_by("name")
+        if "package_uom" in self.fields:
+            self.fields["package_uom"].queryset = UOM.objects.filter(
+                category__iexact="count"
+            ).order_by("name")
+
         if "payment_term" in self.fields:
             self.fields["payment_term"].queryset = PaymentTerm.objects.all().order_by(
                 "name"
@@ -706,50 +710,45 @@ class FreightQuotationForm(forms.ModelForm):
                     kind="province"
                 ).order_by("name")
 
-        # kalau EDIT (instance pk ada), isi regency/district/village berdasarkan parent
-        inst = self.instance if getattr(self, "instance", None) and self.instance.pk else None
-        if not inst:
-            return  # ADD mode, cukup provinsi saja
+        # Helper untuk bind anak geo berdasarkan POST / instance
+        def _bind_geo(prefix: str):
+            prov_field = f"{prefix}_province"
+            reg_field = f"{prefix}_regency"
+            dist_field = f"{prefix}_district"
+            vill_field = f"{prefix}_village"
 
-        # ---------- SHIPPER ----------
-        sp_prov_id = getattr(inst, "shipper_province_id", None)
-        sp_reg_id = getattr(inst, "shipper_regency_id", None)
-        sp_dist_id = getattr(inst, "shipper_district_id", None)
+            prov_id = None
+            reg_id = None
+            dist_id = None
 
-        if sp_prov_id and "shipper_regency" in self.fields:
-            self.fields["shipper_regency"].queryset = Location.objects.filter(
-                parent_id=sp_prov_id
-            ).order_by("name")
+            if self.is_bound:
+                # ADD & EDIT (POST) – ambil dari data yang dikirim user
+                prov_id = self.data.get(prov_field) or None
+                reg_id = self.data.get(reg_field) or None
+                dist_id = self.data.get(dist_field) or None
+            elif self.instance and self.instance.pk:
+                # EDIT (GET) – ambil dari instance
+                prov_id = getattr(self.instance, f"{prov_field}_id", None)
+                reg_id = getattr(self.instance, f"{reg_field}_id", None)
+                dist_id = getattr(self.instance, f"{dist_field}_id", None)
 
-        if sp_reg_id and "shipper_district" in self.fields:
-            self.fields["shipper_district"].queryset = Location.objects.filter(
-                parent_id=sp_reg_id
-            ).order_by("name")
+            if prov_id and reg_field in self.fields:
+                self.fields[reg_field].queryset = Location.objects.filter(
+                    parent_id=prov_id
+                ).order_by("name")
 
-        if sp_dist_id and "shipper_village" in self.fields:
-            self.fields["shipper_village"].queryset = Location.objects.filter(
-                parent_id=sp_dist_id
-            ).order_by("name")
+            if reg_id and dist_field in self.fields:
+                self.fields[dist_field].queryset = Location.objects.filter(
+                    parent_id=reg_id
+                ).order_by("name")
 
-        # ---------- CONSIGNEE ----------
-        cg_prov_id = getattr(inst, "consignee_province_id", None)
-        cg_reg_id = getattr(inst, "consignee_regency_id", None)
-        cg_dist_id = getattr(inst, "consignee_district_id", None)
+            if dist_id and vill_field in self.fields:
+                self.fields[vill_field].queryset = Location.objects.filter(
+                    parent_id=dist_id
+                ).order_by("name")
 
-        if cg_prov_id and "consignee_regency" in self.fields:
-            self.fields["consignee_regency"].queryset = Location.objects.filter(
-                parent_id=cg_prov_id
-            ).order_by("name")
-
-        if cg_reg_id and "consignee_district" in self.fields:
-            self.fields["consignee_district"].queryset = Location.objects.filter(
-                parent_id=cg_reg_id
-            ).order_by("name")
-
-        if cg_dist_id and "consignee_village" in self.fields:
-            self.fields["consignee_village"].queryset = Location.objects.filter(
-                parent_id=cg_dist_id
-            ).order_by("name")
+        _bind_geo("shipper")
+        _bind_geo("consignee")
 
     def clean(self):
         cleaned = super().clean()
@@ -769,7 +768,7 @@ class FreightQuotationForm(forms.ModelForm):
             base_date = cleaned.get("quotation_date") or today
             cleaned["valid_until"] = base_date + timezone.timedelta(days=7)
 
-        # === 3) HEADER WAJIB ===
+        # === 3) HEADER WAJIB (tambahan proteksi untuk customer) ===
         if not cleaned.get("customer"):
             self.add_error("customer", "Customer wajib diisi.")
 
@@ -807,53 +806,92 @@ class FreightQuotationForm(forms.ModelForm):
         cleaned["tax_amount"] = tax_amount
         cleaned["total_amount"] = total
 
-        # === 5) BUSINESS RULE: Shipper wajib untuk D2D / D2P ===
+        # === 5) BUSINESS RULE: Shipper / Consignee berdasarkan sales_service ===
         service = cleaned.get("sales_service")
         code = (getattr(service, "code", "") or "").upper()
 
-        if code.startswith(("D2D", "D2P")) or "DOOR" in code:
-            required_shipper_fields = [
-                "shipper",
-                "shipper_address",
-                "shipper_province",
-                "shipper_regency",
-                "shipper_district",
-                "shipper_village",
-            ]
+        is_d2d = code.startswith("D2D") or "DOOR TO DOOR" in code
+        is_d2p = code.startswith("D2P") or "DOOR TO PORT" in code
+        is_p2p = code.startswith("P2P") or "PORT TO PORT" in code
 
-            if not cleaned.get("shipper") and "shipper" not in self.errors:
-                self.add_error(
-                    "shipper",
-                    "Shipper wajib diisi untuk Door to Door / Door to Port.",
-                )
+        def add_required(field_name, message):
+            """
+            Tambah error kalau field kosong.
+            Field name mengikuti nama field di model:
+            - shipper_contact_name, shipper_phone, shipper_address, shipper_province, ...
+            - consignee_name, consignee_phone, consignee_address, consignee_province, ...
+            """
+            if field_name in self.errors:
+                return
+            if not cleaned.get(field_name):
+                self.add_error(field_name, message)
 
-            for fname in required_shipper_fields:
-                if not cleaned.get(fname):
-                    self.add_error(
-                        fname,
-                        "Wajib diisi untuk Door to Door / Door to Port.",
-                    )
+        # =======================
+        # D2D
+        # =======================
+        # D2D: shipper & consignee WAJIB
+        # nama, telp, alamat, GEO (province–village)
+        if is_d2d:
+            # SHIPPER
+            add_required("shipper_contact_name", "Nama shipper wajib diisi untuk layanan Door to Door.")
+            add_required("shipper_phone", "Telepon shipper wajib diisi untuk layanan Door to Door.")
+            add_required("shipper_address", "Alamat shipper wajib diisi untuk layanan Door to Door.")
+            add_required("shipper_province", "Provinsi shipper wajib diisi untuk layanan Door to Door.")
+            add_required("shipper_regency", "Kabupaten/Kota shipper wajib diisi untuk layanan Door to Door.")
+            add_required("shipper_district", "Kecamatan shipper wajib diisi untuk layanan Door to Door.")
+            add_required("shipper_village", "Kelurahan/Desa shipper wajib diisi untuk layanan Door to Door.")
+
+            # CONSIGNEE
+            add_required("consignee_name", "Nama consignee wajib diisi untuk layanan Door to Door.")
+            add_required("consignee_phone", "Telepon consignee wajib diisi untuk layanan Door to Door.")
+            add_required("consignee_address", "Alamat consignee wajib diisi untuk layanan Door to Door.")
+            add_required("consignee_province", "Provinsi consignee wajib diisi untuk layanan Door to Door.")
+            add_required("consignee_regency", "Kabupaten/Kota consignee wajib diisi untuk layanan Door to Door.")
+            add_required("consignee_district", "Kecamatan consignee wajib diisi untuk layanan Door to Door.")
+            add_required("consignee_village", "Kelurahan/Desa consignee wajib diisi untuk layanan Door to Door.")
+
+        # =======================
+        # D2P
+        # =======================
+        # D2P:
+        # - Shipper WAJIB full: nama, telp, alamat, GEO
+        # - Consignee WAJIB: nama, telp, alamat (GEO boleh kosong)
+        elif is_d2p:
+            # SHIPPER
+            add_required("shipper_contact_name", "Nama shipper wajib diisi untuk layanan Door to Port.")
+            add_required("shipper_phone", "Telepon shipper wajib diisi untuk layanan Door to Port.")
+            add_required("shipper_address", "Alamat shipper wajib diisi untuk layanan Door to Port.")
+            add_required("shipper_province", "Provinsi shipper wajib diisi untuk layanan Door to Port.")
+            add_required("shipper_regency", "Kabupaten/Kota shipper wajib diisi untuk layanan Door to Port.")
+            add_required("shipper_district", "Kecamatan shipper wajib diisi untuk layanan Door to Port.")
+            add_required("shipper_village", "Kelurahan/Desa shipper wajib diisi untuk layanan Door to Port.")
+
+            # CONSIGNEE (tanpa GEO)
+            add_required("consignee_name", "Nama consignee wajib diisi untuk layanan Door to Port.")
+            add_required("consignee_phone", "Telepon consignee wajib diisi untuk layanan Door to Port.")
+            add_required("consignee_address", "Alamat consignee wajib diisi untuk layanan Door to Port.")
+
+        # =======================
+        # P2P
+        # =======================
+        # P2P:
+        # - Shipper & Consignee WAJIB nama, telp, alamat
+        # - Semua GEO boleh kosong
+        elif is_p2p:
+            # SHIPPER
+            add_required("shipper_contact_name", "Nama shipper wajib diisi untuk layanan Port to Port.")
+            add_required("shipper_phone", "Telepon shipper wajib diisi untuk layanan Port to Port.")
+            add_required("shipper_address", "Alamat shipper wajib diisi untuk layanan Port to Port.")
+
+            # CONSIGNEE
+            add_required("consignee_name", "Nama consignee wajib diisi untuk layanan Port to Port.")
+            add_required("consignee_phone", "Telepon consignee wajib diisi untuk layanan Port to Port.")
+            add_required("consignee_address", "Alamat consignee wajib diisi untuk layanan Port to Port.")
 
         return cleaned
 
 
-class FreightOrderEditForm(forms.ModelForm):
-    class Meta:
-        model = FreightOrder
-        fields = [
-            "payment_term",
-            "down_payment",
-            "reference_type",
-            "reference_number",
-            "reference_date",
-        ]
-        widgets = {
-            "reference_date": forms.DateInput(
-                attrs={"type": "date", "class": "form-control"}
-            ),
-        }
-
-
+#---------------------------------
 # sales/forms.py
 from django import forms
 from decimal import Decimal, InvalidOperation
@@ -913,3 +951,168 @@ class GenerateOrderForm(forms.Form):
             raise forms.ValidationError("Down Payment tidak boleh negatif.")
 
         return value
+
+# sales/forms.py
+from django import forms
+from .freight import FreightOrder
+
+
+class FreightOrderEditForm(forms.ModelForm):
+    class Meta:
+        model = FreightOrder
+        fields = [
+            "order_date",
+            "reference_type",
+            "reference_number",
+            "down_payment",
+        ]
+        widgets = {
+            "order_date": forms.DateInput(
+                attrs={
+                    "type": "date",
+                    "class": "form-control",
+                    "required": "required",
+                }
+            ),
+            "reference_type": forms.Select(
+                attrs={
+                    "class": "form-select",
+                    "required": "required",
+                }
+            ),
+            "reference_number": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "maxlength": "50",
+                    "required": "required",
+                }
+            ),
+            # field asli untuk DB: hidden
+            "down_payment": forms.HiddenInput(
+                attrs={
+                    "id": "id_down_payment",  # penting untuk JS
+                }
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["order_date"].required = True
+        self.fields["reference_type"].required = True
+        self.fields["reference_number"].required = True
+        self.fields["down_payment"].required = False
+
+
+
+
+
+
+
+#-------------------------------INVOICE AREA----------------------------------------------------#
+# sales/forms.py
+
+from django import forms
+from .invoice import Invoice
+from .freight import FreightOrder
+
+
+class InvoiceForm(forms.ModelForm):
+    class Meta:
+        model = Invoice
+        fields = [
+            "freight_order",
+            "invoice_date",
+            "due_date",
+            "subtotal_amount",
+            "tax_amount",
+            "total_amount",
+            "notes_customer",
+            "notes_internal",
+        ]
+        widgets = {
+            "invoice_date": forms.DateInput(attrs={"type": "date"}),
+            "due_date": forms.DateInput(attrs={"type": "date"}),
+            "notes_customer": forms.Textarea(attrs={"rows": 3}),
+            "notes_internal": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+
+        qs = FreightOrder.objects.select_related("customer").order_by("-id")
+        self.fields["freight_order"].queryset = qs
+        self.fields["freight_order"].widget.attrs.update({"class": "form-select"})
+
+        # Styling
+        for name, field in self.fields.items():
+            if name != "freight_order":
+                css = field.widget.attrs.get("class", "")
+                field.widget.attrs["class"] = (css + " form-control").strip()
+
+        # Kalau EDIT (instance sudah ada), lock freight_order
+        if self.instance and self.instance.pk:
+            self.fields["freight_order"].disabled = True        
+
+
+class InvoiceGenerateForm(forms.Form):
+    MODE_FULL = "FULL"
+    MODE_CUSTOM = "CUSTOM"
+    MODE_CHOICES = [
+        (MODE_FULL, "Full amount (total Freight Order)"),
+        (MODE_CUSTOM, "Custom amount"),
+    ]
+
+    mode = forms.ChoiceField(
+        choices=MODE_CHOICES,
+        widget=forms.RadioSelect,
+        initial=MODE_FULL,
+        label="Invoice Mode",
+    )
+
+    invoice_date = forms.DateField(
+        initial=timezone.now().date,
+        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+        label="Invoice Date",
+    )
+
+    due_date = forms.DateField(
+        initial=timezone.now().date,
+        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+        label="Due Date",
+    )
+
+    amount = forms.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        required=False,
+        label="Invoice Amount",
+        help_text="Untuk mode FULL akan otomatis memakai total Freight Order.",
+        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+    )
+
+    notes_customer = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+        label="Notes to Customer",
+    )
+
+    notes_internal = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+        label="Internal Notes",
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        mode = cleaned.get("mode")
+        amount = cleaned.get("amount")
+
+        if mode == self.MODE_CUSTOM:
+            if not amount or amount <= 0:
+                self.add_error("amount", "Untuk mode Custom, amount wajib diisi dan > 0.")
+        return cleaned
+
+
+

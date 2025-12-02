@@ -32,6 +32,7 @@ class FreightQuotation(TimeStampedModel):
     1 quotation = 1 origin + 1 destination
     Menyimpan snapshot shipper & consignee (nama, telp, alamat, geo).
     """
+    
 
     # --- BASIC INFO ---
     number = models.CharField(
@@ -621,6 +622,7 @@ class FreightOrderStatus(models.TextChoices):
 #   FREIGHT ORDER
 # ============================
 class FreightOrder(TimeStampedModel):
+
     number = models.CharField(
         max_length=30,
         unique=True,
@@ -645,6 +647,16 @@ class FreightOrder(TimeStampedModel):
         related_name="freight_orders_payment_terms",  
         null=True, blank=True
     )
+
+    currency = models.ForeignKey(
+        Currency,
+        on_delete=PROTECT,
+        null=True,          # supaya migrasi pertama aman
+        blank=True,
+        related_name="freight_orders",
+        default=None,       # kita isi default di migrasi, bukan di model
+    )
+
     quotation = models.OneToOneField(
         FreightQuotation,
         on_delete=models.PROTECT,

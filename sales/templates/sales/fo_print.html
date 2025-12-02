@@ -5,7 +5,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Freight Quotation {{ fq.number }}</title>
+  <title>Freight Order {{ fo.number }}</title>
 
   <style>
     html, body {
@@ -20,10 +20,14 @@
     }
 
     .page {
+     
       margin: 0 auto;
       box-sizing: border-box;
 
-      /* area tulis di antara header/footer */
+      /* ini area tulis di antara header/footer
+         header/footer sudah dipakai wkhtmltopdf via margin-top/bottom
+         jadi di sini cukup padding kecil saja
+      */
       padding: 0mm 20mm 0mm 20mm;
 
       position: relative;
@@ -127,30 +131,56 @@
 <body>
 
 <div class="page">
-  Jakarta, {{ fq.shipment_plan_date|date:"d M Y"|default:"-" }}
+
+  <!-- HEADER KONTEN -->
+  <table class="header-table">
+    <tr>
+      <td style="width: 50%;"></td>
+      <td style="width: 50%;">
+        <div class="company-info">
+          <!-- isi profile perusahaan kalau mau -->
+        </div>
+      </td>
+    </tr>
+  </table>
+
   <br>
-  
+  Jakarta, {{ fo.order_date|date:"d M Y"|default:"-" }}
+  <br><br>
+
   <table style="width:100%">
     <tr>
       <td class="text-left" style="width:50%">
         <div class="customer-address">
-          <strong>To</strong><br>  
+          <strong>To</strong><br>
           Mr. mr <br>
-          <strong>{{ fq.customer.company_name|default:fq.customer.name }}</strong><br>
-          {{ fq.customer_address_text|linebreaksbr }}
+          <strong>{{ fo.customer.company_name|default:fo.customer.name }}</strong><br>
+          {% if fo.customer_address_text %}
+            {{ fo.customer_address_text|linebreaksbr }}
+          {% else %}
+            {% if fo.customer.address %}{{ fo.customer.address }}<br>{% endif %}
+            {% if fo.customer.city %}{{ fo.customer.city }}{% endif %}
+          {% endif %}
         </div>
       </td>
       <td class="text-right" style="vertical-align: top;">
-        <h3 style="margin-bottom: 0px;">QUOTATION</h3>
-        #{{ fq.number }}<br>
+        <h3 style="margin-bottom: 0px;">FREIGHT ORDER</h3>
+        #{{ fo.number }}<br>
         <span style="font-size:11px;">
-          Valid until: {{ fq.valid_until|date:"d M Y"|default:"-" }}
+          SO Date : {{ fo.order_date|date:"d M Y"|default:"-" }}<br>
+          Ref : {{ fo.reference_type }} / {{ fo.reference_number|default:"-" }}<br>
+          Down Payment :
+          {% if fo.down_payment %}
+            {{ fo.down_payment|indo_currency:fo.currency.code }}
+          {% else %}
+            -
+          {% endif %}
         </span>
       </td>
     </tr>
   </table>
 
-  <br><br>
+  <br><br><br>
 
   <!-- ROUTE / SERVICE -->
   <table class="service">
@@ -163,28 +193,60 @@
     </tr>
     <tr>
       <td>
-        <div class="field-value ">
-          {{ fq.route_name }}
+        <div class="field-value">
+          {% if fo.route_name %}
+            {{ fo.route_name }}
+          {% elif fo.quotation and fo.quotation.route_name %}
+            {{ fo.quotation.route_name }}
+          {% elif fo.origin and fo.destination %}
+            {{ fo.origin.name }} → {{ fo.destination.name }}
+          {% else %}
+            -
+          {% endif %}
         </div>
       </td>
       <td>
         <div class="field-value">
-          {{ fq.sales_service.name }}
+          {% if fo.sales_service %}
+            {{ fo.sales_service.name }}
+          {% elif fo.quotation and fo.quotation.sales_service %}
+            {{ fo.quotation.sales_service.name }}
+          {% else %}
+            -
+          {% endif %}
         </div>
       </td>
       <td class="text-center">
         <div class="field-value">
-          {{ fq.shipment_plan_date|date:"d M Y"|default:"-" }}
+          {% if fo.shipment_plan_date %}
+            {{ fo.shipment_plan_date|date:"d M Y" }}
+          {% elif fo.quotation and fo.quotation.shipment_plan_date %}
+            {{ fo.quotation.shipment_plan_date|date:"d M Y" }}
+          {% else %}
+            -
+          {% endif %}
         </div>
       </td>
       <td class="text-center">
         <div class="field-value">
-          {{ fq.valid_until|date:"d M Y"|default:"-" }}
+          {% if fo.valid_until %}
+            {{ fo.valid_until|date:"d M Y" }}
+          {% elif fo.quotation and fo.quotation.valid_until %}
+            {{ fo.quotation.valid_until|date:"d M Y" }}
+          {% else %}
+            -
+          {% endif %}
         </div>
       </td>
       <td class="text-center">
         <div class="field-value">
-          {{ fq.payment_term }}
+          {% if fo.payment_term %}
+            {{ fo.payment_term }}
+          {% elif fo.quotation and fo.quotation.payment_term %}
+            {{ fo.quotation.payment_term }}
+          {% else %}
+            -
+          {% endif %}
         </div>
       </td>
     </tr>
@@ -193,22 +255,40 @@
   <!-- SHIPPER / CONSIGNEE -->
   <table class="service" style="width:100%">
     <tr>
-      <th class="text-left" style="width:50%">SHIPPER</th>
-      <th width="50%">CONSIGNEE</th>
+      <th class="text-left" width="50%">SHIPPER</th>
+      <th class="text-left" width="50%">CONSIGNEE</th>
     </tr>
     <tr>
       <td class="text-left">
         <address class="small mb-3">
-          {% for line in fq.shipper_address_lines %}
-            {{ line }}<br>
-          {% endfor %}
+          {% if fo.shipper_name or fo.shipper_address %}
+            {% if fo.shipper_name %}{{ fo.shipper_name }}<br>{% endif %}
+            {% if fo.shipper_address %}{{ fo.shipper_address|linebreaksbr }}{% endif %}
+          {% elif fo.quotation %}
+            {% for line in fo.quotation.shipper_address_lines %}
+              {{ line }}<br>
+            {% endfor %}
+          {% elif fo.shipper %}
+            {{ fo.shipper.name }}<br>
+            {% if fo.shipper.address %}{{ fo.shipper.address }}<br>{% endif %}
+            {% if fo.shipper.city %}{{ fo.shipper.city }}{% endif %}
+          {% endif %}
         </address>
       </td>
       <td class="text-left">
         <address class="small mb-3">
-          {% for line in fq.consignee_address_lines %}
-            {{ line }}<br>
-          {% endfor %}
+          {% if fo.consignee_name or fo.consignee_address %}
+            {% if fo.consignee_name %}{{ fo.consignee_name }}<br>{% endif %}
+            {% if fo.consignee_address %}{{ fo.consignee_address|linebreaksbr }}{% endif %}
+          {% elif fo.quotation %}
+            {% for line in fo.quotation.consignee_address_lines %}
+              {{ line }}<br>
+            {% endfor %}
+          {% elif fo.consignee %}
+            {{ fo.consignee.name }}<br>
+            {% if fo.consignee.address %}{{ fo.consignee.address }}<br>{% endif %}
+            {% if fo.consignee.city %}{{ fo.consignee.city }}{% endif %}
+          {% endif %}
         </address>
       </td>
     </tr>
@@ -228,64 +308,60 @@
     <tbody>
       <tr>
         <td>
-          {{ fq.cargo_name }} <br/>
-          {{ fq.package_count }} pkg |
-          G.W: {{ fq.gross_weight }} {{ fq.weight_uom.code|default_if_none:"" }} |
-          Volume: {{ fq.volume_cbm }} CBM
+          {{ fo.cargo_name }} <br/>
+          {{ fo.package_count }} pkg |
+          G.W: {{ fo.gross_weight }} {{ fo.weight_uom.code|default_if_none:"" }} |
+          Volume: {{ fo.volume_cbm }} CBM
         </td>
         <td class="text-center">
-          {{ fq.quantity|indo_number:0 }}
+          {{ fo.quantity|indo_number:0 }}
         </td>
         <td class="text-right">
-          {{ fq.unit_price|indo_currency:fq.currency.code }}
+          {{ fo.unit_price|indo_currency:fo.currency.code }}
         </td>
         <td class="text-right">
-          {{ fq.amount|indo_currency:fq.currency.code }}
+          {{ fo.amount|indo_currency:fo.currency.code }}
         </td>
         <td class="text-right">
-          {{ fq.amount|indo_currency:fq.currency.code }}
+          {{ fo.amount|indo_currency:fo.currency.code }}
         </td>
       </tr>
-
       <tr>
         <td colspan="4" class="text-right" style="border:none">
-          Disc ({{ fq.discount_percent|indo_number:2 }}%)
+          Disc ({{ fo.discount_percent|indo_number:2 }}%)
         </td>
         <td class="text-right">
-          -{{ fq.discount_amount|indo_currency:fq.currency.code }}
+          -{{ fo.discount_amount|indo_currency:fo.currency.code }}
         </td>
       </tr>
-
       <tr>
         <td colspan="4" class="text-right" style="border:none">
-          Tax ({{ fq.tax_percent|indo_number:2 }}%)
+          Tax ({{ fo.tax_percent|indo_number:2 }}%)
         </td>
         <td class="text-right">
-          {{ fq.tax_amount|indo_currency:fq.currency.code }}
+          {{ fo.tax_amount|indo_currency:fo.currency.code }}
         </td>
       </tr>
-
       <tr>
         <td colspan="4" class="text-right" style="border:none"><strong>Total</strong></td>
         <td class="text-right">
-          <strong>{{ fq.total_amount|indo_currency:fq.currency.code }}</strong>
+          <strong>{{ fo.total_amount|indo_currency:fo.currency.code }}</strong>
         </td>
       </tr>
     </tbody>
   </table>
 
-  {% if fq.notes_customer %}
+  {% if fo.notes_customer %}
     <div style="margin:30px 0 30px 0"><strong>TERM & CONDITION</strong></div>
     <div class="customer-notes">
-      {{ fq.notes_customer|safe }}
+      {{ fo.notes_customer|safe }}
     </div>
   {% endif %}
 
   <div class="footer-sign">
     Best regards,<br><br><br>
-    <strong>PT Dakara Samudera Hanasta</strong><br>
-    <br><br><br><br><br>
-    {{ fq.sales_user.get_full_name|default:fq.sales_user.username }}<br>
+    <strong>PT Dakara Samudera Hanasta</strong><br><br><br><br><br>
+    {{ fo.sales_user.get_full_name|default:fo.sales_user.username }}<br>
     Sales Department
   </div>
 

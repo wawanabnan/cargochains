@@ -38,7 +38,20 @@ from .views.freight import (
     FoEditFieldsView
 )
 
+
+from .views.invoices import (
+    InvoiceListView,
+    InvoiceCreateView,
+    InvoiceGenerateView,
+    InvoiceDetailView,
+    InvoiceUpdateView,
+    InvoicePrintView,
+    
+)
+
 from .views.freight_pdf import  FreightQuotationPdfHtmlView
+from .views.fo_pdf import FreightOrderPdfHtmlView  # sesuaikan path
+from .views.invoice_pdf_html import InvoicePdfHtmlView  # sesuaikan path
 
 
 app_name = "sales"
@@ -123,6 +136,35 @@ urlpatterns = [
     path("freight-orders/<int:pk>/", FoDetailView.as_view(), name="fo_detail"),
     path("freight-orders/<int:pk>/status/", FoStatusUpdateView.as_view(), name="fo_change_status"),
     path("freight-orders/<int:pk>/edit-fields/", FoEditFieldsView.as_view(), name="fo_edit_fields"),
+
+
+
+    path(
+        "freight-orders/<int:pk>/print/",
+        FreightOrderPdfHtmlView.as_view(),
+        name="fo_pdf",
+    ),
+
+    path(
+        "invoices/",
+        InvoiceListView.as_view(),
+        name="invoice_list",
+    ),
+    path(
+        "invoices/add/",
+        InvoiceCreateView.as_view(),
+        name="invoice_add",
+    ),
+
+    path(
+        "freight-orders/<int:pk>/generate-invoice/",
+        InvoiceGenerateView.as_view(),
+        name="invoice_generate",
+    ),
+    path("invoices/<int:pk>/", InvoiceDetailView.as_view(), name="invoice_detail"),
+    path("invoices/<int:pk>/edit/", InvoiceUpdateView.as_view(), name="invoice_edit"),
+    #path("invoices/<int:pk>/print/",InvoicePrintView.as_view(),name="invoice_print"),
+    path("invoices/<int:pk>/pdf/", InvoicePdfHtmlView.as_view(), name="invoice_pdf"),
 
 ]
 

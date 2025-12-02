@@ -1,0 +1,577 @@
+{% load static %}
+{% static 'img/letter_header_bg.png' as letter_head_fallback %}
+{% static 'img/letter_footer_bg.png' as letter_foot_fallback %}
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Freight Order {{ fo.number }}</title>
+
+<style>
+   html, body {
+    margin: 0;
+    padding: 0;
+     background: #ffffff !important;
+  }
+
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 13px;
+    {% if is_pdf %}
+      background: #ffffff;
+    {% else %}
+      background: #fff;
+    {% endif %}
+  }
+
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    box-sizing: border-box;
+     padding: 0mm 20mm 35mm 20mm;  /* contoh, sesuaikan */
+     position: relative;
+    z-index: 1;
+    background-image: url('');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover; /* Adjust as needed */
+
+  }
+
+  @media print {
+    body { background: #ffffff !important; }
+  }
+
+  
+  
+  
+  .letter-header-img,
+  .letter-footer-img {
+    width: 210mm;
+    height: auto;
+    display: block;
+  }
+
+  /* header strip dipaku di atas */
+  .pdf-header-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 0;
+  }
+
+  /* footer strip dipaku di bawah */
+  .pdf-footer-bg {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 0;
+  }
+
+  @media print {
+    body { background: #fff; }
+    .page {
+      margin: 0 auto;
+    }
+  }
+
+  .quotation-header {
+      font-size: 24px;
+      text-align: center;
+    }
+
+    /* HEADER */
+    .header-table {
+      width: 100%;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      border-bottom: 0px solid #888;
+    }
+    .header-table td {
+      vertical-align: top;
+    }
+
+    .company-info {
+      text-align: right;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 0 0 8px 0;
+    }
+
+    .section-title {
+      font-weight: bold;
+      font-size: 15px;
+      margin-top: 18px;
+      margin-bottom: 6px;
+      padding-bottom: 3px;
+      border-bottom: 1px solid #bbb;
+    }
+
+    .field-label {
+      font-weight: bold;
+      margin-top: 6px;
+    }
+    .field-value {
+      margin-bottom: 4px;
+    }
+
+    /* PRICING TABLE */
+    table.pricing, table.service {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    table.pricing th,
+    table.service th {
+      background: #f0f0f0;
+      padding: 6px;
+      border: 1px solid #ddd;
+      font-weight: bold;
+    }
+    table.pricing td,
+    table.service td {
+      padding: 6px;
+      border: 1px solid #e2e2e2;
+    }
+
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+    .text-left { text-align: left; }
+
+    .footer-sign {
+      margin-top: 28px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    /* PRINT TOOLBAR (Hanya muncul saat preview) */
+    .print-toolbar {
+      width: 210mm;
+      margin: 5mm auto 0;
+      text-align: right;
+    }
+    .btn {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 4px;
+      border: 1px solid #777;
+      background: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      margin-left: 4px;
+    }
+    .btn-primary {
+      background: #005fcc;
+      color: #fff;
+      border-color: #004fa8;
+    }
+
+
+    .notes-table {
+      width: 100%;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    .notes-table td {
+      vertical-align: top;
+      padding-right: 10px;
+    }
+    .notes-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+    .notes-table ul {
+      margin: 0 0 6px 16px;
+      padding: 0;
+    }
+    .notes-table li {
+      margin-bottom: 3px;
+    }
+
+    .customer-notes table {
+      width: 100% !important;
+      border:none;
+      border-collapse: collapse !important;
+      border-spacing: 0 !important;
+      table-layout: fixed;
+      font-size: 12px;
+    }
+
+    .customer-notes colgroup col {
+      width: 50% !important;
+    }
+
+    .customer-notes td,
+    .customer-notes th {
+      border: 0px solid #555 !important;
+      padding: 3px 6px !important;
+      vertical-align: top;
+    }
+
+    .customer-notes p {
+      margin: 0 0 4px 0 !important;
+    }
+
+    .customer-notes ul,
+    .customer-notes ol {
+      margin: 0 0 4px 16px !important;
+      padding: 0;
+    }
+
+.pdf-header {
+    position: fixed;
+    top: -5mm;           /* geser sedikit ke atas */
+    left: 0;
+    right: 0;
+    width: 100%;
+    text-align: left;
+}
+
+.header-img {
+    width: 100%;
+    height: auto;
+}
+
+.pdf-footer {
+    position: fixed;
+    bottom: -2mm;       /* bisa disesuaikan */
+    left: 0;
+    right: 0;
+    width: 100%;
+    text-align: left;
+}
+
+.footer-img {
+    width: 100%;
+    height: auto;
+}
+
+.page-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 210mm;
+    height: 297mm;
+    background: #ffffff !important;
+    z-index: 0;
+}
+
+
+</style>
+</head>
+
+<body>
+{% if is_pdf %}
+<div class="page-bg"></div>
+{% endif %}
+
+  <div class="page">
+  <!-- HEADER -->
+  <table class="header-table">
+    <tr>
+      <td style="width: 50%;">
+      </td>
+      <td style="width: 50%;">
+        <div class="company-info">
+          <!-- isi profile perusahaan kalau mau -->
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <br>
+  Jakarta, {{ fo.order_date|date:"d M Y"|default:"-" }}
+  <br>
+  <br>
+
+  <table style="width:100%">
+    <tr>
+      <td class="text-left" style="width:50%">
+        <div class="customer-address">
+          <strong>To</strong><br>
+          Mr. mr <br>
+          <strong>{{ fo.customer.company_name|default:fo.customer.name }}</strong><br>
+          {% if fo.customer_address_text %}
+            {{ fo.customer_address_text|linebreaksbr }}
+          {% else %}
+            {# fallback sederhana kalau belum ada customer_address_text #}
+            {% if fo.customer.address %}{{ fo.customer.address }}<br>{% endif %}
+            {% if fo.customer.city %}{{ fo.customer.city }}{% endif %}
+          {% endif %}
+        </div>
+      </td>
+      <td class="text-right" style="vertical-align: top;">
+        <h3 style="margin-bottom: 0px;">FREIGHT ORDER</h3>
+        #{{ fo.number }}<br>
+        <span style="font-size:11px;">
+          SO Date : {{ fo.order_date|date:"d M Y"|default:"-" }}<br>
+          Ref : {{ fo.reference_type }} / {{ fo.reference_number|default:"-" }}<br>
+          Down Payment :
+          {% if fo.down_payment %}
+            {{ fo.down_payment|indo_currency:fo.currency.code }}
+          {% else %}
+            -
+          {% endif %}
+        </span>
+      </td>
+    </tr>
+  </table>
+
+  <br>
+  <br>
+  <br>
+
+  <table class="service">
+  <tr>
+    <th class="text-left">
+      <div class="field-label">SHIPMENT ROUTE</div>
+    </th>
+    <th class="text-left" style="width:18%">
+      <div class="field-label">SERVICE</div>
+    </th>
+    <th class="text-center" style="width:14%">
+      <div class="field-label">SHIPMENT PLAN</div>
+    </th>
+    <th class="text-center" style="width:12%">
+      <div class="field-label">VALID UNTIL</div>
+    </th>
+    <th class="text-center" style="width:14%">
+      <div class="field-label">PAYMENT TERM</div>
+    </th>
+  </tr>
+  <tr>
+    <!-- SHIPMENT ROUTE -->
+    <td>
+      <div class="field-value">
+        {% if fo.route_name %}
+          {{ fo.route_name }}
+        {% elif fo.quotation and fo.quotation.route_name %}
+          {{ fo.quotation.route_name }}
+        {% elif fo.origin and fo.destination %}
+          {{ fo.origin.name }} → {{ fo.destination.name }}
+        {% else %}
+          -
+        {% endif %}
+      </div>
+    </td>
+
+    <!-- SERVICE -->
+    <td style="width:15%">
+      <div class="field-value">
+        {% if fo.sales_service %}
+          {{ fo.sales_service.name }}
+        {% elif fo.quotation and fo.quotation.sales_service %}
+          {{ fo.quotation.sales_service.name }}
+        {% else %}
+          -
+        {% endif %}
+      </div>
+    </td>
+
+    <!-- SHIPMENT PLAN -->
+    <td class="text-center">
+      <div class="field-value">
+        {% if fo.shipment_plan_date %}
+          {{ fo.shipment_plan_date|date:"d M Y" }}
+        {% elif fo.quotation and fo.quotation.shipment_plan_date %}
+          {{ fo.quotation.shipment_plan_date|date:"d M Y" }}
+        {% else %}
+          -
+        {% endif %}
+      </div>
+    </td>
+
+    <!-- VALID UNTIL (biasanya cuma ada di Quotation) -->
+    <td class="text-center">
+      <div class="field-value">
+        {% if fo.valid_until %}
+          {{ fo.valid_until|date:"d M Y" }}
+        {% elif fo.quotation and fo.quotation.valid_until %}
+          {{ fo.quotation.valid_until|date:"d M Y" }}
+        {% else %}
+          -
+        {% endif %}
+      </div>
+    </td>
+
+    <!-- PAYMENT TERM -->
+    <td class="text-center">
+      <div class="field-value">
+        {% if fo.payment_term %}
+          {{ fo.payment_term }}
+        {% elif fo.quotation and fo.quotation.payment_term %}
+          {{ fo.quotation.payment_term }}
+        {% else %}
+          -
+        {% endif %}
+      </div>
+    </td>
+  </tr>
+</table>
+
+
+  <table class="service" style="width:100%">
+  <tr>
+    <th class="text-left" width="50%">SHIPPER</th>
+    <th class="text-left" width="50%">CONSIGNEE</th>
+  </tr>
+  <tr>
+    <td class="text-left">
+      <address class="small mb-3">
+        {# 1) PREFER: snapshot di FO (kalau terisi) #}
+        {% if fo.shipper_name or fo.shipper_address %}
+          {% if fo.shipper_name %}{{ fo.shipper_name }}<br>{% endif %}
+          {% if fo.shipper_address %}{{ fo.shipper_address|linebreaksbr }}{% endif %}
+
+        {# 2) FALLBACK: ambil dari Quotation kalau ada relasi #}
+        {% elif fo.quotation %}
+          {% if fo.quotation.shipper_address_lines %}
+            {% for line in fo.quotation.shipper_address_lines %}
+              {{ line }}<br>
+            {% endfor %}
+          {% endif %}
+
+        {# 3) LAST FALLBACK: langsung dari partner shipper #}
+        {% elif fo.shipper %}
+          {{ fo.shipper.name }}<br>
+          {% if fo.shipper.address %}{{ fo.shipper.address }}<br>{% endif %}
+          {% if fo.shipper.city %}{{ fo.shipper.city }}{% endif %}
+        {% endif %}
+      </address>
+    </td>
+
+    <td class="text-left">
+      <address class="small mb-3">
+        {% if fo.consignee_name or fo.consignee_address %}
+          {% if fo.consignee_name %}{{ fo.consignee_name }}<br>{% endif %}
+          {% if fo.consignee_address %}{{ fo.consignee_address|linebreaksbr }}{% endif %}
+
+        {% elif fo.quotation %}
+          {% if fo.quotation.consignee_address_lines %}
+            {% for line in fo.quotation.consignee_address_lines %}
+              {{ line }}<br>
+            {% endfor %}
+          {% endif %}
+
+        {% elif fo.consignee %}
+          {{ fo.consignee.name }}<br>
+          {% if fo.consignee.address %}{{ fo.consignee.address }}<br>{% endif %}
+          {% if fo.consignee.city %}{{ fo.consignee.city }}{% endif %}
+        {% endif %}
+      </address>
+    </td>
+  </tr>
+</table>
+
+
+  <table class="pricing">
+    <thead>
+      <tr>
+        <th class="text-left">CARGO DESCRIPTION</th>
+        <th class="text-center" style="width:45px;">QTY</th>
+        <th class="text-right"  style="width:95px;">PRICE</th>
+        <th class="text-right"  style="width:95px;">AMOUNT</th>
+        <th class="text-right"  style="width:95px;">TOTAL</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- BARIS UTAMA (ITEM) -->
+      <tr>
+        <td>
+          {{ fo.cargo_name }} <br/>
+          {{ fo.package_count }} pkg |
+          G.W: {{ fo.gross_weight }} {{ fo.weight_uom.code|default_if_none:"" }} |
+          Volume: {{ fo.volume_cbm }} CBM
+        </td>
+
+        <td class="text-center">
+          {{ fo.quantity|indo_number:0 }}
+        </td>
+
+        <td class="text-right">
+          {{ fo.unit_price|indo_currency:fo.currency.code }}
+        </td>
+
+        <td class="text-right">
+          {{ fo.amount|indo_currency:fo.currency.code }}
+        </td>
+
+        <td class="text-right">
+          {{ fo.amount|indo_currency:fo.currency.code }}
+        </td>
+      </tr>
+
+      <!-- BARIS DISCOUNT -->
+      <tr>
+        <td colspan="4" class="text-right" style="border:none">
+          Disc ({{ fo.discount_percent|indo_number:2 }}%)
+        </td>
+        <td class="text-right">
+          -{{ fo.discount_amount|indo_currency:fo.currency.code }}
+        </td>
+      </tr>
+
+      <!-- BARIS TAX -->
+      <tr>
+        <td colspan="4" class="text-right" style="border:none">
+          Tax ({{ fo.tax_percent|indo_number:2 }}%)
+        </td>
+        <td class="text-right">
+          {{ fo.tax_amount|indo_currency:fo.currency.code }}
+        </td>
+      </tr>
+
+   
+
+      <!-- BARIS TOTAL AKHIR -->
+      <tr>
+        <td colspan="4" class="text-right" style="border:none"><strong>Total</strong></td>
+        <td class="text-right">
+          <strong>{{ fo.total_amount|indo_currency:fo.currency.code }}</strong>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- NOTES / TERM & CONDITION -->
+  {% if fo.notes_customer %}
+    <div style="margin:30px 0 30px 0"><strong>TERM & CONDITION</strong></div>
+    <div class="customer-notes">
+      {{ fo.notes_customer|safe }}
+    </div>
+  {% endif %}
+
+  <!-- SIGN -->
+  <div class="footer-sign">
+    Best regards,<br><br><br>
+    <strong>PT Dakara Samudera Hanasta</strong><br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    {{ fo.sales_user.get_full_name|default:fo.sales_user.username }}<br>
+    Sales Department
+  </div>
+
+</div>
+{% if is_pdf %}
+<div class="pdf-footer">
+  <img src="{{ bottom_footer_path }}" class="footer-img">
+</div>
+{% endif %}
+
+</body>
+</html>

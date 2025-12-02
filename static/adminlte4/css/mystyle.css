@@ -35,7 +35,12 @@ body {
 
 .app-content-header h3 {
 
-  font-size:22px
+  font-size:28px !important;
+}
+
+.app-content-header h4 {
+
+  font-size:20px !important;
 }
 
 /* ubah kursor dan efek hover */
