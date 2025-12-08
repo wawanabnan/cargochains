@@ -1,0 +1,240 @@
+{# templates/sales/job_list.html #}
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+<div class="app-content">
+  <div class="container-fluid">
+
+    {# HEADER #}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h4 mb-0">Job Order List</h1>
+
+      <div>
+        {# Kalau nanti mau link ke halaman split/new job, tinggal ganti href-nya #}
+        <a href="{%  url 'sales:job_order_new' %}"
+           class="btn btn-primary btn-sm">
+          <i class="fa fa-plus me-1"></i> New Job Order
+        </a>
+      </div>
+    </div>
+
+    {# FILTER CARD #}
+    <div class="card mb-3">
+      <div class="card-header py-2">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">Filter</span>
+        </div>
+      </div>
+      <div class="card-body py-3">
+        <form method="get" class="row g-2 align-items-end">
+
+          <div class="col-md-3">
+            <label class="form-label form-label-sm mb-1">Search</label>
+            <input type="text"
+                   name="q"
+                   value="{{ filter_q }}"
+                   class="form-control form-control-sm"
+                   placeholder="Job No / Cargo description...">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label form-label-sm mb-1">Customer</label>
+            <select name="customer" class="form-select form-select-sm">
+              <option value="">-- All customers --</option>
+              {% for c in customers %}
+                <option value="{{ c.pk }}"
+                        {% if filter_customer|default:'' == c.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ c.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label form-label-sm mb-1">Service</label>
+            <select name="service" class="form-select form-select-sm">
+              <option value="">-- All services --</option>
+              {% for s in services %}
+                <option value="{{ s.pk }}"
+                        {% if filter_service|default:'' == s.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ s.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label form-label-sm mb-1">Date from</label>
+                <input type="date"
+                       name="date_from"
+                       value="{{ filter_date_from }}"
+                       class="form-control form-control-sm">
+              </div>
+              <div class="col-6">
+                <label class="form-label form-label-sm mb-1">Date to</label>
+                <input type="date"
+                       name="date_to"
+                       value="{{ filter_date_to }}"
+                       class="form-control form-control-sm">
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-3 mt-2">
+            <button type="submit" class="btn btn-primary btn-sm me-1">
+              <i class="fa fa-filter me-1"></i> Apply
+            </button>
+            <a href="?" class="btn btn-outline-secondary btn-sm">
+              <i class="fa fa-undo me-1"></i> Reset
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {# TABLE CARD #}
+    <div class="card">
+      <div class="card-header py-2">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">Job Orders</span>
+          <span class="text-muted small">
+            Total: {{ page_obj.paginator.count }}
+          </span>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-sm mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 80px;">Job No</th>
+                <th style="width: 90px;">Date</th>
+                <th>Customer</th>
+                <th>Service</th>
+                <th>Cargo</th>
+                <th class="text-end" style="width: 120px;">Grand Total</th>
+                <th style="width: 120px;">Sales</th>
+                <th style="width: 70px;" class="text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if job_orders %}
+                {% for jo in job_orders %}
+                  <tr>
+                    <td>
+                      {# Link ke split view; sesuaikan url name kalau beda #}
+                      <a href="{% url 'sales:job_order' %}?job={{ jo.pk }}"
+                         class="text-decoration-none">
+                        {{ jo.number }}
+                      </a>
+                    </td>
+                    <td>{{ jo.job_date|date:"d-m-Y" }}</td>
+                    <td>{{ jo.customer.name }}</td>
+                    <td>{{ jo.service.name }}</td>
+                    <td>{{ jo.cargo_description|default:"-" }}</td>
+                    <td class="text-end">
+                      {{ jo.grand_total|default:0|floatformat:0|intcomma }}
+                    </td>
+                    <td>
+                      {% if jo.sales_user %}
+                        {{ jo.sales_user.get_full_name|default:jo.sales_user.username }}
+                      {% else %}
+                        -
+                      {% endif %}
+                    </td>
+                    <td class="text-center">
+                      <a href="{% url 'sales:job_order' %}?job={{ jo.pk }}"
+                         class="btn btn-outline-secondary btn-xs">
+                        <i class="fa fa-eye"></i>
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="8" class="text-center py-3 text-muted">
+                    Tidak ada data job order.
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {# PAGINATION #}
+      {% if is_paginated %}
+        <div class="card-footer py-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="small text-muted">
+              Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </div>
+            <nav>
+              <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?page=1&q={{ filter_q }}&customer={{ filter_customer }}&service={{ filter_service }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+                      « First
+                    </a>
+                  </li>
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ page_obj.previous_page_number }}&q={{ filter_q }}&customer={{ filter_customer }}&service={{ filter_service }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+                      ‹ Prev
+                    </a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled"><span class="page-link">« First</span></li>
+                  <li class="page-item disabled"><span class="page-link">‹ Prev</span></li>
+                {% endif %}
+
+                {# halaman sekitar #}
+                {% for num in page_obj.paginator.page_range %}
+                  {% if num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+                    {% if num == page_obj.number %}
+                      <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                      </li>
+                    {% else %}
+                      <li class="page-item">
+                        <a class="page-link"
+                           href="?page={{ num }}&q={{ filter_q }}&customer={{ filter_customer }}&service={{ filter_service }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+                          {{ num }}
+                        </a>
+                      </li>
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ page_obj.next_page_number }}&q={{ filter_q }}&customer={{ filter_customer }}&service={{ filter_service }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+                      Next ›
+                    </a>
+                  </li>
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ page_obj.paginator.num_pages }}&q={{ filter_q }}&customer={{ filter_customer }}&service={{ filter_service }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+                      Last »
+                    </a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled"><span class="page-link">Next ›</span></li>
+                  <li class="page-item disabled"><span class="page-link">Last »</span></li>
+                {% endif %}
+              </ul>
+            </nav>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -208,3 +208,30 @@ class CompanyProfile(models.Model):
 
     def __str__(self):
         return self.brand or self.name
+
+
+      
+class Service(models.Model):
+    name = models.CharField(max_length=100)
+    service_group = models.CharField(max_length=30)
+    
+    sort_order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+   
+    class Meta:
+        db_table = "core_services"
+        ordering = ["sort_order", "name"]
+
+    def __str__(self):
+        return f"{self.name} - {self.service_group}"
+
+    @property
+    def only_name(self):
+        return self.name
+    
+    
+   

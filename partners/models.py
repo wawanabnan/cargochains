@@ -239,6 +239,22 @@ class Partner(models.Model):
         return "\n".join(self.full_address_lines)
 
 
+class CustomerManager(models.Manager):
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .filter(roles__code="customer")  # roles -> PartnerRoleTypes via M2M
+            .distinct()
+        )
+
+class Customer(Partner):
+    objects = CustomerManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = "Customer"
+        verbose_name_plural = "Customers"
 
 
 class PartnerRoleTypes(models.Model):

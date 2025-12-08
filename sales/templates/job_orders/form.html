@@ -1,0 +1,173 @@
+{# templates/sales/job_form.html #}
+{% extends "base.html" %}   {# ganti sesuai base layout om #}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3 class="mb-0">
+        {% if job %}Edit Job Order #{{ job.number }}{% else %}New Job Order{% endif %}
+      </h3>
+
+      <div>
+        <a href="{% url 'sales:job_order_list' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="fa fa-list me-1"></i> Back to List
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+
+        {# tampilkan error global #}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger py-2">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if job %}
+            <input type="hidden" name="job_id" value="{{ job.pk }}">
+          {% endif %}
+
+          <div class="row g-3">
+
+            <!-- JOB INFO -->
+            <div class="col-12">
+              <h6 class="fw-bold mb-2">Job Info</h6>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Date</label>
+              {{ form.job_date }}
+              {{ form.job_date.errors }}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Customer</label>
+              {{ form.customer }}
+              {{ form.customer.errors }}
+            </div>
+
+            <div class="col-md-5">
+              <label class="form-label">Service</label>
+              {{ form.service }}
+              {{ form.service.errors }}
+            </div>
+
+            <!-- CARGO INFO -->
+            <div class="col-12 mt-3">
+              <h6 class="fw-bold mb-2">Cargo Info</h6>
+            </div>
+
+            <div class="col-md-8">
+              <label class="form-label">Cargo Description</label>
+              {{ form.cargo_description }}
+              {{ form.cargo_description.errors }}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Quantity</label>
+              {{ form.quantity }}
+              {{ form.quantity.errors }}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Pick Up</label>
+              {{ form.pickup }}
+              {{ form.pickup.errors }}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Delivery</label>
+              {{ form.delivery }}
+              {{ form.delivery.errors }}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">PIC</label>
+              {{ form.pic }}
+              {{ form.pic.errors }}
+            </div>
+
+            <!-- PAYMENT -->
+            <div class="col-12 mt-3">
+              <h6 class="fw-bold mb-2">Payment</h6>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Payment Term</label>
+              {{ form.payment_term }}
+              {{ form.payment_term.errors }}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Currency</label>
+              {{ form.currency }}
+              {{ form.currency.errors }}
+            </div>
+
+            <div class="col-md-5">
+              <label class="form-label">Sales</label>
+              {{ form.sales_user }}
+              {{ form.sales_user.errors }}
+            </div>
+
+            <!-- AMOUNT -->
+            <div class="col-12 mt-3">
+              <h6 class="fw-bold mb-2">Amount</h6>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Total Amount</label>
+              {{ form.total_amount }}
+              {{ form.total_amount.errors }}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Tax Amount</label>
+              {{ form.tax_amount }}
+              {{ form.tax_amount.errors }}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">PPH Amount</label>
+              {{ form.pph_amount }}
+              {{ form.pph_amount.errors }}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Grand Total</label>
+              {{ form.grand_total }}
+              {{ form.grand_total.errors }}
+            </div>
+
+            <!-- REMARKS -->
+            <div class="col-12 mt-3">
+              <h6 class="fw-bold mb-2">Internal Remarks</h6>
+            </div>
+
+            <div class="col-12">
+              {{ form.remarks_internal }}
+              {{ form.remarks_internal.errors }}
+            </div>
+          </div>
+
+          <div class="mt-4 d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary">
+              <i class="fa fa-save me-1"></i>
+              {% if job %}Update{% else %}Create{% endif %}
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

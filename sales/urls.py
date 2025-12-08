@@ -32,7 +32,7 @@ from .views.freight import (
     FqDeleteView,
     FqBulkDeleteView,
     FqStatusUpdateView,
-     FoListView,
+    FoListView,
     FoDetailView,
     FoStatusUpdateView,
     FoEditFieldsView
@@ -52,6 +52,13 @@ from .views.invoices import (
 from .views.freight_pdf import  FreightQuotationPdfHtmlView
 from .views.fo_pdf import FreightOrderPdfHtmlView  # sesuaikan path
 from .views.invoice_pdf_html import InvoicePdfHtmlView  # sesuaikan path
+
+from .views.job_order import (
+    JobOrderListView,
+    JobOrderCreateView,
+    JobOrderUpdateView,
+)
+
 
 
 app_name = "sales"
@@ -165,6 +172,9 @@ urlpatterns = [
     path("invoices/<int:pk>/edit/", InvoiceUpdateView.as_view(), name="invoice_edit"),
     #path("invoices/<int:pk>/print/",InvoicePrintView.as_view(),name="invoice_print"),
     path("invoices/<int:pk>/pdf/", InvoicePdfHtmlView.as_view(), name="invoice_pdf"),
+    path("job_orders/", JobOrderListView.as_view(), name="job_order_list"),
+    path("job-orders/new/", JobOrderCreateView.as_view(), name="job_order_new"),
+    path("job-orders/<int:pk>/edit/", JobOrderUpdateView.as_view(), name="job_order_edit"),
 
 ]
 

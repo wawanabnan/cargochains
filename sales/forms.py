@@ -888,6 +888,29 @@ class FreightQuotationForm(forms.ModelForm):
             add_required("consignee_phone", "Telepon consignee wajib diisi untuk layanan Port to Port.")
             add_required("consignee_address", "Alamat consignee wajib diisi untuk layanan Port to Port.")
 
+       
+        # === 6) ORIGIN / DESTINATION FINAL LOGIC ===
+        # D2D: origin & destination otomatis diambil dari shipper/consignee_village
+        if is_d2d:
+            shipper_village = cleaned.get("shipper_village")
+            consignee_village = cleaned.get("consignee_village")
+
+            # Kalau village ada dan origin/destination belum terisi, isi dari village
+            if shipper_village and not cleaned.get("origin"):
+                cleaned["origin"] = shipper_village
+
+            if consignee_village and not cleaned.get("destination"):
+                cleaned["destination"] = consignee_village
+
+        # Semua layanan (D2D / D2P / P2P / lainnya):
+        # origin & destination WAJIB terisi sebelum save
+        if "origin" not in self.errors and not cleaned.get("origin"):
+            self.add_error("origin", "Origin wajib diisi.")
+
+        if "destination" not in self.errors and not cleaned.get("destination"):
+            self.add_error("destination", "Destination wajib diisi.")
+
+       
         return cleaned
 
 

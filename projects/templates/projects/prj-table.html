@@ -8,8 +8,9 @@
                 <th>Ref</th>
                 <th>Name</th>
                 <th>Category</th>
+                <th class="text-end">Budget</th>
+                <th class="text-end">Amount</th>
                 <th>Status</th>
-                <th class="text-end">Total Cost</th>
                 <th class="text-center" style="width:100px;">Actions</th>
               </tr>
             </thead>
@@ -20,15 +21,18 @@
                 <td>{{ p.ref_number|default:"-" }}</td>
                 <td>{{ p.name }}</td>
                 <td>{{ p.category.name }}</td>
+                <td>0,00</td>
+                <td class="text-end">{{ p.total_cost|floatformat:2 }}</td>
+                
                 <td>
                   <span class="badge text-bg-light border">{{ p.get_status_display }}</span>
                 </td>
-                <td class="text-end">{{ p.total_cost|floatformat:2 }}</td>
                 <td class="text-center">
                   <a href="{% url 'projects:project_edit' p.pk %}" class="btn btn-sm btn-outline-secondary">
                     <i class="fas fa-pen"></i>
                   </a>
                 </td>
+
               </tr>
               {% empty %}
               <tr>

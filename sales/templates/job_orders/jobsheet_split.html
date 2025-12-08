@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Jobsheet{% endblock %}
+
+{% block content_header %}
+  <div class="d-flex justify-content-between align-items-center">
+    <h1 class="h4 mb-0">Jobsheet</h1>
+  </div>
+{% endblock content_header %}
+
+{% block content %}
+<div class="row">
+  {# KIRI: daftar Jobs #}
+  <div class="col-lg-3 col-md-4">
+    <div class="card card-outline card-secondary h-100">
+      <div class="card-header py-2">
+        <h3 class="card-title">Daftar Job</h3>
+      </div>
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush" style="max-height: calc(100vh - 220px); overflow-y: auto;">
+          {% for job in jobs %}
+            <a href="?job={{ job.pk }}"
+               class="list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if selected_job and job.pk == selected_job.pk %}active{% endif %}">
+              <div class="me-auto">
+                <div class="fw-bold">{{ job.number }}</div>
+                <small>{{ job.job_date }} · {{ job.customer.name }}</small><br>
+                <small class="text-muted">{{ job.description|default:"(no description)" }}</small>
+              </div>
+              <span class="badge bg-secondary ms-2">{{ job.get_status_display }}</span>
+            </a>
+          {% empty %}
+            <div class="p-3 text-muted">
+              Belum ada job.
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# KANAN: detail job + cost lines #}
+  <div class="col-lg-9 col-md-8">
+    {% if selected_job %}
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="job_id" value="{{ selected_job.pk }}">
+
+        <div class="card mb-3">
+          <div class="card-header py-2">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="text-muted">Job No</span>
+                <h3 class="card-title mb-0">{{ selected_job.number }}</h3>
+              </div>
+              <div>
+                <span class="badge bg-primary">{{ selected_job.get_status_display }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-md-4">
+                <label class="form-label small mb-0">Job Date</label>
+                {{ job_form.job_date }}
+              </div>
+              <div class="col-md-8">
+                <label class="form-label small mb-0">Customer</label>
+                {{ job_form.customer }}
+              </div>
+
+              <div class="col-md-8">
+                <label class="form-label small mb-0">Description</label>
+                {{ job_form.description }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small mb-0">Status</label>
+                {{ job_form.status }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small mb-0">Currency</label>
+                {{ job_form.currency }}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label small mb-0">Internal Remarks</label>
+                {{ job_form.remarks_internal }}
+              </div>
+
+              <div class="col-12 mt-2 text-end">
+                <strong>Total Cost: {{ selected_job.total_cost|default:"0" }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# TABEL COST #}
+        <div class="card">
+          <div class="card-header py-2 d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0">Rincian Biaya</h3>
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="fa fa-save me-1"></i> Simpan Jobsheet
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm table-striped mb-0 align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 160px;">PO Customer</th>
+                    <th style="width: 160px;">Vendor</th>
+                    <th>Cost Category / Description</th>
+                    <th style="width: 80px;" class="text-end">Qty</th>
+                    <th style="width: 80px;">Unit</th>
+                    <th style="width: 120px;" class="text-end">Unit Price</th>
+                    <th style="width: 120px;" class="text-end">Amount</th>
+                    <th style="width: 60px;">Bill?</th>
+                    <th style="width: 60px;">Del</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{ formset.management_form }}
+                  {% for form in formset %}
+                    <tr>
+                      <td>{{ form.purchase_order }}</td>
+                      <td>{{ form.vendor }}</td>
+                      <td>
+                        {{ form.cost_category }}
+                        {{ form.description }}
+                      </td>
+                      <td class="text-end">{{ form.qty }}</td>
+                      <td>{{ form.unit }}</td>
+                      <td class="text-end">{{ form.unit_price }}</td>
+                      <td class="text-end">{{ form.amount }}</td>
+                      <td class="text-center">{{ form.is_billable }}</td>
+                      <td class="text-center">
+                        {% if form.instance.pk %}
+                          {{ form.DELETE }}
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card-footer py-2">
+            <small class="text-muted">
+              Tambah baris baru: formset extra = {{ formset.extra }} (bisa diatur di forms_jobsheet.py).
+            </small>
+          </div>
+        </div>
+      </form>
+    {% else %}
+      <div class="alert alert-info">
+        Pilih salah satu Job di sisi kiri untuk melihat dan mengedit jobsheet.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock content %}
+
+{% block extra_js %}
+  {{ block.super }}
+  <script>
+    // Contoh simpel: auto hitung amount = qty * unit_price (optional)
+    document.addEventListener('input', function (e) {
+      if (e.target.name && (e.target.name.includes('-qty') || e.target.name.includes('-unit_price'))) {
+        const nameParts = e.target.name.split('-');
+        const prefix = nameParts[0] + '-' + nameParts[1] + '-';  // mis: form-0-
+        const qtyInput = document.querySelector('input[name="' + prefix + 'qty"]');
+        const priceInput = document.querySelector('input[name="' + prefix + 'unit_price"]');
+        const amountInput = document.querySelector('input[name="' + prefix + 'amount"]');
+        if (qtyInput && priceInput && amountInput) {
+          const qty = parseFloat(qtyInput.value || '0');
+          const price = parseFloat(priceInput.value || '0');
+          amountInput.value = (qty * price).toFixed(2);
+        }
+      }
+    });
+  </script>
+{% endblock extra_js %}

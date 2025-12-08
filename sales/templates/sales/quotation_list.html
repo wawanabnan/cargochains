@@ -1,4 +1,5 @@
 {% extends "adminbase.html" %}
+{% load indo_format %}
 
 {% block content %}
 
@@ -120,8 +121,8 @@
                         <input type="checkbox" class="chk-row" value="{{ fq.pk }}">
                       </td>
                       <td>{{ fq.number }}</td>
-                      <td>{{ fq.valid_until|date:"Y-m-d" }}</td>
-                      <td>{{ fq.shipment_plan_date|date:"Y-m-d" }}</td>
+                      <td>{{ fq.valid_until|date:"d-m-y" }}</td>
+                      <td>{{ fq.shipment_plan_date|date:"d-m-Y" }}</td>
                       <td>{{ fq.customer.company_name|default:fq.customer.name }}</td>
                       <td>{{ fq.sales_service.code }}</td>
 
@@ -131,7 +132,7 @@
                       <td class="text-center">{{ fq.currency }}</td>
 
                       <td class="text-end">
-                        {{ fq.total_amount|floatformat:2 }} {{ fq.currency_code }}
+                        {{ fq.total_amount|indo_number }} 
                       </td>
 
                       <td class="text-center">

@@ -123,25 +123,8 @@
             </div>
           </div>
 
-         
-          {# ====================== #}
-          {#  CARD: PRICE & AMOUNT  #}
-          {# ====================== #}
-          
-          
-          {# ====================== #}
-          {#  CARD: ROUTE           #}
-          {# ====================== #}
-          {# ====================== #}
-          {#  CARD: SHIPPER         #}
-          {# ====================== #}
-     
-          
-          {# ====================== #}
-          {#  CARD: CONSIGNEE       #}
-          {# ====================== #}
-          
-                    {% include 'sales/sub-forms/route.html' %}
+          {#  Route Origin - Destination       #}
+          {% include 'sales/sub-forms/route.html' %}
 
         
           <div class="card shaddow-none my-3">
@@ -761,5 +744,68 @@
     toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
   });
 </script>
+<script>
+  function isD2DService() {
+    const select = document.getElementById("id_sales_service");
+    if (!select) return false;
+
+    const opt = select.selectedOptions[0];
+    if (!opt) return false;
+
+    // Pakai teks tampilan option: "Sea - Door to Door", "Air - Door to Door", dst
+    const text = (opt.textContent || opt.innerText || "").toUpperCase();
+    return text.includes("DOOR TO DOOR");   // true kalau ada kalimat ini
+  }
+
+  function updateRouteVisibility() {
+    const routeBlock = document.getElementById("quotation-route-id");
+    if (!routeBlock) return;
+
+    const isD2D = isD2DService();
+
+    if (isD2D) {
+      routeBlock.style.display = "none";  // hide origin–destination
+    } else {
+      routeBlock.style.display = "";      // show normal
+    }
+  }
+
+  function syncOriginDestinationForD2D() {
+    const isD2D = isD2DService();
+    if (!isD2D) return;
+
+    const shipperVillage = document.getElementById("id_shipper_village");
+    const consigneeVillage = document.getElementById("id_consignee_village");
+    const originInput = document.getElementById("id_origin");
+    const destinationInput = document.getElementById("id_destination");
+
+    if (originInput && shipperVillage) {
+      originInput.value = shipperVillage.value || "";
+    }
+    if (destinationInput && consigneeVillage) {
+      destinationInput.value = consigneeVillage.value || "";
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const salesSelect = document.getElementById("id_sales_service");
+    if (salesSelect) {
+      // initial
+      updateRouteVisibility();
+
+      salesSelect.addEventListener("change", function () {
+        updateRouteVisibility();
+      });
+    }
+
+    const form = document.getElementById("fqForm"); // ganti ID ini sesuai form om
+    if (form) {
+      form.addEventListener("submit", function () {
+        syncOriginDestinationForD2D();
+      });
+    }
+  });
+</script>
+
 
 {% endblock%}

@@ -1,114 +1,119 @@
-    <!--begin::Sidebar Brand-->
-        <div class="sidebar-brand">
-          <!--begin::Brand Link-->
-          <a href="./index.html" class="brand-link">
-            <!--begin::Brand Image-->
-            <img
-              src=""
-              alt=""
-              class="brand-image opacity-75 shadow"
-            />
-            <!--end::Brand Image-->
-            <!--begin::Brand Text-->
-            <span class="brand-text fw-light">CARGO CHAINS</span>
-            <!--end::Brand Text-->
+<nav class="mt-2">
+  <ul class="nav nav-pills nav-sidebar flex-column"
+      data-lte-toggle="treeview"
+      role="menu"
+      data-accordion="false">
+
+    <!-- Dashboard -->
+    <li class="nav-item">
+      <a href="#"
+         class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <i class="nav-icon fas fa-home"></i>
+        <p>Dashboard</p>
+      </a>
+    </li>
+
+    <!-- Projects (contoh om pakai /projects/) -->
+    <li class="nav-item">
+      <a href="#"
+         class="nav-link {% if request.resolver_match.app_name == 'projects' %}active{% endif %}">
+        <i class="nav-icon fas fa-folder-open"></i>
+        <p>Projects</p>
+      </a>
+    </li>
+
+    <!-- SALES -->
+    {% with current_app=request.resolver_match.app_name current_view=request.resolver_match.url_name %}
+    <li class="nav-item {% if current_app == 'sales' %}menu-open{% endif %}">
+      <a href="#"
+         class="nav-link {% if current_app == 'sales' %}active{% endif %}">
+        <i class="nav-icon fas fa-briefcase"></i>
+        <p>
+          Sales
+          <i class="end fas fa-angle-left"></i>
+        </p>
+      </a>
+
+      <ul class="nav nav-treeview">
+
+        <li class="nav-item">
+          <a href="#:
+             class="nav-link {% if current_view == 'jobfile_list' %}active{% endif %}">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Jobfile</p>
           </a>
-          <!--end::Brand Link-->
-        </div>
-        <!--end::Sidebar Brand-->
+        </li>
 
+        <li class="nav-item">
+          <a href="#"
+             class="nav-link {% if current_view == 'fq_list' %}active{% endif %}">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Freight Quotation</p>
+          </a>
+        </li>
 
-        <!--begin::Sidebar Wrapper-->
-        <div class="sidebar-wrapper">
-            {% load static %}
-            <nav class="mt-2">
-              <ul   class="nav sidebar-menu flex-column"
-                      data-lte-toggle="treeview"
-                      role="navigation"
-                      aria-label="Main navigation"
-                      data-accordion="false"
-                      id="navigation">
-                
-                <li class="nav-item menu-open ">
-                        <a href="#" class="nav-link active">
-                          <i class="nav-icon bi bi-speedometer"></i>
-                          <p>Quotation<i class="nav-arrow bi bi-chevron-right"></i></p>                        </p>
-                        </a>
-                        <ul class="nav nav-treeview" style="padding-left: 20px;">
-                          <li class="nav-item sales">
-                            <a href="/sales/freight/quotations" 
-                              data-module="Sales"
-                              data-menu="Quotation:/sales/quotations|Order:/sales/orders|Config:/sales/config"
+        <li class="nav-item">
+          <a href="{% url 'sales:fo_list' %}"
+             class="nav-link {% if current_view == 'fo_list' %}active{% endif %}">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Freight Order</p>
+          </a>
+        </li>
 
-                            
-                              class="nav-link active">
-                              <i class="nav-icon bi bi-circle"></i>
-                              <p>Freight</p>
-                            </a>
-                          </li>
-                          <li class="nav-item sales">
-                            <a href="./index2.html" class="nav-link">
-                              <i class="nav-icon bi bi-circle"></i>
-                              <p>Ship Charter</p>
-                            </a>
-                          </li>
-                          <li class="nav-item">
-                            <a href="./index3.html" class="nav-link">
-                              <i class="nav-icon bi bi-circle"></i>
-                              <p>Transhipment</p>
-                            </a>
-                          </li>
-                        </ul>
-                </li>
+      </ul>
+    </li>
+    {% endwith %}
 
-                <li class="nav-item ">
-                        <a href="#" class="nav-link active">
-                          <i class="nav-icon bi bi-speedometer"></i>
-                          <p>Orders<i class="nav-arrow bi bi-chevron-right"></i></p>                        </p>
-                        </a>
-                        <ul class="nav nav-treeview" style="padding-left: 20px;">
-                          <li class="nav-item">
-                            <a href="/sales/orders/freight" class="nav-link active">
-                              <i class="nav-icon bi bi-circle"></i>
-                              <p>Freight</p>
-                            </a>
-                          </li>
-                          <li class="nav-item">
-                            <a href="./index2.html" class="nav-link">
-                              <i class="nav-icon bi bi-circle"></i>
-                              <p>Ship Charter</p>
-                            </a>
-                          </li>
-                          <li class="nav-item">
-                            <a href="./index3.html" class="nav-link">
-                              <i class="nav-icon bi bi-circle"></i>
-                              <p>Transhipment</p>
-                            </a>
-                          </li>
-                        </ul>
-                </li>
+    <!-- PARTNERS -->
+    <li class="nav-item">
+      <a href="#"
+         class="nav-link {% if request.resolver_match.app_name == 'partners' %}active{% endif %}">
+        <i class="nav-icon fas fa-users"></i>
+        <p>Partners</p>
+      </a>
+    </li>
 
+    <!-- CONFIG -->
+    {% with current_app=request.resolver_match.app_name %}
+    <li class="nav-item {% if current_app == 'config' %}menu-open{% endif %}">
+      <a href="#"
+         class="nav-link {% if current_app == 'config' %}active{% endif %}">
+        <i class="nav-icon fas fa-gears"></i>
+        <p>
+          Config
+          <i class="end fas fa-angle-left"></i>
+        </p>
+      </a>
 
+      <ul class="nav nav-treeview">
 
-              
+        <li class="nav-item">
+          <a href="#"
+             class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Sales Services</p>
+          </a>
+        </li>
 
-  <!-- Shipments -->
-  <li class="nav-item">
-    <a href="#"
-       class="nav-link {% if ns == 'shipment' %}active{% endif %}">
-      <i class="nav-icon fas fa-truck"></i>
-      <p>Shipments</p>
-    </a>
-  </li>
-<li class="nav-item">
-  <a href="{% url 'account:logout' %}" class="nav-link text-danger">
-    <i class="nav-icon fas fa-sign-out-alt"></i>
-    <p>Logout</p>
-  </a>
-</li>
-               
-              </ul>
-    </nav>
-         
-        </div>
-        <!--end::Sidebar Wrapper-->
+        <li class="nav-item">
+          <a href="#"
+             class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Payment Terms</p>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a href="#"
+             class="nav-link">
+            <i class="far fa-circle nav-icon"></i>
+            <p>Number Sequence</p>
+          </a>
+        </li>
+
+      </ul>
+    </li>
+    {% endwith %}
+
+  </ul>
+</nav>

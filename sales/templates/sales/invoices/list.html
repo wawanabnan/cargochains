@@ -1,9 +1,10 @@
 {% extends "adminbase.html" %}
+{% load indo_format %}
 
 {% block content %}
 
 <div class="app-header">
-  <div class="container-fluid py-2 d-flex justify-content-between align-items-center">
+  <div class="container-fluid py-2 d-flex justify-content-between align-items-center flex-wrap">
     <h5 class="mb-0">Invoices</h5>
 
     <a href="{% url 'sales:invoice_add' %}" class="btn btn-primary btn-sm">
@@ -15,10 +16,11 @@
 <div class="app-content">
 
   <div class="container-fluid mb-3">
-    <form method="get" class="row g-2">
+    <form method="get" class="row g-2 align-items-end">
       <div class="col-md-3">
         <label class="form-label mb-1">Search</label>
-        <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm">
+        <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
+               placeholder="Invoice no, customer...">
       </div>
 
       <div class="col-md-3">
@@ -33,8 +35,10 @@
         </select>
       </div>
 
-      <div class="col-md-3 d-flex align-items-end">
-        <button class="btn btn-primary btn-sm me-2"><i class="fa fa-search me-1"></i>Filter</button>
+      <div class="col-md-3">
+        <button class="btn btn-primary btn-sm me-2">
+          <i class="fa fa-search me-1"></i> Filter
+        </button>
         <a href="{% url 'sales:invoice_list' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
       </div>
     </form>
@@ -45,39 +49,48 @@
       <div class="card-body p-0">
 
         <div class="table-responsive">
-          <table class="table table-hover table-sm mb-0 align-middle">
+          <table class="table table-hover table-sm mb-0 align-middle" id="invoiceTable">
             <thead class="table-light">
               <tr>
-                <th>#</th>
-                <th>Invoice No</th>
-                <th>Date</th>
+                <th style="width:30px;">
+                  <input type="checkbox" class="form-check-input" id="chkAll">
+                </th>
+                <th  style="width:170px;">Invoice No</th>
+                <th  style="width:140px;">Date</th>
                 <th>Customer</th>
-                <th>Total</th>
-                <th>Outstanding</th>
-                <th>Status</th>
+                <th class="text-end">Total</th>
+                <th class="text-end">Outstanding</th>
+                <th class="text-center" style="width:140px;"">Status</th>
+               
               </tr>
             </thead>
 
             <tbody>
               {% for inv in invoices %}
-                <tr>
-                  <td>{{ forloop.counter }}</td>
+                <tr class="clickable-row" data-href="{% url 'sales:invoice_detail' inv.pk %}">
+                  <td>
+                    <input type="checkbox" class="form-check-input row-check">
+                  </td>
+
                   <td>{{ inv.number }}</td>
                   <td>{{ inv.invoice_date|date:"d M Y" }}</td>
-                  <td>{{ inv.customer.name }}</td>
-                  <td class="text-end">{{ inv.total_amount|floatformat:2 }}</td>
-                  <td class="text-end">{{ inv.amount_outstanding|floatformat:2 }}</td>
-                  <td>
+
+                  <td>{{ inv.customer.company_type inv.customer.company_name }}</td>
+
+                  <td class="text-end">{{ inv.total_amount|indo_currency }}</td>
+                  <td class="text-end">{{ inv.amount_outstanding|indo_currency }}</td>
+
+                  <td class="text-center">
                     <span class="badge bg-secondary">{{ inv.get_status_display }}</span>
                   </td>
+
                 </tr>
               {% empty %}
                 <tr>
-                  <td colspan="7" class="text-center py-3">No invoices found</td>
+                  <td colspan="8" class="text-center py-3">Tidak ada invoice.</td>
                 </tr>
               {% endfor %}
             </tbody>
-
           </table>
         </div>
 
@@ -87,4 +100,30 @@
 
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Klik row → masuk detail
+  document.querySelectorAll(".clickable-row").forEach(row => {
+      row.addEventListener("click", function () {
+        const href = this.dataset.href;
+        if (href) window.location = href;
+      });
+  });
+
+  // Stop klik checkbox agar tidak trigger klik row
+  document.querySelectorAll(".row-check").forEach(chk => {
+      chk.addEventListener("click", function (e) {
+          e.stopPropagation();
+      });
+  });
+
+  // Select all
+  const chkAll = document.getElementById("chkAll");
+  chkAll.addEventListener("click", function(){
+      const checks = document.querySelectorAll(".row-check");
+      checks.forEach(c => c.checked = chkAll.checked);
+  });
+</script>
 {% endblock %}

@@ -73,7 +73,7 @@
               <i class="fas fa-save"></i> Save
             </button>
             {% if form.instance.pk %}
-              <a href="{% url 'projects:cost_add' form.instance.pk %}" class="btn btn-sm  btn-primary">
+              <a href="#" class="btn btn-sm  btn-primary">
                 <i class="fas fa-plus"></i> Add Cost
               </a>
             {% endif %}
@@ -85,7 +85,7 @@
       <div id="costs" class="card mt-3">
         <div class="card-header">
           <strong>Costs</strong>
-          <a class="btn btn-sm btn-primary float-end" href="{% url 'projects:cost_add' form.instance.pk %}">
+          <a class="btn btn-sm btn-primary float-end" href="#">
             <i class="fas fa-plus"></i> Add Cost
           </a>
         </div>

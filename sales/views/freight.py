@@ -2,7 +2,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 
-from partners.models import Partner
+from partners.models import Partner,PartnerRole
 from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from django.urls import reverse_lazy
 from django.contrib import messages
@@ -77,7 +77,7 @@ class FqListView(LoginRequiredMixin, ListView):
             qs = qs.filter(sales_service_id__in=services)
 
         if agents:
-            qs = qs.filter(sales_user_id__in=agents)
+              qs = qs.filter(sales_agency_id__in=agents)
 
         if paymentterms:
             qs = qs.filter(payment_term_id__in=paymentterms)
@@ -87,6 +87,17 @@ class FqListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         request = self.request
+
+        try:
+            agency_ids = PartnerRole.objects.filter(
+                role_type__code__iexact="agency"
+            ).values_list("partner_id", flat=True)
+
+            agents_qs = Partner.objects.filter(id__in=agency_ids).order_by("name")
+        except Exception:
+            agents_qs = Partner.objects.none()
+
+
 
         # buat filter value yang dipilih user
         ctx.update(
@@ -104,7 +115,7 @@ class FqListView(LoginRequiredMixin, ListView):
                 "paymentterms": PaymentTerm.objects.order_by("name"),
 
                 # sales agent: ambil partner individu
-                "agents": Partner.objects.filter(is_individual=True).order_by("name"),
+                "agents": agents_qs ,
 
                 # ===== NILAI FILTER YANG SEDANG DIPILIH =====
                 "flt_statuses": request.GET.getlist("status"),
@@ -550,6 +561,7 @@ class FqBulkDeleteView(LoginRequiredMixin, View):
 
         if is_ajax:
             # JS di modal akan pakai redirect_url ini
+            fo_detail_url = reverse("sales:fo_detail", args=[order.pk])
             return JsonResponse(
                 {
                     "success": True,

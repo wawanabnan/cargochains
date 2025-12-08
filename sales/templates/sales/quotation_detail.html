@@ -206,29 +206,134 @@
       </div>
 
       {# ROUTE #}
-      <div class="card mb-3 shadow-none">
-        <div class="card-header ">
-          <strong>Route</strong>
-        </div>
-        <div class="card-body row g-3">
-
-          <div class="col-md-6">
-            <label class="form-label small">Origin</label>
-            <div>{{ fq.origin.name }}</div>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label small">Destination</label>
-            <div>{{ fq.destination.name }}</div>
-          </div>
-
-          <div class="col-md-12">
-            <label class="form-label small">Route</label>
-            <div>{{ fq.route_name }}</div>
-          </div>
-
-        </div>
+    <div class="card mb-3 shadow-none">
+      <div class="card-header">
+        <strong>Route</strong>
       </div>
+
+      {% with origin=fq.origin destination=fq.destination code=fq.sales_service.code|upper %}
+      <div class="card-body">
+
+        
+        {% if code|slice:":3" == "D2D" %}
+          <div class="row g-2">
+            <div class="col-md-6">
+              <div class="form-label small mb-1">Origin</div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-label small mb-1">Destination</div>
+            </div>
+          </div>
+
+          {# Village + District #}
+          <div class="row g-2">
+            <div class="col-md-6">
+              <div class="fw-semibold">{{ origin.name|default:"-" }}</div>
+              <div class="small text-muted">
+                {{ origin.parent.name|default:"-" }} {# district #}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="fw-semibold">{{ destination.name|default:"-" }}</div>
+              <div class="small text-muted">
+                {{ destination.parent.name|default:"-" }} {# district #}
+              </div>
+            </div>
+          </div>
+
+          {# Regency + Province #}
+          <div class="row g-2 mt-1">
+            <div class="col-md-6">
+              <div class="small">
+                {{ origin.parent.parent.name|default:"-" }} {# regency #}
+              </div>
+              <div class="small text-muted">
+                {{ origin.parent.parent.parent.name|default:"-" }} {# province #}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="small">
+                {{ destination.parent.parent.name|default:"-" }} {# regency #}
+              </div>
+              <div class="small text-muted">
+                {{ destination.parent.parent.parent.name|default:"-" }} {# province #}
+              </div>
+            </div>
+          </div>
+
+          {% elif code|slice:":3" == "D2P" %}
+          <div class="row g-2">
+            <div class="col-md-6">
+              <div class="form-label small mb-1">Origin</div>
+              <div class="fw-semibold">{{ origin.name|default:"-" }}</div>
+              <div class="small text-muted">
+                {{ origin.parent.name|default:"-" }} {# district #}
+              </div>
+              <div class="small">
+                {{ origin.parent.parent.name|default:"-" }} {# regency #}
+              </div>
+              <div class="small text-muted">
+                {{ origin.parent.parent.parent.name|default:"-" }} {# province #}
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="form-label small mb-1">Destination</div>
+              <div class="fw-semibold">{{ destination.name|default:"-" }}</div>
+              <div class="small text-muted">
+                {# Nama kind (fallback ke raw kind kalau tidak pakai choices) #}
+                {{ destination.get_kind_display|default:destination.kind|default:"-" }}
+              </div>
+            </div>
+          </div>
+
+        
+        {% elif code|slice:":3" == "P2P" %}
+          <div class="row g-2">
+            <div class="col-md-6">
+              <div class="form-label small mb-1">Origin</div>
+              <div class="fw-semibold">{{ origin.name|default:"-" }}</div>
+              <div class="small text-muted">
+                {{ origin.get_kind_display|default:origin.kind|default:"-" }}
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="form-label small mb-1">Destination</div>
+              <div class="fw-semibold">{{ destination.name|default:"-" }}</div>
+              <div class="small text-muted">
+                {{ destination.get_kind_display|default:destination.kind|default:"-" }}
+              </div>
+            </div>
+          </div>
+
+          {% else %}
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label small">Origin</label>
+              <div>{{ origin.name|default:"-" }}</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small">Destination</label>
+              <div>{{ destination.name|default:"-" }}</div>
+            </div>
+          </div>
+
+          {% if fq.route_name %}
+            <div class="row g-2 mt-2">
+              <div class="col-md-12">
+                <label class="form-label small">Route</label>
+                <div>{{ fq.route_name }}</div>
+              </div>
+            </div>
+          {% endif %}
+        {% endif %}
+
+      </div>
+      {% endwith %}
+    </div>
+
 
       {# CARGO INFO #}
       <div class="card mb-3 shadow-none">
