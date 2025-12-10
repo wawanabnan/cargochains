@@ -1,0 +1,81 @@
+{# ... setelah blok form header job order (2 kolom) dan sebelum tombol Save ... #}
+
+<h5 class="mb-2">Job Cost</h5>
+
+{{ cost_formset.management_form }}
+
+<table id="jobcost-table" class="table table-bordered mb-0" style="border-collapse: collapse;">
+  <thead>
+    <tr class="bg-body-secondary text-muted" style="border-bottom: 1px solid #ddd;">
+      <th style="width:35%;padding:2px;">Description</th>
+      <th style="width:10%;padding:2px;text-align:center;">Qty</th>
+      <th style="width:15%;padding:2px;text-align:right;">Price</th>
+      <th style="width:15%;padding:2px;text-align:right;">Amount</th>
+      <th style="width:5%;padding:2px;text-align:center;"></th>
+    </tr>
+  </thead>
+  <tbody id="jobcost-body">
+    {% for form in cost_formset.forms %}
+      <tr class="jobcost-row">
+        {{ form.id }}
+        <td >
+          {{ form.description }}
+          {{ form.description.errors }}
+        </td>
+        <td >
+          {{ form.qty }}
+          {{ form.qty.errors }}
+        </td>
+        <td >
+          {{ form.price }}
+          {{ form.price.errors }}
+        </td>
+        <td >
+          {{ form.amount }}
+          {{ form.amount.errors }}
+        </td>
+        <td class="text-center" >
+          <button type="button"
+                  class=" remove-row" style="border: none;background:none;padding-top: 5px;">
+            <i class="fa fa-times"></i>
+          </button>
+          {{ form.DELETE.as_hidden }}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<button type="button"
+        id="btn-jobcost-add"
+        class="btn btn-outline-primary btn-sm mt-2">
+  <i class="fa fa-plus me-1"></i> Add Row
+</button>
+
+{# template untuk row baru #}
+<template id="jobcost-empty-row">
+  <tr class="jobcost-row">
+    {{ cost_formset.empty_form.id }}
+    <td >
+      {{ cost_formset.empty_form.description }}
+    </td>
+    <td >
+      {{ cost_formset.empty_form.qty }}
+    </td>
+    <td >
+      {{ cost_formset.empty_form.price }}
+    </td>
+    <td >
+      {{ cost_formset.empty_form.amount }}
+    </td>
+    <td class="text-center" >
+     <button type="button"
+                  class=" remove-row" style="border: none;background:none;padding-top: 5px;">
+            <i class="fa fa-times"></i>
+          </button>
+      {{ cost_formset.empty_form.DELETE.as_hidden }}
+    </td>
+  </tr>
+</template>
+
+

@@ -1,0 +1,298 @@
+{% extends "adminbase.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-6">
+        <h3 class="mb-0">Job Orders</h3>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-end">
+          <li class="breadcrumb-item active" aria-current="page">
+            <a href="{% url 'sales:job_order_list' %}" class="btn btn-outline-secondary btn-sm">
+              <i class="fa fa-list me-1"></i> Back to List
+            </a>
+
+          </li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid ">
+    <div class="card">
+      <div class="card-body">
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger py-2">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        {% if cost_formset.non_form_errors %}
+          <div class="alert alert-danger py-2">
+            {{ cost_formset.non_form_errors }}
+          </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if job %}
+            <input type="hidden" name="job_id" value="{{ job.pk }}">
+          {% endif %}
+
+          <!-- ======================= JOB INFO ======================= -->
+        <div class="container-fluid py-3">
+          <div class="row">
+              <div class="col px-4">
+                {% include 'job_orders/extension/col_1.html' %}
+
+              </div>
+              
+              <div class="col px-4">
+                {% include 'job_orders/extension/col_2.html' %}
+              </div>
+
+          </div>
+          
+
+        </div>
+        <div class="container-fluid">
+                          {% include 'job_orders/extension/cost.html' %}
+
+
+        </div>
+        
+
+          <hr>
+          <div class="mt-1"></div>
+          <!-- SUBMIT -->
+          <div class="mt-4 d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary">
+              <i class="fa fa-save me-1"></i>
+              {% if job %}Update{% else %}Create{% endif %}
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+#jobcost-table  .form-control  {
+  border:none !important;
+  box-shadow: none;
+
+}
+
+#jobcost-table tr td {
+  padding: 0;
+  background-color: grey;;
+}
+
+
+#jobcost-table tr th {
+  background:#f4f4f4;
+  padding:5px 10px !important
+}
+
+
+
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+
+  // =========================
+  // HELPER FORMAT INDONESIA
+  // =========================
+
+  // "1.234,56" -> 1234.56 (number)
+  function parseID(v) {
+      if (!v) return 0;
+      let s = String(v).trim();
+
+      // Kalau ada koma → style Indonesia: 20.000.000,00
+      if (s.indexOf(",") >= 0) {
+        s = s.replace(/\./g, "").replace(",", ".");
+        const n = parseFloat(s);
+        return isNaN(n) ? 0 : n;
+      }
+
+      // Kalau TIDAK ada koma → anggap "." itu desimal biasa
+      const n = parseFloat(s);
+      return isNaN(n) ? 0 : n;
+  }
+
+
+  // 1234.56 -> "1.234,56"
+  function fmtID(n) {
+    return Number(n || 0).toLocaleString("id-ID", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  // =========================
+  // DOM READY
+  // =========================
+  document.addEventListener("DOMContentLoaded", function () {
+
+    // ==========================================
+    // A. HEADER TOTAL / TAX / GRAND TOTAL
+    // ==========================================
+
+    const totalEl = document.getElementById("id_total_amount");
+    const taxEl   = document.getElementById("id_tax_amount");
+    const grandEl = document.getElementById("id_grand_total");
+    const isTaxEl = document.getElementById("id_is_tax");
+    const form    = document.querySelector("form");
+
+    if (totalEl && taxEl && grandEl && isTaxEl && form) {
+
+      function recalcHeader() {
+        let total = parseID(totalEl.value);
+        let tax   = isTaxEl.checked ? total * 0.011 : 0;
+        let grand = total + tax;
+
+        totalEl.value = fmtID(total);
+        taxEl.value   = fmtID(tax);
+        grandEl.value = fmtID(grand);
+      }
+
+      // lock tax_amount
+      taxEl.readOnly = true;
+
+      // auto-select saat focus
+      [totalEl, grandEl].forEach(function(el){
+        el.addEventListener("focus", ()=> setTimeout(()=>el.select(),0));
+      });
+
+      // perhitungan saat input berubah
+      totalEl.addEventListener("blur", recalcHeader);
+      totalEl.addEventListener("change", recalcHeader);
+      isTaxEl.addEventListener("change", recalcHeader);
+
+      // format pertama kali
+      recalcHeader();
+
+      // sebelum submit → convert ke format yang diterima Django (plain number)
+      form.addEventListener("submit", function(){
+        totalEl.value = parseID(totalEl.value);
+        taxEl.value   = parseID(taxEl.value);
+        grandEl.value = parseID(grandEl.value);
+      });
+    }
+
+    // ==========================================
+    // B. JOB COST INLINE FORMSET (qty/price/amount)
+    // ==========================================
+
+    const prefix = "{{ cost_formset.prefix|default:'' }}";   // contoh: jobcost_set
+    const totalFormsInput = prefix
+      ? document.querySelector(`input[name="${prefix}-TOTAL_FORMS"]`)
+      : null;
+    const tbody = document.getElementById("jobcost-body");
+    const addBtn = document.getElementById("btn-jobcost-add");
+    const tpl    = document.getElementById("jobcost-empty-row");
+
+    if (prefix && totalFormsInput && tbody && addBtn && tpl) {
+
+      function attachCalcToRow(row) {
+        const qty    = row.querySelector(`input[name^="${prefix}-"][name$="-qty"]`);
+        const price  = row.querySelector(`input[name^="${prefix}-"][name$="-price"]`);
+        const amount = row.querySelector(`input[name^="${prefix}-"][name$="-amount"]`);
+
+        if (!qty || !price || !amount) return;
+
+        // hitung amount
+        function recalcAmount() {
+          const q = parseID(qty.value);
+          const p = parseID(price.value);
+          const a = q * p;
+          amount.value = fmtID(a);
+        }
+
+        // ketika user mengetik → update amount
+        qty.addEventListener("input", recalcAmount);
+        price.addEventListener("input", recalcAmount);
+
+        // saat blur → qty / price diformat ke ID, lalu amount dihitung
+        qty.addEventListener("blur", function () {
+          const q = parseID(qty.value);
+          qty.value = fmtID(q);        // 1 -> 1,00
+          recalcAmount();
+        });
+
+        price.addEventListener("blur", function () {
+          const p = parseID(price.value);
+          price.value = fmtID(p);      // 1000 -> 1.000,00
+          recalcAmount();
+        });
+
+        // hitung awal (edit form, ada nilai dari server)
+        recalcAmount();
+      }
+
+      function attachRemoveHandler(row) {
+        const btn = row.querySelector(".remove-row");
+        const delInput = row.querySelector(
+          `input[name^="${prefix}-"][name$="-DELETE"]`
+        );
+        if (!btn || !delInput) return;
+
+        btn.addEventListener("click", function () {
+          delInput.checked = true;
+          row.style.display = "none";
+        });
+      }
+
+      // init semua row yang ada
+      tbody.querySelectorAll(".jobcost-row").forEach(function (row) {
+        attachCalcToRow(row);
+        attachRemoveHandler(row);
+      });
+
+      // tombol ADD ROW
+      addBtn.addEventListener("click", function () {
+        const index = parseInt(totalFormsInput.value, 10);
+        let html = tpl.innerHTML.replace(/__prefix__/g, index);
+        totalFormsInput.value = index + 1;
+
+        tbody.insertAdjacentHTML("beforeend", html);
+        const newRow = tbody.lastElementChild;
+
+        // default nilai row baru
+        const qtyInput    = newRow.querySelector(`input[name^="${prefix}-"][name$="-qty"]`);
+        const priceInput  = newRow.querySelector(`input[name^="${prefix}-"][name$="-price"]`);
+        const amountInput = newRow.querySelector(`input[name^="${prefix}-"][name$="-amount"]`);
+
+        if (qtyInput) qtyInput.value = "1,00";      // atau 0,00 terserah om
+        if (priceInput) priceInput.value = "0,00";
+        if (amountInput) amountInput.value = "0,00";
+
+        attachCalcToRow(newRow);
+        attachRemoveHandler(newRow);
+      });
+    }
+
+  });
+
+})();
+</script>
+
+
+
+{% endblock %}

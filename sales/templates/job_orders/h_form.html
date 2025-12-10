@@ -2,21 +2,29 @@
 {% load static %}
 
 {% block content %}
-<div class="app-content">
+
+<div class="app-content-header">
   <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-6">
+        <h3 class="mb-0">Job Orders</h3>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-end">
+          <li class="breadcrumb-item active" aria-current="page">
+            <a href="{% url 'sales:job_order_list' %}" class="btn btn-outline-secondary btn-sm">
+              <i class="fa fa-list me-1"></i> Back to List
+            </a>
 
-    <!-- HEADER -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h3 class="mb-0">
-        {% if job %}Edit Job Order #{{ job.number }}{% else %}New Job Order{% endif %}
-      </h3>
-
-      <a href="{% url 'sales:job_order_list' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="fa fa-list me-1"></i> Back to List
-      </a>
+          </li>
+        </ol>
+      </div>
     </div>
+  </div>
+</div>
 
-    <!-- CARD -->
+<div class="app-content">
+  <div class="container-fluid ">
     <div class="card">
       <div class="card-body">
 
@@ -24,6 +32,20 @@
           <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
 
+        {% if form.errors or form.non_field_errors %}
+  <div class="alert alert-danger">
+    <ul class="mb-0">
+      {% for field, errors in form.errors.items %}
+        {% for error in errors %}
+          <li><strong>{{ field }}:</strong> {{ error }}</li>
+        {% endfor %}
+      {% endfor %}
+      {% for error in form.non_field_errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
         <form method="post" novalidate>
           {% csrf_token %}
 
@@ -32,132 +54,26 @@
           {% endif %}
 
           <!-- ======================= JOB INFO ======================= -->
-          <h5 class="fw-semibold mt-2">Job Info</h5>
-          <hr class="mt-1">
+        <div class="container-fluid py-3">
+          <div class="row">
+              <div class="col px-4">
+                {% include 'job_orders/extension/col_1.html' %}
 
-          <div class="row mb-3">
-            <label class="col-sm-3 col-form-label">Date</label>
-            <div class="col-sm-9">
-              {{ form.job_date }} {{ form.job_date.errors }}
-            </div>
-          </div>
-
-          <div class="row mb-3">
-            <label class="col-sm-3 col-form-label">Customer</label>
-            <div class="col-sm-9">
-              {{ form.customer }} {{ form.customer.errors }}
-            </div>
-          </div>
-
-          <div class="row mb-3">
-            <label class="col-sm-3 col-form-label">Service</label>
-            <div class="col-sm-9">
-              {{ form.service }} {{ form.service.errors }}
-            </div>
-          </div>
-
-          <!-- ======================= CARGO INFO ======================= -->
-          <h5 class="fw-semibold mt-4">Cargo Information</h5>
-          <hr class="mt-1">
-
-          <div class="row mb-3">
-            <label class="col-sm-3 col-form-label">Cargo Description</label>
-            <div class="col-sm-9">
-              {{ form.cargo_description }} {{ form.cargo_description.errors }}
-            </div>
-          </div>
-
-          <div class="row mb-3">
-            <label class="col-sm-3 col-form-label">Quantity</label>
-            <div class="col-sm-9">
-              {{ form.quantity }} {{ form.quantity.errors }}
-            </div>
-          </div>
-
-          <div class="row mb-3">
-            <label class="col-sm-3 col-form-label">Pick Up</label>
-            <div class="col-sm-9">
-              {{ form.pickup }} {{ form.pickup.errors }}
-            </div>
-          </div>
-
-          <div class="row mb-3">
-            <label class="col-sm-3 col-form-label">Delivery</label>
-            <div class="col-sm-9">
-              {{ form.delivery }} {{ form.delivery.errors }}
-            </div>
-          </div>
-
-          <div class="row mb-3">
-            <label class="col-sm-3 col-form-label">PIC</label>
-            <div class="col-sm-9">
-              {{ form.pic }} {{ form.pic.errors }}
-            </div>
-          </div>
-
-          <!-- ======================= PAYMENT ======================= -->
-          <h5 class="fw-semibold mt-4">Payment</h5>
-          <hr class="mt-1">
-
-          <div class="row mb-3">
-            <label class="col-sm-3 col-form-label">Payment Term</label>
-            <div class="col-sm-9">
-              {{ form.payment_term }} {{ form.payment_term.errors }}
-            </div>
-          </div>
-
-          <div class="row mb-3">
-            <label class="col-sm-3 col-form-label">Currency</label>
-            <div class="col-sm-9">
-              {{ form.currency }} {{ form.currency.errors }}
-            </div>
-          </div>
-
-          <!-- ======================= TAX ======================= -->
-          <h5 class="fw-semibold mt-4">Tax (PPN)</h5>
-          <hr class="mt-1">
-
-          <div class="row mb-3">
-            <label class="col-sm-3 col-form-label">Apply Tax (1,1%)</label>
-            <div class="col-sm-9 d-flex align-items-center">
-              <div class="form-check form-switch">
-                {{ form.is_tax }} {{ form.is_tax.errors }}
               </div>
-            </div>
+              
+              <div class="col px-4">
+                {% include 'job_orders/extension/col_2.html' %}
+              </div>
+
           </div>
+          
 
-          <div class="row mb-3">
-            <label class="col-sm-3 col-form-label">Total Amount</label>
-            <div class="col-sm-9">
-              {{ form.total_amount }} {{ form.total_amount.errors }}
-            </div>
-          </div>
+        </div>
+        
+        
 
-          <div class="row mb-3">
-            <label class="col-sm-3 col-form-label">Tax Amount</label>
-            <div class="col-sm-9">
-              {{ form.tax_amount }} {{ form.tax_amount.errors }}
-            </div>
-          </div>
-
-          <div class="row mb-3">
-            <label class="col-sm-3 col-form-label">Grand Total</label>
-            <div class="col-sm-9">
-              {{ form.grand_total }} {{ form.grand_total.errors }}
-            </div>
-          </div>
-
-          <!-- ======================= REMARKS ======================= -->
-          <h5 class="fw-semibold mt-4">Internal Remarks</h5>
-          <hr class="mt-1">
-
-          <div class="row mb-3">
-            <label class="col-sm-3 col-form-label">Remarks</label>
-            <div class="col-sm-9">
-              {{ form.remarks_internal }} {{ form.remarks_internal.errors }}
-            </div>
-          </div>
-
+          <hr>
+          <div class="mt-1"></div>
           <!-- SUBMIT -->
           <div class="mt-4 d-flex justify-content-end">
             <button type="submit" class="btn btn-primary">
@@ -174,103 +90,82 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-  {{ block.super }}
-  <script>
-    (function () {
 
-      // --- helper: parse angka Indonesia "1.000.000,00" -> float ---
-      function parseIdNumber(value) {
-        if (!value) return 0;
-        let s = String(value).trim();
-        // hapus spasi
-        s = s.replace(/\s+/g, "");
-        // hilangkan titik ribuan, koma jadi titik desimal
+{% block extra_js %}
+<script>
+(function(){
+
+  function parseID(v) {
+    if (!v) return 0;
+      let s = String(v).trim();
+
+      // Kalau ada koma → style Indonesia: 20.000.000,00
+      if (s.indexOf(",") >= 0) {
         s = s.replace(/\./g, "").replace(",", ".");
         const n = parseFloat(s);
         return isNaN(n) ? 0 : n;
       }
 
-      // --- helper: format float -> "1.000.000,00" (locale id-ID) ---
-      function formatIdNumber(num) {
-        if (isNaN(num)) num = 0;
-        return num.toLocaleString("id-ID", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        });
-      }
+      // Kalau TIDAK ada koma → anggap "." itu desimal biasa
+      const n = parseFloat(s);
+      return isNaN(n) ? 0 : n;
+  }
 
-      // --- hitung tax & grand total ---
-      function recalcTax() {
-        const totalEl = document.getElementById("id_total_amount");
-        const taxEl = document.getElementById("id_tax_amount");
-        const grandEl = document.getElementById("id_grand_total");
-        const isTaxEl = document.getElementById("id_is_tax");
 
-        if (!totalEl || !taxEl || !grandEl || !isTaxEl) {
-          return;
-        }
+  function fmtID(n){
+    return n.toLocaleString("id-ID",
+      {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
 
-        let total = parseIdNumber(totalEl.value);
-        let tax = 0;
+  function recalc(){
+    const totalEl = document.getElementById("id_total_amount");
+    const taxEl   = document.getElementById("id_tax_amount");
+    const grandEl = document.getElementById("id_grand_total");
+    const isTaxEl = document.getElementById("id_is_tax");
 
-        if (isTaxEl.checked) {
-          tax = total * 0.011; // 1.1%
-        }
+    let total = parseID(totalEl.value);
+    let tax   = isTaxEl.checked ? total * 0.011 : 0;
+    let grand = total + tax;
 
-        const grand = total + tax;
+    totalEl.value = fmtID(total);
+    taxEl.value   = fmtID(tax);
+    grandEl.value = fmtID(grand);
+  }
 
-        // set nilai dengan format Indonesia
-        totalEl.value = formatIdNumber(total);
-        taxEl.value = formatIdNumber(tax);
-        grandEl.value = formatIdNumber(grand);
-      }
+  document.addEventListener("DOMContentLoaded", function(){
 
-      document.addEventListener("DOMContentLoaded", function () {
-        const totalEl = document.getElementById("id_total_amount");
-        const taxEl = document.getElementById("id_tax_amount");
-        const grandEl = document.getElementById("id_grand_total");
-        const isTaxEl = document.getElementById("id_is_tax");
+    const totalEl = document.getElementById("id_total_amount");
+    const taxEl   = document.getElementById("id_tax_amount");
+    const grandEl = document.getElementById("id_grand_total");
+    const isTaxEl = document.getElementById("id_is_tax");
+    const form    = document.querySelector("form");
 
-        if (!totalEl || !taxEl || !grandEl || !isTaxEl) {
-          return;
-        }
+    if(!form || !totalEl) return;
 
-        // lock tax_amount supaya tidak bisa diedit manual
-        taxEl.readOnly = true;
+    taxEl.readOnly = true;
 
-        // === 1) FOKUS: angka otomatis ke-select ===
-        [totalEl, grandEl].forEach(function (input) {
-          if (!input) return;
-          input.addEventListener("focus", function () {
-            // pakai setTimeout supaya select jalan setelah fokus
-            setTimeout(function () {
-              input.select();
-            }, 0);
-          });
-        });
+    // --- auto-select saat focus ---
+    [totalEl, grandEl].forEach(function(el){
+      el.addEventListener("focus", ()=> setTimeout(()=>el.select(),0));
+    });
 
-        // === 2) RE-CALC saat total berubah ===
-        function hookRecalcOnInput(el) {
-          if (!el) return;
-          el.addEventListener("blur", recalcTax);
-          el.addEventListener("change", recalcTax);
-          el.addEventListener("keyup", function (e) {
-            if (e.key === "Enter") {
-              recalcTax();
-            }
-          });
-        }
+    // --- perhitungan ---
+    totalEl.addEventListener("blur", recalc);
+    totalEl.addEventListener("change", recalc);
+    isTaxEl.addEventListener("change", recalc);
 
-        hookRecalcOnInput(totalEl);
+    // --- format pertama kali ---
+    recalc();
 
-        // === 3) RE-CALC saat apply tax dicentang / di-uncheck ===
-        isTaxEl.addEventListener("change", recalcTax);
+    // --- sebelum submit → convert ke format yg diterima Django ---
+    form.addEventListener("submit", function(){
+      totalEl.value = parseID(totalEl.value);
+      taxEl.value   = parseID(taxEl.value);
+      grandEl.value = parseID(grandEl.value);
+    });
 
-        // === 4) Hitung & format sekali di awal load ===
-        recalcTax();
-      });
+  });
 
-    })();
-  </script>
+})();
+</script>
 {% endblock %}

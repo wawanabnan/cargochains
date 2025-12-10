@@ -57,7 +57,11 @@ from .views.job_order import (
     JobOrderListView,
     JobOrderCreateView,
     JobOrderUpdateView,
+    JobOrderDetailView
 )
+
+from .views.jo_revenue_pdf import JobOrderRevenuePdfView
+
 
 
 
@@ -172,9 +176,12 @@ urlpatterns = [
     path("invoices/<int:pk>/edit/", InvoiceUpdateView.as_view(), name="invoice_edit"),
     #path("invoices/<int:pk>/print/",InvoicePrintView.as_view(),name="invoice_print"),
     path("invoices/<int:pk>/pdf/", InvoicePdfHtmlView.as_view(), name="invoice_pdf"),
-    path("job_orders/", JobOrderListView.as_view(), name="job_order_list"),
-    path("job-orders/new/", JobOrderCreateView.as_view(), name="job_order_new"),
-    path("job-orders/<int:pk>/edit/", JobOrderUpdateView.as_view(), name="job_order_edit"),
+    path("job-orders/", JobOrderListView.as_view(), name="job_order_list"),
+    path("job-order/add/", JobOrderCreateView.as_view(), name="job_order_add"),
+    path("job-order/<int:pk>/edit/", JobOrderUpdateView.as_view(), name="job_order_edit"),
+    path("job-order/<int:pk>/", JobOrderDetailView.as_view(), name="job_order_detail"),
+    path("job-orders/<int:pk>/revenue-pdf/",JobOrderRevenuePdfView.as_view(),name="job_order_revenue_pdf",
+    ),
 
 ]
 

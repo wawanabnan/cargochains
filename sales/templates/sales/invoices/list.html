@@ -75,7 +75,7 @@
                   <td>{{ inv.number }}</td>
                   <td>{{ inv.invoice_date|date:"d M Y" }}</td>
 
-                  <td>{{ inv.customer.company_type inv.customer.company_name }}</td>
+                  <td>{{ inv.customer.company_name }}</td>
 
                   <td class="text-end">{{ inv.total_amount|indo_currency }}</td>
                   <td class="text-end">{{ inv.amount_outstanding|indo_currency }}</td>

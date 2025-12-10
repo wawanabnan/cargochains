@@ -1,0 +1,60 @@
+
+          <div class="row mb-3">
+            <label class="col-sm-3 col-form-label">PIC</label>
+            <div class="col-sm-9">
+              {{ form.pic }} {{ form.pic.errors }}
+            </div>
+          </div>
+
+
+          <div class="row mb-3">
+            <label class="col-sm-3 col-form-label">Payment Term</label>
+            <div class="col-sm-9">
+              {{ form.payment_term }} {{ form.payment_term.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <label class="col-sm-3 col-form-label">Currency</label>
+            <div class="col-sm-9">
+              {{ form.currency }} {{ form.currency.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <label class="col-sm-3 col-form-label">Apply Tax (1,1%)</label>
+            <div class="col-sm-9 d-flex align-items-center">
+              <div class="form-check form-switch">
+                {{ form.is_tax }} {{ form.is_tax.errors }}
+              </div>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <label class="col-sm-3 col-form-label">Total Amount</label>
+            <div class="col-sm-9">
+              {{ form.total_amount }} {{ form.total_amount.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <label class="col-sm-3 col-form-label">Tax Amount</label>
+            <div class="col-sm-9">
+              {{ form.tax_amount }} {{ form.tax_amount.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <label class="col-sm-3 col-form-label">Grand Total</label>
+            <div class="col-sm-9">
+              {{ form.grand_total }} {{ form.grand_total.errors }}
+            </div>
+          </div>
+
+
+          <div class="row mb-3">
+            <label class="col-sm-3 col-form-label">Remarks</label>
+            <div class="col-sm-9">
+              {{ form.remarks_internal }} {{ form.remarks_internal.errors }}
+            </div>
+          </div>

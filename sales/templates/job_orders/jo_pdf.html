@@ -1,0 +1,223 @@
+{% load static %}
+{% load indo_format %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Revenue {{ job.number }}</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff !important;
+    }
+
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 13px;
+    }
+
+    .page {
+      margin: 0 auto;
+      box-sizing: border-box;
+      padding: 0mm 20mm 0mm 20mm;
+      position: relative;
+    }
+
+    .header-table {
+      width: 100%;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      border-bottom: 0;
+    }
+    .header-table td {
+      vertical-align: top;
+    }
+
+    .company-info {
+      text-align: right;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .section-title {
+      font-weight: bold;
+      font-size: 15px;
+      margin-top: 18px;
+      margin-bottom: 6px;
+      padding-bottom: 3px;
+      border-bottom: 1px solid #bbb;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+    th, td {
+      padding: 6px;
+      border: 1px solid #e2e2e2;
+    }
+    th {
+      background: #f0f0f0;
+      font-weight: bold;
+    }
+
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+    .text-left { text-align: left; }
+
+    .summary-table td {
+      border: none;
+      padding: 4px 2px;
+    }
+
+    @media print {
+      html, body { background: #ffffff !important; }
+      .page { margin: 0 auto; }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="page" style="padding-top:100px">
+
+  <!-- HEADER KONTEN (sama gaya dengan FO) -->
+  <table class="header-table">
+    <tr>
+      <td style="width: 50%;">
+        <div style="font-size: 16px; font-weight: bold;">
+          REVENUE REPORT
+        </div>
+        <div style="font-size: 12px; margin-top: 4px;">
+          Job No: {{ job.number }}<br>
+          Date: {{ job.job_date|date:"d M Y"|default:"-" }}
+        </div>
+      </td>
+      <td style="width: 50%;">
+        <div class="company-info">
+          <!-- kalau mau isi alamat perusahaan, taruh di sini -->
+          <strong>Customer</strong><br>
+          {{ job.customer.company_name|default:job.customer.name }}<br>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- REVENUE -->
+  <div class="section-title">Revenue</div>
+
+  <table class="summary-table">
+    <tr>
+      <td class="text-left" style="width: 70%;">Grand Total Revenue</td>
+      <td class="text-right" style="width: 30%;">
+        {{ revenue|indo_currency:job.currency.code }}
+      </td>
+    </tr>
+  </table>
+
+  <!-- COGS -->
+  <div class="section-title">Cost of Goods Sold (Job Cost)</div>
+
+  <div class="section-title">Cost of Goods Sold (Job Cost)</div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 30px;" class="text-center">No</th>
+      <th class="text-left">Description</th>
+      <th style="width: 60px;" class="text-center">Qty</th>
+      <th style="width: 100px;" class="text-right">Price</th>
+      <th style="width: 120px;" class="text-right">Amount</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if costs %}
+      {# baris item job cost #}
+      {% for c in costs %}
+        <tr>
+          <td class="text-center">{{ forloop.counter }}</td>
+          <td class="text-left">{{ c.description }}</td>
+          <td class="text-center">
+            {{ c.qty|indo_number }}
+          </td>
+          <td class="text-right">
+            {{ c.price|indo_currency:job.currency.code }}
+          </td>
+          <td class="text-right">
+            {{ c.amount|indo_currency:job.currency.code }}
+          </td>
+        </tr>
+      {% endfor %}
+
+      {# baris TAX dari header, ikut di COGS #}
+      {% if tax_cost and tax_cost != 0 %}
+        <tr>
+          <td class="text-center">
+            {{ costs|length|add:"1" }}
+          </td>
+          <td class="text-left">
+            Tax (Header)
+          </td>
+          <td class="text-center">-</td>
+          <td class="text-right">-</td>
+          <td class="text-right">
+            {{ tax_cost|indo_currency:job.currency.code }}
+          </td>
+        </tr>
+      {% endif %}
+
+    {% else %}
+      <tr>
+        <td colspan="5" class="text-center">
+          No job cost recorded.
+        </td>
+      </tr>
+    {% endif %}
+  </tbody>
+
+  {% if costs or tax_cost %}
+    <tfoot>
+      <tr>
+        <th colspan="4" class="text-right">Total COGS</th>
+        <th class="text-right">
+          {{ total_cogs|indo_currency:job.currency.code }}
+        </th>
+      </tr>
+    </tfoot>
+  {% endif %}
+</table>
+
+
+  <!-- GROSS PROFIT -->
+  <div class="section-title">Gross Profit</div>
+
+  <table class="summary-table">
+    <tr>
+      <td class="text-left" style="width: 70%;">Revenue</td>
+      <td class="text-right" style="width: 30%;">
+        {{ revenue|indo_currency:job.currency.code }}
+      </td>
+    </tr>
+    <tr>
+      <td class="text-left">Less: Total COGS</td>
+      <td class="text-right">
+        {{ total_cost|indo_currency:job.currency.code }}
+      </td>
+    </tr>
+    <tr>
+      <td class="text-left"><strong>Gross Profit</strong></td>
+      <td class="text-right">
+        <strong>{{ gross_profit|indo_currency:job.currency.code }}</strong>
+      </td>
+    </tr>
+  </table>
+
+</div>
+
+</body>
+</html>

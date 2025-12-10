@@ -1,0 +1,73 @@
+          <!-- ======================= JOB INFO ======================= -->
+
+ 
+        <div class="row mb-3">
+
+            <label class="col-sm-4 col-form-label">Job Date</label>
+            <div class="col-sm-8">
+              {{ form.job_date }} {{ form.job_date.errors }}
+            </div>
+          </div>
+        
+          {% if job %}
+          <div class="row mb-3">
+            <label class="col-sm-4 col-form-label">Job Order#</label>
+            <div class="col-sm-8">
+              <input type="text"
+                    class="form-control form-control-sm"
+                    value="{{ job.number }}"
+                    readonly>
+            </div>
+          </div>
+        {% endif %}
+
+          <div class="row mb-3">
+            <label class="col-sm-4 col-form-label">Order#</label>
+            <div class="col-sm-8">
+              {{ form.order_number }} {{ form.order_number.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-3">
+
+            <label class="col-sm-4 col-form-label">Customer</label>
+            <div class="col-sm-8">
+              {{ form.customer }} {{ form.customer.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <label class="col-sm-4 col-form-label">Service</label>
+            <div class="col-sm-8">
+              {{ form.service }} {{ form.service.errors }}
+            </div>
+          </div>
+
+        
+          <div class="row mb-3">
+            <label class="col-sm-4 col-form-label">Cargo Description</label>
+            <div class="col-sm-8">
+              {{ form.cargo_description }} {{ form.cargo_description.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <label class="col-sm-4 col-form-label">Quantity</label>
+            <div class="col-sm-8">
+              {{ form.quantity }} {{ form.quantity.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <label class="col-sm-4 col-form-label">Pick Up</label>
+            <div class="col-sm-8">
+              {{ form.pickup }} {{ form.pickup.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <label class="col-sm-4 col-form-label">Delivery</label>
+            <div class="col-sm-8">
+              {{ form.delivery }} {{ form.delivery.errors }}
+            </div>
+          </div>

@@ -1,0 +1,243 @@
+{# templates/sales/job_order_detail.html #}
+{% extends "adminbase.html" %}
+{% load static %}
+{% load indo_format %}  {# kalau filter indo_number ada di sini #}
+
+{% block content %}
+
+<div class="app-content">
+  <div class="container-fluid">
+
+    {# HEADER #}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h1 class="h4 mb-0">Job Order Detail</h1>
+        <div class="text-muted small">
+          Job No: <strong>{{ job.number }}</strong><br>
+          Date: {{ job.job_date|date:"d-m-Y" }}
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{% url 'sales:job_order_list' %}"
+           class="btn btn-outline-secondary btn-sm">
+          <i class="fa fa-arrow-left me-1"></i> Back to List
+        </a>
+        <a href="{% url 'sales:job_order_edit' job.pk %}"
+           class="btn btn-primary btn-sm">
+          <i class="fa fa-edit me-1"></i> Edit
+        </a>
+        <a href="{% url 'sales:job_order_revenue_pdf' job.pk %}"
+            class="btn btn-outline-primary btn-sm"
+            target="_blank">
+            <i class="fa fa-file-pdf me-1"></i> Revenue PDF
+          </a>
+
+      </div>
+    </div>
+
+    <div class="row">
+      {# KIRI: Info utama #}
+      <div class="col-lg-6">
+        <div class="card mb-3">
+          <div class="card-header py-2">
+            <strong>Job Information</strong>
+          </div>
+          <div class="card-body">
+
+            <div class="row mb-2">
+              <label class="col-sm-4 col-form-label col-form-label-sm">Customer</label>
+              <div class="col-sm-8">
+                <div class="form-control-plaintext form-control-sm">
+                  {{ job.customer.company_name|default:job.customer.name }}
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-2">
+              <label class="col-sm-4 col-form-label col-form-label-sm">Service</label>
+              <div class="col-sm-8">
+                <div class="form-control-plaintext form-control-sm">
+                  {{ job.service.name }} ({{ job.service.service_group }})
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-2">
+              <label class="col-sm-4 col-form-label col-form-label-sm">Cargo</label>
+              <div class="col-sm-8">
+                <div class="form-control-plaintext form-control-sm">
+                  {{ job.cargo_description|default:"-" }}
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-2">
+              <label class="col-sm-4 col-form-label col-form-label-sm">Pickup</label>
+              <div class="col-sm-8">
+                <div class="form-control-plaintext form-control-sm">
+                  {{ job.pickup|default:"-" }}
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-2">
+              <label class="col-sm-4 col-form-label col-form-label-sm">Delivery</label>
+              <div class="col-sm-8">
+                <div class="form-control-plaintext form-control-sm">
+                  {{ job.delivery|default:"-" }}
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-2">
+              <label class="col-sm-4 col-form-label col-form-label-sm">PIC</label>
+              <div class="col-sm-8">
+                <div class="form-control-plaintext form-control-sm">
+                  {{ job.pic|default:"-" }}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {# KANAN: Payment & summary #}
+      <div class="col-lg-6">
+        <div class="card mb-3">
+          <div class="card-header py-2">
+            <strong>Payment & Summary</strong>
+          </div>
+          <div class="card-body">
+
+            <div class="row mb-2">
+              <label class="col-sm-4 col-form-label col-form-label-sm">Payment Term</label>
+              <div class="col-sm-8">
+                <div class="form-control-plaintext form-control-sm">
+                  {{ job.payment_term.name }}
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-2">
+              <label class="col-sm-4 col-form-label col-form-label-sm">Currency</label>
+              <div class="col-sm-8">
+                <div class="form-control-plaintext form-control-sm">
+                  {{ job.currency.code }}
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-2">
+              <label class="col-sm-4 col-form-label col-form-label-sm">Total Amount</label>
+              <div class="col-sm-8 text-end">
+                <div class="form-control-plaintext form-control-sm">
+                  {{ job.total_amount|indo_number }}
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-2">
+              <label class="col-sm-4 col-form-label col-form-label-sm">Tax</label>
+              <div class="col-sm-8 text-end">
+                <div class="form-control-plaintext form-control-sm">
+                  {{ job.tax_amount|indo_number }}
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-2">
+              <label class="col-sm-4 col-form-label col-form-label-sm">Grand Total</label>
+              <div class="col-sm-8 text-end">
+                <div class="form-control-plaintext form-control-sm fw-semibold">
+                  {{ job.grand_total|indo_number }}
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-2">
+              <label class="col-sm-4 col-form-label col-form-label-sm">Sales</label>
+              <div class="col-sm-8">
+                <div class="form-control-plaintext form-control-sm">
+                  {% if job.sales_user %}
+                    {{ job.sales_user.get_full_name|default:job.sales_user.username }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# ======================================== #}
+    {# TABEL JOB COST DI BAWAH DETAIL          #}
+    {# ======================================== #}
+
+    <div class="card">
+      <div class="card-header py-2 d-flex justify-content-between align-items-center">
+        <strong>Job Cost</strong>
+        <a href="{% url 'sales:job_order_edit' job.pk %}#jobcost"
+           class="btn btn-outline-primary btn-sm">
+          <i class="fa fa-edit me-1"></i> Edit Job Cost
+        </a>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width:40px;">No</th>
+                <th>Description</th>
+                <th class="text-center" style="width:80px;">Qty</th>
+                <th class="text-end" style="width:120px;">Price</th>
+                <th class="text-end" style="width:120px;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if costs %}
+                {% for c in costs %}
+                  <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ c.description }}</td>
+                    <td class="text-center">
+                      {{ c.qty|indo_number }}
+                    </td>
+                    <td class="text-end">
+                      {{ c.price|indo_number }}
+                    </td>
+                    <td class="text-end">
+                      {{ c.amount|indo_number }}
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="5" class="text-center py-3 text-muted">
+                    Belum ada job cost.
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+            {% if costs %}
+              <tfoot>
+                <tr class="fw-semibold">
+                  <td colspan="4" class="text-end">Total Job Cost</td>
+                  <td class="text-end">
+                    {{ total_cost|indo_number }}
+                  </td>
+                </tr>
+              </tfoot>
+            {% endif %}
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

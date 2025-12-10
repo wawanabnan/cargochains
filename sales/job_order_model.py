@@ -8,6 +8,7 @@ from core.models import Currency, Service
 from core.utils import get_next_number
 from partners.models import Partner
 from partners.models import Customer
+from decimal import Decimal
 
 
 class JobOrder(TimeStampedModel):
@@ -17,6 +18,14 @@ class JobOrder(TimeStampedModel):
     Satu baris = satu job penjualan, basisnya customer + service.
     """
     number = models.CharField("Job No", max_length=30, unique=True)
+    order_number = models.CharField(
+        max_length=30, 
+        null=True,
+        blank=True,
+        help_text="Customer reference eg. PO#",
+        
+    )
+
     job_date = models.DateField("Date")
 
     service = models.ForeignKey(
@@ -105,6 +114,18 @@ class JobOrder(TimeStampedModel):
         default=0,
     )
 
+    curs_idr = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+    )
+
+    total_in_idr = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+    )
+    
     tax_amount = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -140,7 +161,10 @@ class JobOrder(TimeStampedModel):
         help_text="Catatan internal untuk tim.",
     )
 
+
+    
     class Meta:
+        db_table = "sales_job_orders"
         ordering = ["-job_date", "-id"]
         verbose_name = "Job"
         verbose_name_plural = "Jobs"
@@ -151,5 +175,35 @@ class JobOrder(TimeStampedModel):
     def save(self, *args, **kwargs):
         if not self.number:
             # Pakai NumberSequence: app='sales', code='JOBFILE'
-            self.number = get_next_number("sales", "JOB")
+            self.number = get_next_number("sales", "JOB_ORDER")
+        super().save(*args, **kwargs)
+
+
+
+class JobCost(models.Model):
+    job_order = models.ForeignKey(
+        JobOrder,
+        on_delete=models.CASCADE,
+        related_name="costs",
+        db_index=True
+    )
+
+    description = models.CharField(max_length=255)
+    qty = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "sales_job_costs"
+        ordering = ["id"]
+
+    def __str__(self):
+        return f"{self.description} ({self.amount})"
+
+    def save(self, *args, **kwargs):
+        # hitung amount otomatis
+        self.amount = (self.qty or Decimal("0")) * (self.price or Decimal("0"))
         super().save(*args, **kwargs)

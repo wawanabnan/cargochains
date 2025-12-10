@@ -67,3 +67,9 @@ tr.clickable-row:hover {
 .card-body.p-0 .table thead > tr > th:first-of-type, .card-body.p-0 .table thead > tr > td:first-of-type, .card-body.p-0 .table tfoot > tr > th:first-of-type, .card-body.p-0 .table tfoot > tr > td:first-of-type, .card-body.p-0 .table tbody > tr > th:first-of-type, .card-body.p-0 .table tbody > tr > td:first-of-type {
     padding-left: 1rem;
 }
+
+.form-control {
+  
+  border-radius: 0 !important;
+
+}
