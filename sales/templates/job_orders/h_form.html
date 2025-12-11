@@ -140,8 +140,32 @@
     const isTaxEl = document.getElementById("id_is_tax");
     const form    = document.querySelector("form");
 
+    const currencyEl = document.getElementById("id_currency");
+    const kursRow = document.getElementById("row-kurs");
+    const kursInput = document.getElementById("id_kurs_idr");
+
     if(!form || !totalEl) return;
 
+    function toggleKurs() {
+      if (!currencyEl) return;
+
+      const selected = currencyEl.options[currencyEl.selectedIndex].text.trim();
+      if (selected !== "IDR") {
+        kursRow.style.display = "";
+      } else {
+        kursRow.style.display = "none";
+        kursInput.value = "1,00";
+      }
+    }
+
+    if (currencyEl) {
+      toggleKurs();
+      currencyEl.addEventListener("change", toggleKurs);
+    }
+
+
+
+   
     taxEl.readOnly = true;
 
     // --- auto-select saat focus ---

@@ -114,10 +114,10 @@ class JobOrder(TimeStampedModel):
         default=0,
     )
 
-    curs_idr = models.DecimalField(
+    kurs_idr = models.DecimalField(
         max_digits=12,
         decimal_places=2,
-        default=0,
+        default=1,
     )
 
     total_in_idr = models.DecimalField(
@@ -125,7 +125,7 @@ class JobOrder(TimeStampedModel):
         decimal_places=2,
         default=0,
     )
-    
+
     tax_amount = models.DecimalField(
         max_digits=12,
         decimal_places=2,
