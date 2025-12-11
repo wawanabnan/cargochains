@@ -1,0 +1,53 @@
+          
+            <div class="row mb-2" id="row-kurs">
+              <label class="col-sm-4 col-form-label col-form-label-sm">Kurs IDR</label>
+              <div class="col-sm-8">
+                <input type="text" name="kurs_idr"
+                    id="id_kurs_idr"
+                    value="{{ form.kurs_idr.value|default:'0,00' }}"
+                    class="form-control form-control-sm text-end">
+              </div>
+            </div>
+          
+
+            <div class="row mb-2">
+              <label class="col-sm-4 col-form-label">Total Amount</label>
+              <div class="col-sm-8">
+                {{ form.total_amount }} {{ form.total_amount.errors }}
+              </div>
+            </div>
+
+            <div class="row mb-2">
+              <label class="col-sm-4 col-form-label">Apply Tax (1,1%)</label>
+              <div class="col-sm-2 d-flex align-items-center">
+                <div class="form-check form-switch">
+                  {{ form.is_tax }} {{ form.is_tax.errors }}
+                </div>
+              </div>
+              <label class="col-sm-4 col-form-label">Apply PPH (2 %)</label>
+              <div class="col-sm-2 d-flex align-items-center">
+                <div class="form-check form-switch">
+                  {{ form.is_pph }} {{ form.is_tax.errors }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="row mb-2">
+              <label class="col-sm-4 col-form-label">Tax 1.1 %</label>
+              <div class="col-sm-8">
+                {{ form.tax_amount }} {{ form.tax_amount.errors }}
+              </div>
+            </div>
+      
+            <div class="row mb-2">
+            <label class="col-sm-4 col-form-label">PPH 2 % </label>
+            <div class="col-sm-8">
+              {{ form.pph_amount }} {{ form.pph_amount.errors }}
+            </div>
+            </div>
+            <div class="row mb-2">
+                <label class="col-sm-4 col-form-label">Grand Total</label>
+                <div class="col-sm-8">
+                    {{ form.grand_total }} {{ form.grand_total.errors }}
+                </div>
+            </div>    

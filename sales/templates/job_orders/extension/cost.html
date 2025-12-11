@@ -1,6 +1,5 @@
 {# ... setelah blok form header job order (2 kolom) dan sebelum tombol Save ... #}
 
-<h5 class="mb-2">Job Cost</h5>
 
 {{ cost_formset.management_form }}
 
@@ -45,12 +44,16 @@
     {% endfor %}
   </tbody>
 </table>
-
-<button type="button"
+  <div class="d-flex justify-content-;eft">
+    <button type="button"
         id="btn-jobcost-add"
         class="btn btn-outline-primary btn-sm mt-2">
   <i class="fa fa-plus me-1"></i> Add Row
 </button>
+
+
+  </div>
+
 
 {# template untuk row baru #}
 <template id="jobcost-empty-row">

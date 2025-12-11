@@ -26,7 +26,7 @@
 <div class="app-content">
   <div class="container-fluid ">
     <div class="card">
-      <div class="card-body p-0">
+      <div class="card-body">
         {% if form.non_field_errors %}
           <div class="alert alert-danger py-2">
             {{ form.non_field_errors }}
@@ -47,20 +47,32 @@
           {% endif %}
 
           <!-- ======================= JOB INFO ======================= -->
-       
-          <div class="container-fluid p-3">
-                {% include 'job_orders/extension/header.html' %}
-            
+        <div class="container-fluid py-3">
+          <div class="row">
+              <div class="col px-4">
+                {% include 'job_orders/extension/col_1.html' %}
+
+              </div>
+              
+              <div class="col px-4">
+                {% include 'job_orders/extension/col_2.html' %}
+              </div>
+
           </div>
-        
-        <div>
-          {% include 'job_orders/extension/navtab.html' %}
+          
+
+        </div>
+        <div class="container-fluid">
+                          {% include 'job_orders/extension/cost.html' %}
+
+
         </div>
         
 
-          <hr>  
+          <hr>
+          <div class="mt-1"></div>
           <!-- SUBMIT -->
-          <div class="d-flex justify-content-end p-2">
+          <div class="mt-4 d-flex justify-content-end">
             <button type="submit" class="btn btn-primary">
               <i class="fa fa-save me-1"></i>
               {% if job %}Update{% else %}Create{% endif %}
@@ -94,32 +106,12 @@
   padding:5px 10px !important
 }
 
-  
-	  
-.nav-tabs .nav-item:first-of-type {
-  margin-left: 20px; /* Adjust the value as needed */
-}
-
-.nav-tabs {
-  border-color: black;
-}
-
-.tab-content {
-  padding: 15px;
-}
 
 
 </style>
-
-<link rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
-
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
 <script>
 (function() {
 
@@ -200,7 +192,6 @@
       form.addEventListener("submit", function(){
         totalEl.value = parseID(totalEl.value);
         taxEl.value   = parseID(taxEl.value);
-        pphEl.value   = parseID(pphEl.value);
         grandEl.value = parseID(grandEl.value);
       });
     }
@@ -296,32 +287,6 @@
         attachRemoveHandler(newRow);
       });
     }
-
-          if (typeof flatpickr === "undefined") {
-        console.warn("Flatpickr belum ter-load");
-        return;
-      }
-
-      const inputs = document.querySelectorAll(".js-jobdate");
-      if (!inputs.length) return;
-
-      inputs.forEach(function (el) {
-        const fp = flatpickr(el, {
-          dateFormat: "d-m-Y",      // tampilan ke user
-          allowInput: true,
-          clickOpens: true,
-          altInput: false,          // biar tetap pakai form-control yang ada
-          defaultDate: el.value || null,
-          locale: {
-            firstDayOfWeek: 1
-          }
-        });
-
-      // auto show saat got focus
-      el.addEventListener("focus", function () {
-        fp.open();
-      });
-    });
 
   });
 

@@ -1,48 +1,70 @@
 # sales/forms_job_order.py
-
 from decimal import Decimal, InvalidOperation
 
 from django import forms
 
 from .job_order_model import JobOrder
-from partners.models import Customer  # proxy customer yang sudah om buat
+from partners.models import Customer  # proxy Customer yang sudah om buat
+
+PPH_RATE = Decimal("0.02")  # 2% dari DPP (total_amount)
 
 
 class JobOrderForm(forms.ModelForm):
-    # override field angka jadi CharField supaya bisa pakai format "1.000,00"
+    # Override field angka supaya bisa pakai format "1.000,00"
     total_amount = forms.CharField(required=False)
     tax_amount = forms.CharField(required=False)
     grand_total = forms.CharField(required=False)
 
-    # kurs & total IDR juga kita tampilkan sebagai text (format Indonesia)
-    kurs_idr = forms.CharField(required=False, label="Kurs IDR")
-    total_in_idr = forms.CharField(required=False, label="Total (IDR)")
+    # PPH dihitung otomatis, tapi tetap kita definisikan supaya bisa ditampilkan
+    pph_amount = forms.CharField(required=False, label="PPH Amount")
+
+    job_date = forms.DateField(
+        label="Job Date",
+        input_formats=["%d-%m-%Y", "%Y-%m-%d"],
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-sm js-jobdate",
+                "autocomplete": "off",
+                "placeholder": "dd-mm-yyyy",
+            }
+        ),
+    )
 
     class Meta:
         model = JobOrder
         fields = "__all__"
-        # tidak ditampilkan di form:
-        exclude = ["created", "modified", "is_pph", "pph_amount", "sales_user","number"]
+        exclude = [
+            "number",       # auto pakai get_next_number di model
+            "created",
+            "modified",
+            "sales_user",
+            "total_in_idr"
+        ]
 
         widgets = {
-            "job_date": forms.DateInput(
-                attrs={"type": "date", "class": "form-control form-control-sm"}
-            ),
-
             "service": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "customer": forms.Select(attrs={"class": "form-select form-select-sm"}),
 
-            "cargo_description": forms.TextInput(
-                attrs={"class": "form-control form-control-sm"}
+            
+            "cargo_description": forms.Textarea(
+                attrs={"class": "form-control form-control-sm", "rows": 2}
             ),
+
+            "pickup": forms.Textarea(
+                attrs={"class": "form-control form-control-sm", "rows": 2}
+            ),
+            "delivery": forms.Textarea(
+                attrs={"class": "form-control form-control-sm", "rows": 2}
+            ),
+
             "quantity": forms.NumberInput(
                 attrs={"class": "form-control form-control-sm", "step": "0.01"}
             ),
-            "pickup": forms.TextInput(attrs={"class": "form-control form-control-sm"}),
-            "delivery": forms.TextInput(attrs={"class": "form-control form-control-sm"}),
             "pic": forms.TextInput(attrs={"class": "form-control form-control-sm"}),
 
-            "payment_term": forms.Select(attrs={"class": "form-select form-select-sm"}),
+            "payment_term": forms.Select(
+                attrs={"class": "form-select form-select-sm"}
+            ),
             "currency": forms.Select(attrs={"class": "form-select form-select-sm"}),
 
             "remarks_internal": forms.Textarea(
@@ -50,8 +72,9 @@ class JobOrderForm(forms.ModelForm):
             ),
 
             "is_tax": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "is_pph": forms.CheckboxInput(attrs={"class": "form-check-input"}),
 
-            # angka: text + rata kanan
+            # angka: text-end + readonly di tax & pph
             "total_amount": forms.TextInput(
                 attrs={"class": "form-control form-control-sm text-end"}
             ),
@@ -62,70 +85,68 @@ class JobOrderForm(forms.ModelForm):
                     "tabindex": "-1",
                 }
             ),
-            "grand_total": forms.TextInput(
-                attrs={"class": "form-control form-control-sm text-end"}
-            ),
-
-            # kurs & total IDR
-            "kurs_idr": forms.TextInput(
-                attrs={"class": "form-control form-control-sm text-end"}
-            ),
-            "total_in_idr": forms.TextInput(
+            "pph_amount": forms.TextInput(
                 attrs={
                     "class": "form-control form-control-sm text-end",
                     "readonly": "readonly",
                     "tabindex": "-1",
                 }
             ),
+            "grand_total": forms.TextInput(
+                attrs={"class": "form-control form-control-sm text-end"}
+            ),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # pakai proxy Customer biar dropdown cuma role customer
+        # dropdown customer → proxy Customer (cuma yang punya role customer)
         if "customer" in self.fields:
             self.fields["customer"].queryset = Customer.objects.all().order_by("name")
 
-        # styling massal (kalau ada field yang belum diset widget-nya)
+        # styling massal (jaga-jaga kalau ada field tambahan)
         for name, field in self.fields.items():
-            w = field.widget
-            if isinstance(w, forms.CheckboxInput):
-                w.attrs.setdefault("class", "form-check-input")
-            elif isinstance(w, forms.Select):
-                w.attrs.setdefault("class", "form-select form-select-sm")
+            widget = field.widget
+            if isinstance(widget, forms.CheckboxInput):
+                widget.attrs.setdefault("class", "form-check-input")
+            elif isinstance(widget, forms.Select):
+                widget.attrs.setdefault("class", "form-select form-select-sm")
             else:
-                if "form-control" not in w.attrs.get("class", ""):
+                css = widget.attrs.get("class", "")
+                if "form-control" not in css:
                     css = "form-control form-control-sm"
-                    if name in ("total_amount", "tax_amount", "grand_total",
-                                "kurs_idr", "total_in_idr"):
+                    if name in (
+                        "total_amount",
+                        "tax_amount",
+                        "grand_total",
+                        "pph_amount",
+                        "curs_idr",
+                        "total_in_idr",
+                    ):
                         css += " text-end"
-                    w.attrs.setdefault("class", css)
+                    widget.attrs["class"] = css
 
-        # default angka "0,00" untuk form baru (create)
+        # default angka untuk form baru
         if not self.instance.pk and not self.is_bound:
             self.initial.setdefault("total_amount", "0,00")
             self.initial.setdefault("tax_amount", "0,00")
             self.initial.setdefault("grand_total", "0,00")
-            self.initial.setdefault("kurs_idr", "0,00")
-            self.initial.setdefault("total_in_idr", "0,00")
+            self.initial.setdefault("pph_amount", "0,00")
+            # kalau pakai kurs:
+            # self.initial.setdefault("curs_idr", "1,00")
+            # self.initial.setdefault("total_in_idr", "0,00")
 
-    # ============================ helper angka ============================
-
+    # ========== helper parse angka Indonesia ==========
     def _parse_id_decimal(self, value_str, field_label="angka"):
         """
-        Ubah string format Indonesia '1.000.000,00' -> Decimal('1000000.00')
-        Juga aman kalau input '2000000.00' (tanpa koma, dari DB).
+        '1.000.000,00' -> Decimal('1000000.00')
         """
         if value_str in (None, ""):
             return Decimal("0")
         s = str(value_str).strip()
         s = s.replace(" ", "")
-
-        # kalau mengandung koma → anggap format Indonesia
         if "," in s:
             s = s.replace(".", "").replace(",", ".")
-        # kalau tidak ada koma → biarkan, '.' dianggap desimal biasa
-
         try:
             return Decimal(s)
         except InvalidOperation:
@@ -133,43 +154,36 @@ class JobOrderForm(forms.ModelForm):
                 f"Format {field_label} tidak valid. Gunakan contoh: 1.000,00"
             )
 
-    # ============================ clean utama ============================
-
+    # ========== clean utama ==========
     def clean(self):
         cleaned = super().clean()
 
-        # 1) TOTAL / TAX / GRAND TOTAL
+        # ----- TOTAL / TAX / GRAND -----
         total_raw = cleaned.get("total_amount") or ""
         is_tax = cleaned.get("is_tax") or False
+        is_pph = cleaned.get("is_pph") or False
 
         total = self._parse_id_decimal(total_raw, "Total Amount")
 
+        # Tax 1.1% kalau dicentang
         if is_tax:
             tax = (total * Decimal("0.011")).quantize(Decimal("0.01"))
         else:
             tax = Decimal("0.00")
 
-        grand = (total + tax).quantize(Decimal("0.01"))
+        if is_pph:
+            pph = (total * PPH_RATE).quantize(Decimal("0.01"))
+        else:
+            pph = Decimal("0.00")    
+
+        grand = (total + tax - pph).quantize(Decimal("0.01"))
 
         cleaned["total_amount"] = total
         cleaned["tax_amount"] = tax
+        cleaned["pph_amount"] = pph
         cleaned["grand_total"] = grand
 
-        # 2) KURS & TOTAL DALAM IDR
-        currency = cleaned.get("currency")
-        kurs_raw = cleaned.get("kurs_idr") or ""
 
-        if currency and getattr(currency, "code", "").upper() != "IDR":
-            kurs = self._parse_id_decimal(kurs_raw, "Kurs IDR")
-            if kurs <= 0:
-                raise forms.ValidationError("Kurs IDR harus lebih besar dari 0.")
-        else:
-            # kalau IDR → kurs 1, dan total_in_idr = grand_total
-            kurs = Decimal("1.00")
-
-        total_in_idr = (grand * kurs).quantize(Decimal("0.01"))
-
-        cleaned["kurs_idr"] = kurs
-        cleaned["total_in_idr"] = total_in_idr
+        # (kalau om punya logic kurs & total_in_idr, bisa lanjut di bawah sini)
 
         return cleaned
