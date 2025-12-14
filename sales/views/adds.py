@@ -11,7 +11,7 @@ from django.utils import timezone
 from django.views import View
 from django.db import transaction
 
-from sales.forms import QuotationHeaderForm
+from sales.forms.quotations import QuotationHeaderForm
 from sales import models as m
 from geo.models import Location
 from core.models import CoreSetting

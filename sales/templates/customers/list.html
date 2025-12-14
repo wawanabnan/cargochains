@@ -1,0 +1,23 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="app-content-header" style="background-color: #fff;">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+      <h3 class="mb-0">Customers</h3>
+      <a href="{% url 'sales:customer_add' %}" class="btn btn-primary btn-sm">
+        <i class="fa fa-plus me-1"></i> New
+      </a>
+    </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">      
+     {% include 'customers/extension/toolbar.html' %}
+  </div>
+  <div class="container-fluid">      
+     {% include 'customers/extension/table.html' %}
+  </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title mb-0">
+      {% if object and object.pk %}Edit Invoice{% else %}New Invoice{% endif %}
+    </h3>
+  </div>
+
+  <form method="post" class="card-body" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {% if form.errors %}
+      <div class="alert alert-danger">
+        <div class="fw-semibold mb-1">Form error:</div>
+        {{ form.errors }}
+      </div>
+    {% endif %}
+
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <div class="mb-3">{{ form.job_order.label_tag }}{{ form.job_order }}</div>
+        <div class="mb-3">{{ form.invoice_date.label_tag }}{{ form.invoice_date }}</div>
+        <div class="mb-3">{{ form.due_date.label_tag }}{{ form.due_date }}</div>
+      </div>
+      <div class="col-lg-6">
+        <div class="mb-3">{{ form.subtotal_amount.label_tag }}{{ form.subtotal_amount }}</div>
+        <div class="mb-3">{{ form.tax_amount.label_tag }}{{ form.tax_amount }}</div>
+        <div class="mb-3">{{ form.total_amount.label_tag }}{{ form.total_amount }}</div>
+      </div>
+      <div class="col-12">
+        <div class="mb-3">{{ form.notes_customer.label_tag }}{{ form.notes_customer }}</div>
+        <div class="mb-3">{{ form.notes_internal.label_tag }}{{ form.notes_internal }}</div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:invoice_list' %}">Back</a>
+      <button class="btn btn-primary btn-sm" type="submit">Save</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

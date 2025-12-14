@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.urls import reverse
 from django.shortcuts import redirect
 from .. import models as m
-from ..forms import QuotationHeaderForm
+from sales.forms.quotations import QuotationHeaderForm
 from django.forms import inlineformset_factory   # ← tambahkan ini
 from ..forms_lines_edit import LineEditForm, LineEditFormSet
    # ← pakai form kustom

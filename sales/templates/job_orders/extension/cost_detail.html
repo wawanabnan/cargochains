@@ -1,0 +1,54 @@
+{% load indo_format %}
+ <div class="card">
+     
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width:40px;">No</th>
+                <th>Description</th>
+                <th class="text-center" style="width:80px;">Qty</th>
+                <th class="text-end" style="width:120px;">Price</th>
+                <th class="text-end" style="width:120px;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if costs %}
+                {% for c in costs %}
+                  <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ c.description }}</td>
+                    <td class="text-center">
+                      {{ c.qty|indo_number }}
+                    </td>
+                    <td class="text-end">
+                      {{ c.price|indo_number }}
+                    </td>
+                    <td class="text-end">
+                      {{ c.amount|indo_number }}
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="5" class="text-center py-3 text-muted">
+                    Belum ada job cost.
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+            {% if costs %}
+              <tfoot>
+                <tr class="fw-semibold">
+                  <td colspan="4" class="text-end">Total Job Cost</td>
+                  <td class="text-end">
+                    {{ total_cost|indo_number }}
+                  </td>
+                </tr>
+              </tfoot>
+            {% endif %}
+          </table>
+        </div>
+      </div>
+    </div>

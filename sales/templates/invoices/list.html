@@ -1,0 +1,81 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title mb-0">Invoices</h3>
+    <a href="{% url 'sales:invoice_add' %}" class="btn btn-primary btn-sm">
+      <i class="fa fa-plus me-1"></i> New Invoice
+    </a>
+  </div>
+
+  <div class="card-body">
+
+    <form method="get" class="d-flex gap-2 mb-3">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search number / customer / job...">
+      <button class="btn btn-outline-secondary btn-sm" type="submit">Search</button>
+    </form>
+
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Invoice</th>
+            <th>Job Order</th>
+            <th>Customer</th>
+            <th class="text-end">Total</th>
+            <th class="text-end" style="width: 120px;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inv in invoices %}
+            <tr class="js-row" data-href="{% url 'sales:invoice_detail' inv.pk %}" style="cursor:pointer;">
+              <td class="fw-semibold">{{ inv.number|default:"(no number)" }}</td>
+              <td>{{ inv.job_order.number|default:"-" }}</td>
+              <td>{{ inv.customer.company_name|default:inv.customer.name|default:"-" }}</td>
+              <td class="text-end">{{ inv.total_amount }}</td>
+              <td class="text-end">
+                <a class="btn btn-outline-primary btn-sm" href="{% url 'sales:invoice_edit' inv.pk %}">Edit</a>
+                <a class="btn btn-outline-danger btn-sm" href="{% url 'sales:invoice_delete' inv.pk %}">Del</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-muted text-center">No invoices.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if is_paginated %}
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted small">
+          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </div>
+        <div class="btn-group">
+          {% if page_obj.has_previous %}
+            <a class="btn btn-outline-secondary btn-sm" href="?q={{ q }}&page={{ page_obj.previous_page_number }}">Prev</a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a class="btn btn-outline-secondary btn-sm" href="?q={{ q }}&page={{ page_obj.next_page_number }}">Next</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("click", function(e){
+  const tr = e.target.closest(".js-row");
+  if (!tr) return;
+  // kalau klik tombol/link, jangan redirect row
+  if (e.target.closest("a,button,input,select,textarea,label")) return;
+  const href = tr.getAttribute("data-href");
+  if (href) window.location.href = href;
+});
+</script>
+{% endblock %}

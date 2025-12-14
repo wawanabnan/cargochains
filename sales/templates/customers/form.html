@@ -1,0 +1,220 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title mb-0">Customer</h3>
+  </div>
+
+  <form method="post" class="card-body" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    {% if form.errors %}
+      <div class="alert alert-danger">
+        <div class="fw-semibold mb-1">Form error:</div>
+        {{ form.errors }}
+      </div>
+    {% endif %}
+
+    <div class="row g-3">
+      <div class="col-lg-6">
+
+        <div class="card card-body">
+  <h6 class="mb-3">Identity</h6>
+
+  {% if form.is_individual %}
+  <div class="form-check mb-2">
+    {{ form.is_individual }}
+    <label class="form-check-label" for="{{ form.is_individual.id_for_label }}">Personal (Perorangan)</label>
+  </div>
+  {% endif %}
+
+  {# ✅ NAME SELALU TAMPIL: brand / short name (company) atau nama orang (personal) #}
+  {% if form.name %}
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.name.id_for_label }}">Nama / Brand (Short Name)</label>
+      {{ form.name }}
+      <div class="form-text">Contoh: <b>Humpus</b> (brand), atau <b>Budi</b> (personal).</div>
+    </div>
+  {% endif %}
+
+  {# ✅ COMPANY LEGAL: hanya tampil kalau bukan personal #}
+  <div class="company-section">
+    {% if form.company_name %}
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.company_name.id_for_label }}">Nama Legal (Billing)</label>
+        {{ form.company_name }}
+        <div class="form-text">Contoh: <b>PT Humpus Indopratama</b> (untuk invoice).</div>
+      </div>
+    {% endif %}
+
+    {% if form.company_type %}
+      <div class="mb-3">{{ form.company_type.label_tag }}{{ form.company_type }}</div>
+    {% endif %}
+
+    {% if form.is_pkp %}
+    <div class="form-check mb-2">
+      {{ form.is_pkp }}
+      <label class="form-check-label" for="{{ form.is_pkp.id_for_label }}">PKP</label>
+    </div>
+    {% endif %}
+
+    {% if form.tax %}
+      <div class="mb-3">{{ form.tax.label_tag }}{{ form.tax }}</div>
+    {% endif %}
+  </div>
+
+  {% if form.job_title %}
+    <div class="mb-3">{{ form.job_title.label_tag }}{{ form.job_title }}</div>
+  {% endif %}
+</div>
+
+
+      </div>
+
+      <div class="col-lg-6">
+
+        <div class="card card-body">
+          <h6 class="mb-3">Address</h6>
+
+          {% if form.address_line1 %}
+            <div class="mb-3">{{ form.address_line1.label_tag }}{{ form.address_line1 }}</div>
+          {% endif %}
+          {% if form.address_line2 %}
+            <div class="mb-3">{{ form.address_line2.label_tag }}{{ form.address_line2 }}</div>
+          {% endif %}
+
+          <div class="row g-2">
+            {% if form.province %}
+              <div class="col-md-6 mb-2">{{ form.province.label_tag }}{{ form.province }}</div>
+            {% endif %}
+            {% if form.regency %}
+              <div class="col-md-6 mb-2">{{ form.regency.label_tag }}{{ form.regency }}</div>
+            {% endif %}
+            {% if form.district %}
+              <div class="col-md-6 mb-2">{{ form.district.label_tag }}{{ form.district }}</div>
+            {% endif %}
+            {% if form.village %}
+              <div class="col-md-6 mb-2">{{ form.village.label_tag }}{{ form.village }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card card-body mt-3">
+          <h6 class="mb-3">Finance</h6>
+          {% if form.bank_name %}
+            <div class="mb-3">{{ form.bank_name.label_tag }}{{ form.bank_name }}</div>
+          {% endif %}
+          {% if form.bank_account %}
+            <div class="mb-3">{{ form.bank_account.label_tag }}{{ form.bank_account }}</div>
+          {% endif %}
+          {% if form.balance %}
+            <div class="mb-3">{{ form.balance.label_tag }}{{ form.balance }}</div>
+          {% endif %}
+           {% if form.bank_account_name %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.bank_account_name.id_for_label }}">Account Name</label>
+            {{ form.bank_account_name }}
+          </div>
+        {% endif %}
+        </div>
+
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:customer_list' %}">Back</a>
+      <button class="btn btn-primary btn-sm" type="submit">Save</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  // ====== toggle personal vs company ======
+  function toggleCompanySection() {
+    const cb = document.getElementById("id_is_individual");
+    const isInd = cb ? cb.checked : false;
+
+    document.querySelectorAll(".name-section").forEach(el => {
+      el.style.display = isInd ? "" : "none";
+    });
+
+    document.querySelectorAll(".company-section").forEach(el => {
+      el.style.display = isInd ? "none" : "";
+    });
+  }
+
+  toggleCompanySection();
+  const indCb = document.getElementById("id_is_individual");
+  if (indCb) indCb.addEventListener("change", toggleCompanySection);
+
+  // ====== GEO cascade ======
+  function resetSelect(el, placeholder) {
+    if (!el) return;
+    el.innerHTML = "";
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = placeholder;
+    el.appendChild(opt);
+  }
+
+  function loadChildren(parentId, targetEl, placeholder) {
+    if (!targetEl) return;
+    resetSelect(targetEl, "Loading...");
+
+    if (!parentId) {
+      resetSelect(targetEl, placeholder);
+      return;
+    }
+
+    fetch(`/geo/children/?parent=${parentId}`)
+      .then(r => r.json())
+      .then(items => {
+        resetSelect(targetEl, placeholder);
+        items.forEach(it => {
+          const opt = document.createElement("option");
+          opt.value = it.id;
+          opt.textContent = it.name;
+          targetEl.appendChild(opt);
+        });
+      })
+      .catch(() => resetSelect(targetEl, placeholder));
+  }
+
+  const prov = document.getElementById("id_province");
+  const reg  = document.getElementById("id_regency");
+  const dist = document.getElementById("id_district");
+  const vill = document.getElementById("id_village");
+
+  if (prov) {
+    prov.addEventListener("change", function () {
+      loadChildren(this.value, reg, "-- Pilih Kab/Kota --");
+      resetSelect(dist, "-- Pilih Kecamatan --");
+      resetSelect(vill, "-- Pilih Kelurahan/Desa --");
+    });
+  }
+
+  if (reg) {
+    reg.addEventListener("change", function () {
+      loadChildren(this.value, dist, "-- Pilih Kecamatan --");
+      resetSelect(vill, "-- Pilih Kelurahan/Desa --");
+    });
+  }
+
+  if (dist) {
+    dist.addEventListener("change", function () {
+      loadChildren(this.value, vill, "-- Pilih Kelurahan/Desa --");
+    });
+  }
+});
+</script>
+{% endblock %}

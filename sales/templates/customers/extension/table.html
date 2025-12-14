@@ -1,0 +1,31 @@
+<div class="card ">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>City</th>
+                    <th>Phone</th>
+                    <th>email</th>
+                    
+                    <th class="text-end">Balance</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for c in customers %}
+                <tr style="cursor:pointer" onclick="window.location='{% url 'sales:customer_detail' c.pk %}'">
+                    <td>{{ c.name }}</td>
+                    <td>{{ c.regency.name }}</td>
+                    <td>{{ c.phone }}</td>
+                    <td>{{ c.email }}</td>
+                    <td class="text-end">{{ c.balance }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-muted">No customers</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>        

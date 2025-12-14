@@ -21,7 +21,7 @@
       <!-- ============================= -->
       <!--     SEARCH BAR + TOOLBAR      -->
       <!-- ============================= -->
-      <div class="card border-0 mb-3">
+      <div class="card" style="background-color: #f8f9fa;border-bottom: 0px;" >
         <div class="card-body">
 
           <div id="joborders-toolbar"
@@ -40,7 +40,7 @@
               <!-- SEARCH (default) -->
               <div id="search-box" class="flex-grow-1 d-flex justify-content-center">
                 <form method="get"
-                      class="input-group input-group-sm rounded-pill overflow-hidden shadow-sm border"
+                      class="input-group input-group-md rounded-pill overflow-hidden shadow-sm border"
                       style="max-width:500px;">
                   <input type="search"
                          name="q"
@@ -108,7 +108,7 @@
                   <th>Cargo</th>
                   <th class="text-end" style="width: 12%;">Grand Total</th>
                   <th style="width: 12%;">Sales</th>
-                  <th class="text-center" style="width: 8%;">Action</th>
+                
                 </tr>
               </thead>
 
@@ -144,20 +144,6 @@
                         {% endif %}
                       </td>
 
-                      <td class="text-center">
-                        <div class="btn-group btn-group-xs">
-                          <a href="{% url 'sales:job_order_detail' jo.pk %}"
-                             class="btn btn-outline-secondary btn-xs"
-                             title="View">
-                            <i class="fa fa-eye"></i>
-                          </a>
-                          <a href="{% url 'sales:job_order_edit' jo.pk %}"
-                             class="btn btn-outline-primary btn-xs"
-                             title="Edit">
-                            <i class="fa fa-edit"></i>
-                          </a>
-                        </div>
-                      </td>
 
                     </tr>
                   {% endfor %}

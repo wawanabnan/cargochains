@@ -4,22 +4,25 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import View
 
-from sales.job_order_model import JobOrder,JobCost
+from sales.job_order_model import JobOrder,JobCost, JobOrderAttachment
 from sales.forms_job_order import JobOrderForm
 from sales.forms_job_cost import JobCostFormSet
+from sales.forms_job_attachment import JobOrderAttachmentForm
+
 from django.views.generic import ListView
 
-from partners.models import Partner
+from partners.models import Customer
 from core.models import Service  #
 from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from core.utils import get_next_number
 from django.db.models import Sum
 
 
+
 # ==========================
 # LIST
 # ==========================
-class JobOrderListView(LoginRequiredMixin, ListView):
+class JkobOrderListView(LoginRequiredMixin, ListView):
     model = JobOrder
     template_name = "job_orders/list.html"
     context_object_name = "job_orders"
@@ -39,6 +42,57 @@ class JobOrderListView(LoginRequiredMixin, ListView):
 
         return qs
 
+class JobOrderListView(LoginRequiredMixin, ListView):
+    model = JobOrder
+    template_name = "job_orders/list.html"
+    context_object_name = "job_orders"
+    paginate_by = 25
+
+    def get_queryset(self):
+        qs = (
+            JobOrder.objects
+            .select_related("customer", "service", "payment_term", "currency", "sales_user")
+            .order_by("-job_date", "-id")
+        )
+
+        q = self.request.GET.get("q")
+        customer_id = self.request.GET.get("customer")
+        service_id = self.request.GET.get("service")
+        date_from = self.request.GET.get("date_from")
+        date_to = self.request.GET.get("date_to")
+
+        if q:
+            qs = qs.filter(number__icontains=q) | qs.filter(cargo_description__icontains=q)
+
+        if customer_id:
+            qs = qs.filter(customer_id=customer_id)
+
+        if service_id:
+            qs = qs.filter(service_id=service_id)
+
+        if date_from:
+            qs = qs.filter(job_date__gte=date_from)
+
+        if date_to:
+            qs = qs.filter(job_date__lte=date_to)
+
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        # nilai filter agar dropdown tetap selected
+        ctx["filter_q"] = self.request.GET.get("q", "")
+        ctx["filter_customer"] = self.request.GET.get("customer", "")
+        ctx["filter_service"] = self.request.GET.get("service", "")
+        ctx["filter_date_from"] = self.request.GET.get("date_from", "")
+        ctx["filter_date_to"] = self.request.GET.get("date_to", "")
+
+        # dropdown data
+        ctx["customers"] = Customer.objects.all().order_by("name")
+        ctx["services"] = Service.objects.all().order_by("name")
+
+        return ctx
 
 # ==========================
 # CREATE
@@ -146,4 +200,45 @@ class JobOrderDetailView(LoginRequiredMixin, DetailView):
 
         ctx["costs"] = costs
         ctx["total_cost"] = total_cost
+        ctx["attachments"] = job.attachments.all()
+        ctx["attachment_form"] = JobOrderAttachmentForm()
         return ctx
+    
+
+class JobOrderAttachmentUploadView(LoginRequiredMixin, View):
+    """
+    Terima POST (multipart) untuk upload attachment job order.
+    """
+
+    def post(self, request, pk):
+        job = get_object_or_404(JobOrder, pk=pk)
+        form = JobOrderAttachmentForm(request.POST, request.FILES)
+
+        if not form.is_valid():
+            messages.error(request, "Upload gagal. Pastikan file dipilih dan format benar.")
+            return redirect("sales:job_order_detail", pk=job.pk)
+
+        att = form.save(commit=False)
+        att.job_order = job
+        att.uploaded_by = request.user
+        att.save()
+
+        messages.success(request, "Attachment berhasil ditambahkan.")
+        return redirect("sales:job_order_detail", pk=job.pk)
+
+
+class JobOrderAttachmentDeleteView(LoginRequiredMixin, View):
+    """
+    Hapus satu attachment job order.
+    """
+
+    def post(self, request, pk, att_id):
+        job = get_object_or_404(JobOrder, pk=pk)
+        att = get_object_or_404(JobOrderAttachment, pk=att_id, job_order=job)
+
+        # (Opsional) bisa cek permission dulu di sini
+
+        att.file.delete(save=False)  # hapus file fisik
+        att.delete()
+        messages.success(request, "Attachment berhasil dihapus.")
+        return redirect("sales:job_order_detail", pk=job.pk)

@@ -1,0 +1,22 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title mb-0">Delete Invoice</h3>
+  </div>
+
+  <form method="post" class="card-body">
+    {% csrf_token %}
+    <p class="mb-0">
+      Hapus invoice <b>{{ invoice.number|default:invoice.pk }}</b> ?
+    </p>
+
+    <div class="d-flex gap-2 mt-3">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:invoice_detail' invoice.pk %}">Cancel</a>
+      <button class="btn btn-danger btn-sm" type="submit">Yes, delete</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

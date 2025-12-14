@@ -38,15 +38,9 @@ from .views.freight import (
     FoEditFieldsView
 )
 
-
-from .views.invoices import (
-    InvoiceListView,
-    InvoiceCreateView,
-    InvoiceGenerateView,
-    InvoiceDetailView,
-    InvoiceUpdateView,
-    InvoicePrintView,
-    
+from sales.views.invoices import (
+    InvoiceListView, InvoiceCreateView, InvoiceUpdateView,
+    InvoiceDetailView, InvoiceDeleteView, InvoiceGenerateFromJobOrderView
 )
 
 from .views.freight_pdf import  FreightQuotationPdfHtmlView
@@ -57,12 +51,18 @@ from .views.job_order import (
     JobOrderListView,
     JobOrderCreateView,
     JobOrderUpdateView,
-    JobOrderDetailView
+    JobOrderDetailView,
+    JobOrderAttachmentUploadView,
+    JobOrderAttachmentDeleteView,
 )
 
 from .views.jo_revenue_pdf import JobOrderRevenuePdfView
 
-
+from .views.customers import (
+    CustomerListView, CustomerCreateView, CustomerDetailView,
+    CustomerUpdateView, CustomerDeleteView,
+     CustomerContactCreateView
+)
 
 
 app_name = "sales"
@@ -167,21 +167,36 @@ urlpatterns = [
         name="invoice_add",
     ),
 
-    path(
-        "freight-orders/<int:pk>/generate-invoice/",
-        InvoiceGenerateView.as_view(),
-        name="invoice_generate",
-    ),
-    path("invoices/<int:pk>/", InvoiceDetailView.as_view(), name="invoice_detail"),
-    path("invoices/<int:pk>/edit/", InvoiceUpdateView.as_view(), name="invoice_edit"),
-    #path("invoices/<int:pk>/print/",InvoicePrintView.as_view(),name="invoice_print"),
-    path("invoices/<int:pk>/pdf/", InvoicePdfHtmlView.as_view(), name="invoice_pdf"),
+    
+    
     path("job-orders/", JobOrderListView.as_view(), name="job_order_list"),
     path("job-order/add/", JobOrderCreateView.as_view(), name="job_order_add"),
     path("job-order/<int:pk>/edit/", JobOrderUpdateView.as_view(), name="job_order_edit"),
     path("job-order/<int:pk>/", JobOrderDetailView.as_view(), name="job_order_detail"),
-    path("job-orders/<int:pk>/revenue-pdf/",JobOrderRevenuePdfView.as_view(),name="job_order_revenue_pdf",
-    ),
+    path("job-orders/<int:pk>/revenue-pdf/",JobOrderRevenuePdfView.as_view(),name="job_order_revenue_pdf"),
+    path("job-orders/<int:pk>/attachments/add/",
+         JobOrderAttachmentUploadView.as_view(),
+         name="job_order_attachment_add"),
+    path("job-orders/<int:pk>/attachments/<int:att_id>/delete/",
+         JobOrderAttachmentDeleteView.as_view(),
+         name="job_order_attachment_delete"),
+
+    path("customers/", CustomerListView.as_view(), name="customer_list"),
+    path("customers/add/", CustomerCreateView.as_view(), name="customer_add"),
+    path("customers/<int:pk>/", CustomerDetailView.as_view(), name="customer_detail"),
+    path("customers/<int:pk>/edit/", CustomerUpdateView.as_view(), name="customer_edit"),
+    path("customers/<int:pk>/delete/", CustomerDeleteView.as_view(), name="customer_delete"),
+    path("customers/<int:pk>/contacts/add/", CustomerContactCreateView.as_view(), name="customer_contact_add"),
+
+    path("invoices/", InvoiceListView.as_view(), name="invoice_list"),
+    path("invoices/add/", InvoiceCreateView.as_view(), name="invoice_add"),
+    path("invoices/<int:pk>/", InvoiceDetailView.as_view(), name="invoice_detail"),
+    path("invoices/<int:pk>/edit/", InvoiceUpdateView.as_view(), name="invoice_edit"),
+    path("invoices/<int:pk>/delete/", InvoiceDeleteView.as_view(), name="invoice_delete"),
+
+    # optional: generate invoice from job order via modal/form
+    path("invoices/generate-from-job/", InvoiceGenerateFromJobOrderView.as_view(), name="invoice_generate_from_job"),
+
 
 ]
 

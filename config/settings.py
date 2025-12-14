@@ -183,3 +183,5 @@ WKHTMLTOPDF_CMD = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
 
 
 
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"

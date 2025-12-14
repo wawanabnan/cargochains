@@ -1,32 +1,35 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect
-from django.urls import reverse_lazy
-
-from partners.models import Partner,PartnerRole
-from django.views.generic import ListView, CreateView, UpdateView, DetailView
-from django.urls import reverse_lazy
 from django.contrib import messages
-from django.http import HttpResponseRedirect
-
-from ..models import FreightQuotation, FreightQuotationStatus
-from ..forms import FreightQuotationForm, GenerateOrderForm,FreightOrderEditForm
-from geo.models import Location
-from core.utils import get_valid_days_default
-from django.utils import timezone
-from core.models import Currency,SalesService,PaymentTerm
-from django.shortcuts import render,redirect, get_object_or_404
-from django.views import View
 from django.db import transaction
-import datetime
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse, reverse_lazy
+from django.utils import timezone
+from django.views import View
+from django.views.generic import (
+    ListView,
+    CreateView,
+    UpdateView,
+    DetailView,
+)
+
 from decimal import Decimal, InvalidOperation
-from django.http import JsonResponse
+import datetime
 
-import sys
+from partners.models import Partner, PartnerRole
+from geo.models import Location
+from core.models import Currency, SalesService, PaymentTerm
+from core.utils import get_next_number, get_valid_days_default
 
+from sales.forms.freights import (
+    FreightQuotationForm,
+    GenerateOrderForm,
+    FreightOrderEditForm,
+)
 
-from django.contrib import messages
-from django.urls import reverse
-from core.utils import get_next_number
+from sales.freight import FreightOrder, FreightOrderStatus
+from django.db.models import Q
+from sales.freight import FreightQuotation, FreightQuotationStatus
 
 
 
@@ -268,8 +271,6 @@ class FreightQuotationMixin:
         return ctx
 
 
-from django.http import HttpResponse
-from django.urls import reverse
 class FqCreateView(LoginRequiredMixin, FreightQuotationMixin, CreateView):
     model = FreightQuotation
     form_class = FreightQuotationForm
@@ -283,8 +284,6 @@ class FqCreateView(LoginRequiredMixin, FreightQuotationMixin, CreateView):
     def get_success_url(self):
         return reverse("sales:fq_detail", args=[self.object.pk])
 
-
-from django.views.generic import UpdateView
 
 class FqUpdateView(LoginRequiredMixin, FreightQuotationMixin, UpdateView):
     model = FreightQuotation
@@ -1155,13 +1154,6 @@ class FoStatusUpdateView(LoginRequiredMixin, View):
 
 
 
-# sales/views/freight.py
-from django.views import View
-from django.shortcuts import get_object_or_404, redirect, render
-from django.contrib import messages
-
-from ..forms import FreightOrderEditForm
-from ..freight import FreightOrder, FreightOrderStatus  # sesuaikan import
 
 
 class FoEditFieldsView(View):

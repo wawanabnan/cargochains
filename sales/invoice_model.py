@@ -7,7 +7,7 @@ from django.utils import timezone
 from core.models import TimeStampedModel, Currency, PaymentTerm, NumberSequence
 from core.utils import get_next_number
 from partners.models import Partner
-from .freight import FreightOrder   # <-- INI YANG BENAR
+from .job_order_model import JobOrder
 
 
 
@@ -23,14 +23,6 @@ class InvoiceStatus(models.TextChoices):
 
 
 
-# ============================
-#   INVOICE CATEGORY
-# ============================
-
-class InvoiceCategory(models.TextChoices):
-    FREIGHT = "FREIGHT", "Freight"
-    AGENCY = "AGENCY", "Agency"
-    SHIP_CHARTER = "SHIP_CHARTER", "Ship Charter"
 
 
 # ============================
@@ -38,18 +30,12 @@ class InvoiceCategory(models.TextChoices):
 # ============================
 class Invoice(TimeStampedModel):
     """
-    Invoice penagihan berdasarkan FreightOrder.
-    Default desain: 1 FreightOrder -> 1 Invoice (OneToOneField).
+    Invoice penagihan berdasarkan JobOrder.
+    Default desain: 1 JobOrder -> 1 Invoice (OneToOneField).
     Kalau nanti perlu multi-invoice per order, ganti ke ForeignKey.
     """
 
-    category = models.CharField(
-        max_length=20,
-        choices=InvoiceCategory.choices,
-        default=InvoiceCategory.FREIGHT,
-        help_text="Kategori bisnis invoice ini (Freight, Agency, Ship Charter, dll)."
-    )
-
+  
     number = models.CharField(
         max_length=30,
         unique=True,
@@ -57,9 +43,11 @@ class Invoice(TimeStampedModel):
         help_text="Nomor invoice (auto generate dari NumberSequence)"
     )
 
-    freight_order = models.ForeignKey(
-        FreightOrder,
+    job_order = models.ForeignKey(
+        JobOrder,
         on_delete=PROTECT,
+        null=False,
+        blank=False,
         related_name="invoices",
     )
 
@@ -148,7 +136,7 @@ class Invoice(TimeStampedModel):
         verbose_name_plural = "Invoices"
 
     def __str__(self):
-        return self.number or f"Invoice for {self.freight_order}"
+        return self.number or f"Invoice for {self.job_order}"
 
     # -----------------------------
     #   HELPER & BUSINESS LOGIC
@@ -165,7 +153,7 @@ class Invoice(TimeStampedModel):
     def save(self, *args, **kwargs):
         # Auto-generate number jika belum ada
         if not self.number:
-            # Pastikan sudah ada NumberSequence: (app_label='sales', key='FREIGHT_INVOICE')
+            # Pastikan sudah ada NumberSequence: (app_label='sales', key='JOB_INVOICE')
             self.number = get_next_number("sales", "INVOICE")
 
         # Kalau due_date belum diisi, set default = invoice_date
@@ -178,10 +166,10 @@ class Invoice(TimeStampedModel):
     @property
     def description(self):
         """
-        Deskripsi invoice yang diambil dari FreightOrder:
+        Deskripsi invoice yang diambil dari JibOrder:
         'Freight Order No XXX - SalesService Origin - Destination CargoName'
         """
-        fo = self.freight_order
+        fo = self.job_order
         if not fo:
             return ""
 
@@ -189,7 +177,7 @@ class Invoice(TimeStampedModel):
 
         # No Freight Order
         if getattr(fo, "number", None):
-            parts.append(f"Freight Order No {fo.number}")
+            parts.append(f"Job Order No {jo.number}")
 
         # Sales Service (misal: Sea - Door to Door)
         sales_service = getattr(fo, "sales_service", None)
@@ -219,22 +207,21 @@ class Invoice(TimeStampedModel):
     #   FACTORY: BUAT DARI ORDER
     # -----------------------------
     @classmethod
-    def create_from_freight_order(cls, freight_order, user=None, invoice_date=None):
+    def create_from_job_order(cls, job_order, user=None, invoice_date=None):
         """
-        Buat invoice dari FreightOrder:
-        - category otomatis FREIGHT
+        Buat invoice dari JobOrder:
         - salin customer, currency, payment_term
-        - salin nilai subtotal, tax, total dari FreightOrder
+        - salin nilai subtotal, tax, total dari JobOrder
         """
         if invoice_date is None:
             invoice_date = timezone.now().date()
 
         obj = cls(
-            category=InvoiceCategory.FREIGHT,
-            freight_order=freight_order,
-            customer=freight_order.customer,
-            currency=getattr(freight_order, "currency", None),
-            payment_term=getattr(freight_order, "payment_term", None),
+            
+            job_order=job_order,
+            customer=job_order.customer,
+            currency=getattr(job_order, "currency", None),
+            payment_term=getattr(job_order, "payment_term", None),
             invoice_date=invoice_date,
             due_date=invoice_date,
             created_by=user,
@@ -242,9 +229,9 @@ class Invoice(TimeStampedModel):
         )
 
         # SESUAIKAN NAMA FIELD FO DI SINI
-        obj.subtotal_amount = getattr(freight_order, "subtotal_amount", 0) or 0
-        obj.tax_amount = getattr(freight_order, "tax_amount", 0) or 0
-        obj.total_amount = getattr(freight_order, "total_amount", 0) or 0
+        obj.subtotal_amount = getattr(job_order, "subtotal_amount", 0) or 0
+        obj.tax_amount = getattr(job_order, "tax_amount", 0) or 0
+        obj.total_amount = getattr(job_order, "total_amount", 0) or 0
 
         obj.save()
         return obj
@@ -257,7 +244,7 @@ class InvoiceLine(TimeStampedModel):
     """
     Detail invoice (baris-baris biaya).
     Untuk simple case: 1 invoice bisa terdiri dari beberapa charge.
-    Belum di-link langsung ke FreightOrderLine supaya aman.
+    Belum di-link langsung ke JobOrderLine supaya aman.
     Nanti kalau FO sudah pakai line, bisa ditambahkan FK opsional.
     """
 
@@ -277,6 +264,7 @@ class InvoiceLine(TimeStampedModel):
 
     class Meta:
         ordering = ["invoice", "sort_order", "id"]
+        db_table = "sales_invoice_lines" 
 
     def __str__(self):
         return self.description or f"Line {self.pk}"

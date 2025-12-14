@@ -73,3 +73,14 @@ tr.clickable-row:hover {
   border-radius: 0 !important;
 
 }
+
+
+.card {
+  border: var(--bs-card-border-width) solid var(--bs-card-border-color);
+  border-radius: 0 !important;
+  box-shadow:none !important
+}
+
+.app-content {
+    padding: 1rem 0rem !important;
+}

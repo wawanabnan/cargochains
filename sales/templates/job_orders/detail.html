@@ -35,16 +35,16 @@
       </div>
     </div>
 
-    <div class="row">
-      {# KIRI: Info utama #}
-      <div class="col-lg-6">
-        <div class="card mb-3">
-          <div class="card-header py-2">
-            <strong>Job Information</strong>
-          </div>
-          <div class="card-body">
 
-            <div class="row mb-2">
+
+
+
+    <div class="card">
+      <div class="card-header">Job Information</div>
+      <div class="card-body">
+        <div class="row">
+            <div class="col">
+                 <div class="row mb-2">
               <label class="col-sm-4 col-form-label col-form-label-sm">Customer</label>
               <div class="col-sm-8">
                 <div class="form-control-plaintext form-control-sm">
@@ -98,19 +98,10 @@
               </div>
             </div>
 
-          </div>
-        </div>
-      </div>
 
-      {# KANAN: Payment & summary #}
-      <div class="col-lg-6">
-        <div class="card mb-3">
-          <div class="card-header py-2">
-            <strong>Payment & Summary</strong>
-          </div>
-          <div class="card-body">
-
-            <div class="row mb-2">
+            </div>
+            <div class="col">
+                 <div class="row mb-2">
               <label class="col-sm-4 col-form-label col-form-label-sm">Payment Term</label>
               <div class="col-sm-8">
                 <div class="form-control-plaintext form-control-sm">
@@ -168,76 +159,109 @@
               </div>
             </div>
 
-          </div>
+
+            </div>
         </div>
       </div>
-    </div>
 
-    {# ======================================== #}
-    {# TABEL JOB COST DI BAWAH DETAIL          #}
-    {# ======================================== #}
-
-    <div class="card">
-      <div class="card-header py-2 d-flex justify-content-between align-items-center">
-        <strong>Job Cost</strong>
-        <a href="{% url 'sales:job_order_edit' job.pk %}#jobcost"
-           class="btn btn-outline-primary btn-sm">
-          <i class="fa fa-edit me-1"></i> Edit Job Cost
-        </a>
-      </div>
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-sm mb-0 align-middle">
-            <thead class="table-light">
-              <tr>
-                <th style="width:40px;">No</th>
-                <th>Description</th>
-                <th class="text-center" style="width:80px;">Qty</th>
-                <th class="text-end" style="width:120px;">Price</th>
-                <th class="text-end" style="width:120px;">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% if costs %}
-                {% for c in costs %}
-                  <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ c.description }}</td>
-                    <td class="text-center">
-                      {{ c.qty|indo_number }}
-                    </td>
-                    <td class="text-end">
-                      {{ c.price|indo_number }}
-                    </td>
-                    <td class="text-end">
-                      {{ c.amount|indo_number }}
-                    </td>
-                  </tr>
-                {% endfor %}
-              {% else %}
-                <tr>
-                  <td colspan="5" class="text-center py-3 text-muted">
-                    Belum ada job cost.
-                  </td>
-                </tr>
-              {% endif %}
-            </tbody>
-            {% if costs %}
-              <tfoot>
-                <tr class="fw-semibold">
-                  <td colspan="4" class="text-end">Total Job Cost</td>
-                  <td class="text-end">
-                    {{ total_cost|indo_number }}
-                  </td>
-                </tr>
-              </tfoot>
-            {% endif %}
-          </table>
-        </div>
-      </div>
     </div>
+    {#===========================================#}
+    <ul class="nav nav-pills nav-fill  mynav mt-2" 
+                id="myTab" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active " 
+                        id="home-tab" 
+                        data-bs-toggle="tab" data-bs-target="#costTab" 
+                        type="button" role="tab" 
+                        aria-controls="home" aria-selected="true">Job Cost
+                </button>
+              </li>
+               <li class="nav-item" role="presentation">
+                <button class="nav-link" 
+                        id="home-tab" 
+                        data-bs-toggle="tab" data-bs-target="#noteTab" 
+                        type="button" role="tab" 
+                        aria-controls="home" aria-selected="true">Note
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" 
+                        id="profile-tab" 
+                        data-bs-toggle="tab" data-bs-target="#attachmentTab" 
+                        type="button" role="tab" 
+                        aria-controls="profile" aria-selected="false">Attachment
+                </button>
+              </li>
+              
+            
+            </ul>
+            <div class="tab-content border border-0 mt-3" id="myCargoPriceTab">
+                <div class="tab-pane fade show active" 
+                    id="costTab" 
+                    role="tabpanel" aria-labelledby="cargotab">
+                     {% include 'job_orders/extension/cost_detail.html' %}
+
+
+                </div>
+                 <div class="tab-pane fade show active" 
+                    id="noteTab" 
+                    role="tabpanel" aria-labelledby="notetab">
+                    
+
+                </div>
+                <div class="tab-pane fade" 
+                      id="attachmentTab" 
+                      role="tabpanel" aria-labelledby="price-tab">
+                       {% include 'job_orders/extension/attachment.html' %}
+
+                </div>
+                 
+            </div>
+
+
+
+
+
+  </div>
+  <div class="container-fluid">
+    
 
   </div>
 </div>
 
+{% endblock %}
+{% block extra_css %}
+
+<style>
+#myTab {border:none}  
+#myTab .nav-link {
+    background-color: #cdcacd !important;  /* warna background active */
+    border-radius: 0;
+    color: #fff !important;                /* warna teks */
+    text-transform: uppercase;
+
+}
+
+#myTab .nav-link.active {
+    background-color: #ab1680 !important;  /* warna background active */
+    border-radius: 0;
+    color: #fff !important;            
+    font-weight: bold;
+}
+
+.mynav > .nav-pills .mynav > .nav-link.active {
+    background-color:blueviolet /* Replace with your desired color code */
+    color: #F0F8FF; /* Optional: Change text color for contrast */
+}
+
+
+.tab-content {
+  padding: 0px;
+  min-height: 100px;
+  background-color: #fff;
+}
+
+
+
+</style>
 {% endblock %}

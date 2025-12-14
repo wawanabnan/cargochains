@@ -12,7 +12,7 @@ from django.template.loader import render_to_string
 from django.templatetags.static import static
 from django.views import View
 
-from sales.invoice import Invoice
+from sales.invoice_model import Invoice
 
 
 class InvoicePdfHtmlView(LoginRequiredMixin, View):

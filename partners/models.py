@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from geo.models import Location
+from decimal import Decimal
 
 
 class Partner(models.Model):
@@ -141,6 +142,21 @@ class Partner(models.Model):
         on_delete=models.CASCADE,
         related_name="contacts",
         limit_choices_to={"is_individual": False},  # hanya partner perusahaan
+    )
+
+    bank_name = models.CharField(max_length=120, blank=True, default="")
+    bank_account = models.CharField(max_length=60, blank=True, default="")
+    bank_account_name = models.CharField(max_length=120, blank=True, default="")
+    balance = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+
+    is_sales_contact = models.BooleanField(
+        default=False,
+        help_text="Centang jika contact ini dipakai untuk Quotation / Sales Order.",
+    )
+
+    is_billing_contact = models.BooleanField(
+        default=False,
+        help_text="Centang jika contact ini dipakai untuk Invoice / Billing.",
     )
 
     sales_user = models.ForeignKey(

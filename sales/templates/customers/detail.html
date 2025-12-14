@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+      <h4 class="mb-0">
+        {{ customer.company_name|default:customer.name }}
+      </h4>
+      <div class="text-muted small">
+        {% if customer.is_individual %}
+          Contact Person
+        {% else %}
+          Company
+        {% endif %}
+        {% if customer.company %}
+          · Company:
+          <a href="{% url 'sales:customer_detail' customer.company.pk %}">
+            {{ customer.company.company_name|default:customer.company.name }}
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'sales:customer_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back
+      </a>
+
+      <a href="{% url 'sales:customer_edit' customer.pk %}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-pencil-square me-1"></i> Edit
+      </a>
+
+      <a href="{% url 'sales:customer_delete' customer.pk %}" class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-trash me-1"></i> Delete
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- LEFT: Identity & Contact -->
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title mb-0">Identity</h3>
+        </div>
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-md-6">
+              <div class="text-muted small">Name</div>
+              <div class="fw-semibold">{{ customer.name|default:"-" }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted small">Company Name</div>
+              <div class="fw-semibold">{{ customer.company_name|default:"-" }}</div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="text-muted small">Company Type</div>
+              <div class="fw-semibold">{{ customer.get_company_type_display|default:"-" }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted small">PKP</div>
+              <div class="fw-semibold">
+                {% if customer.is_pkp %}Yes{% else %}No{% endif %}
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="text-muted small">NPWP</div>
+              <div class="fw-semibold">{{ customer.tax|default:"-" }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted small">Job Title</div>
+              <div class="fw-semibold">{{ customer.job_title|default:"-" }}</div>
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          <div class="row g-2">
+            <div class="col-md-6">
+              <div class="text-muted small">Email</div>
+              <div class="fw-semibold">{{ customer.email|default:"-" }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted small">Phone</div>
+              <div class="fw-semibold">{{ customer.phone|default:"-" }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted small">Mobile</div>
+              <div class="fw-semibold">{{ customer.mobile|default:"-" }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted small">Websites</div>
+              <div class="fw-semibold">{{ customer.websites|default:"-" }}</div>
+            </div>
+
+            <div class="col-md-12">
+              <div class="text-muted small">Sales PIC</div>
+              <div class="fw-semibold">
+                {{ customer.sales_user|default:"-" }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    
+    </div>
+
+    <!-- RIGHT: Address & Finance -->
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title mb-0">Address</h3>
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <div class="text-muted small">Address Line 1</div>
+            <div class="fw-semibold">{{ customer.address_line1|default:"-" }}</div>
+          </div>
+          <div class="mb-2">
+            <div class="text-muted small">Address Line 2</div>
+            <div class="fw-semibold">{{ customer.address_line2|default:"-" }}</div>
+          </div>
+
+          <hr class="my-3">
+
+          <div class="row g-2">
+            <div class="col-md-6">
+              <div class="text-muted small">Province</div>
+              <div class="fw-semibold">{{ customer.province.name|default:"-" }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted small">Regency</div>
+              <div class="fw-semibold">{{ customer.regency.name|default:"-" }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted small">District</div>
+              <div class="fw-semibold">{{ customer.district.name|default:"-" }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted small">Village</div>
+              <div class="fw-semibold">{{ customer.village.name|default:"-" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-3">
+        <div class="card-header">
+          <h3 class="card-title mb-0">Finance</h3>
+        </div>
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-md-6">
+              <div class="text-muted small">Bank Name</div>
+              <div class="fw-semibold">{{ customer.bank_name|default:"-" }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted small">Bank Account</div>
+              <div class="fw-semibold">{{ customer.bank_account|default:"-" }}</div>
+            </div>
+            <div class="col-md-12">
+              <div class="text-muted small">Balance</div>
+              <div class="fw-semibold">{{ customer.balance }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+<div class="card card-body mt-3">
+  <div class="d-flex justify-content-between align-items-center">
+    <h6 class="mb-0">Contacts</h6>
+    <button type="button" class="btn btn-primary btn-sm"
+            data-bs-toggle="modal" data-bs-target="#contactModal">
+      + Add Contact
+    </button>
+  </div>
+
+  <div class="table-responsive mt-3">
+    <table class="table table-sm table-hover">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Title</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Flags</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if customer.is_individual %}
+          <tr>
+            <td>
+              {{ customer.name }}
+              <span class="text-muted">(Self)</span>
+            </td>
+            <td>{{ customer.email|default:"-" }}</td>
+            <td>{{ customer.phone|default:"-" }}</td>
+            <td class="text-end">
+              <span class="badge text-bg-primary">Sales</span>
+              <span class="badge text-bg-success">Billing</span>
+            </td>
+          </tr>
+        {% endif %}
+        {% for x in contacts %}
+          <tr>
+            <td>{{ x.name }}</td>
+            <td>{{ x.job_title|default:"-" }}</td>
+            <td>{{ x.email|default:"-" }}</td>
+            <td>{{ x.phone|default:"-" }}</td>
+            <td>
+              {% if x.is_sales_contact %}<span class="badge bg-info">Sales</span>{% endif %}
+              {% if x.is_billing_contact %}<span class="badge bg-warning">Billing</span>{% endif %}
+              {% if not x.is_sales_contact and not x.is_billing_contact %}-{% endif %}
+            </td>
+          </tr>
+        {% empty %}
+         {% if not customer.is_individual %}
+            <tr>
+              <td colspan="4" class="text-muted text-center">
+                Belum ada contact.
+              </td>
+            </tr>
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# ===== MODAL ADD CONTACT ===== #}
+<div class="modal fade" id="contactModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg  modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" action="{% url 'sales:customer_contact_add' customer.pk %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">Add Contact</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          {% if contact_form.non_field_errors %}
+            <div class="alert alert-danger">{{ contact_form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="mb-2">{{ contact_form.name.label_tag }}{{ contact_form.name }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-2">{{ contact_form.job_title.label_tag }}{{ contact_form.job_title }}</div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="mb-2">{{ contact_form.email.label_tag }}{{ contact_form.email }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-2">{{ contact_form.phone.label_tag }}{{ contact_form.phone }}</div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="mb-2">{{ contact_form.mobile.label_tag }}{{ contact_form.mobile }}</div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="form-check mb-2">
+                {{ contact_form.is_sales_contact }}
+                <label class="form-check-label" for="{{ contact_form.is_sales_contact.id_for_label }}">
+                  Sales Contact
+                </label>
+              </div>
+              <div class="form-check mb-2">
+                {{ contact_form.is_billing_contact }}
+                <label class="form-check-label" for="{{ contact_form.is_billing_contact.id_for_label }}">
+                  Billing Contact
+                </label>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Save Contact</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% if open_contact %}
+<script>
+  document.addEventListener("DOMContentLoaded", function(){
+    const el = document.getElementById("contactModal");
+    if (el && window.bootstrap) bootstrap.Modal.getOrCreateInstance(el).show();
+  });
+</script>
+{% endif %}
+
+{% endblock %}

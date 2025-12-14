@@ -10,9 +10,8 @@ from core.models import SalesService
 from core.models import UOM     
 from core.models import PaymentTerm
 from core.models import Currency
-from .freight import FreightQuotation, FreightOrder,  FreightQuotationStatus
-from .invoice import *
-from .job_order_model import *
+from sales.invoice_model import *
+from sales.job_order_model import *
 
 
 class SalesQuotation(models.Model):

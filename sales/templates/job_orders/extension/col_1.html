@@ -3,15 +3,14 @@
  
         <div class="row mb-2">
            <label class="col-sm-4 col-form-label col-form-label-sm">Job Date</label>
-  <div class="col-sm-8">
-    <div class="input-group input-group-sm">
-      {{ form.job_date }}
-      <span class="input-group-text">
-        <i class="fa fa-calendar"></i>
-      </span>
-    </div>
-  </div>
-           
+          <div class="col-sm-8">
+            <div class="input-group input-group-sm">
+              {{ form.job_date }}
+              <span class="input-group-text">
+                <i class="fa fa-calendar"></i>
+              </span>
+            </div>
+          </div>       
         </div>
         
           {% if job %}
@@ -24,7 +23,7 @@
                     readonly>
             </div>
           </div>
-        {% endif %}
+          {% endif %}
 
           <div class="row mb-2">
             <label class="col-sm-4 col-form-label">Order#</label>

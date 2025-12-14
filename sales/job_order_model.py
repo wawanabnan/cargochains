@@ -207,3 +207,42 @@ class JobCost(models.Model):
         # hitung amount otomatis
         self.amount = (self.qty or Decimal("0")) * (self.price or Decimal("0"))
         super().save(*args, **kwargs)
+
+
+
+class JobOrderAttachment(TimeStampedModel):
+    job_order = models.ForeignKey(
+        "JobOrder",
+        on_delete=models.CASCADE,
+        related_name="attachments",
+        verbose_name="Job Order",
+    )
+    file = models.FileField(
+        upload_to="job_orders/%Y/%m/",
+        verbose_name="File",
+    )
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Description",
+        help_text="Keterangan singkat file, misal: PO Customer, Kontrak, dll."
+    )
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="joborder_attachments",
+    )
+
+    class Meta:
+        verbose_name = "Job Order Attachment"
+        verbose_name_plural = "Job Order Attachments"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.job_order.number} - {self.filename}"
+
+    @property
+    def filename(self):
+        return self.file.name.split("/")[-1]

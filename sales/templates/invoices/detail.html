@@ -1,0 +1,39 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title mb-0">Invoice {{ invoice.number|default:"(no number)" }}</h3>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'sales:invoice_edit' invoice.pk %}">Edit</a>
+      <a class="btn btn-outline-danger btn-sm" href="{% url 'sales:invoice_delete' invoice.pk %}">Delete</a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <div class="mb-2"><span class="text-muted">Job Order:</span> <b>{{ invoice.job_order.number|default:"-" }}</b></div>
+        <div class="mb-2"><span class="text-muted">Customer:</span> <b>{{ invoice.customer.company_name|default:invoice.customer.name|default:"-" }}</b></div>
+        <div class="mb-2"><span class="text-muted">Invoice Date:</span> {{ invoice.invoice_date }}</div>
+        <div class="mb-2"><span class="text-muted">Due Date:</span> {{ invoice.due_date }}</div>
+      </div>
+      <div class="col-lg-6">
+        <div class="mb-2"><span class="text-muted">Subtotal:</span> <b>{{ invoice.subtotal_amount }}</b></div>
+        <div class="mb-2"><span class="text-muted">Tax:</span> <b>{{ invoice.tax_amount }}</b></div>
+        <div class="mb-2"><span class="text-muted">Total:</span> <b>{{ invoice.total_amount }}</b></div>
+      </div>
+      <div class="col-12">
+        <hr>
+        <div class="mb-2"><span class="text-muted">Notes to customer:</span><br>{{ invoice.notes_customer|linebreaksbr }}</div>
+        <div class="mb-2"><span class="text-muted">Internal notes:</span><br>{{ invoice.notes_internal|linebreaksbr }}</div>
+      </div>
+    </div>
+
+    <div class="mt-3">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:invoice_list' %}">Back</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
