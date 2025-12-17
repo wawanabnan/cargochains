@@ -150,7 +150,14 @@
                           -
                         {% endif %}
                       </td>
-                       <td> {{ jo.is_invoice }}</td>
+                       <td>
+                          {% if jo.is_invoiced %}
+                            <span class="badge bg-success">Invoiced</span>
+                          {% else %}
+                            <span class="badge bg-warning text-dark">Not Invoiced</span>
+                          {% endif %}
+
+                       </td>
 
                     </tr>
                   {% endfor %}

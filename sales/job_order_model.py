@@ -183,7 +183,7 @@ class JobOrder(TimeStampedModel):
             self.number = get_next_number("sales", "JOB_ORDER")
         super().save(*args, **kwargs)
 
-
+    
 
 class JobCost(models.Model):
     job_order = models.ForeignKey(

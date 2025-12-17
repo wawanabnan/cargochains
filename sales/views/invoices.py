@@ -87,6 +87,23 @@ def recalc_invoice_totals(invoice: Invoice):
     invoice.total_amount = total
     invoice.save(update_fields=["subtotal_amount", "tax_amount", "total_amount"])
 
+from decimal import Decimal
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
+
+def get_ppn_11_tax():
+    # prioritas: rate 1.10 / 1.1
+    for r in (Decimal("1.10"), Decimal("1.1")):
+        try:
+            return Tax.objects.get(rate=r)
+        except (ObjectDoesNotExist, MultipleObjectsReturned):
+            pass
+
+    # fallback: cari nama mengandung "PPN" dan "1.1"
+    q = Tax.objects.filter(name__icontains="ppn").filter(name__icontains="1.1")
+    if q.exists():
+        return q.first()
+
+    raise ValueError("Master Tax PPN 1.1% tidak ditemukan. Buat dulu di tabel Tax.")
 
 # =========================================================
 # Views
@@ -307,6 +324,17 @@ class InvoiceCreateFromJobOrderView(LoginRequiredMixin, CreateView):
         formset.instance = inv
         formset.save()
 
+        ppn11 = get_ppn_11_tax()
+        if ppn11:
+            for ln in inv.lines.all():
+                ln.taxes.set([ppn11])
+        else:
+            messages.warning(
+                self.request,
+                "Master Tax PPN 1.1% belum tersedia. Pajak pada invoice line kosong."
+            )
+
+        # recalc dari line (PPN sudah di line)
         recalc_invoice_totals(inv)
 
         messages.success(self.request, "Invoice berhasil dibuat dari Job Order.")
