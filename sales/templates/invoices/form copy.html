@@ -288,7 +288,7 @@
         </tr>
       </script>
 
-      <div class="d-flex justify-content-between align-items-start mt-2 p-2">
+      <div class="d-flex justify-content-between align-items-start mt-2">
         <!-- LEFT: Add line -->
         <div>
           <a href="javascript:void(0)" id="btnAddLine" class="text-primary text-decoration-none small">
@@ -448,15 +448,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2/dist/umd/popper.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@eonasdan/tempus-dominus@6.9.5/dist/js/tempus-dominus.min.js"></script>
 
-{{ tax_rates|json_script:"tax-rates" }}
-<script>
-  window.TAX_RATES = JSON.parse(document.getElementById("tax-rates").textContent || "{}");
-</script>
-
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const TAX_RATES = window.TAX_RATES || {};
-
   const linesBody  = document.getElementById("linesBody");
   const btnAdd     = document.getElementById("btnAddLine");
   const tpl        = document.getElementById("lineEmptyTemplate");
@@ -465,21 +458,25 @@ document.addEventListener("DOMContentLoaded", function () {
   // display totals (UX only)
   const uxSubEl   = document.getElementById("ux_subtotal");
   const uxTotalEl = document.getElementById("ux_total");
-  const formEl    = document.querySelector("form");
+  const formEl = document.querySelector("form");
 
-  // hidden real fields (kalau masih ada di form)
+  // hidden real fields (kalau masih ada di form) - tetap aman
   const subEl   = document.getElementById("id_subtotal_amount") || document.querySelector('[name="subtotal_amount"]');
   const taxEl   = document.getElementById("id_tax_amount")      || document.querySelector('[name="tax_amount"]');
   const totalEl = document.getElementById("id_total_amount")    || document.querySelector('[name="total_amount"]');
 
   // =========================
   // PARSER ANGKA (AMAN)
+  // - "1.000,00" -> 1000.00
+  // - "1,00"     -> 1.00
+  // - "1.00"     -> 1.00   (PENTING: titik dianggap DESIMAL jika tidak ada koma)
   // =========================
   function toNum(val) {
     if (val === null || val === undefined) return 0;
     let s = String(val).trim();
     if (!s) return 0;
 
+    // jika ada koma => format Indonesia: 1.234,56
     if (s.includes(",")) {
       s = s.replace(/\s+/g, "");
       s = s.replace(/\./g, "").replace(",", ".");
@@ -487,6 +484,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return isNaN(n) ? 0 : n;
     }
 
+    // jika tidak ada koma => format standar/backend: 1234.56 (titik = desimal)
     const n = parseFloat(s);
     return isNaN(n) ? 0 : n;
   }
@@ -504,23 +502,23 @@ document.addEventListener("DOMContentLoaded", function () {
     el.value = fmtID(toNum(el.value));
   }
 
-  // fallback parse "11%" dari text
-  function getRateFromText(text) {
-    const m = String(text || "").match(/(\d+(?:[.,]\d+)?)\s*%/);
-    if (!m) return 0;
-    return parseFloat(m[1].replace(",", ".")) || 0;
-  }
-
-  // Force qty/price existing jadi js-num
+  // ✅ Paksa semua qty/price yang SUDAH ADA (row edit/row awal) jadi text + js-num
   if (linesBody) {
     linesBody.querySelectorAll('input[name$="-quantity"], input[name$="-price"]').forEach(function (el) {
       el.type = "text";
       el.classList.add("js-num");
       el.setAttribute("inputmode", "decimal");
       el.setAttribute("autocomplete", "off");
+
       if (!el.value) el.value = "0,00";
       setInputFormatted(el);
     });
+  }
+
+  function getRateFromLabel(text) {
+    const m = String(text || "").match(/(\d+(?:[.,]\d+)?)\s*%/);
+    if (!m) return 0;
+    return parseFloat(m[1].replace(",", ".")) || 0;
   }
 
   function recalcRow(tr) {
@@ -536,72 +534,30 @@ document.addEventListener("DOMContentLoaded", function () {
     return amount;
   }
 
-  function calcRowTaxes(tr, amount, taxMap) {
-    let taxTotal = 0;
-
-    // ✅ PRIMARY: select multiple (Django ModelMultipleChoiceField)
-    const sel = tr.querySelector('select[name$="-taxes"]');
-    if (sel) {
-      const selected = Array.from(sel.selectedOptions || []);
-      selected.forEach(opt => {
-        const id = parseInt(opt.value, 10);
-
-        let rate = 0;
-        if (!isNaN(id) && TAX_RATES[id] !== undefined) rate = parseFloat(TAX_RATES[id]) || 0;
-        if (!rate) rate = getRateFromText(opt.textContent || "");
-
-        if (!rate) return;
-
-        const label = (opt.textContent || ("Tax " + opt.value)).trim();
-        const taxAmt = amount * rate / 100.0;
-
-        taxMap[label] = (taxMap[label] || 0) + taxAmt;
-        taxTotal += taxAmt;
-      });
-
-      return taxTotal;
-    }
-
-    // ✅ FALLBACK: checkbox taxes (kalau widget berubah lagi)
-    const checks = tr.querySelectorAll('input[type="checkbox"][name$="-taxes"]:checked');
-    checks.forEach(cb => {
-      const id = parseInt(cb.value, 10);
-
-      let rate = 0;
-      if (!isNaN(id) && TAX_RATES[id] !== undefined) rate = parseFloat(TAX_RATES[id]) || 0;
-
-      const labelEl = tr.querySelector('label[for="' + cb.id + '"]');
-      const label = (labelEl ? labelEl.textContent : ("Tax " + cb.value)).trim();
-
-      if (!rate) rate = getRateFromText(label);
-      if (!rate) return;
-
-      const taxAmt = amount * rate / 100.0;
-      taxMap[label] = (taxMap[label] || 0) + taxAmt;
-      taxTotal += taxAmt;
-    });
-
-    return taxTotal;
-  }
-
   function recalcTotals() {
-    if (!linesBody) return;
-
     let subtotal = 0;
     let taxTotal = 0;
-    const taxMap = {};
 
-    const rows = linesBody.querySelectorAll("tr.line-row");
+    const taxMap = {};
+    const rows = linesBody ? linesBody.querySelectorAll("tr.line-row") : [];
+
     rows.forEach(tr => {
-      // skip deleted
       const del = tr.querySelector('input[type="checkbox"][name$="-DELETE"]');
       if (del && del.checked) return;
-      if (tr.style.display === "none" || tr.classList.contains("d-none")) return;
 
       const amount = recalcRow(tr);
       subtotal += amount;
 
-      taxTotal += calcRowTaxes(tr, amount, taxMap);
+      const checks = tr.querySelectorAll('input[type="checkbox"][name$="-taxes"]:checked');
+      checks.forEach(cb => {
+        const labelEl  = tr.querySelector('label[for="' + cb.id + '"]');
+        const taxLabel = labelEl ? labelEl.textContent.trim() : "";
+        const rate     = getRateFromLabel(taxLabel);
+        const taxAmt   = (amount * rate / 100.0);
+
+        if (taxLabel) taxMap[taxLabel] = (taxMap[taxLabel] || 0) + taxAmt;
+        taxTotal += taxAmt;
+      });
     });
 
     // DISPLAY totals (UX)
@@ -625,8 +581,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // sort by rate (fallback parse)
-    keys.sort((a, b) => getRateFromText(a) - getRateFromText(b));
+    keys.sort((a, b) => getRateFromLabel(a) - getRateFromLabel(b));
 
     wrap.style.display = "";
     list.innerHTML = keys.map(k => {
@@ -645,7 +600,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }).join("");
   }
 
-  // blok input '.' supaya user tidak bikin "1.00"
+  // ✅ blok input '.' supaya user tidak bikin "1.00" (yang sering bikin jadi 100)
   if (linesBody) {
     linesBody.addEventListener("keydown", function(e){
       const el = e.target;
@@ -681,21 +636,15 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
-    // ✅ FINAL change handler: support select taxes + fallback checkbox + delete
     linesBody.addEventListener("change", function (e) {
       const tr = e.target.closest("tr.line-row");
       if (!tr) return;
-
-      if (
-        e.target.matches('select[name$="-taxes"]') ||
-        e.target.matches('input[type="checkbox"][name$="-taxes"]') ||
-        e.target.matches('input[type="checkbox"][name$="-DELETE"]')
-      ) {
+      if (e.target.matches('input[type="checkbox"][name$="-taxes"], input[type="checkbox"][name$="-DELETE"]')) {
         recalcTotals();
       }
     });
 
-    // delete: existing row → check DELETE & hide; new row → remove
+    // ✅ delete: existing row → check DELETE & hide; new row → remove
     linesBody.addEventListener("click", function (e) {
       const btn = e.target.closest(".btnRemoveLine");
       if (!btn) return;
@@ -715,7 +664,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Add line
-  if (btnAdd && tpl && totalForms && linesBody) {
+  if (btnAdd && tpl && totalForms) {
     btnAdd.addEventListener("click", function () {
       const idx  = parseInt(totalForms.value || "0", 10);
       const html = tpl.innerHTML.replace(/__prefix__/g, String(idx));
@@ -756,26 +705,33 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Before submit: kirim angka format backend "1000.00"
-  if (formEl) {
-    let submitting = false;
+  // ✅ Sebelum submit: kirim angka format backend "1000.00" (bukan "1.000,00")
 
-    formEl.addEventListener("submit", function (e) {
-      if (submitting) return;
+  // ✅ SUPER-FINAL: intercept submit (capture), cegah script lain, convert, lalu submit native
+if (formEl) {
+  let submitting = false;
 
-      e.preventDefault();
-      e.stopImmediatePropagation();
+  formEl.addEventListener("submit", function (e) {
+    if (submitting) return;
 
-      if (linesBody) {
-        linesBody.querySelectorAll('input[name$="-quantity"], input[name$="-price"]').forEach(function (el) {
-          el.value = (toNum(el.value) || 0).toFixed(2);
-        });
-      }
+    // stop semua submit handler lain
+    e.preventDefault();
+    e.stopImmediatePropagation();
 
-      submitting = true;
-      formEl.submit();
-    }, true);
-  }
+    // convert qty/price jadi backend number (1,00 -> 1.00)
+    if (linesBody) {
+      linesBody.querySelectorAll('input[name$="-quantity"], input[name$="-price"]').forEach(function (el) {
+        el.value = (toNum(el.value) || 0).toFixed(2);
+      });
+    }
+    console.log("SENT qty/price:", [...linesBody.querySelectorAll('input[name$="-quantity"], input[name$="-price"]')].map(i => [i.name, i.value]));
+
+    // kirim TANPA memicu event submit lagi
+    submitting = true;
+    formEl.submit();
+  }, true); // <-- CAPTURE PHASE (penting)
+}
+
 
   // init
   document.querySelectorAll("input.js-num").forEach(el => setInputFormatted(el));

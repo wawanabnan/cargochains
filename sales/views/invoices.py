@@ -124,17 +124,16 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        inv = self.object
-        ctx["lines"] = inv.lines.all().order_by("id")
-       
-        sub_total, tax_total, grand_total = calc_invoice_totals(inv)
-        ctx.update({
-            "sub_total": sub_total,
-            "tax_total": tax_total,
-            "grand_total": grand_total,
-        })
 
+        inv = getattr(self, "object", None)
+        if inv and inv.pk:
+            ctx["lines"] = inv.lines.all().order_by("id")
+        else:
+            ctx["lines"] = []
+
+        ctx["tax_rates"] = {t.id: float(t.rate) for t in Tax.objects.all()}
         return ctx
+
 
 class InvoiceCreateManualView(LoginRequiredMixin, View):
     template_name = "invoices/form.html"
