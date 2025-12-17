@@ -1,238 +1,305 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container-fluid">
 
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <div>
-      <h4 class="mb-0">
-        {{ customer.company_name|default:customer.name }}
-      </h4>
-      <div class="text-muted small">
-        {% if customer.is_individual %}
-          Contact Person
-        {% else %}
-          Company
-        {% endif %}
-        {% if customer.company %}
-          · Company:
-          <a href="{% url 'sales:customer_detail' customer.company.pk %}">
-            {{ customer.company.company_name|default:customer.company.name }}
-          </a>
-        {% endif %}
-      </div>
-    </div>
-
-    <div class="d-flex flex-wrap gap-2">
-      <a href="{% url 'sales:customer_list' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i> Back
-      </a>
-
-      <a href="{% url 'sales:customer_edit' customer.pk %}" class="btn btn-outline-primary btn-sm">
-        <i class="bi bi-pencil-square me-1"></i> Edit
-      </a>
-
-      <a href="{% url 'sales:customer_delete' customer.pk %}" class="btn btn-outline-danger btn-sm">
-        <i class="bi bi-trash me-1"></i> Delete
-      </a>
-    </div>
-  </div>
-
-  <div class="row g-3">
-    <!-- LEFT: Identity & Contact -->
-    <div class="col-lg-6">
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title mb-0">Identity</h3>
-        </div>
-        <div class="card-body">
-          <div class="row g-2">
-            <div class="col-md-6">
-              <div class="text-muted small">Name</div>
-              <div class="fw-semibold">{{ customer.name|default:"-" }}</div>
-            </div>
-            <div class="col-md-6">
-              <div class="text-muted small">Company Name</div>
-              <div class="fw-semibold">{{ customer.company_name|default:"-" }}</div>
-            </div>
-
-            <div class="col-md-6">
-              <div class="text-muted small">Company Type</div>
-              <div class="fw-semibold">{{ customer.get_company_type_display|default:"-" }}</div>
-            </div>
-            <div class="col-md-6">
-              <div class="text-muted small">PKP</div>
-              <div class="fw-semibold">
-                {% if customer.is_pkp %}Yes{% else %}No{% endif %}
-              </div>
-            </div>
-
-            <div class="col-md-6">
-              <div class="text-muted small">NPWP</div>
-              <div class="fw-semibold">{{ customer.tax|default:"-" }}</div>
-            </div>
-            <div class="col-md-6">
-              <div class="text-muted small">Job Title</div>
-              <div class="fw-semibold">{{ customer.job_title|default:"-" }}</div>
-            </div>
-          </div>
-
-          <hr class="my-3">
-
-          <div class="row g-2">
-            <div class="col-md-6">
-              <div class="text-muted small">Email</div>
-              <div class="fw-semibold">{{ customer.email|default:"-" }}</div>
-            </div>
-            <div class="col-md-6">
-              <div class="text-muted small">Phone</div>
-              <div class="fw-semibold">{{ customer.phone|default:"-" }}</div>
-            </div>
-            <div class="col-md-6">
-              <div class="text-muted small">Mobile</div>
-              <div class="fw-semibold">{{ customer.mobile|default:"-" }}</div>
-            </div>
-            <div class="col-md-6">
-              <div class="text-muted small">Websites</div>
-              <div class="fw-semibold">{{ customer.websites|default:"-" }}</div>
-            </div>
-
-            <div class="col-md-12">
-              <div class="text-muted small">Sales PIC</div>
-              <div class="fw-semibold">
-                {{ customer.sales_user|default:"-" }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    
-    </div>
-
-    <!-- RIGHT: Address & Finance -->
-    <div class="col-lg-6">
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title mb-0">Address</h3>
-        </div>
-        <div class="card-body">
-          <div class="mb-2">
-            <div class="text-muted small">Address Line 1</div>
-            <div class="fw-semibold">{{ customer.address_line1|default:"-" }}</div>
-          </div>
-          <div class="mb-2">
-            <div class="text-muted small">Address Line 2</div>
-            <div class="fw-semibold">{{ customer.address_line2|default:"-" }}</div>
-          </div>
-
-          <hr class="my-3">
-
-          <div class="row g-2">
-            <div class="col-md-6">
-              <div class="text-muted small">Province</div>
-              <div class="fw-semibold">{{ customer.province.name|default:"-" }}</div>
-            </div>
-            <div class="col-md-6">
-              <div class="text-muted small">Regency</div>
-              <div class="fw-semibold">{{ customer.regency.name|default:"-" }}</div>
-            </div>
-            <div class="col-md-6">
-              <div class="text-muted small">District</div>
-              <div class="fw-semibold">{{ customer.district.name|default:"-" }}</div>
-            </div>
-            <div class="col-md-6">
-              <div class="text-muted small">Village</div>
-              <div class="fw-semibold">{{ customer.village.name|default:"-" }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card mt-3">
-        <div class="card-header">
-          <h3 class="card-title mb-0">Finance</h3>
-        </div>
-        <div class="card-body">
-          <div class="row g-2">
-            <div class="col-md-6">
-              <div class="text-muted small">Bank Name</div>
-              <div class="fw-semibold">{{ customer.bank_name|default:"-" }}</div>
-            </div>
-            <div class="col-md-6">
-              <div class="text-muted small">Bank Account</div>
-              <div class="fw-semibold">{{ customer.bank_account|default:"-" }}</div>
-            </div>
-            <div class="col-md-12">
-              <div class="text-muted small">Balance</div>
-              <div class="fw-semibold">{{ customer.balance }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-</div>
-<div class="card card-body mt-3">
-  <div class="d-flex justify-content-between align-items-center">
-    <h6 class="mb-0">Contacts</h6>
-    <button type="button" class="btn btn-primary btn-sm"
-            data-bs-toggle="modal" data-bs-target="#contactModal">
-      + Add Contact
-    </button>
-  </div>
-
-  <div class="table-responsive mt-3">
-    <table class="table table-sm table-hover">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Title</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Flags</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if customer.is_individual %}
-          <tr>
-            <td>
-              {{ customer.name }}
-              <span class="text-muted">(Self)</span>
-            </td>
-            <td>{{ customer.email|default:"-" }}</td>
-            <td>{{ customer.phone|default:"-" }}</td>
-            <td class="text-end">
-              <span class="badge text-bg-primary">Sales</span>
-              <span class="badge text-bg-success">Billing</span>
-            </td>
-          </tr>
-        {% endif %}
-        {% for x in contacts %}
-          <tr>
-            <td>{{ x.name }}</td>
-            <td>{{ x.job_title|default:"-" }}</td>
-            <td>{{ x.email|default:"-" }}</td>
-            <td>{{ x.phone|default:"-" }}</td>
-            <td>
-              {% if x.is_sales_contact %}<span class="badge bg-info">Sales</span>{% endif %}
-              {% if x.is_billing_contact %}<span class="badge bg-warning">Billing</span>{% endif %}
-              {% if not x.is_sales_contact and not x.is_billing_contact %}-{% endif %}
-            </td>
-          </tr>
-        {% empty %}
-         {% if not customer.is_individual %}
-            <tr>
-              <td colspan="4" class="text-muted text-center">
-                Belum ada contact.
-              </td>
-            </tr>
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <div>
+        <h4 class="mb-0">
+          {{ customer.company_name|default:customer.name }}
+        </h4>
+        <div class="text-muted small">
+          {% if customer.is_individual %}
+            Contact Person
+          {% else %}
+            Company
           {% endif %}
-        {% endfor %}
-      </tbody>
-    </table>
+          {% if customer.company %}
+            · Company:
+            <a href="{% url 'sales:customer_detail' customer.company.pk %}">
+              {{ customer.company.company_name|default:customer.company.name }}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'sales:customer_list' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+
+        <a href="{% url 'sales:customer_edit' customer.pk %}" class="btn btn-outline-primary btn-sm">
+          <i class="bi bi-pencil-square me-1"></i> Edit
+        </a>
+
+        <a href="{% url 'sales:customer_delete' customer.pk %}" class="btn btn-outline-danger btn-sm">
+          <i class="bi bi-trash me-1"></i> Delete
+        </a>
+      </div>
+    </div>
+
+ </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="row g-3">
+
+      <!-- ================= LEFT : IDENTITY ================= -->
+      <div class="col-lg-6">
+        <div class="card h-100">
+          <div class="card-header">
+            <h6 class="mb-0">Identity</h6>
+          </div>
+
+          <div class="card-body">
+
+            <!-- Basic identity -->
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="text-muted small">Name</div>
+                <div class="fw-semibold">{{ customer.name|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="text-muted small">Company Name</div>
+                <div class="fw-semibold">{{ customer.company_name|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="text-muted small">Company Type</div>
+                <div class="fw-semibold">{{ customer.get_company_type_display|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="text-muted small">PKP</div>
+                <div class="fw-semibold">
+                  {% if customer.is_pkp %}
+                    <span class="badge bg-success">Yes</span>
+                  {% else %}
+                    <span class="badge bg-secondary">No</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="text-muted small">NPWP</div>
+                <div class="fw-semibold">{{ customer.tax|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="text-muted small">Job Title</div>
+                <div class="fw-semibold">{{ customer.job_title|default:"-" }}</div>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            <!-- Contact -->
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="text-muted small">Email</div>
+                <div class="fw-semibold">{{ customer.email|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="text-muted small">Phone</div>
+                <div class="fw-semibold">{{ customer.phone|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="text-muted small">Mobile</div>
+                <div class="fw-semibold">{{ customer.mobile|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="text-muted small">Website</div>
+                <div class="fw-semibold">{{ customer.websites|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-12">
+                <div class="text-muted small">Sales PIC</div>
+                <div class="fw-semibold">{{ customer.sales_user|default:"-" }}</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= RIGHT : ADDRESS + FINANCE ================= -->
+      <div class="col-lg-6">
+
+        <!-- Address -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <h6 class="mb-0">Address</h6>
+          </div>
+
+          <div class="card-body">
+
+            <div class="mb-3">
+              <div class="text-muted small">Address Line 1</div>
+              <div class="fw-semibold">{{ customer.address_line1|default:"-" }}</div>
+            </div>
+
+            <div class="mb-3">
+              <div class="text-muted small">Address Line 2</div>
+              <div class="fw-semibold">{{ customer.address_line2|default:"-" }}</div>
+            </div>
+
+            <hr class="my-3">
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="text-muted small">Province</div>
+                <div class="fw-semibold">{{ customer.province.name|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="text-muted small">Regency</div>
+                <div class="fw-semibold">{{ customer.regency.name|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="text-muted small">District</div>
+                <div class="fw-semibold">{{ customer.district.name|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="text-muted small">Village</div>
+                <div class="fw-semibold">{{ customer.village.name|default:"-" }}</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Finance -->
+        <div class="card">
+          <div class="card-header">
+            <h6 class="mb-0">Finance</h6>
+          </div>
+
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="text-muted small">Bank Name</div>
+                <div class="fw-semibold">{{ customer.bank_name|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="text-muted small">Bank Account</div>
+                <div class="fw-semibold">{{ customer.bank_account|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="text-muted small">Balance</div>
+                <div class="fw-semibold">{{ customer.balance }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<div class="app-content">
+  <div class="container-fluid">
+    <div class="card mt-3">
+        <div class="card-header d-flex align-items-center">
+          <h6 class="mb-0">Contacts</h6>
+
+          <button type="button"
+                  class="btn btn-primary px-2 py-1 ms-auto"
+                  style="font-size:1rem; line-height:1;"
+                  data-bs-toggle="modal"
+                  data-bs-target="#contactModal">
+                  <i class="bi bi-person-plus"></i>
+          </button>
+        </div>
+
+        <div class="card card-body p-0 border-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0 align-middle  table-hover n">
+              <thead class="table-light">
+                <tr>
+                  <th>Name</th>
+                  <th>Title</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Assigned in</th>
+                </tr>
+              </thead>
+              <tbody>
+                  {# SELF row (kalau individual) — harus 6 kolom supaya balance #}
+                  {% if customer.is_individual %}
+                    <tr>
+                      <td>
+                        {{ customer.name }}
+                        <span class="text-muted">(Self)</span>
+                      </td>
+                      <td>{{ customer.job_title|default:"-" }}</td>
+                      <td>{{ customer.email|default:"-" }}</td>
+                      <td>{{ customer.phone|default:"-" }}</td>
+                      <td>
+                        <span class="badge bg-info">Sales</span>
+                        <span class="badge bg-warning">Billing</span>
+                      </td>
+                      <td class="text-end">-</td>
+                    </tr>
+                  {% endif %}
+
+                  {# CONTACT rows #}
+                  {% for x in contacts %}
+                    <tr class="contact-row"
+                        role="button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#contactModal"
+                        data-mode="edit"
+                        data-id="{{ x.pk }}"
+                        data-name="{{ x.name|default:'' }}"
+                        data-job_title="{{ x.job_title|default:'' }}"
+                        data-email="{{ x.email|default:'' }}"
+                        data-phone="{{ x.phone|default:'' }}"
+                        data-mobile="{{ x.mobile|default:'' }}"
+                        data-sales="{% if x.is_sales_contact %}1{% else %}0{% endif %}"
+                        data-billing="{% if x.is_billing_contact %}1{% else %}0{% endif %}">
+
+                      <td>{{ x.name }}</td>
+                      <td>{{ x.job_title|default:"-" }}</td>
+                      <td>{{ x.email|default:"-" }}</td>
+                      <td>{{ x.phone|default:"-" }}</td>
+
+                      <td>
+                        {% if x.is_sales_contact %}<span class="badge bg-info">Sales</span>{% endif %}
+                        {% if x.is_billing_contact %}<span class="badge bg-warning">Billing</span>{% endif %}
+                        {% if not x.is_sales_contact and not x.is_billing_contact %}-{% endif %}
+                      </td>
+
+                      
+                    </tr>
+                  {% empty %}
+                    {% if not customer.is_individual %}
+                      <tr>
+                        <td colspan="6" class="text-muted text-center">
+                          Belum ada contact.
+                        </td>
+                      </tr>
+                    {% endif %}
+                  {% endfor %}
+              </tbody>
+
+            </table>
+          </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -240,10 +307,10 @@
 <div class="modal fade" id="contactModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg  modal-dialog-centered">
     <div class="modal-content">
-      <form method="post" action="{% url 'sales:customer_contact_add' customer.pk %}">
+      <form method="post" action="{% url 'sales:customer_contact_add' customer.pk %}" id="contactForm">
         {% csrf_token %}
         <div class="modal-header">
-          <h5 class="modal-title">Add Contact</h5>
+          <h5 class="modal-title" contactModalTitle>Add Contact</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
 
@@ -297,6 +364,59 @@
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const modalEl = document.getElementById("contactModal");
+  const formEl  = document.getElementById("contactForm");
+  const titleEl = document.getElementById("contactModalTitle");
+
+  if (!modalEl || !formEl) return;
+
+  const addUrl = "{% url 'sales:customer_contact_add' customer.pk %}";
+  const updateUrlTpl = "{% url 'sales:customer_contact_update' 0 %}";
+
+  function setValByName(name, v) {
+    const el = formEl.querySelector(`[name="${name}"]`);
+    if (el) el.value = v ?? "";
+  }
+  function setCheckByName(name, v) {
+    const el = formEl.querySelector(`[name="${name}"]`);
+    if (el) el.checked = (String(v) === "1" || String(v).toLowerCase() === "true");
+  }
+
+  modalEl.addEventListener("show.bs.modal", function (ev) {
+    const trigger = ev.relatedTarget;
+    const ds = trigger ? trigger.dataset : {};
+    const mode = (ds.mode || "add").toLowerCase();
+
+    if (mode === "edit" && ds.id) {
+      if (titleEl) titleEl.textContent = "Edit Contact";
+      formEl.action = updateUrlTpl.replace("/0/", `/${ds.id}/`);
+
+      // isi berdasarkan NAME field (lebih aman daripada id)
+      setValByName("name", ds.name);
+      setValByName("job_title", ds.job_title);
+      setValByName("email", ds.email);
+      setValByName("phone", ds.phone);
+      setValByName("mobile", ds.mobile);
+      setCheckByName("is_sales_contact", ds.sales);
+      setCheckByName("is_billing_contact", ds.billing);
+
+    } else {
+      if (titleEl) titleEl.textContent = "Add Contact";
+      formEl.action = addUrl;
+      formEl.reset();
+    }
+  });
+
+  document.querySelectorAll(".btn-edit-contact").forEach(btn => {
+    btn.addEventListener("click", e => e.stopPropagation());
+  });
+});
+</script>
+
+
 
 {% if open_contact %}
 <script>

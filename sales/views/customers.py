@@ -97,10 +97,21 @@ class CustomerDetailView(LoginRequiredMixin, CustomerQuerysetMixin, DetailView):
     context_object_name = "customer"
 
     def get_context_data(self, **kwargs):
-       ctx = super().get_context_data(**kwargs)
-       customer = self.object
-       ctx["contacts"] = customer.contacts.all().order_by("id")  # contact tambahan
-       return ctx
+        ctx = super().get_context_data(**kwargs)
+        customer = self.object
+
+        # list contact tambahan (relasi company -> contacts)
+        ctx["contacts"] = customer.contacts.all().order_by("id")
+
+        # INI KUNCINYA: supaya modal tidak kosong
+        ctx["contact_form"] = ctx.get("contact_form") or CustomerContactForm()
+
+        # support auto-open modal dari querystring ?open_contact=1
+        open_flag = (self.request.GET.get("open_contact") or "").strip()
+        ctx["open_contact"] = bool(open_flag) and open_flag not in ("0", "false", "False", "no", "NO")
+
+        return ctx
+
 
 
 class CustomerDeleteView(LoginRequiredMixin, CustomerQuerysetMixin, DeleteView):
@@ -131,3 +142,31 @@ class CustomerContactCreateView(View):
         # kalau invalid, balik ke detail dan buka modal lagi
         messages.error(request, f"Gagal menambah contact: {form.errors.as_text()}")
         return redirect(reverse("sales:customer_detail", args=[customer.pk]) + "?open_contact=1")
+
+
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
+
+class CustomerContactUpdateView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        contact = get_object_or_404(Partner, pk=pk, is_individual=True)
+        customer = contact.company  # induknya
+
+        form = CustomerContactForm(request.POST, instance=contact)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.is_individual = True
+            obj.company = customer
+            obj.save()
+            messages.success(request, "Contact berhasil diupdate.")
+            return redirect(reverse("sales:customer_detail", args=[customer.pk]))
+
+        # invalid -> balik ke detail, modal kebuka lagi, isi tetap ada
+        contacts = customer.contacts.all().order_by("id")
+        return render(request, "customers/detail.html", {
+            "customer": customer,
+            "contacts": contacts,
+            "contact_form": form,
+            "open_contact": True,
+            "edit_contact_id": contact.pk,
+        })

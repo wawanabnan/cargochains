@@ -3,277 +3,116 @@ from django.db import models
 from django.db.models import PROTECT, CASCADE
 from django.conf import settings
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+from decimal import Decimal
 
-from core.models import TimeStampedModel, Currency, PaymentTerm, NumberSequence
+from core.models import TimeStampedModel, Currency, PaymentTerm,Tax
 from core.utils import get_next_number
-from partners.models import Partner
+from partners.models import Partner,Customer
 from .job_order_model import JobOrder
 
 
-
-# ============================
-#   INVOICE STATUS
-# ============================
-class InvoiceStatus(models.TextChoices):
-    DRAFT = "DRAFT", "Draft"
-    SENT = "SENT", "Sent to customer"
-    PARTIAL = "PARTIAL", "Partially Paid"
-    PAID = "PAID", "Paid"
-    CANCELLED = "CANCELLED", "Cancelled"
-
-
-
-
-
-# ============================
-#   INVOICE (HEADER)
-# ============================
 class Invoice(TimeStampedModel):
-    """
-    Invoice penagihan berdasarkan JobOrder.
-    Default desain: 1 JobOrder -> 1 Invoice (OneToOneField).
-    Kalau nanti perlu multi-invoice per order, ganti ke ForeignKey.
-    """
+    STATUS_DRAFT = "DRAFT"
+    STATUS_UNPAID = "UNPAID"
+    STATUS_PAID = "PAID"
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, "Draft"),
+        (STATUS_UNPAID, "Unpaid"),
+        (STATUS_PAID, "Paid"),
+    ]
 
-  
-    number = models.CharField(
-        max_length=30,
-        unique=True,
-        editable=False,
-        help_text="Nomor invoice (auto generate dari NumberSequence)"
-    )
+    number = models.CharField(max_length=30, unique=True, editable=False)
 
+    # optional (jika invoice dari JobOrder)
     job_order = models.ForeignKey(
-        JobOrder,
-        on_delete=PROTECT,
-        null=False,
-        blank=False,
-        related_name="invoices",
+        JobOrder, on_delete=PROTECT, null=True, blank=True, related_name="invoices"
     )
 
-    # Snapshot informasi customer di saat invoice dibuat
+    
     customer = models.ForeignKey(
-        Partner,
+        Customer,
         on_delete=PROTECT,
         related_name="customer_invoices",
+        verbose_name="Customer",
+        
     )
 
-    # Informasi tanggal & pembayaran
+    tax = models.ForeignKey(Tax, on_delete=models.PROTECT, null=True, blank=True)
+
     invoice_date = models.DateField(default=timezone.now)
-    due_date = models.DateField()
+    due_date = models.DateField(null=True, blank=True)
 
-    currency = models.ForeignKey(
-        Currency,
-        on_delete=PROTECT,
-        related_name="currency_invoices",
-    )
+    currency = models.ForeignKey(Currency, on_delete=PROTECT, null=True, blank=True)
+    payment_term = models.ForeignKey(PaymentTerm, on_delete=PROTECT, null=True, blank=True)
 
-    payment_term = models.ForeignKey(
-        PaymentTerm,
-        on_delete=PROTECT,
-        related_name="payment_invoices",
-    )
+    subtotal_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+    tax_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+    total_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+    apply_pph = models.BooleanField(default=False)
+    pph_percent = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal("0.00"))
+    pph_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
 
-    # Ringkasan nilai
-    subtotal_amount = models.DecimalField(
-        max_digits=18,
-        decimal_places=2,
-        default=0,
-    )
-    tax_amount = models.DecimalField(
-        max_digits=18,
-        decimal_places=2,
-        default=0,
-    )
-    total_amount = models.DecimalField(
-        max_digits=18,
-        decimal_places=2,
-        default=0,
-        help_text="Total yang ditagihkan ke customer."
-    )
-    amount_paid = models.DecimalField(
-        max_digits=18,
-        decimal_places=2,
-        default=0,
-        help_text="Total pembayaran yang sudah diterima."
-    )
 
-    status = models.CharField(
-        max_length=20,
-        choices=InvoiceStatus.choices,
-        default=InvoiceStatus.DRAFT,
-    )
+    amount_paid = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
 
-    # Catatan
-    notes_internal = models.TextField(
-        blank=True,
-        help_text="Catatan internal, tidak tampil di invoice customer."
-    )
-    notes_customer = models.TextField(
-        blank=True,
-        help_text="Catatan yang akan tampil di invoice (footer / remarks)."
-    )
+    notes_internal = models.TextField(blank=True, default="")
+    notes_customer = models.TextField(blank=True, default="")
 
-    # Audit user
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=PROTECT,
-        related_name="invoices_created",
-        null=True,
-        blank=True,
+        settings.AUTH_USER_MODEL, on_delete=PROTECT,
+        related_name="invoices_created", null=True, blank=True
     )
     updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=PROTECT,
-        related_name="invoices_updated",
-        null=True,
-        blank=True,
+        settings.AUTH_USER_MODEL, on_delete=PROTECT,
+        related_name="invoices_updated", null=True, blank=True
     )
 
     class Meta:
         ordering = ["-invoice_date", "-id"]
-        verbose_name = "Invoice"
-        verbose_name_plural = "Invoices"
 
     def __str__(self):
-        return self.number or f"Invoice for {self.job_order}"
+        return self.number
 
-    # -----------------------------
-    #   HELPER & BUSINESS LOGIC
-    # -----------------------------
-    @property
-    def amount_outstanding(self):
-        """Sisa tagihan."""
-        return (self.total_amount or 0) - (self.amount_paid or 0)
-
-    @property
-    def is_paid(self):
-        return self.status == InvoiceStatus.PAID
+    def clean(self):
+        # kalau manual (tanpa job) -> customer wajib
+        if not self.job_order and not self.customer:
+            raise ValidationError({"customer": "Customer wajib diisi untuk invoice manual."})
 
     def save(self, *args, **kwargs):
-        # Auto-generate number jika belum ada
         if not self.number:
-            # Pastikan sudah ada NumberSequence: (app_label='sales', key='JOB_INVOICE')
             self.number = get_next_number("sales", "INVOICE")
 
-        # Kalau due_date belum diisi, set default = invoice_date
+        # auto set dari JobOrder
+        if self.job_order:
+            if not self.customer:
+                self.customer = getattr(self.job_order, "customer", None)
+            if not self.currency:
+                self.currency = getattr(self.job_order, "currency", None)
+            if not self.payment_term:
+                self.payment_term = getattr(self.job_order, "payment_term", None)
+
         if not self.due_date:
             self.due_date = self.invoice_date
 
         super().save(*args, **kwargs)
 
 
-    @property
-    def description(self):
-        """
-        Deskripsi invoice yang diambil dari JibOrder:
-        'Freight Order No XXX - SalesService Origin - Destination CargoName'
-        """
-        fo = self.job_order
-        if not fo:
-            return ""
-
-        parts = []
-
-        # No Freight Order
-        if getattr(fo, "number", None):
-            parts.append(f"Job Order No {jo.number}")
-
-        # Sales Service (misal: Sea - Door to Door)
-        sales_service = getattr(fo, "sales_service", None)
-        if sales_service and getattr(sales_service, "name", None):
-            parts.append(sales_service.name)
-
-        # Origin - Destination
-        origin = getattr(fo, "origin", None)
-        destination = getattr(fo, "destination", None)
-
-        if origin and getattr(origin, "name", None) and destination and getattr(destination, "name", None):
-            parts.append(f"{origin.name} - {destination.name}")
-        elif origin and getattr(origin, "name", None):
-            parts.append(origin.name)
-        elif destination and getattr(destination, "name", None):
-            parts.append(destination.name)
-
-        # Cargo name
-        cargo_name = getattr(fo, "cargo_name", None)
-        if cargo_name:
-            parts.append(cargo_name)
-
-        return " - ".join(parts)
-
-
-    # -----------------------------
-    #   FACTORY: BUAT DARI ORDER
-    # -----------------------------
-    @classmethod
-    def create_from_job_order(cls, job_order, user=None, invoice_date=None):
-        """
-        Buat invoice dari JobOrder:
-        - salin customer, currency, payment_term
-        - salin nilai subtotal, tax, total dari JobOrder
-        """
-        if invoice_date is None:
-            invoice_date = timezone.now().date()
-
-        obj = cls(
-            
-            job_order=job_order,
-            customer=job_order.customer,
-            currency=getattr(job_order, "currency", None),
-            payment_term=getattr(job_order, "payment_term", None),
-            invoice_date=invoice_date,
-            due_date=invoice_date,
-            created_by=user,
-            updated_by=user,
-        )
-
-        # SESUAIKAN NAMA FIELD FO DI SINI
-        obj.subtotal_amount = getattr(job_order, "subtotal_amount", 0) or 0
-        obj.tax_amount = getattr(job_order, "tax_amount", 0) or 0
-        obj.total_amount = getattr(job_order, "total_amount", 0) or 0
-
-        obj.save()
-        return obj
-
-
-# ============================
-#   FREIGHT INVOICE LINE
-# ============================
 class InvoiceLine(TimeStampedModel):
-    """
-    Detail invoice (baris-baris biaya).
-    Untuk simple case: 1 invoice bisa terdiri dari beberapa charge.
-    Belum di-link langsung ke JobOrderLine supaya aman.
-    Nanti kalau FO sudah pakai line, bisa ditambahkan FK opsional.
-    """
-
-    invoice = models.ForeignKey(
-        Invoice,
-        on_delete=CASCADE,
-        related_name="lines",
-    )
-
+    invoice = models.ForeignKey(Invoice, on_delete=CASCADE, related_name="lines")
     description = models.CharField(max_length=255)
-    quantity = models.DecimalField(max_digits=18, decimal_places=3, default=1)
-    uom = models.CharField(max_length=20, blank=True)  # kalau mau, nanti bisa FK ke UOM model
-    unit_price = models.DecimalField(max_digits=18, decimal_places=2, default=0)
-    amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    quantity = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("1.00"))
+    price = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+    amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+    taxes = models.ManyToManyField(Tax, blank=True, related_name="invoice_lines")
 
     sort_order = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering = ["invoice", "sort_order", "id"]
-        db_table = "sales_invoice_lines" 
-
-    def __str__(self):
-        return self.description or f"Line {self.pk}"
+        ordering = ["sort_order", "id"]
+        db_table = "sales_invoice_lines"
 
     def save(self, *args, **kwargs):
-        # Hitung amount jika belum diisi
-        if not self.amount:
-            self.amount = (self.quantity or 0) * (self.unit_price or 0)
+        self.amount = (self.quantity or 0) * (self.price or 0)
         super().save(*args, **kwargs)
-
-
-

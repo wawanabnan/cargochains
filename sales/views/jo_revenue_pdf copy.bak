@@ -1,0 +1,148 @@
+# sales/views/jo_revenue_pdf.py
+
+from decimal import Decimal
+import os
+import tempfile
+
+import pdfkit
+from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Sum
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
+from django.templatetags.static import static
+from django.views import View
+
+from sales.job_order_model import JobOrder, JobCost
+
+
+class JobOrderRevenuePdfView(LoginRequiredMixin, View):
+    template_name = "job_orders/jo_pdf.html"
+
+    def get(self, request, pk):
+        job = get_object_or_404(JobOrder, pk=pk)
+
+        # ---------------------------
+        # Currency helpers
+        # ---------------------------
+        currency_code = getattr(job.currency, "code", "IDR") or "IDR"
+        grand_total = job.grand_total or Decimal("0.00")
+        kurs = job.kurs_idr or Decimal("1.00")
+        backup_total_idr = job.total_in_idr or Decimal("0.00")
+
+        # ---------------------------
+        # 1) REVENUE (IDR)
+        # Rule: revenue report = grand_total x kurs_idr (untuk non-IDR)
+        # total_in_idr hanya backup bila kurs tidak valid/0.
+        # ---------------------------
+        if currency_code != "IDR":
+            if kurs and kurs != Decimal("0.00"):
+                revenue_idr = (grand_total * kurs).quantize(Decimal("0.01"))
+            else:
+                revenue_idr = backup_total_idr.quantize(Decimal("0.01"))
+        else:
+            revenue_idr = grand_total.quantize(Decimal("0.01"))
+
+        # ---------------------------
+        # 2) COST (IDR) - selalu IDR
+        # ---------------------------
+        costs_qs = JobCost.objects.filter(job_order=job)
+        items_cost_idr = costs_qs.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+        items_cost_idr = Decimal(items_cost_idr).quantize(Decimal("0.01"))
+
+        # ---------------------------
+        # 3) TAX & PPH (IDR) - ambil dari nilai yang tersimpan di Job Order
+        #   - Jika non-IDR: tax_amount/pph_amount (currency) x kurs_idr
+        #   - Jika IDR: langsung pakai amount
+        # ---------------------------
+        tax_amount = job.tax_amount or Decimal("0.00")
+        pph_amount = job.pph_amount or Decimal("0.00")
+
+        if getattr(job, "is_tax", False) and tax_amount:
+            if currency_code != "IDR":
+                tax_idr = (tax_amount * kurs).quantize(Decimal("0.01"))
+            else:
+                tax_idr = tax_amount.quantize(Decimal("0.01"))
+        else:
+            tax_idr = Decimal("0.00")
+
+        if getattr(job, "is_pph", False) and pph_amount:
+            if currency_code != "IDR":
+                pph_idr = (pph_amount * kurs).quantize(Decimal("0.01"))
+            else:
+                pph_idr = pph_amount.quantize(Decimal("0.01"))
+        else:
+            pph_idr = Decimal("0.00")
+
+        # ---------------------------
+        # 4) TOTAL COGS & PROFIT (IDR)
+        # Note: COGS di report ini = JobCost + Tax (PPN) (sesuai template sebelumnya)
+        # ---------------------------
+        total_cogs_idr = (items_cost_idr + tax_idr).quantize(Decimal("0.01"))
+        gross_profit_idr = (revenue_idr - total_cogs_idr).quantize(Decimal("0.01"))
+
+        # ---------------------------
+        # 5) HEADER & FOOTER (wkhtmltopdf)
+        # ---------------------------
+        header_url = request.build_absolute_uri(static("img/letter_header_bg.png"))
+        footer_url = request.build_absolute_uri(static("img/letter_footer_bg.png"))
+
+        header_html = render_to_string("sales/pdf/header.html", {"header_url": header_url})
+        footer_html = render_to_string("sales/pdf/footer.html", {"footer_url": footer_url})
+
+        tmp_header = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
+        tmp_footer = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
+        tmp_header.write(header_html.encode("utf-8"))
+        tmp_footer.write(footer_html.encode("utf-8"))
+        tmp_header.close()
+        tmp_footer.close()
+
+        # ---------------------------
+        # 6) BODY HTML
+        # ---------------------------
+        html = render_to_string(
+            self.template_name,
+            {
+                "job": job,
+                "currency_code": currency_code,
+                "kurs": kurs,
+                "revenue_idr": revenue_idr,
+
+                "costs": costs_qs,
+                "items_cost_idr": items_cost_idr,
+                "tax_idr": tax_idr,
+                "pph_idr": pph_idr,
+                "total_cogs_idr": total_cogs_idr,
+                "gross_profit_idr": gross_profit_idr,
+
+                "is_pdf": True,
+            },
+        )
+
+        options = {
+            "page-size": "A4",
+            "encoding": "UTF-8",
+            "margin-top": "30mm",
+            "margin-bottom": "45mm",
+            "margin-left": "0mm",
+            "margin-right": "0mm",
+            "header-html": tmp_header.name,
+            "footer-html": tmp_footer.name,
+            "header-spacing": "0",
+            "footer-spacing": "0",
+            "enable-local-file-access": None,
+        }
+
+        wkhtml_path = getattr(settings, "WKHTMLTOPDF_CMD", None)
+        config = pdfkit.configuration(wkhtmltopdf=wkhtml_path) if wkhtml_path else None
+
+        pdf_content = pdfkit.from_string(html, False, options=options, configuration=config)
+
+        os.unlink(tmp_header.name)
+        os.unlink(tmp_footer.name)
+
+        filename = f"Revenue-{job.number}.pdf"
+        response = HttpResponse(pdf_content, content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="{filename}"'
+        return response

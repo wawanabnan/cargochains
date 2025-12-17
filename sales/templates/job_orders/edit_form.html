@@ -85,7 +85,6 @@
 
 #jobcost-table tr td {
   padding: 0;
-  background-color: grey;;
 }
 
 
@@ -161,50 +160,70 @@
     // ==========================================
     // A. HEADER TOTAL / TAX / GRAND TOTAL
     // ==========================================
+// ==========================================
+// A. HEADER TOTAL / TAX / PPH / GRAND TOTAL
+// ==========================================
 
-    const totalEl = document.getElementById("id_total_amount");
-    const taxEl   = document.getElementById("id_tax_amount");
-    const grandEl = document.getElementById("id_grand_total");
-    const isTaxEl = document.getElementById("id_is_tax");
-    const form    = document.querySelector("form");
+const totalEl = document.getElementById("id_total_amount");
+const taxEl   = document.getElementById("id_tax_amount");
+const pphEl   = document.getElementById("id_pph_amount");
+const grandEl = document.getElementById("id_grand_total");
 
-    if (totalEl && taxEl && grandEl && isTaxEl && form) {
+const isTaxEl = document.getElementById("id_is_tax");
+const isPphEl = document.getElementById("id_is_pph");
+const form    = document.querySelector("form");
 
-      function recalcHeader() {
-        let total = parseID(totalEl.value);
-        let tax   = isTaxEl.checked ? total * 0.011 : 0;
-        let grand = total + tax;
+if (totalEl && taxEl && grandEl && isTaxEl && form) {
 
-        totalEl.value = fmtID(total);
-        taxEl.value   = fmtID(tax);
-        grandEl.value = fmtID(grand);
-      }
+  function recalcHeader() {
+    let total = parseID(totalEl.value);
 
-      // lock tax_amount
-      taxEl.readOnly = true;
+    // TAX 1.1%
+    let tax = isTaxEl.checked ? total * 0.011 : 0;
 
-      // auto-select saat focus
-      [totalEl, grandEl].forEach(function(el){
-        el.addEventListener("focus", ()=> setTimeout(()=>el.select(),0));
-      });
-
-      // perhitungan saat input berubah
-      totalEl.addEventListener("blur", recalcHeader);
-      totalEl.addEventListener("change", recalcHeader);
-      isTaxEl.addEventListener("change", recalcHeader);
-
-      // format pertama kali
-      recalcHeader();
-
-      // sebelum submit → convert ke format yang diterima Django (plain number)
-      form.addEventListener("submit", function(){
-        totalEl.value = parseID(totalEl.value);
-        taxEl.value   = parseID(taxEl.value);
-        pphEl.value   = parseID(pphEl.value);
-        grandEl.value = parseID(grandEl.value);
-      });
+    // PPH 2%
+    let pph = 0;
+    if (pphEl && isPphEl) {
+      pph = isPphEl.checked ? total * 0.02 : 0;
+      pphEl.value = fmtID(pph);   // FORMAT ID
     }
 
+    // GRAND TOTAL (PPH dipotong)
+    let grand = total + tax - pph;
+
+    totalEl.value = fmtID(total);
+    taxEl.value   = fmtID(tax);
+    grandEl.value = fmtID(grand);
+  }
+
+  // lock calculated fields
+  taxEl.readOnly = true;
+  if (pphEl) pphEl.readOnly = true;
+
+  // auto select on focus
+  [totalEl, grandEl].forEach(function(el){
+    el.addEventListener("focus", () => setTimeout(() => el.select(), 0));
+  });
+
+  // recalc triggers
+  totalEl.addEventListener("blur", recalcHeader);
+  totalEl.addEventListener("change", recalcHeader);
+  isTaxEl.addEventListener("change", recalcHeader);
+  if (isPphEl) isPphEl.addEventListener("change", recalcHeader);
+
+  // initial format
+  recalcHeader();
+
+  // before submit → convert to plain number (Django DecimalField)
+  form.addEventListener("submit", function(){
+    totalEl.value = parseID(totalEl.value);
+    taxEl.value   = parseID(taxEl.value);
+    if (pphEl) pphEl.value = parseID(pphEl.value);
+    grandEl.value = parseID(grandEl.value);
+  });
+}
+
+    
     // ==========================================
     // B. JOB COST INLINE FORMSET (qty/price/amount)
     // ==========================================

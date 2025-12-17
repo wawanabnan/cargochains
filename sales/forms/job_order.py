@@ -3,7 +3,7 @@ from decimal import Decimal, InvalidOperation
 
 from django import forms
 
-from .job_order_model import JobOrder
+from ..job_order_model import JobOrder
 from partners.models import Customer  # proxy Customer yang sudah om buat
 
 PPH_RATE = Decimal("0.02")  # 2% dari DPP (total_amount)

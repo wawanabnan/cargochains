@@ -1,6 +1,6 @@
 # sales/forms_job_attachment.py
 from django import forms
-from .job_order_model import JobOrderAttachment
+from ..job_order_model import JobOrderAttachment
 
 
 class JobOrderAttachmentForm(forms.ModelForm):

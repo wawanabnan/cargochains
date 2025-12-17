@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation
 from django import forms
 from django.forms import inlineformset_factory
 
-from .job_order_model import JobOrder, JobCost
+from ..job_order_model import JobOrder, JobCost
 
 
 class JobCostForm(forms.ModelForm):

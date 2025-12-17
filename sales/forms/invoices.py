@@ -1,111 +1,165 @@
+# sales/forms/invoices.py
 from django import forms
-from django.utils import timezone
-from sales.invoice_model import Invoice
-from sales.job_order_model import JobOrder
+from django.forms import inlineformset_factory
+from sales.invoice_model import Invoice, InvoiceLine
+from decimal import Decimal
+from django import forms
+from core.models import Tax
+from sales_configuration.models import SalesTaxPolicy
+from sales.invoice_model import InvoiceLine
+from decimal import Decimal, InvalidOperation
+
+def _to_decimal_id(v):
+    """
+    Terima:
+      - Indonesia: "1.000,00" / "1000,00"
+      - Standar : "1000.00"
+      - Integer : "1000"
+    Return Decimal('1000.00')
+    """
+    if v is None:
+        return None
+    s = str(v).strip()
+    if s == "":
+        return None
+
+    s = s.replace(" ", "")
+
+    try:
+        # Kalau ada koma => format Indonesia (titik ribuan, koma desimal)
+        if "," in s:
+            s = s.replace(".", "").replace(",", ".")
+            return Decimal(s)
+
+        # Kalau tidak ada koma:
+        # - Anggap "1000.00" itu format standar (titik = desimal) => BIARKAN
+        # - Anggap "1.000" (tanpa koma) itu ribuan? (opsional) → biasanya tidak dipakai
+        return Decimal(s)
+
+    except (InvalidOperation, ValueError):
+        return None
+
 
 
 class InvoiceForm(forms.ModelForm):
     class Meta:
         model = Invoice
         fields = [
-            "job_order",
+            "customer",
             "invoice_date",
             "due_date",
+            "currency",
+            "payment_term",
+            "notes_customer",
+            "notes_internal",
             "subtotal_amount",
             "tax_amount",
             "total_amount",
-            "notes_customer",
-            "notes_internal",
+           
         ]
+
         widgets = {
-            "invoice_date": forms.DateInput(attrs={"type": "date"}),
-            "due_date": forms.DateInput(attrs={"type": "date"}),
-            "notes_customer": forms.Textarea(attrs={"rows": 3}),
-            "notes_internal": forms.Textarea(attrs={"rows": 3}),
+            "job_order": forms.Select(attrs={"class": "form-select"}),
+            "customer": forms.Select(attrs={"class": "form-select"}),
+            "currency": forms.Select(attrs={"class": "form-select"}),
+            "payment_term": forms.Select(attrs={"class": "form-select"}),
+            "invoice_date": forms.DateInput(attrs={"type": "date", "class": "form-control", "autocomplete": "off",}),
+            "due_date": forms.DateInput(attrs={"type": "date", "class": "form-control","autocomplete": "off",}),
+            "notes_customer": forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+            "notes_internal": forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+         }    
+
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # date
+        for df in ("invoice_date", "due_date"):
+            if df in self.fields:
+                self.fields[df].widget = forms.DateInput(attrs={"type": "date"})
+
+        # styling AdminLTE/Bootstrap
+        for name, f in self.fields.items():
+            css = f.widget.attrs.get("class", "")
+            if isinstance(f.widget, forms.Select):
+                f.widget.attrs["class"] = (css + " form-select form-select-sm").strip()
+            else:
+                if not isinstance(f.widget, forms.CheckboxInput):
+                    f.widget.attrs["class"] = (css + " form-control form-control-sm").strip()
+
+        # totals: display-only + jangan wajib
+        for n in ("subtotal_amount", "tax_amount", "total_amount"):
+            if n in self.fields:
+                self.fields[n].required = False
+                self.fields[n].initial = Decimal("0.00")
+                self.fields[n].widget = forms.TextInput()  # biar aman kalau mau ditampilkan
+                self.fields[n].widget.attrs.update({
+                    "class": (self.fields[n].widget.attrs.get("class", "") + " form-control form-control-sm text-end").strip(),
+                    "readonly": "readonly",
+                    "autocomplete": "off",
+                })
+
+
+class InvoiceLineForm(forms.ModelForm):
+    class Meta:
+        model = InvoiceLine
+        fields = ["description", "quantity", "price", "taxes"]
+        widgets = {
+            "description": forms.TextInput(attrs={
+                "class": "form-control form-control-sm",
+                "autocomplete": "off",
+            }),
+            "quantity": forms.TextInput(attrs={
+                "class": "form-control form-control-sm text-end js-num",
+                "inputmode": "decimal",
+                "autocomplete": "off",
+            }),
+            "price": forms.TextInput(attrs={
+                "class": "form-control form-control-sm text-end js-num",
+                "inputmode": "decimal",
+                "autocomplete": "off",
+            }),
         }
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
 
-        qs = JobOrder.objects.select_related("customer").order_by("-id")
-        self.fields["job_order"].queryset = qs
-        self.fields["job_order"].widget.attrs.update({"class": "form-select"})
+        # taxes: checkbox + queryset dinamis dari Sales Config (INVOICE)
+        if "taxes" in self.fields:
+            self.fields["taxes"].required = False
+            self.fields["taxes"].widget = forms.CheckboxSelectMultiple()
 
-        # AdminLTE-friendly styling (aman untuk berbagai widget)
-        for name, field in self.fields.items():
-            w = field.widget
-            css = w.attrs.get("class", "")
+            allowed = Tax.objects.filter(
+                is_active=True,
+                sales_policies__module="INVOICE",
+                sales_policies__is_active=True,
+            ).distinct().order_by("name")
 
-            if name == "job_order":
-                continue
+            self.fields["taxes"].queryset = allowed
+            
 
-            if isinstance(w, forms.Select):
-                w.attrs["class"] = (css + " form-select").strip()
-            elif isinstance(w, forms.CheckboxInput):
-                w.attrs["class"] = (css + " form-check-input").strip()
-            else:
-                w.attrs["class"] = (css + " form-control").strip()
+    def clean_quantity(self):
+        v = self.cleaned_data.get("quantity")
+        dec = _to_decimal_id(v)
+        if dec is None:
+            raise forms.ValidationError("Number Format is not valid.")
+        return dec
 
-        # Kalau EDIT (instance sudah ada), lock job_order
-        if self.instance and self.instance.pk:
-            self.fields["job_order"].disabled = True
+    def clean_price(self):
+        v = self.cleaned_data.get("price")
+        dec = _to_decimal_id(v)
+        if dec is None:
+            raise forms.ValidationError("This field is required.")
+        return dec
+
+    
+
+InvoiceLineFormSet = inlineformset_factory(
+    Invoice,
+    InvoiceLine,
+    form=InvoiceLineForm,
+    extra=0,        # ✅ ini yang mencegah "form kosong bawaan" bikin required error
+    can_delete=True
+)
 
 
-class InvoiceGenerateForm(forms.Form):
-    MODE_FULL = "FULL"
-    MODE_CUSTOM = "CUSTOM"
-    MODE_CHOICES = [
-        (MODE_FULL, "Full amount (total Job Order)"),
-        (MODE_CUSTOM, "Custom amount"),
-    ]
-
-    mode = forms.ChoiceField(
-        choices=MODE_CHOICES,
-        widget=forms.RadioSelect,
-        initial=MODE_FULL,
-        label="Invoice Mode",
-    )
-
-    invoice_date = forms.DateField(
-        initial=timezone.now().date,
-        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
-        label="Invoice Date",
-    )
-
-    due_date = forms.DateField(
-        initial=timezone.now().date,
-        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
-        label="Due Date",
-    )
-
-    amount = forms.DecimalField(
-        max_digits=18,
-        decimal_places=2,
-        required=False,
-        label="Invoice Amount",
-        help_text="Untuk mode FULL akan otomatis memakai total Job Order.",
-        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
-    )
-
-    notes_customer = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
-        label="Notes to Customer",
-    )
-
-    notes_internal = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
-        label="Internal Notes",
-    )
-
-    def clean(self):
-        cleaned = super().clean()
-        mode = cleaned.get("mode")
-        amount = cleaned.get("amount")
-
-        if mode == self.MODE_CUSTOM:
-            if not amount or amount <= 0:
-                self.add_error("amount", "Untuk mode Custom, amount wajib diisi dan > 0.")
-        return cleaned

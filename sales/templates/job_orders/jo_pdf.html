@@ -133,60 +133,84 @@
   {# ====================================================== #}
   {#  HEADER: JO, CUSTOMER, REVENUE IDR                     #}
   {# ====================================================== #}
-  <table class="header-table">
-    <tr>
-      <td style="width: 55%;">
-       
-        <div class="doc-subtitle">
-          Job No&nbsp;: {{ job.number }}<br>
-          Date&nbsp;&nbsp;&nbsp;: {{ job.job_date|date:"d M Y"|default:"-" }}<br>
-          Customer :
-          {{ job.customer.company_name|default:job.customer.name }}
-        </div>
+<table class="header-table">
+  <tr>
+    <td style="width: 55%;">
 
-        <div class="small mt-5">
-          Service : {{ job.service.name }} ({{ job.service.service_group }})<br>
-          Sales :
-          {% if job.sales_user %}
-            {{ job.sales_user.get_full_name|default:job.sales_user.username }}
-          {% else %}
-            -
-          {% endif %}
-        </div>
-      </td>
+      <div class="doc-subtitle">
+        Job No&nbsp;: {{ job.number }}<br>
+        Date&nbsp;&nbsp;&nbsp;: {{ job.job_date|date:"d M Y"|default:"-" }}<br>
+        Customer :
+        {{ job.customer.company_name|default:job.customer.name }}<br>
+        To :
+        {{ to_display }}
+      </div>
 
-      <td style="width: 45%; text-align: right;">
-        <table class="summary-table" style="float: right;">
+      <div class="small mt-5">
+        Service : {{ job.service.name }} ({{ job.service.service_group }})<br>
+        Sales :
+        {% if job.sales_user %}
+          {{ job.sales_user.get_full_name|default:job.sales_user.username }}
+        {% else %}
+          -
+        {% endif %}
+      </div>
+    </td>
+
+    <td style="width: 45%; text-align: right;">
+      <table class="summary-table" style="float: right;">
+        <tr>
+          <td class="text-left">Currency</td>
+          <td class="text-right">
+            {{ currency_code }}
+          </td>
+        </tr>
+
+        {% if currency_code != "IDR" %}
           <tr>
-            <td class="text-left">Currency</td>
+            <td class="text-left">Kurs → IDR</td>
             <td class="text-right">
-              {{ currency_code }}
+              {{ kurs|indo_number }}
             </td>
           </tr>
+        {% endif %}
+
+        {% if job.is_tax and job.tax_amount %}
           <tr>
-            <td class="text-left">Grand Total ({{ currency_code }})</td>
+            <td class="text-left">Tax ({{ currency_code }})</td>
             <td class="text-right">
-              {{ job.grand_total|indo_number }} {{ job.currency.code }}
+              {{ job.tax_amount|indo_number }} {{ job.currency.code }}
             </td>
           </tr>
-          {% if currency_code != "IDR" %}
-            <tr>
-              <td class="text-left">Kurs → IDR</td>
-              <td class="text-right">
-                {{ kurs|indo_number }}
-              </td>
-            </tr>
-          {% endif %}
+        {% endif %}
+
+        {% if job.is_pph and job.pph_amount %}
           <tr>
-            <td class="text-left"><strong>Revenue (IDR)</strong></td>
+            <td class="text-left">PPH ({{ currency_code }})</td>
             <td class="text-right">
-              <strong>{{ revenue_idr|indo_number }} IDR</strong>
+              {{ job.pph_amount|indo_number }} {{ job.currency.code }}
             </td>
           </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
+        {% endif %}
+
+        <tr>
+          <td class="text-left">Grand Total ({{ currency_code }})</td>
+          <td class="text-right">
+            {{ job.grand_total|indo_number }} {{ job.currency.code }}
+          </td>
+        </tr>
+
+        <tr>
+          <td class="text-left"><strong>Revenue (IDR)</strong></td>
+          <td class="text-right">
+            <strong>{{ revenue_idr|indo_number }} IDR</strong>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
 
   <br>
 
@@ -239,7 +263,7 @@
   {# ====================================================== #}
   {#  COGS (IDR) — JOB COST + TAX                          #}
   {# ====================================================== #}
-  <div class="section-title">Cost of Goods Sold (COGS) — IDR</div>
+  <div class="section-title">COGS Estimation</div>
 
   <table class="table-bordered table-cogs ">
     <thead>
@@ -288,7 +312,7 @@
               {{ costs|length|add:"1" }}
             </td>
             <td class="text-left">
-              Tax 1.1% (PPN) — dihitung dari Revenue Job Order (IDR)
+              VAT 1.1 % 
             </td>
             <td class="text-center">-</td>
             <td class="text-center">-</td>
@@ -325,7 +349,7 @@
   {# ====================================================== #}
   {#  GROSS PROFIT (IDR)                                   #}
   {# ====================================================== #}
-  <div class="section-title">Gross Profit — IDR</div>
+  <div class="section-title">Revenue Forcast</div>
 
   <table class="table-bordered">
     <tbody>
@@ -339,7 +363,7 @@
       </tr>
       <tr>
         <td class="text-left">
-          Less: Total COGS (IDR)
+           Cost of good sold
         </td>
         <td class="text-right">
           {{ total_cogs_idr|indo_number }}

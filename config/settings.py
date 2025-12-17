@@ -30,7 +30,8 @@ INSTALLED_APPS = [
     "shipments.apps.ShipmentsConfig",
     'geo',
     'projects',
-    'purchases'
+    'purchases',
+    "sales_configuration",
 ]
 
 INSTALLED_APPS += ["rest_framework", "corsheaders"]

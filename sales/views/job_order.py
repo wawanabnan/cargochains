@@ -5,9 +5,9 @@ from django.urls import reverse
 from django.views import View
 
 from sales.job_order_model import JobOrder,JobCost, JobOrderAttachment
-from sales.forms_job_order import JobOrderForm
-from sales.forms_job_cost import JobCostFormSet
-from sales.forms_job_attachment import JobOrderAttachmentForm
+from sales.forms.job_order import JobOrderForm
+from sales.forms.job_cost import JobCostFormSet
+from sales.forms.job_attachment import JobOrderAttachmentForm
 
 from django.views.generic import ListView
 

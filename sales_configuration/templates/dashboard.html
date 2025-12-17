@@ -1,0 +1,23 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title mb-0">Sales Configuration</h3>
+    <div class="text-muted small">Pengaturan aturan modul Sales</div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <a class="card card-body text-decoration-none h-100"
+           href="{% url 'sales_configuration:tax_config' %}">
+          <div class="fw-semibold">Tax</div>
+          <div class="text-muted small">Atur pajak yang aktif per module</div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

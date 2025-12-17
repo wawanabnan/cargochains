@@ -21,22 +21,27 @@
         <thead>
           <tr>
             <th>Invoice</th>
-            <th>Job Order</th>
             <th>Customer</th>
             <th class="text-end">Total</th>
-            <th class="text-end" style="width: 120px;">Action</th>
+            <th class="text-end" style="width: 120px;">Status</th>
           </tr>
         </thead>
         <tbody>
           {% for inv in invoices %}
             <tr class="js-row" data-href="{% url 'sales:invoice_detail' inv.pk %}" style="cursor:pointer;">
               <td class="fw-semibold">{{ inv.number|default:"(no number)" }}</td>
-              <td>{{ inv.job_order.number|default:"-" }}</td>
-              <td>{{ inv.customer.company_name|default:inv.customer.name|default:"-" }}</td>
+              <td>{{ inv.customer.name }}</td>
               <td class="text-end">{{ inv.total_amount }}</td>
               <td class="text-end">
-                <a class="btn btn-outline-primary btn-sm" href="{% url 'sales:invoice_edit' inv.pk %}">Edit</a>
-                <a class="btn btn-outline-danger btn-sm" href="{% url 'sales:invoice_delete' inv.pk %}">Del</a>
+                  {% with s=invoice.status|default:"DRAFT" %}
+                    {% if s == "PAID" %}
+                      <span class="badge text-bg-success">PAID</span>
+                    {% elif s == "UNPAID" %}
+                      <span class="badge text-bg-warning">UNPAID</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary">DRAFT</span>
+                    {% endif %}
+                  {% endwith %}
               </td>
             </tr>
           {% empty %}

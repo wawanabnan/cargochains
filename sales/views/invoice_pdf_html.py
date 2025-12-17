@@ -1,4 +1,4 @@
-# sales/views/fo_pdf_html.py (atau di file views invoices om)
+# sales/views/invoice_pdf_html.py (atau taruh di views.py)
 
 import pdfkit
 import tempfile
@@ -12,7 +12,7 @@ from django.template.loader import render_to_string
 from django.templatetags.static import static
 from django.views import View
 
-from sales.invoice_model import Invoice
+from sales.invoice_model import Invoice  # sesuaikan path import
 
 
 class InvoicePdfHtmlView(LoginRequiredMixin, View):
@@ -27,26 +27,15 @@ class InvoicePdfHtmlView(LoginRequiredMixin, View):
         # ============================================
         # 1) ABSOLUTE URL ke gambar header & footer
         # ============================================
-        header_url = request.build_absolute_uri(
-            static("img/letter_header_bg.png")
-        )
-        footer_url = request.build_absolute_uri(
-            static("img/letter_footer_bg.png")
-        )
+        header_url = request.build_absolute_uri(static("img/letter_header_bg.png"))
+        footer_url = request.build_absolute_uri(static("img/letter_footer_bg.png"))
 
         # ============================================
         # 2) Render HTML untuk header & footer
         # ============================================
-        header_html = render_to_string(
-            "sales/pdf/header.html",
-            {"header_url": header_url},
-        )
-        footer_html = render_to_string(
-            "sales/pdf/footer.html",
-            {"footer_url": footer_url},
-        )
+        header_html = render_to_string("sales/pdf/header.html", {"header_url": header_url})
+        footer_html = render_to_string("sales/pdf/footer.html", {"footer_url": footer_url})
 
-        # simpan ke file sementara (wkhtmltopdf butuh path file)
         tmp_header = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
         tmp_footer = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
 
@@ -57,14 +46,15 @@ class InvoicePdfHtmlView(LoginRequiredMixin, View):
         tmp_footer.close()
 
         # ============================================
-        # 3) Render BODY FO (konten saja)
+        # 3) Render BODY Invoice (konten saja)
         # ============================================
         body_html = render_to_string(
-            "sales/invoices/print_pdf.html",
+            "invoices/print.html",
             {
                 "invoice": invoice,
                 "is_pdf": True,
             },
+            request=request,
         )
 
         # ============================================
@@ -74,11 +64,11 @@ class InvoicePdfHtmlView(LoginRequiredMixin, View):
             "page-size": "A4",
             "encoding": "UTF-8",
 
-            # area header/footer (sesuaikan dengan tinggi gambar)
-            "margin-top": "30mm",     # ruang untuk header image
-            "margin-bottom": "45mm",  # ruang untuk footer image
+            # sesuaikan tinggi header/footer image
+            "margin-top": "30mm",
+            "margin-bottom": "45mm",
 
-            # header/footer mau full-bleed: margin kiri/kanan 0
+            # full-bleed kiri/kanan
             "margin-left": "0mm",
             "margin-right": "0mm",
 
@@ -100,12 +90,10 @@ class InvoicePdfHtmlView(LoginRequiredMixin, View):
             configuration=config,
         )
 
-        # beres: hapus file sementara
         os.unlink(tmp_header.name)
         os.unlink(tmp_footer.name)
 
-        filename = f"SO-{invoice.number}.pdf" if getattr(invoice, "number", None) else "invoice.pdf"
-
+        filename = f"INV-{invoice.number}.pdf" if getattr(invoice, "number", None) else "Invoice.pdf"
         response = HttpResponse(pdf_data, content_type="application/pdf")
         response["Content-Disposition"] = f'inline; filename="{filename}"'
         return response

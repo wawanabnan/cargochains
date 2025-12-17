@@ -17,6 +17,7 @@ class JobOrder(TimeStampedModel):
 
     Satu baris = satu job penjualan, basisnya customer + service.
     """
+    
     number = models.CharField("Job No", max_length=30, unique=True)
     order_number = models.CharField(
         max_length=30, 
@@ -162,7 +163,11 @@ class JobOrder(TimeStampedModel):
     )
 
 
-    
+    is_invoiced = models.BooleanField(
+        default=False,
+        help_text="Sudah dibuat invoice"
+    )
+
     class Meta:
         db_table = "sales_job_orders"
         ordering = ["-job_date", "-id"]

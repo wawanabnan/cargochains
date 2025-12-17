@@ -14,7 +14,11 @@ from django.template.loader import render_to_string
 from django.templatetags.static import static
 from django.views import View
 
-from sales.job_order_model import JobOrder,JobCost
+from sales.job_order_model import JobOrder, JobCost
+
+
+D0 = Decimal("0.00")
+D1 = Decimal("1.00")
 
 
 class JobOrderRevenuePdfView(LoginRequiredMixin, View):
@@ -23,38 +27,74 @@ class JobOrderRevenuePdfView(LoginRequiredMixin, View):
     def get(self, request, pk):
         job = get_object_or_404(JobOrder, pk=pk)
 
-        # ---------- 1) REVENUE IDR ----------
-        # Kalau om sudah simpan total_in_idr di model, pakai itu:
-        revenue_idr = job.total_in_idr or Decimal("0.00")
+        # ==========================
+        # BASE DATA
+        # ==========================
+        currency_code = getattr(job.currency, "code", "IDR") or "IDR"
+        kurs = job.kurs_idr or D1
 
-        # (fallback kalau belum ada total_in_idr, pakai grand_total saja)
-        if not revenue_idr:
-            revenue_idr = job.grand_total or Decimal("0.00")
+        # ==========================
+        # TO (company_name + billing contact)
+        # self relation: Partner.company -> contacts
+        # ==========================
+        customer = job.customer
+        company = customer.company if getattr(customer, "company_id", None) else customer
+        company_name = company.company_name or company.name
 
-        # ---------- 2) COGS: JOB COST (IDR) ----------
-        costs_qs = JobCost.objects.filter(job_order=job)
-
-        items_cost_idr = (
-            costs_qs.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+        billing_contact = (
+            company.contacts.filter(is_billing_contact=True).order_by("id").first()
         )
 
-        # ---------- 3) TAX (IDR) ----------
-        # Tax di header job order anggap sudah 1.1% dari revenue, simpan di IDR.
-        # Kalau tax_amount masih di currency asing, om bisa kalikan kurs di sini.
-        # Di contoh om, tax adalah 2.145.000,00.
-        tax_idr = getattr(job, "tax_idr", None)
-        if tax_idr is None:
-            # fallback: hitung dari revenue_idr * 1.1% jika is_tax True
-            if getattr(job, "is_tax", False):
-                tax_idr = (revenue_idr * Decimal("0.011")).quantize(Decimal("0.01"))
-            else:
-                tax_idr = Decimal("0.00")
+        if billing_contact:
+            to_display = f"{company_name} - Attn: {billing_contact.name}"
+        else:
+            to_display = company_name
 
-        # ---------- 4) TOTAL COGS & PROFIT (IDR) ----------
-        total_cogs_idr = (items_cost_idr + tax_idr).quantize(Decimal("0.01"))
+        # ==========================
+        # REVENUE (IDR) = SUBTOTAL * KURS
+        # subtotal field = total_amount (bukan grand_total)
+        # total_in_idr hanya backup jika kurs invalid/0 (non-IDR)
+        # ==========================
+        sub_total = job.total_amount or D0
+        backup_total_idr = job.total_in_idr or D0
+
+        if currency_code != "IDR":
+            if kurs and kurs != D0:
+                revenue_idr = (sub_total * kurs).quantize(Decimal("0.01"))
+            else:
+                revenue_idr = backup_total_idr.quantize(Decimal("0.01"))
+        else:
+            revenue_idr = sub_total.quantize(Decimal("0.01"))
+
+        # ==========================
+        # COGS (IDR) = SUM(JobCost.amount) ONLY
+        # (TIDAK ADA TAX DI COGS)
+        # ==========================
+        costs_qs = JobCost.objects.filter(job_order=job).order_by("id")
+        items_cost_idr = costs_qs.aggregate(total=Sum("amount"))["total"] or D0
+        total_cogs_idr = Decimal(items_cost_idr).quantize(Decimal("0.01"))
+
+        # ==========================
+        # GROSS PROFIT (IDR)
+        # ==========================
         gross_profit_idr = (revenue_idr - total_cogs_idr).quantize(Decimal("0.01"))
 
-        # ---------- 5) HEADER & FOOTER (wkhtmltopdf) ----------
+        # ==========================
+        # TAX/PPH IDR (OPSIONAL: buat display saja, bukan COGS)
+        # ==========================
+        tax_amount = job.tax_amount or D0
+        pph_amount = job.pph_amount or D0
+
+        if currency_code != "IDR":
+            tax_idr = (tax_amount * kurs).quantize(Decimal("0.01")) if kurs and kurs != D0 else D0
+            pph_idr = (pph_amount * kurs).quantize(Decimal("0.01")) if kurs and kurs != D0 else D0
+        else:
+            tax_idr = tax_amount.quantize(Decimal("0.01"))
+            pph_idr = pph_amount.quantize(Decimal("0.01"))
+
+        # ==========================
+        # WKHTML HEADER/FOOTER
+        # ==========================
         header_url = request.build_absolute_uri(static("img/letter_header_bg.png"))
         footer_url = request.build_absolute_uri(static("img/letter_footer_bg.png"))
 
@@ -68,20 +108,29 @@ class JobOrderRevenuePdfView(LoginRequiredMixin, View):
         tmp_header.close()
         tmp_footer.close()
 
-        # ---------- 6) BODY HTML ----------
+        # ==========================
+        # BODY HTML
+        # ==========================
         html = render_to_string(
             self.template_name,
             {
                 "job": job,
-                "currency_code": job.currency.code,
-                "kurs": job.kurs_idr or Decimal("1.00"),
+                "currency_code": currency_code,
+                "kurs": kurs,
 
+                "to_display": to_display,
+
+                # Revenue & Costing
+                "revenue_idr": revenue_idr,
                 "costs": costs_qs,
                 "items_cost_idr": items_cost_idr,
-                "tax_idr": tax_idr,
                 "total_cogs_idr": total_cogs_idr,
-                "revenue_idr": revenue_idr,
                 "gross_profit_idr": gross_profit_idr,
+
+                # Optional display only
+                "tax_idr": tax_idr,
+                "pph_idr": pph_idr,
+
                 "is_pdf": True,
             },
         )

@@ -1,0 +1,108 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="card-title mb-0">Sales Configuration</h3>
+      <div class="text-muted small">Pengaturan aturan modul Sales (ala Odoo)</div>
+    </div>
+  </div>
+
+  <div class="card-body">
+
+          {# ====================== #}
+          {#  CARD: CUSTOMER        #}
+          {# ====================== #}
+          
+    <div class="card card-body mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div>
+          <div class="fw-semibold">Tax</div>
+          <div class="text-muted small">Atur pajak yang aktif & default per module (Invoice/SO/Quotation)</div>
+        </div>
+      </div>
+
+      <form method="post" class="mb-0">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_tax">
+
+        <div class="row g-2 align-items-end mb-2">
+          <div class="col-md-4">
+            {{ tax_form.module.label_tag }}
+            {{ tax_form.module }}
+          </div>
+
+          <div class="col-md-4">
+            {{ tax_form.default_tax.label_tag }}
+            {{ tax_form.default_tax }}
+            <div class="form-text">Default tax dipakai saat buat invoice baru</div>
+          </div>
+
+          <div class="col-md-4 text-end">
+            <button class="btn btn-primary btn-sm" type="submit">
+              Save Tax
+            </button>
+          </div>
+        </div>
+
+        <hr class="my-2">
+
+        <div class="row g-2">
+          <div class="col-12">
+            <label class="form-label small fw-semibold">Active Taxes</label>
+            <div class="row">
+              {% for cb in tax_form.taxes %}
+                <div class="col-md-4">
+                  <div class="form-check">
+                    {{ cb.tag }}
+                    <label class="form-check-label ms-1">{{ cb.choice_label }}</label>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+            {% if tax_form.taxes.errors %}
+              <div class="text-danger small mt-1">{{ tax_form.taxes.errors|striptags }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+      </form>
+    </div>
+
+          {# ====================== #}
+          {#  CARD:PAYMENT TERM       #}
+          {# ====================== #}
+    
+    <div class="card card-body mb-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fw-semibold">Payment Term</div>
+          <div class="text-muted small">Coming soon: aturan payment term untuk sales</div>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" type="button" disabled>
+          Save Payment Term
+        </button>
+      </div>
+    </div>
+
+          {# ====================== #}
+          {#  CARD: CURRENCY        #}
+          {# ====================== #}
+    
+    <div class="card card-body">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fw-semibold">Defaults</div>
+          <div class="text-muted small">Coming soon: default currency, default payment term, dll</div>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" type="button" disabled>
+          Save Defaults
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

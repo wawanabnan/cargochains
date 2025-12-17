@@ -1,5 +1,4 @@
-{# ... setelah blok form header job order (2 kolom) dan sebelum tombol Save ... #}
-
+{# ===================== JOB COST INLINE FORMSET ===================== #}
 
 {{ cost_formset.management_form }}
 
@@ -13,72 +12,87 @@
       <th style="width:5%;padding:2px;text-align:center;"></th>
     </tr>
   </thead>
+
   <tbody id="jobcost-body">
     {% for form in cost_formset.forms %}
       <tr class="jobcost-row">
+
         {{ form.id }}
-        <td >
+
+        <td>
           {{ form.description }}
           {{ form.description.errors }}
         </td>
-        <td >
+
+        <td>
           {{ form.qty }}
           {{ form.qty.errors }}
         </td>
-        <td >
+
+        <td>
           {{ form.price }}
           {{ form.price.errors }}
         </td>
-        <td >
+
+        <td>
           {{ form.amount }}
           {{ form.amount.errors }}
         </td>
-        <td class="text-center" >
+
+        <td class="text-center">
           <button type="button"
-                  class=" remove-row" style="border: none;background:none;padding-top: 5px;">
+                  class="remove-row"
+                  style="border:none;background:none;padding-top:5px;">
             <i class="fa fa-times"></i>
           </button>
-          {{ form.DELETE.as_hidden }}
+
+          {# PENTING: DELETE harus checkbox (bukan as_hidden) #}
+          <span class="d-none">{{ form.DELETE }}</span>
         </td>
       </tr>
     {% endfor %}
   </tbody>
 </table>
-  <div class="d-flex justify-content-;eft">
-    <button type="button"
-        id="btn-jobcost-add"
-        class="btn btn-outline-primary btn-sm mt-2">
-  <i class="fa fa-plus me-1"></i> Add Row
-</button>
 
+<div class="d-flex justify-content-start">
+  <button type="button"
+          id="btn-jobcost-add"
+          class="btn btn-outline-primary btn-sm mt-2">
+    <i class="fa fa-plus me-1"></i> Add Row
+  </button>
+</div>
 
-  </div>
-
-
-{# template untuk row baru #}
+{# ===================== TEMPLATE ROW BARU ===================== #}
 <template id="jobcost-empty-row">
   <tr class="jobcost-row">
+
     {{ cost_formset.empty_form.id }}
-    <td >
+
+    <td>
       {{ cost_formset.empty_form.description }}
     </td>
-    <td >
+
+    <td>
       {{ cost_formset.empty_form.qty }}
     </td>
-    <td >
+
+    <td>
       {{ cost_formset.empty_form.price }}
     </td>
-    <td >
+
+    <td>
       {{ cost_formset.empty_form.amount }}
     </td>
-    <td class="text-center" >
-     <button type="button"
-                  class=" remove-row" style="border: none;background:none;padding-top: 5px;">
-            <i class="fa fa-times"></i>
-          </button>
-      {{ cost_formset.empty_form.DELETE.as_hidden }}
+
+    <td class="text-center">
+      <button type="button"
+              class="remove-row"
+              style="border:none;background:none;padding-top:5px;">
+        <i class="fa fa-times"></i>
+      </button>
+
+      {# HARUS checkbox juga, sama seperti row existing #}
+      <span class="d-none">{{ cost_formset.empty_form.DELETE }}</span>
     </td>
   </tr>
 </template>
-
-

@@ -1,0 +1,47 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title mb-0">Sales Tax Configuration</h3>
+    <div class="text-muted small">Atur pajak yang berlaku untuk modul sales</div>
+  </div>
+
+  <form method="post" class="card-body">
+    {% csrf_token %}
+
+    <div class="row g-3">
+      <div class="col-md-4">
+        {{ form.module.label_tag }}
+        {{ form.module }}
+      </div>
+    </div>
+
+    <hr>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Active Taxes</label>
+      <div class="row">
+        {% for cb in form.taxes %}
+          <div class="col-md-4 form-check">
+            {{ cb.tag }}
+            <label class="form-check-label ms-1">{{ cb.choice_label }}</label>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="mb-3 col-md-4">
+      {{ form.default_tax.label_tag }}
+      {{ form.default_tax }}
+      <div class="form-text">Default tax untuk invoice baru</div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary btn-sm" type="submit">Save Configuration</button>
+      <a href="{% url 'sales_configuration:config_dashboard' %}" class="btn btn-outline-secondary btn-sm">Back</a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

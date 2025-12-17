@@ -1,11 +1,32 @@
 {% extends "adminbase.html" %}
 {% block content %}
 
-<div class="card">
-  <div class="card-header">
-    <h3 class="card-title mb-0">Customer</h3>
-  </div>
 
+<div class="app-content-header">
+          <!--begin::Container-->
+          <div class="container-fluid">
+            <!--begin::Row-->
+            <div class="row">
+              <div class="col-sm-6">
+                <h3 class="mb-0">Customer</h3>
+              </div>
+              <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-end">
+                  <li class="breadcrumb-item"><a href="{% url 'account:dashboard' %}">Home</a></li>
+                  <li class="breadcrumb-item active" aria-current="page">
+                      <a href="{% url 'sales:customer_list' %}">Customer List </a>
+                  </li>
+                  
+                </ol>
+              </div>
+            </div>
+            <!--end::Row-->
+          </div>
+          <!--end::Container-->
+        </div>
+
+<div class="app-content">
+ <div class="container-fluid">
   <form method="post" class="card-body" novalidate>
     {% csrf_token %}
 
@@ -21,116 +42,134 @@
     {% endif %}
 
     <div class="row g-3">
-      <div class="col-lg-6">
+      {# ===== Identity ===== #}
+      <div class="col-lg-4">
+        <div class="card h-100">
+          <div class="card-header">
+            <h6 class="mb-0">Identity</h6>
+          </div>
+          <div class="card-body">
 
-        <div class="card card-body">
-  <h6 class="mb-3">Identity</h6>
+            <div class="form-check mb-3">
+              {{ form.is_individual }}
+              <label class="form-check-label" for="{{ form.is_individual.id_for_label }}">Personal Business</label>
+            </div>
 
-  {% if form.is_individual %}
-  <div class="form-check mb-2">
-    {{ form.is_individual }}
-    <label class="form-check-label" for="{{ form.is_individual.id_for_label }}">Personal (Perorangan)</label>
-  </div>
-  {% endif %}
-
-  {# ✅ NAME SELALU TAMPIL: brand / short name (company) atau nama orang (personal) #}
-  {% if form.name %}
-    <div class="mb-3">
-      <label class="form-label" for="{{ form.name.id_for_label }}">Nama / Brand (Short Name)</label>
-      {{ form.name }}
-      <div class="form-text">Contoh: <b>Humpus</b> (brand), atau <b>Budi</b> (personal).</div>
-    </div>
-  {% endif %}
-
-  {# ✅ COMPANY LEGAL: hanya tampil kalau bukan personal #}
-  <div class="company-section">
-    {% if form.company_name %}
-      <div class="mb-3">
-        <label class="form-label" for="{{ form.company_name.id_for_label }}">Nama Legal (Billing)</label>
-        {{ form.company_name }}
-        <div class="form-text">Contoh: <b>PT Humpus Indopratama</b> (untuk invoice).</div>
-      </div>
-    {% endif %}
-
-    {% if form.company_type %}
-      <div class="mb-3">{{ form.company_type.label_tag }}{{ form.company_type }}</div>
-    {% endif %}
-
-    {% if form.is_pkp %}
-    <div class="form-check mb-2">
-      {{ form.is_pkp }}
-      <label class="form-check-label" for="{{ form.is_pkp.id_for_label }}">PKP</label>
-    </div>
-    {% endif %}
-
-    {% if form.tax %}
-      <div class="mb-3">{{ form.tax.label_tag }}{{ form.tax }}</div>
-    {% endif %}
-  </div>
-
-  {% if form.job_title %}
-    <div class="mb-3">{{ form.job_title.label_tag }}{{ form.job_title }}</div>
-  {% endif %}
-</div>
-
-
-      </div>
-
-      <div class="col-lg-6">
-
-        <div class="card card-body">
-          <h6 class="mb-3">Address</h6>
-
-          {% if form.address_line1 %}
-            <div class="mb-3">{{ form.address_line1.label_tag }}{{ form.address_line1 }}</div>
-          {% endif %}
-          {% if form.address_line2 %}
-            <div class="mb-3">{{ form.address_line2.label_tag }}{{ form.address_line2 }}</div>
-          {% endif %}
-
-          <div class="row g-2">
-            {% if form.province %}
-              <div class="col-md-6 mb-2">{{ form.province.label_tag }}{{ form.province }}</div>
+            {% if form.name %}
+              <div class="mb-3">
+                <label class="form-label" for="{{ form.name.id_for_label }}">Brand (Short Name)</label>
+                {{ form.name }}
+                <div class="form-text">Contoh: <b>Humpus</b> (brand), atau <b>Budi</b> (personal).</div>
+              </div>
             {% endif %}
-            {% if form.regency %}
-              <div class="col-md-6 mb-2">{{ form.regency.label_tag }}{{ form.regency }}</div>
+
+            <div class="company-section">
+              {% if form.company_name %}
+                <div class="mb-3">
+                  <label class="form-label" for="{{ form.company_name.id_for_label }}">Nama Legal (Billing)</label>
+                  {{ form.company_name }}
+                  <div class="form-text">Contoh: <b>PT Humpus Indopratama</b> (untuk invoice).</div>
+                </div>
+              {% endif %}
+
+              {% if form.company_type %}
+                <div class="mb-3">{{ form.company_type.label_tag }}{{ form.company_type }}</div>
+              {% endif %}
+
+              {% if form.is_pkp %}
+                <div class="form-check mb-3">
+                  {{ form.is_pkp }}
+                  <label class="form-check-label" for="{{ form.is_pkp.id_for_label }}">PKP</label>
+                </div>
+              {% endif %}
+
+              {% if form.tax %}
+                <div class="mb-3">{{ form.tax.label_tag }}{{ form.tax }}</div>
+              {% endif %}
+            </div>
+
+            {% if form.job_title %}
+              <div class="mb-0">{{ form.job_title.label_tag }}{{ form.job_title }}</div>
             {% endif %}
-            {% if form.district %}
-              <div class="col-md-6 mb-2">{{ form.district.label_tag }}{{ form.district }}</div>
-            {% endif %}
-            {% if form.village %}
-              <div class="col-md-6 mb-2">{{ form.village.label_tag }}{{ form.village }}</div>
-            {% endif %}
+
           </div>
         </div>
-
-        <div class="card card-body mt-3">
-          <h6 class="mb-3">Finance</h6>
-          {% if form.bank_name %}
-            <div class="mb-3">{{ form.bank_name.label_tag }}{{ form.bank_name }}</div>
-          {% endif %}
-          {% if form.bank_account %}
-            <div class="mb-3">{{ form.bank_account.label_tag }}{{ form.bank_account }}</div>
-          {% endif %}
-          {% if form.balance %}
-            <div class="mb-3">{{ form.balance.label_tag }}{{ form.balance }}</div>
-          {% endif %}
-           {% if form.bank_account_name %}
-          <div class="mb-3">
-            <label class="form-label" for="{{ form.bank_account_name.id_for_label }}">Account Name</label>
-            {{ form.bank_account_name }}
-          </div>
-        {% endif %}
-        </div>
-
       </div>
+
+      {# ===== Address ===== #}
+      <div class="col-lg-4">
+        <div class="card h-100">
+          <div class="card-header">
+            <h6 class="mb-0">Address</h6>
+          </div>
+          <div class="card-body">
+
+            {% if form.address_line1 %}
+              <div class="mb-3">{{ form.address_line1.label_tag }}{{ form.address_line1 }}</div>
+            {% endif %}
+            {% if form.address_line2 %}
+              <div class="mb-3">{{ form.address_line2.label_tag }}{{ form.address_line2 }}</div>
+            {% endif %}
+
+            <div class="row g-2">
+              {% if form.province %}
+                <div class="col-12 mb-2">{{ form.province.label_tag }}{{ form.province }}</div>
+              {% endif %}
+              {% if form.regency %}
+                <div class="col-12 mb-2">{{ form.regency.label_tag }}{{ form.regency }}</div>
+              {% endif %}
+              {% if form.district %}
+                <div class="col-12 mb-2">{{ form.district.label_tag }}{{ form.district }}</div>
+              {% endif %}
+              {% if form.village %}
+                <div class="col-12 mb-0">{{ form.village.label_tag }}{{ form.village }}</div>
+              {% endif %}
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {# ===== Finance ===== #}
+      <div class="col-lg-4">
+        <div class="card h-100">
+          <div class="card-header">
+            <h6 class="mb-0">Finance</h6>
+          </div>
+          <div class="card-body">
+
+            {% if form.bank_name %}
+              <div class="mb-3">{{ form.bank_name.label_tag }}{{ form.bank_name }}</div>
+            {% endif %}
+            {% if form.bank_account %}
+              <div class="mb-3">{{ form.bank_account.label_tag }}{{ form.bank_account }}</div>
+            {% endif %}
+            {% if form.bank_account_name %}
+              <div class="mb-3">
+                <label class="form-label" for="{{ form.bank_account_name.id_for_label }}">Account Name</label>
+                {{ form.bank_account_name }}
+              </div>
+            {% endif %}
+            {% if form.balance %}
+              <div class="mb-0">{{ form.balance.label_tag }}{{ form.balance }}</div>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+
     </div>
 
-    <div class="d-flex gap-2 mt-3">
-      <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:customer_list' %}">Back</a>
-      <button class="btn btn-primary btn-sm" type="submit">Save</button>
+    <div class="mt-3 d-flex justify-content-end gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:customer_list' %}">Cancel</a>
+      <button class="btn btn-primary btn-sm" type="submit">
+        <i class="fa fa-save me-1"></i> Save
+      </button>
     </div>
   </form>
+
+</div>
+
 </div>
 
 {% endblock %}

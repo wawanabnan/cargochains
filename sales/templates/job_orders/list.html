@@ -7,18 +7,19 @@
   <!-- HEADER -->
   <div class="app-content-header">
     <div class="container-fluid d-flex justify-content-between align-items-center">
-      <h3 class="mb-0">Job Orders</h3>
+      <h4 class="mb-0">Job Orders</h4>
       <a href="{% url 'sales:job_order_add' %}" class="btn btn-primary btn-sm">
         <i class="fa fa-plus me-1"></i> New Job Order
       </a>
     </div>
   </div>
 
-  <!-- MAIN CONTENT -->
-  <section class="content">
-    <div class="container-fluid">
 
-      <!-- ============================= -->
+ 
+
+  <div  class="app-content">
+    <div class="container-fluid">
+        <!-- ============================= -->
       <!--     SEARCH BAR + TOOLBAR      -->
       <!-- ============================= -->
       <div class="card" style="background-color: #f8f9fa;border-bottom: 0px;" >
@@ -32,7 +33,9 @@
               <a href="{% url 'sales:job_order_add' %}" class="btn btn-primary btn-sm">
                 <i class="fa fa-plus me-1"></i> New
               </a>
+              
             </div>
+           
 
             <!-- CENTER: SEARCH BOX / BULK ACTIONS -->
             <div class="flex-grow-1 d-flex justify-content-center">
@@ -88,6 +91,9 @@
         </div>
       </div>
 
+    </div>
+    <div class="container-fluid">
+
       <!-- ============================= -->
       <!--         TABLE LIST            -->
       <!-- ============================= -->
@@ -101,13 +107,14 @@
                   <th style="width: 4%;">
                     <input type="checkbox" id="chk-all">
                   </th>
-                  <th style="width: 10%">Job No</th>
-                  <th style="width: 10%">Date</th>
-                  <th>Customer</th>
-                  <th style="width: 18%">Service</th>
-                  <th>Cargo</th>
-                  <th class="text-end" style="width: 12%;">Grand Total</th>
-                  <th style="width: 12%;">Sales</th>
+                  <th style="width: 10%">JOB#</th>
+                  <th style="width: 10%">DATE</th>
+                  <th>CUSTOMER</th>
+                  <th style="width: 18%">SERVICE</th>
+                  <th>CARGO DESC</th>
+                  <th class="text-end" style="width: 12%;">GRAND TOTAL</th>
+                  <th style="width: 12%;">SALES</th>
+                  <th style="width: 10%;">STATUS</th>
                 
                 </tr>
               </thead>
@@ -143,7 +150,7 @@
                           -
                         {% endif %}
                       </td>
-
+                       <td> {{ jo.is_invoice }}</td>
 
                     </tr>
                   {% endfor %}
@@ -290,11 +297,14 @@
       </div>
 
     </div>
-  </section>
+  </div>
 
 <style>
   .row-clickable {
     cursor: pointer;
+  }
+  .table tr td {
+    padding:8px 5px;
   }
 </style>
 

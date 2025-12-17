@@ -37,6 +37,10 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("sales/", include("sales.urls", namespace="sales")),  # <— include dengan namespace
     path("account/", include("account.urls", namespace="account")),
+    path("sales/config/", include("sales_configuration.urls", namespace="sales_configuration")),
+    
+
+
     path("shipments/", include("shipments.urls", namespace="shipments")),  # <— include dengan namespace
 
     #path("", RedirectView.as_view(url=reverse_lazy(settings.LOGIN_URL), permanent=False)),

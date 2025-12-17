@@ -39,13 +39,17 @@ from .views.freight import (
 )
 
 from sales.views.invoices import (
-    InvoiceListView, InvoiceCreateView, InvoiceUpdateView,
-    InvoiceDetailView, InvoiceDeleteView, InvoiceGenerateFromJobOrderView
+    InvoiceListView, InvoiceUpdateView,
+    InvoiceDetailView, InvoiceDeleteView, 
+    InvoiceCreateFromJobOrderView,
+    InvoiceCreateManualView,
+    generate_invoice_from_job
 )
 
 from .views.freight_pdf import  FreightQuotationPdfHtmlView
 from .views.fo_pdf import FreightOrderPdfHtmlView  # sesuaikan path
 from .views.invoice_pdf_html import InvoicePdfHtmlView  # sesuaikan path
+
 
 from .views.job_order import (
     JobOrderListView,
@@ -61,7 +65,8 @@ from .views.jo_revenue_pdf import JobOrderRevenuePdfView
 from .views.customers import (
     CustomerListView, CustomerCreateView, CustomerDetailView,
     CustomerUpdateView, CustomerDeleteView,
-     CustomerContactCreateView
+     CustomerContactCreateView,
+     CustomerContactUpdateView
 )
 
 
@@ -156,17 +161,7 @@ urlpatterns = [
         name="fo_pdf",
     ),
 
-    path(
-        "invoices/",
-        InvoiceListView.as_view(),
-        name="invoice_list",
-    ),
-    path(
-        "invoices/add/",
-        InvoiceCreateView.as_view(),
-        name="invoice_add",
-    ),
-
+  
     
     
     path("job-orders/", JobOrderListView.as_view(), name="job_order_list"),
@@ -181,22 +176,37 @@ urlpatterns = [
          JobOrderAttachmentDeleteView.as_view(),
          name="job_order_attachment_delete"),
 
+         
+
     path("customers/", CustomerListView.as_view(), name="customer_list"),
     path("customers/add/", CustomerCreateView.as_view(), name="customer_add"),
     path("customers/<int:pk>/", CustomerDetailView.as_view(), name="customer_detail"),
     path("customers/<int:pk>/edit/", CustomerUpdateView.as_view(), name="customer_edit"),
     path("customers/<int:pk>/delete/", CustomerDeleteView.as_view(), name="customer_delete"),
     path("customers/<int:pk>/contacts/add/", CustomerContactCreateView.as_view(), name="customer_contact_add"),
+    path("customers/contacts/<int:pk>/update/", CustomerContactUpdateView.as_view(), name="customer_contact_update"),
+
 
     path("invoices/", InvoiceListView.as_view(), name="invoice_list"),
-    path("invoices/add/", InvoiceCreateView.as_view(), name="invoice_add"),
     path("invoices/<int:pk>/", InvoiceDetailView.as_view(), name="invoice_detail"),
     path("invoices/<int:pk>/edit/", InvoiceUpdateView.as_view(), name="invoice_edit"),
     path("invoices/<int:pk>/delete/", InvoiceDeleteView.as_view(), name="invoice_delete"),
 
     # optional: generate invoice from job order via modal/form
-    path("invoices/generate-from-job/", InvoiceGenerateFromJobOrderView.as_view(), name="invoice_generate_from_job"),
-
+    path("invoices/add/", InvoiceCreateManualView.as_view(), name="invoice_add"),
+    path("invoices/add-from-job/<int:job_order_id>/", InvoiceCreateFromJobOrderView.as_view(), name="invoice_add_from_job"),
+    # sales/urls.py
+   
+     path(
+        "invoices/generate-from-job/<int:job_order_id>/",
+        generate_invoice_from_job,
+        name="invoice_generate_from_job",
+    ),
+     path(
+        "invoices/<int:pk>/pdf/",
+         InvoicePdfHtmlView.as_view(),
+         name="invoice_pdf",
+    ),
 
 ]
 
