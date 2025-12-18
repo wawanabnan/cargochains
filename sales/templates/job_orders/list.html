@@ -8,304 +8,29 @@
   <div class="app-content-header">
     <div class="container-fluid d-flex justify-content-between align-items-center">
       <h4 class="mb-0">Job Orders</h4>
-      <a href="{% url 'sales:job_order_add' %}" class="btn btn-primary btn-sm">
-        <i class="fa fa-plus me-1"></i> New Job Order
-      </a>
+      
     </div>
   </div>
 
+<div  class="app-content">
 
- 
-
-  <div  class="app-content">
     <div class="container-fluid">
-        <!-- ============================= -->
-      <!--     SEARCH BAR + TOOLBAR      -->
-      <!-- ============================= -->
-      <div class="card" style="background-color: #f8f9fa;border-bottom: 0px;" >
-        <div class="card-body">
-
-          <div id="joborders-toolbar"
-               class="d-flex justify-content-between align-items-center gap-2 mb-2">
-
-            <!-- LEFT: NEW BUTTON -->
-            <div class="d-flex align-items-center gap-2">
-              <a href="{% url 'sales:job_order_add' %}" class="btn btn-primary btn-sm">
-                <i class="fa fa-plus me-1"></i> New
-              </a>
-              
-            </div>
-           
-
-            <!-- CENTER: SEARCH BOX / BULK ACTIONS -->
-            <div class="flex-grow-1 d-flex justify-content-center">
-
-              <!-- SEARCH (default) -->
-              <div id="search-box" class="flex-grow-1 d-flex justify-content-center">
-                <form method="get"
-                      class="input-group input-group-md rounded-pill overflow-hidden shadow-sm border"
-                      style="max-width:500px;">
-                  <input type="search"
-                         name="q"
-                         value="{{ filter_q }}"
-                         class="form-control ps-3 border-0 bg-body"
-                         placeholder="Search Job No / Cargo / Customer..."
-                         autocomplete="off">
-
-                  <button class="btn btn-outline-secondary border-0 bg-body" type="submit">
-                    <i class="fa fa-search"></i>
-                  </button>
-
-                  <!-- pertahankan filter lain -->
-                  <input type="hidden" name="customer"  value="{{ filter_customer }}">
-                  <input type="hidden" name="service"   value="{{ filter_service }}">
-                  <input type="hidden" name="date_from" value="{{ filter_date_from }}">
-                  <input type="hidden" name="date_to"   value="{{ filter_date_to }}">
-                </form>
-              </div>
-
-              <!-- BULK ACTIONS (hidden default) -->
-              <div id="bulk-actions" class="d-none align-items-center gap-2">
-                <span class="badge text-bg-secondary me-2 btn-sm-match">
-                  <span id="sel-count">0</span> selected
-                </span>
-                <button type="button"
-                        class="btn btn-warning btn-sm me-2"
-                        id="btn-bulk-update">
-                  <i class="fa fa-edit me-1"></i> Update
-                </button>
-              </div>
-
-            </div>
-
-            <!-- RIGHT: FILTER BUTTON -->
-            <div>
-              <button class="btn btn-outline-secondary btn-sm"
-                      data-bs-toggle="offcanvas"
-                      data-bs-target="#filterSheet">
-                <i class="fa fa-filter me-1"></i> Filter
-              </button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
+    
+              {% include 'job_orders/extension/toolbar.html' %}
     </div>
-    <div class="container-fluid">
-
-      <!-- ============================= -->
-      <!--         TABLE LIST            -->
-      <!-- ============================= -->
+        
+    <div class="container-fluid mt-3">
       <div class="card">
-        <div class="card-body p-0">
+          
+          <div class="card-body p-0 border-0">
+             {% include 'job_orders/extension/table_list.html' %}
 
-          <div class="table-responsive">
-            <table class="table table-hover mb-0 align-middle">
-              <thead class="table-light">
-                <tr>
-                  <th style="width: 4%;">
-                    <input type="checkbox" id="chk-all">
-                  </th>
-                  <th style="width: 10%">JOB#</th>
-                  <th style="width: 10%">DATE</th>
-                  <th>CUSTOMER</th>
-                  <th style="width: 18%">SERVICE</th>
-                  <th>CARGO DESC</th>
-                  <th class="text-end" style="width: 12%;">GRAND TOTAL</th>
-                  <th style="width: 12%;">SALES</th>
-                  <th style="width: 10%;">STATUS</th>
-                
-                </tr>
-              </thead>
-
-              <tbody>
-                {% if job_orders %}
-                  {% for jo in job_orders %}
-                    <tr class="row-clickable"
-                        data-url="{% url 'sales:job_order_detail' jo.pk %}">
-
-                      <td onclick="event.stopPropagation();">
-                        <input type="checkbox" class="chk-row" value="{{ jo.pk }}">
-                      </td>
-
-                      <td>{{ jo.number }}</td>
-                      <td>{{ jo.job_date|date:"d-m-Y" }}</td>
-                      <td>{{ jo.customer.company_name|default:jo.customer.name }}</td>
-                      <td>{{ jo.service }}</td>
-                      <td>{{ jo.cargo_description|default:"-" }}</td>
-
-                      <td class="text-end">
-                        {% if jo.grand_total %}
-                          {{ jo.grand_total|indo_number }}
-                        {% else %}
-                          0
-                        {% endif %}
-                      </td>
-
-                      <td>
-                        {% if jo.sales_user %}
-                          {{ jo.sales_user.get_full_name|default:jo.sales_user.username }}
-                        {% else %}
-                          -
-                        {% endif %}
-                      </td>
-                       <td>
-                          {% if jo.is_invoiced %}
-                            <span class="badge bg-success">Invoiced</span>
-                          {% else %}
-                            <span class="badge bg-warning text-dark">Not Invoiced</span>
-                          {% endif %}
-
-                       </td>
-
-                    </tr>
-                  {% endfor %}
-                {% else %}
-                  <tr>
-                    <td colspan="9" class="text-center py-4 text-muted">
-                      No Job Orders found.
-                    </td>
-                  </tr>
-                {% endif %}
-              </tbody>
-            </table>
           </div>
-
-        </div>
-
-        <!-- PAGINATION -->
-        {% if is_paginated %}
-        <div class="card-footer py-2">
-          <nav aria-label="Job Order pages">
-            <ul class="pagination mb-0 justify-content-end pagination-sm">
-
-              <!-- Previous -->
-              {% if page_obj.has_previous %}
-                <li class="page-item">
-                  <a class="page-link"
-                     href="?page={{ page_obj.previous_page_number }}&q={{ filter_q }}&customer={{ filter_customer }}&service={{ filter_service }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
-                    Previous
-                  </a>
-                </li>
-              {% else %}
-                <li class="page-item disabled">
-                  <span class="page-link">Previous</span>
-                </li>
-              {% endif %}
-
-              <!-- Page numbers -->
-              {% for num in page_obj.paginator.page_range %}
-                {% if num == page_obj.number %}
-                  <li class="page-item active">
-                    <span class="page-link">{{ num }}</span>
-                  </li>
-                {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
-                  <li class="page-item">
-                    <a class="page-link"
-                       href="?page={{ num }}&q={{ filter_q }}&customer={{ filter_customer }}&service={{ filter_service }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
-                      {{ num }}
-                    </a>
-                  </li>
-                {% endif %}
-              {% endfor %}
-
-              <!-- Next -->
-              {% if page_obj.has_next %}
-                <li class="page-item">
-                  <a class="page-link"
-                     href="?page={{ page_obj.next_page_number }}&q={{ filter_q }}&customer={{ filter_customer }}&service={{ filter_service }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
-                    Next
-                  </a>
-                </li>
-              {% else %}
-                <li class="page-item disabled">
-                  <span class="page-link">Next</span>
-                </li>
-              {% endif %}
-
-            </ul>
-          </nav>
-        </div>
-        {% endif %}
-
       </div>
-
-      <!-- ============================= -->
-      <!--       FILTER OFFCANVAS        -->
-      <!-- ============================= -->
-      <div class="offcanvas offcanvas-end" tabindex="-1" id="filterSheet">
-        <div class="offcanvas-header">
-          <h5 class="offcanvas-title">Filters</h5>
-          <button type="button" class="btn-close"
-                  data-bs-dismiss="offcanvas"
-                  aria-label="Close"></button>
-        </div>
-
-        <form class="offcanvas-body" method="get">
-
-          <div class="mb-3">
-            <label class="form-label small">Customer</label>
-            <select name="customer" class="form-select form-select-sm">
-              <option value="">-- All customers --</option>
-              {% for c in customers %}
-                <option value="{{ c.pk }}"
-                        {% if filter_customer|default:'' == c.pk|stringformat:"s" %}selected{% endif %}>
-                  {{ c.name }}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label small">Service</label>
-            <select name="service" class="form-select form-select-sm">
-              <option value="">-- All services --</option>
-              {% for s in services %}
-                <option value="{{ s.pk }}"
-                        {% if filter_service|default:'' == s.pk|stringformat:"s" %}selected{% endif %}>
-                  {{ s.name }} - {{ s.service_group }}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label small">Date From</label>
-            <input type="date"
-                   name="date_from"
-                   value="{{ filter_date_from }}"
-                   class="form-control form-control-sm">
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label small">Date To</label>
-            <input type="date"
-                   name="date_to"
-                   value="{{ filter_date_to }}"
-                   class="form-control form-control-sm">
-          </div>
-
-          <!-- pertahankan parameter search -->
-          <input type="hidden" name="q" value="{{ filter_q }}">
-
-          <div class="d-flex justify-content-end gap-2 mt-3">
-            <button class="btn btn-primary btn-sm" type="submit">
-              <i class="fa fa-check me-1"></i> Apply
-            </button>
-            <button type="button"
-                    class="btn btn-outline-secondary btn-sm"
-                    id="btn-reset-filters">
-              <i class="fa fa-undo me-1"></i> Reset
-            </button>
-          </div>
-
-        </form>
-      </div>
-
+       
     </div>
-  </div>
-
+</div>
+ 
 <style>
   .row-clickable {
     cursor: pointer;
@@ -314,113 +39,117 @@
     padding:8px 5px;
   }
 </style>
-
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("Job order list JS loaded");
 
-  // ================
-  // 1) ROW CLICK
-  // ================
-  var rows = document.querySelectorAll(".row-clickable");
-  rows.forEach(function (row) {
+  // ===== Row click =====
+  document.querySelectorAll(".row-clickable").forEach(function (row) {
     row.addEventListener("click", function (e) {
-      // kalau klik checkbox atau tombol di kolom action, jangan buka detail
       if (
         (e.target.tagName === "INPUT" && e.target.type === "checkbox") ||
-        e.target.closest(".btn")
-      ) {
-        return;
-      }
-      var url = row.dataset.url;
-      if (url) {
-        window.location.href = url;
-      }
+        e.target.closest("button") ||
+        e.target.closest("a")
+      ) return;
+
+      const url = row.dataset.url;
+      if (url) window.location.href = url;
     });
   });
 
-  // ================
-  // 2) BULK UI
-  // ================
-  var chkAll       = document.getElementById("chk-all");
-  var chkRows      = document.querySelectorAll(".chk-row");
-  var selCountSpan = document.getElementById("sel-count");
-  var searchBox    = document.getElementById("search-box");
-  var bulkActions  = document.getElementById("bulk-actions");
+  // ===== Bulk elements =====
+  const chkAll    = document.getElementById("chk-all");
+  const bulkBox   = document.getElementById("bulk-actions");
+  const selCount  = document.getElementById("sel-count");
+  const searchBox = document.getElementById("search-box");   // ✅ tambah ini
 
-  function updateBulkUI() {
-    var checkedCount = document.querySelectorAll(".chk-row:checked").length;
+  const btnPending = document.getElementById("btn-bulk-pending");
+  const btnCancel  = document.getElementById("btn-bulk-cancel");
 
-    if (selCountSpan) {
-      selCountSpan.textContent = checkedCount;
+  function getSelectedIds() {
+    return Array.from(document.querySelectorAll(".row-check:checked"))
+      .map(c => c.dataset.id)
+      .filter(Boolean);
+  }
+
+  function refreshBulkUI() {
+    const count = getSelectedIds().length;
+
+    if (selCount) selCount.textContent = count;
+
+    // ✅ Switch search <-> bulk
+    if (searchBox) {
+      searchBox.classList.toggle("d-none", count > 0);
     }
-
-    if (!searchBox || !bulkActions) {
-      return;
-    }
-
-    if (checkedCount > 0) {
-      // sembunyikan search, tampilkan bulk
-      searchBox.classList.add("d-none");
-      bulkActions.classList.remove("d-none");
-      bulkActions.classList.add("d-flex");
-    } else {
-      // tampilkan search, sembunyikan bulk
-      searchBox.classList.remove("d-none");
-      bulkActions.classList.add("d-none");
-      bulkActions.classList.remove("d-flex");
+    if (bulkBox) {
+      bulkBox.classList.toggle("d-none", count === 0);
+      bulkBox.classList.toggle("d-flex", count > 0); // optional: kalau mau inline flex
     }
   }
 
-  // "Select all"
+  // row checkbox change
+  document.querySelectorAll(".row-check").forEach(function (chk) {
+    chk.addEventListener("change", function () {
+      if (!chk.checked && chkAll) chkAll.checked = false;
+      refreshBulkUI();
+    });
+  });
+
+  // check all
   if (chkAll) {
     chkAll.addEventListener("change", function () {
-      chkRows.forEach(function (c) {
-        c.checked = chkAll.checked;
+      document.querySelectorAll(".row-check").forEach(function (chk) {
+        if (!chk.disabled) chk.checked = chkAll.checked;
       });
-      updateBulkUI();
+      refreshBulkUI();
     });
   }
 
-  // Individu checkbox
-  chkRows.forEach(function (chk) {
-    chk.addEventListener("change", function () {
-      if (!chk.checked && chkAll) {
-        chkAll.checked = false;
-      }
-      updateBulkUI();
+  // ===== Submit bulk via normal POST form =====
+  function submitBulk(action) {
+    const ids = getSelectedIds();
+    if (!ids.length) return alert("No selected");
+
+    if (action === "cancel" && !confirm("Cancel selected job orders?")) return;
+
+    let form = document.getElementById("bulk-form");
+    if (!form) {
+      form = document.createElement("form");
+      form.id = "bulk-form";
+      form.method = "POST";
+      form.action = "{% url 'sales:joborder_bulk_status' %}";
+      form.className = "d-none";
+      form.innerHTML = `{% csrf_token %}
+        <input type="hidden" name="action" id="bulk-action">
+        <div id="bulk-ids"></div>`;
+      document.body.appendChild(form);
+    }
+
+    form.querySelector("#bulk-action").value = action;
+    const holder = form.querySelector("#bulk-ids");
+    holder.innerHTML = "";
+
+    ids.forEach(function (id) {
+      const i = document.createElement("input");
+      i.type = "hidden";
+      i.name = "ids[]";
+      i.value = id;
+      holder.appendChild(i);
     });
+
+    form.submit();
+  }
+
+  if (btnPending) btnPending.addEventListener("click", function () {
+    submitBulk("pending");
+  });
+  if (btnCancel) btnCancel.addEventListener("click", function () {
+    submitBulk("cancel");
   });
 
-  // ================
-  // 3) BULK UPDATE (sementara: tampilkan alert ID terpilih)
-  // ================
-  var btnBulkUpdate = document.getElementById("btn-bulk-update");
-  if (btnBulkUpdate) {
-    btnBulkUpdate.addEventListener("click", function () {
-      var checked = document.querySelectorAll(".chk-row:checked");
-      if (!checked.length) {
-        return;
-      }
-      var ids = [];
-      checked.forEach(function (c) {
-        ids.push(c.value);
-      });
-      // sementara pakai alert; nanti bisa diarahkan ke modal / view update bulk
-      alert("Selected Job Order IDs: " + ids.join(", "));
-    });
-  }
-
-  // ================
-  // 4) RESET FILTER
-  // ================
-  var btnResetFilters = document.getElementById("btn-reset-filters");
-  if (btnResetFilters) {
-    btnResetFilters.addEventListener("click", function () {
-      window.location.href = "{% url 'sales:job_order_list' %}";
-    });
-  }
+  // init
+  refreshBulkUI();
 });
 </script>
+
 
 {% endblock %}

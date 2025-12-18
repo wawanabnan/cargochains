@@ -288,7 +288,7 @@
         </tr>
       </script>
 
-      <div class="d-flex justify-content-between align-items-start mt-2">
+      <div class="d-flex justify-content-between align-items-start mt-2 p-2">
         <!-- LEFT: Add line -->
         <div>
           <a href="javascript:void(0)" id="btnAddLine" class="text-primary text-decoration-none small">
@@ -558,7 +558,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (taxLabel) taxMap[taxLabel] = (taxMap[taxLabel] || 0) + taxAmt;
         taxTotal += taxAmt;
       });
-    });
+      });
 
     // DISPLAY totals (UX)
     if (uxSubEl)   uxSubEl.value   = fmtID(subtotal);
@@ -738,7 +738,12 @@ if (formEl) {
   recalcTotals();
 });
 </script>
-
+{{ tax_rates|json_script:"tax-rates" }}
+<script>
+  const TAX_RATES = JSON.parse(
+    document.getElementById("tax-rates").textContent || "{}"
+  );
+</script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   if (typeof tempusDominus === "undefined") return;

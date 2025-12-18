@@ -1,0 +1,130 @@
+{% load indo_format %}
+<div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+        <thead class="table-light">
+        <tr>
+            <th style="width: 3%;">
+                <input type="checkbox" id="chk-all">
+            </th>
+            <th style="width: 8%">JOB#</th>
+            <th style="width: 7%">DATE</th>
+             <th style="width: 7%">REF#</th>
+            <th>CUSTOMER</th>
+            <th style="width: 12%">SERVICES</th>
+            <th class="text-center" style="width:4%">CURR</th>
+            <th class="text-end" style="width: 10%;">TOTAL</th>
+            <th class="text-center" style="width: 8%;">SALES</th>
+            <th style="width: 7%;">INVOICING</th>
+        
+        </tr>
+        </thead>
+
+        <tbody>
+        {% if job_orders %}
+            {% for jo in job_orders %}
+            <tr class="row-clickable"  
+                data-url="{% url 'sales:job_order_detail' jo.pk %}">
+
+                <td onclick="event.stopPropagation();">
+                     <input type="checkbox" class="row-check" data-id="{{ jo.pk }}">
+
+                </td>
+
+                <td>{{ jo.number }}</td>
+                <td>{{ jo.job_date|date:"d-m-Y" }}</td>
+                 <td>{{ jo.order_number }}</td>
+                <td>{{ jo.customer.company_name|default:jo.customer.name }}</td>
+                <td>{{ jo.service }}</td>
+                <td class="text-center">{{ jo.currency }}</td>
+
+                <td class="text-end">
+                {% if jo.total_amount %}
+                    {{ jo.total_amount|indo_number }}
+                {% else %}
+                    0
+                {% endif %}
+                </td>
+
+                <td class="text-center">
+                {% if jo.sales_user %}
+                    {{ jo.sales_user.username }}
+                {% else %}
+                    -
+                {% endif %}
+                </td>
+                <td>
+                    {% if jo.is_invoiced %}
+                    <span class="badge bg-success">To invoiced</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">Not Invoiced</span>
+                    {% endif %}
+
+                </td>
+
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr>
+            <td colspan="9" class="text-center py-4 text-muted">
+                No Job Orders found.
+            </td>
+            </tr>
+        {% endif %}
+        </tbody>
+    </table>
+</div>
+
+        <!-- PAGINATION -->
+      
+<div class="card-footer py-2">
+          <nav aria-label="Job Order pages">
+            <ul class="pagination mb-0 justify-content-end pagination-sm">
+
+              <!-- Previous -->
+              {% if page_obj.has_previous %}
+                <li class="page-item">
+                  <a class="page-link"
+                     href="?page={{ page_obj.previous_page_number }}&q={{ filter_q }}&customer={{ filter_customer }}&service={{ filter_service }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+                    Previous
+                  </a>
+                </li>
+              {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link">Previous</span>
+                </li>
+              {% endif %}
+
+              <!-- Page numbers -->
+              {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                  <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                  </li>
+                {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ num }}&q={{ filter_q }}&customer={{ filter_customer }}&service={{ filter_service }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+                      {{ num }}
+                    </a>
+                  </li>
+                {% endif %}
+              {% endfor %}
+
+              <!-- Next -->
+              {% if page_obj.has_next %}
+                <li class="page-item">
+                  <a class="page-link"
+                     href="?page={{ page_obj.next_page_number }}&q={{ filter_q }}&customer={{ filter_customer }}&service={{ filter_service }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+                    Next
+                  </a>
+                </li>
+              {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link">Next</span>
+                </li>
+              {% endif %}
+
+            </ul>
+          </nav>
+</div>
+       

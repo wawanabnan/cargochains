@@ -13,15 +13,23 @@ from .job_order_model import JobOrder
 
 
 class Invoice(TimeStampedModel):
-    STATUS_DRAFT = "DRAFT"
-    STATUS_UNPAID = "UNPAID"
-    STATUS_PAID = "PAID"
+    ST_DRAFT = "DRAFT"
+    ST_SENT  = "SENT"
+    ST_PAID  = "PAID"
+
     STATUS_CHOICES = [
-        (STATUS_DRAFT, "Draft"),
-        (STATUS_UNPAID, "Unpaid"),
-        (STATUS_PAID, "Paid"),
+        (ST_DRAFT, "Draft"),
+        (ST_SENT, "Sent"),
+        (ST_PAID, "Paid"),
     ]
 
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=ST_DRAFT,   # ✅ WAJIB ST_DRAFT
+        db_index=True,
+    )
+    
     number = models.CharField(max_length=30, unique=True, editable=False)
 
     # optional (jika invoice dari JobOrder)
@@ -55,7 +63,6 @@ class Invoice(TimeStampedModel):
 
 
     amount_paid = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
 
     notes_internal = models.TextField(blank=True, default="")
     notes_customer = models.TextField(blank=True, default="")
@@ -98,6 +105,24 @@ class Invoice(TimeStampedModel):
 
         super().save(*args, **kwargs)
 
+    @property
+    def list_status(self):
+        if self.status == self.ST_DRAFT:
+            return "DRAFT"
+        if self.status == self.ST_PAID:
+            return "PAID"
+        return "UNPAID"  # SENT -> UNPAID
+    
+    def can_edit(self, user):
+        return self.status == self.ST_DRAFT and (user.is_superuser or user.groups.filter(name="Sales").exists())
+
+    def can_confirm(self, user):
+        return (
+            self.status == self.ST_DRAFT
+            and (user.is_superuser or user.groups.filter(name="Finance").exists())
+        )
+    def can_mark_paid(self, user):
+        return self.status == self.ST_SENT and (user.is_superuser or user.groups.filter(name="Finance").exists())
 
 class InvoiceLine(TimeStampedModel):
     invoice = models.ForeignKey(Invoice, on_delete=CASCADE, related_name="lines")

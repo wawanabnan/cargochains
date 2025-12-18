@@ -16,37 +16,18 @@ from core.models import Service  #
 from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from core.utils import get_next_number
 from django.db.models import Sum
-
+from django.http import JsonResponse, HttpResponseBadRequest
 
 
 # ==========================
 # LIST
 # ==========================
-class JkobOrderListView(LoginRequiredMixin, ListView):
-    model = JobOrder
-    template_name = "job_orders/list.html"
-    context_object_name = "job_orders"
-    paginate_by = 25
-
-    def get_queryset(self):
-        qs = (
-            JobOrder.objects
-            .select_related("customer", "service", "payment_term", "sales_user")
-            .order_by("-job_date", "-id")
-        )
-
-        # filter sederhana (opsional, boleh kamu kembangkan lagi)
-        q = self.request.GET.get("q")
-        if q:
-            qs = qs.filter(number__icontains=q) | qs.filter(cargo_description__icontains=q)
-
-        return qs
 
 class JobOrderListView(LoginRequiredMixin, ListView):
     model = JobOrder
     template_name = "job_orders/list.html"
     context_object_name = "job_orders"
-    paginate_by = 25
+    paginate_by = 19
 
     def get_queryset(self):
         qs = (
@@ -242,3 +223,28 @@ class JobOrderAttachmentDeleteView(LoginRequiredMixin, View):
         att.delete()
         messages.success(request, "Attachment berhasil dihapus.")
         return redirect("sales:job_order_detail", pk=job.pk)
+
+
+class JobOrderBulkStatusView(LoginRequiredMixin, View):
+    def post(self, request):
+        action = request.POST.get("action")
+        ids = request.POST.getlist("ids[]")
+
+        if not ids:
+            messages.info(request, "Tidak ada Job Order yang dipilih.")
+            return redirect("sales:job_order_list")
+
+        qs = JobOrder.objects.filter(pk__in=ids).exclude(status=JobOrder.ST_COMPLETED)
+
+        if action == "pending":
+            updated = qs.filter(status=JobOrder.ST_IN_PROGRESS).update(status=JobOrder.ST_PENDING)
+            messages.success(request, f"{updated} Job Order berhasil di-set Pending.")
+
+        elif action == "cancel":
+            updated = qs.exclude(status=JobOrder.ST_CANCELLED).update(status=JobOrder.ST_CANCELLED)
+            messages.warning(request, f"{updated} Job Order berhasil di-cancel.")
+
+        else:
+            messages.error(request, "Action tidak valid.")
+
+        return redirect("sales:job_order_list")

@@ -28,6 +28,14 @@
            rel="noopener">
           <i class="bi bi-file-earmark-pdf me-1"></i> PDF
         </a>
+      {% if can_confirm %}
+  <form method="post" action="{% url 'sales:invoice_confirm' invoice.pk %}">
+    {% csrf_token %}
+    <button class="btn btn-sm btn-warning">
+      <i class="fa fa-check me-1"></i> Confirm
+    </button>
+  </form>
+{% endif %}
 
       </div>
     </div>
@@ -75,7 +83,7 @@
               {% if invoice.job_order %}
               <div class="row mb-2">
                 <div class="col-5 text-muted">Job Order</div>
-                <div class="col-7">{{ invoice.job_order.number }}</div>
+                <div class="col-7">{{ invoice.job_order.number|indo_currency }}</div>
               </div>
               {% endif %}
             </div>
@@ -86,19 +94,19 @@
 
               <div class="row mb-2">
                 <div class="col-6 text-muted">Subtotal</div>
-                <div class="col-6 text-end">{{ invoice.subtotal_amount }}</div>
+                <div class="col-6 text-end">{{ invoice.subtotal_amount|indo_currency }}</div>
               </div>
 
               <div class="row mb-2">
                 <div class="col-6 text-muted">Tax</div>
-                <div class="col-6 text-end">{{ invoice.tax_amount }}</div>
+                <div class="col-6 text-end">{{ invoice.tax_amount|indo_currency }}</div>
               </div>
 
               <hr class="my-2">
 
               <div class="row mb-0">
                 <div class="col-6 fw-semibold">Grand Total</div>
-                <div class="col-6 text-end fw-semibold">{{ invoice.total_amount }}</div>
+                <div class="col-6 text-end fw-semibold">{{ invoice.total_amount|indo_currency }}</div>
               </div>
             </div>
 

@@ -107,6 +107,26 @@
        
     
       </main>
+      <script>
+document.addEventListener("DOMContentLoaded", function () {
+  // auto hide alert after 3 seconds
+  setTimeout(function () {
+    document.querySelectorAll(".alert.alert-dismissible").forEach(function (el) {
+      // pakai Bootstrap API kalau ada
+      if (window.bootstrap) {
+        const alert = bootstrap.Alert.getOrCreateInstance(el);
+        alert.close();
+      } else {
+        // fallback manual
+        el.classList.remove("show");
+        el.classList.add("fade");
+        setTimeout(() => el.remove(), 300);
+      }
+    });
+  }, 3000); // 3 detik
+});
+</script>
+
       <!--end::App Main-->
       <!--begin::Footer-->
       <footer class="app-footer">

@@ -65,9 +65,11 @@
       border: 1px solid #e2e2e2;
     }
 
-    .text-right { text-align: right; }
-    .text-center { text-align: center; }
-    .text-left { text-align: left; }
+    table.lines .text-right { text-align: right; }
+    table.lines .text-center { text-align: center; }
+    table.lines .text-left { text-align: left; }
+    table.lines { word-wrap:break-word; overflow-wrap:break-word; }
+
     .muted { color: #666; }
 
     .container {
@@ -103,6 +105,8 @@
       html, body { background: #ffffff !important; }
       .page { margin: 0 auto; }
     }
+
+    
   </style>
 </head>
 
@@ -174,13 +178,13 @@
     <table class="lines">
       <thead>
         <tr>
-          <th style="width: 40px;">No</th>
-          <th>Description</th>
-          <th class="text-right" style="width: 90px;">Qty</th>
-          <th class="text-right" style="width: 120px;">Price</th>
-          <th class="text-center" style="width: 150px;">Tax</th>
-          <th class="text-right" style="width: 140px;">Amount</th>
-        </tr>
+        <th class="text-right" style="width:5%;">No</th>
+          <th class="desc">Description</th>
+          <th class="text-right" style="width:8%;">Qty</th>
+          <th class="text-right" style="width:12%;">Price</th>
+          <th class="text-center" style="width:10%;">Tax</th>
+          <th class="text-right" style="width:15%;">Amount</th>
+         </tr>
       </thead>
       <tbody>
         {% for ln in invoice.lines.all %}
@@ -207,26 +211,27 @@
           </tr>
         {% endfor %}
       </tbody>
-    </table>
-
-    <!-- Totals -->
-    <table class="service" style="margin-top: 10px;">
-      <tr>
-        <td class="text-right" style="width:80%;">Subtotal</td>
+      <tfoot>
+        <tr>
+        <td class="text-right" colspan="5"  style="width:80%;">Subtotal</td>
         <td class="text-right">{{ invoice.subtotal_amount|indo_currency }}</td>
       </tr>
       <tr>
-        <td class="text-right">Tax</td>
+        <td colspan="5" class="text-right">Tax</td>
         <td class="text-right">{{ invoice.tax_amount|indo_currency }}</td>
       </tr>
       <tr>
-        <td class="text-right"><strong>Total</strong></td>
+        <td colspan="5" class="text-right"><strong>Total</strong></td>
         <td class="text-right"><strong>{{ invoice.total_amount|indo_currency }}</strong></td>
       </tr>
+
+      </tfoot>
     </table>
 
+   
+
     <p style="margin-top:10px;">
-      <strong>Terbilang:&nbsp;</strong>{{ invoice.total_amount|indo_terbilang|capfirst }} rupiah
+      <strong>Terbilang:&nbsp;</strong>{{ invoice.total_amount|indo_terbilang_uang|capfirst }} 
     </p>
 
     {% if invoice.notes_customer %}

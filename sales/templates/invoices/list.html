@@ -1,86 +1,170 @@
 {% extends "adminbase.html" %}
 {% block content %}
 
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h3 class="card-title mb-0">Invoices</h3>
-    <a href="{% url 'sales:invoice_add' %}" class="btn btn-primary btn-sm">
-      <i class="fa fa-plus me-1"></i> New Invoice
-    </a>
-  </div>
+<div class="app-content-header">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+      <h4 class="mb-0">Invoices</h4>
+      
+    </div>
+ </div>
 
-  <div class="card-body">
 
-    <form method="get" class="d-flex gap-2 mb-3">
-      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search number / customer / job...">
-      <button class="btn btn-outline-secondary btn-sm" type="submit">Search</button>
-    </form>
+<div  class="app-content">
 
-    <div class="table-responsive">
-      <table class="table table-sm table-hover align-middle">
-        <thead>
-          <tr>
-            <th>Invoice</th>
-            <th>Customer</th>
-            <th class="text-end">Total</th>
-            <th class="text-end" style="width: 120px;">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for inv in invoices %}
-            <tr class="js-row" data-href="{% url 'sales:invoice_detail' inv.pk %}" style="cursor:pointer;">
-              <td class="fw-semibold">{{ inv.number|default:"(no number)" }}</td>
-              <td>{{ inv.customer.name }}</td>
-              <td class="text-end">{{ inv.total_amount }}</td>
-              <td class="text-end">
-                  {% with s=invoice.status|default:"DRAFT" %}
-                    {% if s == "PAID" %}
-                      <span class="badge text-bg-success">PAID</span>
-                    {% elif s == "UNPAID" %}
-                      <span class="badge text-bg-warning">UNPAID</span>
-                    {% else %}
-                      <span class="badge text-bg-secondary">DRAFT</span>
-                    {% endif %}
-                  {% endwith %}
-              </td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="5" class="text-muted text-center">No invoices.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div class="container-fluid">
+    
+              {% include 'invoices/extension/toolbar.html' %}
+    </div>
+        
+    <div class="container-fluid mt-3">
+      <div class="card">
+          
+          <div class="card-body p-0 border-0">
+             {% include 'invoices/extension/table_list.html' %}
+
+          </div>
+          <div class="card-footer border-0">
+
+                {% include 'invoices/extension/pagination.html' %}
+          
+          </div>
+       
+
+          </div>
+      </div>
+       
     </div>
 
-    {% if is_paginated %}
-      <div class="d-flex justify-content-between align-items-center mt-3">
-        <div class="text-muted small">
-          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-        </div>
-        <div class="btn-group">
-          {% if page_obj.has_previous %}
-            <a class="btn btn-outline-secondary btn-sm" href="?q={{ q }}&page={{ page_obj.previous_page_number }}">Prev</a>
-          {% endif %}
-          {% if page_obj.has_next %}
-            <a class="btn btn-outline-secondary btn-sm" href="?q={{ q }}&page={{ page_obj.next_page_number }}">Next</a>
-          {% endif %}
-        </div>
-      </div>
-    {% endif %}
 
-  </div>
-</div>
+
+
+
+{% endblock %}
+
+{% block extra_css %}
+
+<style>
+  .row-clickable {
+    cursor: pointer;
+  }
+  .table tr td {
+    padding:8px 5px;
+  }
+</style>
 
 {% endblock %}
 
 {% block extra_js %}
+
 <script>
-document.addEventListener("click", function(e){
-  const tr = e.target.closest(".js-row");
-  if (!tr) return;
-  // kalau klik tombol/link, jangan redirect row
-  if (e.target.closest("a,button,input,select,textarea,label")) return;
-  const href = tr.getAttribute("data-href");
-  if (href) window.location.href = href;
+document.addEventListener("DOMContentLoaded", function () {
+
+  // ===== Row click =====
+  document.querySelectorAll(".row-clickable").forEach(function (row) {
+    row.addEventListener("click", function (e) {
+      if (
+        (e.target.tagName === "INPUT" && e.target.type === "checkbox") ||
+        e.target.closest("button") ||
+        e.target.closest("a")
+      ) return;
+
+      const url = row.dataset.url;
+      if (url) window.location.href = url;
+    });
+  });
+
+  // ===== Bulk elements =====
+  const chkAll    = document.getElementById("chk-all");
+  const bulkBox   = document.getElementById("bulk-actions");
+  const selCount  = document.getElementById("sel-count");
+  const searchBox = document.getElementById("search-box");   // ✅ tambah ini
+
+  const btnPending = document.getElementById("btn-bulk-pending");
+  const btnCancel  = document.getElementById("btn-bulk-cancel");
+
+  function getSelectedIds() {
+    return Array.from(document.querySelectorAll(".row-check:checked"))
+      .map(c => c.dataset.id)
+      .filter(Boolean);
+  }
+
+  function refreshBulkUI() {
+    const count = getSelectedIds().length;
+
+    if (selCount) selCount.textContent = count;
+
+    // ✅ Switch search <-> bulk
+    if (searchBox) {
+      searchBox.classList.toggle("d-none", count > 0);
+    }
+    if (bulkBox) {
+      bulkBox.classList.toggle("d-none", count === 0);
+      bulkBox.classList.toggle("d-flex", count > 0); // optional: kalau mau inline flex
+    }
+  }
+
+  // row checkbox change
+  document.querySelectorAll(".row-check").forEach(function (chk) {
+    chk.addEventListener("change", function () {
+      if (!chk.checked && chkAll) chkAll.checked = false;
+      refreshBulkUI();
+    });
+  });
+
+  // check all
+  if (chkAll) {
+    chkAll.addEventListener("change", function () {
+      document.querySelectorAll(".row-check").forEach(function (chk) {
+        if (!chk.disabled) chk.checked = chkAll.checked;
+      });
+      refreshBulkUI();
+    });
+  }
+
+  // ===== Submit bulk via normal POST form =====
+  function submitBulk(action) {
+    const ids = getSelectedIds();
+    if (!ids.length) return alert("No selected");
+
+    if (action === "cancel" && !confirm("Cancel selected job orders?")) return;
+
+    let form = document.getElementById("bulk-form");
+    if (!form) {
+      form = document.createElement("form");
+      form.id = "bulk-form";
+      form.method = "POST";
+      form.action = "{% url 'sales:joborder_bulk_status' %}";
+      form.className = "d-none";
+      form.innerHTML = `{% csrf_token %}
+        <input type="hidden" name="action" id="bulk-action">
+        <div id="bulk-ids"></div>`;
+      document.body.appendChild(form);
+    }
+
+    form.querySelector("#bulk-action").value = action;
+    const holder = form.querySelector("#bulk-ids");
+    holder.innerHTML = "";
+
+    ids.forEach(function (id) {
+      const i = document.createElement("input");
+      i.type = "hidden";
+      i.name = "ids[]";
+      i.value = id;
+      holder.appendChild(i);
+    });
+
+    form.submit();
+  }
+
+  if (btnPending) btnPending.addEventListener("click", function () {
+    submitBulk("pending");
+  });
+  if (btnCancel) btnCancel.addEventListener("click", function () {
+    submitBulk("cancel");
+  });
+
+  // init
+  refreshBulkUI();
 });
 </script>
 {% endblock %}

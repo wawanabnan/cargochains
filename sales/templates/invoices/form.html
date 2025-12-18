@@ -33,56 +33,10 @@
         <div class="fw-semibold mb-1">Line error:</div>
         {{ formset.non_form_errors }}
       </div>
-    {% endif %}
-
-    <div class="card card-body mb-3" style="display:none">
-      <h6 class="mb-3">Header</h6>
-
-      <div class="row g-2">
-        <div class="col-lg-6 mb-2">
-          {{ form.customer.label_tag }}
-          {{ form.customer }}
-          {% if form.customer.errors %}<div class="text-danger small mt-1">{{ form.customer.errors|striptags }}</div>{% endif %}
-        </div>
-
-        <div class="col-lg-3 col-md-6 mb-2">
-          {{ form.invoice_date.label_tag }}
-          {{ form.invoice_date }}
-          {% if form.invoice_date.errors %}<div class="text-danger small mt-1">{{ form.invoice_date.errors|striptags }}</div>{% endif %}
-        </div>
-
-        <div class="col-lg-3 col-md-6 mb-2">
-          {{ form.due_date.label_tag }}
-          {{ form.due_date }}
-          {% if form.due_date.errors %}<div class="text-danger small mt-1">{{ form.due_date.errors|striptags }}</div>{% endif %}
-        </div>
-
-        <div class="col-lg-3 col-md-6 mb-2">
-          {{ form.currency.label_tag }}
-          {{ form.currency }}
-          {% if form.currency.errors %}<div class="text-danger small mt-1">{{ form.currency.errors|striptags }}</div>{% endif %}
-        </div>
-
-        <div class="col-lg-3 col-md-6 mb-2">
-          {{ form.payment_term.label_tag }}
-          {{ form.payment_term }}
-          {% if form.payment_term.errors %}<div class="text-danger small mt-1">{{ form.payment_term.errors|striptags }}</div>{% endif %}
-        </div>
-
-        <div class="col-lg-6 mb-2">
-          {{ form.notes_customer.label_tag }}
-          {{ form.notes_customer }}
-          {% if form.notes_customer.errors %}<div class="text-danger small mt-1">{{ form.notes_customer.errors|striptags }}</div>{% endif %}
-        </div>
-
-        <div class="col-lg-6 mb-2">
-          {{ form.notes_internal.label_tag }}
-          {{ form.notes_internal }}
-          {% if form.notes_internal.errors %}<div class="text-danger small mt-1">{{ form.notes_internal.errors|striptags }}</div>{% endif %}
-        </div>
-      </div>
-    </div>
-
+    
+      {% endif %}
+    
+    
     {#-----------------------------------HEADER-------------------------------#}
     <div class="card card-body mb-3">
       <div class="row g-3">
@@ -111,43 +65,44 @@
         </div>
 
         <!-- RIGHT COLUMN -->
+        
         <div class="col-lg-6">
 
-  <div class="row g-3">
+        <div class="row g-3">
 
-          <div class="col-md-6">
-  <label class="form-label">{{ form.invoice_date.label }}</label>
-  <div class="input-group input-group-sm" id="invDateWrap">
-    <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
-    {{ form.invoice_date }}
-  </div>
-  {% if form.invoice_date.errors %}<div class="text-danger small mt-1">{{ form.invoice_date.errors|striptags }}</div>{% endif %}
-</div>
+            <div class="col-md-6">
+              <label class="form-label">{{ form.invoice_date.label }}</label>
+              <div class="input-group input-group-sm" id="invDateWrap">
+                <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+                {{ form.invoice_date }}
+              </div>
+              {% if form.invoice_date.errors %}<div class="text-danger small mt-1">{{ form.invoice_date.errors|striptags }}</div>{% endif %}
+            </div>
 
-<div class="col-md-6">
-  <label class="form-label">{{ form.due_date.label }}</label>
-  <div class="input-group input-group-sm" id="dueDateWrap">
-    <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
-    {{ form.due_date }}
-  </div>
-  {% if form.due_date.errors %}<div class="text-danger small mt-1">{{ form.due_date.errors|striptags }}</div>{% endif %}
-</div>
+            <div class="col-md-6">
+              <label class="form-label">{{ form.due_date.label }}</label>
+              <div class="input-group input-group-sm" id="dueDateWrap">
+                <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
+                {{ form.due_date }}
+              </div>
+              {% if form.due_date.errors %}<div class="text-danger small mt-1">{{ form.due_date.errors|striptags }}</div>{% endif %}
+            </div>
 
 
-    <!-- CURRENCY -->
-    <div class="col-md-6">
-      {{ form.currency.label_tag }}
-      {{ form.currency }}
-      {% if form.currency.errors %}
-        <div class="text-danger small mt-1">
-          {{ form.currency.errors|striptags }}
+        <!-- CURRENCY -->
+        <div class="col-md-6">
+          {{ form.currency.label_tag }}
+          {{ form.currency }}
+          {% if form.currency.errors %}
+            <div class="text-danger small mt-1">
+              {{ form.currency.errors|striptags }}
+            </div>
+          {% endif %}
         </div>
-      {% endif %}
-    </div>
 
-    <div class="col-md-6">
-      {# slot cadangan #}
-    </div>
+        <div class="col-md-6">
+          {# slot cadangan #}
+        </div>
 
   </div>
 
@@ -162,10 +117,11 @@
     {% endif %}
   </div>
 
-</div>
+        </div>
 
       </div>
     </div>
+
 
     
     {#------------------------------END OF HEADER-------------------------------#}
@@ -783,6 +739,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   if (typeof tempusDominus === "undefined") return;
@@ -790,30 +747,99 @@ document.addEventListener("DOMContentLoaded", function () {
   const invWrap = document.getElementById("invDateWrap");
   const dueWrap = document.getElementById("dueDateWrap");
 
-  // helper: pastikan inputnya text supaya tampilannya konsisten
-  const invInput = document.getElementById("id_invoice_date");
-  const dueInput = document.getElementById("id_due_date");
+  const invInput = document.getElementById("id_invoice_date") || (invWrap ? invWrap.querySelector("input") : null);
+  const dueInput = document.getElementById("id_due_date") || (dueWrap ? dueWrap.querySelector("input") : null);
+
   if (invInput) invInput.type = "text";
   if (dueInput) dueInput.type = "text";
 
+  function todayDMY() {
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  }
+
+  // YYYY-MM-DD -> DD-MM-YYYY (untuk tampilan)
+  function toDMY(v) {
+    v = (v || "").trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+      const [y, m, d] = v.split("-");
+      return `${d}-${m}-${y}`;
+    }
+    return v;
+  }
+
+  // DD-MM-YYYY / DD/MM/YYYY / DD.MM.YYYY -> YYYY-MM-DD (untuk submit ke Django)
+  function toYMD(v) {
+    v = (v || "").trim();
+    if (!v) return v;
+
+    // sudah benar
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+
+    // split by non-digit
+    const parts = v.split(/\D+/).filter(Boolean);
+    if (parts.length !== 3) return v;
+
+    // detect order
+    // kalau token pertama 4 digit => Y-M-D
+    if (parts[0].length === 4) {
+      const [y, m, d] = parts;
+      if (y.length === 4 && m.length <= 2 && d.length <= 2) {
+        return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      }
+      return v;
+    }
+
+    // else assume D-M-Y
+    const [d, m, y] = parts;
+    if (y.length === 4) {
+      return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    }
+    return v;
+  }
+
+  // === Set default + normalize display ===
+  if (invInput) {
+    if (!invInput.value || !invInput.value.trim()) invInput.value = todayDMY();
+    invInput.value = toDMY(invInput.value);
+  }
+  if (dueInput) {
+    if (!dueInput.value || !dueInput.value.trim()) dueInput.value = invInput ? invInput.value : todayDMY();
+    dueInput.value = toDMY(dueInput.value);
+  }
+
   const opts = {
     display: {
-      components: {
-        calendar: true, date: true, month: true, year: true, decades: true,
-        clock: false
-      },
+      components: { calendar: true, date: true, month: true, year: true, decades: true, clock: false },
       buttons: { today: true, clear: true, close: true }
     },
-    localization: {
-      // format tampilan Indonesia (dd-mm-yyyy)
-      format: "dd-MM-yyyy"
-    }
+    localization: { format: "dd-MM-yyyy" }
   };
 
   if (invWrap) new tempusDominus.TempusDominus(invWrap, opts);
   if (dueWrap) new tempusDominus.TempusDominus(dueWrap, opts);
+
+  // === PAKSA convert sebelum submit (capture + document-level) ===
+  function convertInputs() {
+    if (invInput && invInput.value) invInput.value = toYMD(invInput.value);
+    if (dueInput && dueInput.value) dueInput.value = toYMD(dueInput.value);
+  }
+
+  // convert saat blur juga, biar gak keburu submit
+  if (invInput) invInput.addEventListener("blur", convertInputs, true);
+  if (dueInput) dueInput.addEventListener("blur", convertInputs, true);
+
+  // convert saat submit (paling penting)
+  document.addEventListener("submit", function (e) {
+    // hanya untuk form yang memuat input invoice_date
+    if (invInput && e.target && e.target.contains(invInput)) convertInputs();
+  }, true);
 });
 </script>
+
 
 
 {% endblock %}

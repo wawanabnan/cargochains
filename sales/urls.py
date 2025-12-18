@@ -43,7 +43,8 @@ from sales.views.invoices import (
     InvoiceDetailView, InvoiceDeleteView, 
     InvoiceCreateFromJobOrderView,
     InvoiceCreateManualView,
-    generate_invoice_from_job
+    generate_invoice_from_job,
+    InvoiceConfirmView
 )
 
 from .views.freight_pdf import  FreightQuotationPdfHtmlView
@@ -58,6 +59,8 @@ from .views.job_order import (
     JobOrderDetailView,
     JobOrderAttachmentUploadView,
     JobOrderAttachmentDeleteView,
+     JobOrderBulkStatusView
+    
 )
 
 from .views.jo_revenue_pdf import JobOrderRevenuePdfView
@@ -177,6 +180,11 @@ urlpatterns = [
          name="job_order_attachment_delete"),
 
          
+    path(
+        "job-orders/bulk-status/",
+        JobOrderBulkStatusView.as_view(),
+        name="joborder_bulk_status",
+    ),
 
     path("customers/", CustomerListView.as_view(), name="customer_list"),
     path("customers/add/", CustomerCreateView.as_view(), name="customer_add"),
@@ -207,6 +215,8 @@ urlpatterns = [
          InvoicePdfHtmlView.as_view(),
          name="invoice_pdf",
     ),
+  path("invoices/<int:pk>/confirm/", InvoiceConfirmView.as_view(), name="invoice_confirm"),
+
 
 ]
 

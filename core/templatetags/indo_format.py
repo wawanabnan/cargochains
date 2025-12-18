@@ -150,3 +150,51 @@ def indo_terbilang(value):
             return _terbilang_integer(int(value))
     except:
         return value
+
+
+@register.filter
+def indo_terbilang_uang(value):
+    """
+    Terbilang untuk nominal uang:
+    - Jika desimal 00 -> tambah "saja" (tanpa "koma")
+    - Jika desimal != 00 -> "koma ..." (lebih natural)
+
+    Contoh:
+      30330000.00 -> "tiga puluh juta tiga ratus tiga puluh ribu saja"
+      1250.50     -> "seribu dua ratus lima puluh koma lima puluh"
+      100.05      -> "seratus koma nol lima"
+    """
+    try:
+        s = str(value).strip()
+
+        # normalisasi format indo: 30.330.000,00 -> 30330000.00
+        s = s.replace(" ", "")
+        if "," in s:
+            s = s.replace(".", "").replace(",", ".")
+        else:
+            # kalau format sudah 1000.00 (dot decimal), biarkan
+            pass
+
+        if "." in s:
+            whole_str, frac_str = s.split(".", 1)
+        else:
+            whole_str, frac_str = s, ""
+
+        whole = int(whole_str) if whole_str not in ("", None) else 0
+        whole_words = _terbilang_integer(whole).strip()
+
+        # ambil 2 digit pecahan (uang)
+        frac2 = (frac_str + "00")[:2]
+    
+        if frac2 == "00":
+            return f"{whole_words} rupiah saja".strip() 
+        # jika pecahan leading zero, bacakan per digit biar "nol lima"
+        if frac2[0] == "0" and frac2[1] != "0":
+            frac_words = f"nol {ONES[int(frac2[1])]}"
+        else:
+            frac_words = _terbilang_integer(int(frac2)).strip()
+
+        return f"{whole_words} rupiah koma {frac_words}".strip()
+
+    except Exception:
+        return value

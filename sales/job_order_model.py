@@ -109,11 +109,6 @@ class JobOrder(TimeStampedModel):
         default=0,
     )
 
-    pph_amount = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=0,
-    )
 
     kurs_idr = models.DecimalField(
         max_digits=12,
@@ -127,11 +122,6 @@ class JobOrder(TimeStampedModel):
         default=0,
     )
 
-    tax_amount = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=0,
-    )
 
     pph_amount = models.DecimalField(
         max_digits=12,
@@ -166,6 +156,25 @@ class JobOrder(TimeStampedModel):
     is_invoiced = models.BooleanField(
         default=False,
         help_text="Sudah dibuat invoice"
+    )
+
+    ST_IN_PROGRESS = "IN_PROGRESS"
+    ST_PENDING = "PENDING"
+    ST_CANCELLED = "CANCELLED"
+    ST_COMPLETED = "COMPLETED"
+
+    STATUS_CHOICES = [
+        (ST_IN_PROGRESS, "In Progress"),
+        (ST_PENDING, "Pending"),
+        (ST_CANCELLED, "Cancelled"),
+        (ST_COMPLETED, "Completed"),
+    ]
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=ST_IN_PROGRESS,
+        db_index=True,
     )
 
     class Meta:

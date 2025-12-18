@@ -101,6 +101,7 @@ class InvoiceForm(forms.ModelForm):
 
 
 class InvoiceLineForm(forms.ModelForm):
+    
     class Meta:
         model = InvoiceLine
         fields = ["description", "quantity", "price", "taxes"]
