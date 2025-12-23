@@ -101,13 +101,19 @@
 
 
       <ul class="nav nav-treeview">
-
+         <li class="nav-item">
+          <a href="{% url 'sales:fq_list' %}"
+             class="nav-link {% if request.resolver_match.url_name == 'job_order_list' %}active{% endif %}">
+            <i class="nav-icon bi bi-file-earmark-text"></i>
+            <p>Quotation</p>
+          </a>
+        </li>
         <!-- JOB ORDERS -->
         <li class="nav-item">
           <a href="{% url 'sales:job_order_list' %}"
              class="nav-link {% if request.resolver_match.url_name == 'job_order_list' %}active{% endif %}">
             <i class="nav-icon bi bi-file-earmark-text"></i>
-            <p>Job Orders</p>
+            <p>Booking Confimation</p>
           </a>
         </li>
          <li class="nav-item">

@@ -12,12 +12,12 @@ from sales.forms.job_attachment import JobOrderAttachmentForm
 from django.views.generic import ListView
 
 from partners.models import Customer
-from core.models import Service  #
+from core.models import Service,Currency
 from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from core.utils import get_next_number
 from django.db.models import Sum
 from django.http import JsonResponse, HttpResponseBadRequest
-
+from decimal import Decimal, InvalidOperation
 
 # ==========================
 # LIST
@@ -78,7 +78,7 @@ class JobOrderListView(LoginRequiredMixin, ListView):
 # ==========================
 # CREATE
 # ==========================
-class JobOrderCreateView(LoginRequiredMixin, View):
+class JobOrderCreateView2(LoginRequiredMixin, View):
     template_name = "job_orders/h_form.html"
 
     def get(self, request):
@@ -102,6 +102,8 @@ class JobOrderCreateView(LoginRequiredMixin, View):
 
         job = form.save(commit=False)
         job.sales_user = request.user
+        job.status = JobOrder.ST_IN_PROGRESS  # atau ST_IN_PROGRESS sesuai konstanta om
+
         job.save()
 
         messages.success(request, "Job Order berhasil dibuat.")
@@ -109,6 +111,68 @@ class JobOrderCreateView(LoginRequiredMixin, View):
         # redirect ke edit untuk input JobCost
         return redirect("sales:job_order_edit", pk=job.pk)
 
+
+class JobOrderCreateView(LoginRequiredMixin, View):
+    template_name = "job_orders/h_form.html"
+
+    def get(self, request):
+        form = JobOrderForm()
+        return render(request, self.template_name, {
+            "form": form,
+            "job": None,
+            "cost_formset": None,
+        })
+
+    def post(self, request):
+        # =====================================================
+        # 🔧 NORMALISASI POST DATA (FIX "Enter a number.")
+        # =====================================================
+        data = request.POST.copy()
+
+        currency_id = data.get("currency")
+        if currency_id:
+            cur = Currency.objects.filter(pk=currency_id).only("code").first()
+            code = (cur.code or "").upper() if cur else ""
+
+            if code == "IDR":
+                # ✅ IDR → kurs FIX = 1 (angka valid)
+                data["kurs_idr"] = "1"
+            else:
+                # 🌍 Non-IDR → normalisasi format indo ke decimal
+                raw = (data.get("kurs_idr") or "").strip()
+                if raw:
+                    raw = raw.replace(" ", "").replace(".", "").replace(",", ".")
+                    data["kurs_idr"] = raw
+
+        # =====================================================
+        # FORM VALIDATION
+        # =====================================================
+        form = JobOrderForm(data)
+
+        if not form.is_valid():
+            messages.error(request, "Form tidak valid, silakan diperiksa kembali.")
+            return render(request, self.template_name, {
+                "form": form,
+                "job": None,
+                "cost_formset": None,
+            })
+
+        # =====================================================
+        # SAVE JOB ORDER
+        # =====================================================
+        job = form.save(commit=False)
+        job.sales_user = request.user
+        job.status = JobOrder.ST_IN_PROGRESS
+
+
+        # safety net (double lock)
+        if job.currency and (job.currency.code or "").upper() == "IDR":
+            job.kurs_idr = Decimal("1.00")
+
+        job.save()
+
+        messages.success(request, "Job Order berhasil dibuat.")
+        return redirect("sales:job_order_edit", pk=job.pk)
 
 
 # ==========================

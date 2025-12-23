@@ -11,7 +11,9 @@ from core.models import Currency, UOM, PaymentTerm
 from sales.freight import FreightQuotation, FreightQuotationStatus, FreightOrder
 # ^ kalau ternyata model om bukan di sales/freight.py, ganti ke lokasi model yang benar (sales.models ...)
 
-class FreightQuotationForm(forms.ModelForm):
+from core.forms import BootstrapSmallMixin
+
+class FreightQuotationForm(BootstrapSmallMixin,forms.ModelForm):
     class Meta:
         model = FreightQuotation
         # sales_user diisi otomatis dari request.user di view
@@ -23,9 +25,9 @@ class FreightQuotationForm(forms.ModelForm):
             "status": forms.HiddenInput(),
 
             "customer": forms.Select(
-                attrs={"class": "form-select", "id": "id_customer"}
+                attrs={"id": "id_customer",}
             ),
-            "sales_service": forms.Select(attrs={"class": "form-select"}),
+            "sales_service": forms.Select(),
             "sales_agency": forms.Select(attrs={"class": "form-select"}),
             "payment_term": forms.Select(attrs={"class": "form-select"}),
             "currency": forms.Select(attrs={"class": "form-select"}),
@@ -48,7 +50,7 @@ class FreightQuotationForm(forms.ModelForm):
 
             # ORIGIN / DESTINATION (hidden, diisi via autocomplete)
             "origin": forms.Select(
-                attrs={"class": "form-select d-none", "id": "id_origin"}
+                attrs={"class": "form-selectm d-none", "id": "id_origin"}
             ),
             "destination": forms.Select(
                 attrs={"class": "form-select d-none", "id": "id_destination"}
