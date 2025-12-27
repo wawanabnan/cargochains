@@ -6,10 +6,12 @@
             <th style="width: 3%;">
                 <input type="checkbox" id="chk-all">
             </th>
-            <th style="width: 9%">JOB#</th>
-            <th style="width: 8%">DATE</th>
-             <th style="width: 8%">REF#</th>
-            <th>CUSTOMER</th>
+            <th style="width: 9%"> 
+               <a href="?sort={% if request.GET.sort == 'number' %}-number{% else %}number{% endif %}"></a>JOB#</th>
+            <th style="width: 8%"> <a href="?sort={% if request.GET.sort == 'job_date' %}-job_date{% else %}job_date{% endif %}">DATE</th>
+            <th style="width: 8%">REF#</th>
+            <th><a href="?sort={% if request.GET.sort == 'customer__name' %}-customer__name{% else %}customer__name{% endif %}">
+            </a> CUSTOMER</th>
             <th style="width: 14%">SERVICES</th>
             <th class="text-center" style="width:4%">CURR</th>
             <th class="text-end" style="width: 10%;">TOTAL</th>

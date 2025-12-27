@@ -16,9 +16,11 @@ from sales.invoice_model import Invoice, InvoiceLine
 from sales.forms.invoices import InvoiceForm, InvoiceLineFormSet
 from sales.utils.invoice import build_invoice_description_from_job
 from decimal import Decimal, ROUND_HALF_UP
-from core.models import Tax
+from core.models.taxes import Tax
 from sales.utils.permissions import is_finance
 from django.core.exceptions import PermissionDenied
+from accounting.services.invoice_posting import create_journal_from_invoice
+from django.core.exceptions import PermissionDenied, ValidationError
 
 
 # =========================================================
@@ -163,7 +165,7 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
             fs = InvoiceLineFormSet()
 
             if fs.forms:
-                price_key = "unit_price" if "unit_price" in fs.forms[0].fields else "price"
+                price_key = "price"
 
                 # basis harga: subtotal (sebelum tax)
                 base_amount = getattr(self.job, "subtotal_amount", None)
@@ -187,80 +189,6 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
         ctx["job_order"] = self.job
         return ctx
     
-
-class InvoiceCreateManualView2(LoginRequiredMixin, View):
-    template_name = "invoices/form.html"
-
-    def get(self, request):
-        form = InvoiceForm()
-        formset = InvoiceLineFormSet()
-        return render(request, self.template_name, {"form": form, "formset": formset, "mode": "manual"})
-
-    @transaction.atomic
-    def post(self, request):
-        form = InvoiceForm(request.POST)
-        formset = InvoiceLineFormSet(request.POST)
-
-        if form.is_valid() and formset.is_valid():
-            inv = form.save(commit=False)
-
-                        # link ke job
-            inv.job_order = self.job
-
-            # audit
-            if hasattr(inv, "created_by_id") and not inv.created_by_id:
-                inv.created_by = request.user
-            if hasattr(inv, "updated_by_id"):
-                inv.updated_by = request.user
-
-            # sales hanya buat draft
-            if hasattr(inv, "status"):
-                inv.status = "DRAFT"
-
-            # safety anti-null
-            inv.subtotal_amount = inv.subtotal_amount or Decimal("0.00")
-            inv.tax_amount = inv.tax_amount or Decimal("0.00")
-            inv.total_amount = inv.total_amount or Decimal("0.00")
-
-            inv.save()  # ✅ WAJIB sebelum formset.save()
-
-            formset.instance = inv
-            formset.save()
-
-            recalc_invoice_totals(inv)  # ✅ source of truth
-            messages.success(request, "Invoice berhasil dibuat.")
-            return redirect("sales:invoice_detail", pk=inv.pk)
-
-
-        if not (form.is_valid() and formset.is_valid()):
-            messages.error(request, "VALIDATION ERROR — periksa data berikut:")
-
-            if form.errors:
-                messages.error(request, f"Header: {form.errors.as_text()}")
-
-            if formset.non_form_errors():
-                messages.error(request, f"Lines: {formset.non_form_errors()}")
-
-            for i, errs in enumerate(formset.errors, start=1):
-                if errs:
-                    messages.error(request, f"Line #{i}: {errs}")
-
-            return render(
-                request,
-                self.template_name,
-                {"form": form, "formset": formset, "mode": "manual"}
-            )
-
-
-        return render(request, self.template_name, {"form": form, "formset": formset, "mode": "manual"})
-
-    def get(self, request):
-        form = InvoiceForm()
-        formset = InvoiceLineFormSet()
-
-        messages.info(request, f"FORMSET form class: {formset.form.__name__}")
-
-        return render(request, self.template_name, {"form": form, "formset": formset, "mode": "manual"})
 class InvoiceCreateManualView(LoginRequiredMixin, View):
     template_name = "invoices/form.html"
 
@@ -321,9 +249,6 @@ class InvoiceCreateManualView(LoginRequiredMixin, View):
         messages.info(request, f"FORMSET form class: {formset.form.__name__}")
 
         return render(request, self.template_name, {"form": form, "formset": formset, "mode": "manual"})
-
-
-
 
 class InvoiceUpdateView(LoginRequiredMixin, View):
     template_name = "invoices/form.html"
@@ -397,7 +322,7 @@ class InvoiceCreateFromJobOrder2View(LoginRequiredMixin, CreateView):
         else:
             fs = InvoiceLineFormSet()
             if fs.forms:
-                price_key = "unit_price" if "unit_price" in fs.forms[0].fields else "price"
+                price_key = "price"
 
                 # ✅ basis harga: subtotal (sebelum tax), fallback aman
                 base_amount = getattr(self.job, "subtotal_amount", None)
@@ -490,7 +415,7 @@ class InvoiceCreateFromJobOrder3View(LoginRequiredMixin, CreateView):
             fs = InvoiceLineFormSet()
             if fs.forms:
                 f0 = fs.forms[0]
-                price_key = "unit_price" if "unit_price" in f0.fields else "price"
+                price_key = "price"
 
                 # ✅ basis harga: subtotal (sebelum tax), fallback kalau belum ada
                 base_amount = getattr(self.job, "subtotal_amount", None)
@@ -644,14 +569,41 @@ class InvoiceChangeStatusView(LoginRequiredMixin, View):
         return redirect("sales:invoice_detail", pk=inv.pk)
 
 class InvoiceConfirmView(View):
-    def post(self, request, pk):
-        inv = get_object_or_404(Invoice, pk)
 
+    def post(self, request, pk):
+        inv = get_object_or_404(Invoice, pk=pk)
+
+        # 1️⃣ permission / workflow guard
         if not inv.can_confirm(request.user):
             raise PermissionDenied
 
-        inv.status = Invoice.ST_SENT
-        inv.save(update_fields=["status"])
+        # 2️⃣ idempotent guard (anti double journal)
+        if inv.journal_id:
+            messages.info(
+                request,
+                f"Invoice {inv.number} sudah memiliki journal {inv.journal.number}."
+            )
+            return redirect("sales:invoice_detail", pk=inv.pk)
+
+        try:
+            # 3️⃣ ubah status invoice
+            inv.status = Invoice.ST_SENT
+            inv.save(update_fields=["status"])
+
+            # 4️⃣ 🔥 AUTO CREATE + POST JOURNAL
+            journal = create_journal_from_invoice(inv)
+
+            messages.success(
+                request,
+                f"Invoice {inv.number} berhasil dikonfirmasi "
+                f"dan journal {journal.number} telah dibuat."
+            )
+
+        except ValidationError as e:
+            # rollback otomatis kalau service pakai transaction.atomic
+            messages.error(request, f"Gagal membuat journal: {e}")
+            return redirect("sales:invoice_detail", pk=inv.pk)
+
         return redirect("sales:invoice_detail", pk=inv.pk)
 
 
@@ -665,10 +617,6 @@ class InvoiceMarkPaidView(View):
         inv.status = Invoice.ST_PAID
         inv.save(update_fields=["status"])
         return redirect("sales:invoice_detail", pk=inv.pk)
-
-
-
-
 
 class InvoiceCreateFromJobOrderView(LoginRequiredMixin, CreateView):
     model = Invoice
@@ -700,7 +648,7 @@ class InvoiceCreateFromJobOrderView(LoginRequiredMixin, CreateView):
             fs = InvoiceLineFormSet()
             if fs.forms:
                 f0 = fs.forms[0]
-                price_key = "unit_price" if "unit_price" in f0.fields else "price"
+                price_key = "price"
 
                 # ✅ basis harga: subtotal job (sebelum tax)
                 base_amount = getattr(self.job, "subtotal_amount", None)

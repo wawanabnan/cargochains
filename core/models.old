@@ -4,6 +4,9 @@ from django.utils import timezone
 
 # core/models.py
 from django.db import models
+from accounting.models.chart import Account
+from django.db.models import PROTECT
+
 
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -71,75 +74,6 @@ class UOM(models.Model):
         return f"{self.code} – {self.name}"
     
         
-class SalesService(models.Model):
-    code = models.CharField(max_length=30, unique=True)
-    name = models.CharField(max_length=100)
-    sort_order = models.IntegerField(default=0)
-    is_active = models.BooleanField(default=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-   
-    class Meta:
-        db_table = "sales_services"
-        ordering = ["sort_order", "name"]
-
-    def __str__(self):
-        return f"{self.code} - {self.name}"
-
-    @property
-    def only_name(self):
-        return self.name
-    
-    @property
-    def is_door_to_door(self) -> bool:
-        """
-        Return True jika service adalah Door to Door,
-        berdasarkan prefix kode: D2D_...
-        """
-        return self.code.startswith("D2D_")
-
-    @property
-    def is_door_to_port(self) -> bool:
-        """
-        True jika layanan Door to Port, contoh kode:
-        D2P_SEA, D2P_AIR, dll.
-        """
-        return self.code.upper().startswith("D2P_")
-
-    @property
-    def is_port_to_door(self) -> bool:
-        """
-        True jika layanan Port to Door, contoh kode:
-        P2D_SEA, P2D_AIR, dll. (kalau nanti om pakai prefix ini)
-        """
-        return self.code.upper().startswith("P2D_")
-
-    @property
-    def is_port_to_port(self) -> bool:
-        """
-        True jika layanan Port to Port, contoh kode:
-        P2P_SEA, P2P_AIR, dll.
-        """
-        return self.code.upper().startswith("P2P_")
-
-    @property
-    def service_mode(self) -> str:
-        """
-        Ringkasan mode service: 'D2D', 'D2P', 'P2D', 'P2P', atau 'OTHER'
-        Bisa dipakai di template / UI untuk badge/color.
-        """
-        code = self.code.upper()
-        if code.startswith("D2D_"):
-            return "D2D"
-        if code.startswith("D2P_"):
-            return "D2P"
-        if code.startswith("P2D_"):
-            return "P2D"
-        if code.startswith("P2P_"):
-            return "P2P"
-        return "OTHER"
 
                     
 class PaymentTerm(models.Model):
@@ -192,29 +126,17 @@ class CoreSetting(models.Model):
         return f"{self.code}"
     
 
-# core/models.py
-class CompanyProfile(models.Model):
-    name = models.CharField(max_length=200)
-    brand = models.CharField(max_length=100, blank=True, default="")
-    address = models.TextField(blank=True)
-    phone = models.CharField(max_length=50, blank=True)
-    email = models.EmailField(blank=True)
-    website = models.URLField(blank=True)
-    logo = models.ImageField(upload_to='company_logos/', null=True, blank=True)
-    is_default = models.BooleanField(default=False)
-
-    class Meta:
-        db_table = "core_company_profiles"
-
-    def __str__(self):
-        return self.brand or self.name
-
-
       
 class Service(models.Model):
     name = models.CharField(max_length=100)
     service_group = models.CharField(max_length=30)
-    
+    revenue_account = models.ForeignKey(
+        Account, on_delete=PROTECT, null=True, blank=True, related_name="+"
+    )
+    receivable_account = models.ForeignKey(
+        Account, on_delete=PROTECT, null=True, blank=True, related_name="+"
+    )  # optional    
+
     sort_order = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
 

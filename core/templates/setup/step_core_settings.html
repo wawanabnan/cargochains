@@ -1,0 +1,16 @@
+{% extends "core/setup/_layout.html" %}
+{% block setup_content %}
+<form method="post">
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header"><h6 class="mb-0">Core Settings</h6></div>
+    <div class="card-body">
+      <div class="text-muted small">Boleh dilewati. Nanti bisa diatur dari menu Settings.</div>
+    </div>
+    <div class="card-footer d-flex justify-content-end gap-2">
+      <button name="action" value="skip" class="btn btn-outline-secondary btn-sm">Skip</button>
+      <button name="action" value="save" class="btn btn-primary btn-sm">Save & Next</button>
+    </div>
+  </div>
+</form>
+{% endblock %}

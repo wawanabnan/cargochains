@@ -1,14 +1,15 @@
 # core/admin.py
 from django.contrib import admin
-from .models import (
-    NumberSequence,
-    CoreSetting,
-    CompanyProfile,
-    UOM,
-    PaymentTerm,
-    Currency,
-    SalesService,
-)
+from .models.company import CompanyProfile
+from .models.number_sequences import NumberSequence
+from .models.payment_terms import PaymentTerm
+from .models.currencies import Currency
+from .models.services import Service
+from .models.uoms import UOM
+from .models.settings import CoreSetting
+from .models.setup import SetupState
+
+
 
 
 @admin.action(description="Reset counter (last_no=0, tetap periode sekarang)")
@@ -61,3 +62,11 @@ class UOMdmin(admin.ModelAdmin):
 class PaymentTermdmin(admin.ModelAdmin):
     list_display = ("code", "name", "days", "description")
     search_fields = ("code",)
+
+
+
+
+@admin.register(CompanyProfile)
+class CompanyInformationAdmin(admin.ModelAdmin):
+    list_display = ("brand", "name", "default_currency", "updated_at")
+    search_fields = ("brand", "name", "npwp")

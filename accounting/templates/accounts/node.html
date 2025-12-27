@@ -1,0 +1,50 @@
+<li class="mb-1">
+  <div class="d-flex align-items-center" style="padding-left: {{ level|add:0 }}rem;">
+      {% if node.children.all %}
+        <button class="btn btn-sm btn-outline-secondary me-2"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#coa-{{ node.id }}">
+          +
+        </button>
+      {% else %}
+        <span class="me-2" style="display:inline-block; width:32px;"></span>
+      {% endif %}
+
+      <a class="fw-semibold me-2 text-decoration-none"
+        href="{% url 'accounting:account_detail' node.pk %}">
+        {{ node.code }}
+      </a>
+      <span>
+      {% if not node.is_postable %}
+        <a href="{% url 'accounting:account_detail' node.pk %}" class="text-decoration-none">
+          <strong>{{ node.name }}</strong>
+        </a>
+        <span class="badge text-bg-secondary ms-1">GROUP</span>
+      {% else %}
+        <a href="{% url 'accounting:account_detail' node.pk %}" class="text-decoration-none">
+          {{ node.name }}
+        </a>
+      {% endif %}
+    </span>
+
+
+    <span class="ms-auto">
+        {% if node.is_postable %}
+          <span class="badge text-bg-success">Postable</span>
+        {% else %}
+          <span class="badge text-bg-secondary">Group</span>
+        {% endif %}
+      </span>
+  </div>
+
+  {% if node.children.all %}
+    <div class="collapse ms-4" id="coa-{{ node.id }}">
+      <ul class="list-unstyled mt-1">
+        {% for ch in node.children.all|dictsort:"code" %}
+          {% include "accounts/node.html" with node=ch level=level|add:1 %}
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+</li>

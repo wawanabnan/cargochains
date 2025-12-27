@@ -1,0 +1,72 @@
+{% extends "adminbase.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h4 class="mb-0">General Ledger</h4>
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounting:trial_balance' %}">Back to Trial Balance</a>
+  </div>
+
+  <div class="mb-2">
+    <div class="fw-semibold">{{ account.code }} - {{ account.name }}</div>
+    <div class="text-muted small">
+      {% if posted_only %}Posted only{% else %}All journals{% endif %}
+    </div>
+  </div>
+
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+      <label class="form-label small mb-1">From</label>
+      <input type="date" name="from" class="form-control form-control-sm" value="{{ date_from|date:'Y-m-d' }}">
+    </div>
+    <div class="col-auto">
+      <label class="form-label small mb-1">To</label>
+      <input type="date" name="to" class="form-control form-control-sm" value="{{ date_to|date:'Y-m-d' }}">
+    </div>
+    <div class="col-auto d-flex align-items-end">
+      <button class="btn btn-sm btn-primary">Run</button>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+          <thead>
+            <tr>
+              <th style="width:110px">Date</th>
+              <th style="width:140px">Ref</th>
+              <th>Description</th>
+              <th style="width:140px" class="text-end">Debit</th>
+              <th style="width:140px" class="text-end">Credit</th>
+              <th style="width:140px" class="text-end">Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="table-light">
+              <td colspan="5"><strong>Opening Balance</strong></td>
+              <td class="text-end"><strong>{{ opening_balance|floatformat:2 }}</strong></td>
+            </tr>
+
+            {% for r in rows %}
+              <tr>
+                <td>{{ r.date|date:"Y-m-d" }}</td>
+                <td>{{ r.ref }}</td>
+                <td>{{ r.desc }}</td>
+                <td class="text-end">{{ r.debit|floatformat:2 }}</td>
+                <td class="text-end">{{ r.credit|floatformat:2 }}</td>
+                <td class="text-end">{{ r.balance|floatformat:2 }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-3">No transactions</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -3,12 +3,24 @@ from django.db.models import PROTECT
 from django.conf import settings
 from django.db.models import Q
 
-from core.models import TimeStampedModel, SalesService, PaymentTerm
-from core.models import Currency, Service
+from core.models.services import Service
+from core.models.currencies import Currency
+from core.models.payment_terms import  PaymentTerm
+from core.models.taxes import  Tax
+
+
 from core.utils import get_next_number
 from partners.models import Partner
 from partners.models import Customer
 from decimal import Decimal
+
+
+class TimeStampedModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
 
 
 class JobOrder(TimeStampedModel):

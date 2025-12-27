@@ -1,0 +1,66 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="app-content-header">
+    <div class="container-fluid">
+    {% if not journal.posted %}
+    <form method="post" action="{% url 'accounting:journal_post' journal.pk %}" class="d-inline">
+      {% csrf_token %}
+      <button class="btn btn-sm btn-success">Post</button>
+    </form>
+  {% else %}
+    <span class="badge text-bg-success">POSTED (Locked)</span>
+  {% endif %}
+    </div>
+</div>
+
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center">
+      <h4>Journal {{ journal.number }}</h4>
+
+      {% if not journal.posted %}
+        <form method="post" action="{% url 'accounting:journal_post' journal.pk %}">
+          {% csrf_token %}
+          <button class="btn btn-sm btn-success"
+                  onclick="return confirm('POST journal ini?');">POST</button>
+        </form>
+      {% else %}
+        <span class="badge text-bg-success">POSTED</span>
+      {% endif %}
+    </div>
+
+    <div class="text-muted small mb-3">
+      {{ journal.date|date:"d-m-Y" }} • Ref: {{ journal.ref|default:"-" }}
+    </div>
+
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Account</th>
+          <th>Label</th>
+          <th class="text-end">Debit</th>
+          <th class="text-end">Credit</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ln in journal.lines.all %}
+          <tr>
+            <td>{{ ln.account.code }} - {{ ln.account.name }}</td>
+            <td>{{ ln.label|default:"-" }}</td>
+            <td class="text-end">{{ ln.debit }}</td>
+            <td class="text-end">{{ ln.credit }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="text-muted">Tidak ada lines</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th colspan="2" class="text-end">TOTAL</th>
+          <th class="text-end">{{ journal.total_debit }}</th>
+          <th class="text-end">{{ journal.total_credit }}</th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+{% endblock %}

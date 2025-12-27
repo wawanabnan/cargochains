@@ -3,7 +3,7 @@ from django.shortcuts import redirect, render
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 
-from core.models import Tax
+from core.models.taxes import Tax
 from sales_configuration.forms.tax_policy import SalesTaxConfigForm
 from sales_configuration.models import SalesTaxPolicy
 

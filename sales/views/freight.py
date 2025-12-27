@@ -18,7 +18,12 @@ import datetime
 
 from partners.models import Partner, PartnerRole
 from geo.models import Location
-from core.models import Currency, SalesService, PaymentTerm
+from core.models.currencies import Currency
+from core.models.services import SalesService
+from core.models.payment_terms import PaymentTerm
+
+
+
 from core.utils import get_next_number, get_valid_days_default
 
 from sales.forms.freights import (

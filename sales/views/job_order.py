@@ -12,7 +12,8 @@ from sales.forms.job_attachment import JobOrderAttachmentForm
 from django.views.generic import ListView
 
 from partners.models import Customer
-from core.models import Service,Currency
+from core.models.services import Service
+from core.models.currencies import Currency
 from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from core.utils import get_next_number
 from django.db.models import Sum
@@ -35,6 +36,18 @@ class JobOrderListView(LoginRequiredMixin, ListView):
             .select_related("customer", "service", "payment_term", "currency", "sales_user")
             .order_by("-job_date", "-id")
         )
+
+        sort = self.request.GET.get("sort", "-job_date")  # default
+        allowed = {
+            "number", "-number",
+            "job_date", "-job_date",
+            "customer__name", "-customer__name",
+            "grand_total", "-grand_total",
+        }
+
+        if sort in allowed:
+            qs = qs.order_by(sort)
+
 
         q = self.request.GET.get("q")
         customer_id = self.request.GET.get("customer")

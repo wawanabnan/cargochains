@@ -26,6 +26,7 @@
               <td>{{ inv.customer.name }}</td>
               <td class="text-end">{{ inv.total_amount |indo_number}}</td>
               <td class="text-end">
+             <!--
                 {% if inv.status == "DRAFT" %}
                 <span class="badge bg-secondary">DRAFT</span>
                 {% elif inv.status == "PAID" %}
@@ -34,7 +35,8 @@
                 <span class="badge bg-warning text-dark">UNPAID</span>
                 {% else %}
                 <span class="badge bg-secondary">DRAFT</span>
-                {% endif %}
+                {% endif %}-->
+                {{ inv.pay_status_label }}
               </td>
             </tr>
           {% empty %}

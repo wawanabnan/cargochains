@@ -2,7 +2,9 @@
 from datetime import date
 from django.db import transaction
 from django.utils import timezone
-from core.models import NumberSequence, CoreSetting
+from core.models.number_sequences import NumberSequence
+from core.models.settings import CoreSetting
+
 
 def get_next_number(app_label: str, code: str, today: date | None = None) -> str:
     """

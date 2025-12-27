@@ -1,0 +1,100 @@
+{# templates/partials/menu_accounting.html #}
+<li class="nav-item {% if request.resolver_match.app_name == 'accounting' %}menu-open{% endif %}">
+  <a href="#" class="nav-link {% if request.resolver_match.app_name == 'accounting' %}active{% endif %}">
+    <i class="nav-icon bi bi-calculator"></i>
+    <p>
+      Accounting
+      <i class="nav-arrow bi bi-chevron-right"></i>
+    </p>
+  </a>
+
+  <ul class="nav nav-treeview">
+
+    <li class="nav-item">
+      <a href="{% url 'accounting:account_tree' %}"
+         class="nav-link {% if request.resolver_match.url_name == 'account_tree' %}active{% endif %}">
+        <i class="nav-icon bi bi-diagram-3"></i>
+        <p>Chart of Accounts</p>
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a href="{% url 'accounting:journal_list' %}"
+         class="nav-link {% if request.resolver_match.url_name in 'journal_list journal_add journal_detail journal_edit' %}active{% endif %}">
+        <i class="nav-icon bi bi-journal-text"></i>
+        <p>Journals</p>
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a href="#" class="nav-link">
+        <i class="nav-icon bi bi-graph-up"></i>
+        <p>
+          Reports
+          <i class="nav-arrow bi bi-chevron-right"></i>
+        </p>
+      </a>
+      <ul class="nav nav-treeview">
+
+        <li class="nav-item">
+          <a href="{% url 'accounting:trial_balance' %}"
+             class="nav-link {% if request.resolver_match.url_name == 'trial_balance' %}active{% endif %}">
+            <i class="nav-icon bi bi-table"></i>
+            <p>Trial Balance</p>
+          </a>
+        </li>
+
+      </ul>
+    </li>
+    <li class="nav-item">
+    <a href="{% url 'accounting:settings' %}" class="nav-link">
+      <i class="nav-icon bi bi-gear"></i>
+      <p>Accounting Settings</p>
+    </a>
+  </li>
+  <li class="nav-item">
+  <a href="{% url 'accounting:configuration' %}" class="nav-link">
+    <i class="nav-icon bi bi-sliders"></i>
+    <p>Configuration</p>
+  </a>
+</li>
+
+    <li class="nav-item">
+      <a href="#" class="nav-link">
+        <i class="nav-icon bi bi-gear"></i>
+        <p>
+          Settings
+          <i class="nav-arrow bi bi-chevron-right"></i>
+        </p>
+      </a>
+      <ul class="nav nav-treeview">
+
+        <li class="nav-item">
+          <a href="{% url 'accounting:period_lock_list' %}"
+             class="nav-link {% if request.resolver_match.url_name in 'period_lock_list period_lock_add period_lock_edit' %}active{% endif %}">
+            <i class="nav-icon bi bi-lock"></i>
+            <p>Period Locks</p>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a href="{% url 'accounting:account_import' %}"
+             class="nav-link {% if request.resolver_match.url_name == 'account_import' %}active{% endif %}">
+            <i class="nav-icon bi bi-upload"></i>
+            <p>Import COA</p>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a href="{% url 'accounting:account_export' %}"
+             class="nav-link {% if request.resolver_match.url_name == 'account_export' %}active{% endif %}">
+            <i class="nav-icon bi bi-download"></i>
+            <p>Export COA</p>
+          </a>
+        </li>
+
+      </ul>
+    </li>
+
+  </ul>
+</li>

@@ -12,8 +12,9 @@ from decimal import Decimal
 
 from ..freight import FreightQuotation,  FreightQuotationStatus, FreightOrder
 from geo.models import Location
-from core.models import Currency, CoreSetting
-from core.models import UOM
+from core.models.currencies import Currency
+from core.models.settings import  CoreSetting
+from core.models.uoms import UOM
 
 
 

@@ -1,0 +1,54 @@
+{% extends "adminbase.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Period Locks</h4>
+    <a class="btn btn-sm btn-primary" href="{% url 'accounting:period_lock_add' %}">+ Add</a>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+          <thead>
+            <tr>
+              <th style="width:120px">Period</th>
+              <th style="width:120px">Status</th>
+              <th style="width:160px">Locked At</th>
+              <th style="width:220px" class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+              <tr>
+                <td class="fw-semibold">{{ r.year }}-{{ r.month|stringformat:"02d" }}</td>
+                <td>
+                  {% if r.is_locked %}
+                    <span class="badge text-bg-danger">LOCKED</span>
+                  {% else %}
+                    <span class="badge text-bg-success">OPEN</span>
+                  {% endif %}
+                </td>
+                <td class="text-muted small">{{ r.locked_at|date:"Y-m-d H:i" }}</td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounting:period_lock_edit' r.pk %}">Edit</a>
+                  <form method="post" action="{% url 'accounting:period_lock_toggle' r.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button class="btn btn-sm {% if r.is_locked %}btn-outline-success{% else %}btn-outline-danger{% endif %}">
+                      {% if r.is_locked %}Unlock{% else %}Lock{% endif %}
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-3">No data</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

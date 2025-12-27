@@ -6,11 +6,22 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from decimal import Decimal
 
-from core.models import TimeStampedModel, Currency, PaymentTerm,Tax
+from core.models.currencies import Currency
+from core.models.payment_terms import  PaymentTerm
+from  core.models.taxes import  Tax
+
 from core.utils import get_next_number
 from partners.models import Partner,Customer
 from .job_order_model import JobOrder
+from accounting.models.journal import Journal
 
+
+class TimeStampedModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
 
 class Invoice(TimeStampedModel):
     ST_DRAFT = "DRAFT"
@@ -37,7 +48,13 @@ class Invoice(TimeStampedModel):
         JobOrder, on_delete=PROTECT, null=True, blank=True, related_name="invoices"
     )
 
-    
+    journal = models.OneToOneField(
+        Journal,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="invoice",
+    )
     customer = models.ForeignKey(
         Customer,
         on_delete=PROTECT,
@@ -63,7 +80,7 @@ class Invoice(TimeStampedModel):
 
 
     amount_paid = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
-
+    
     notes_internal = models.TextField(blank=True, default="")
     notes_customer = models.TextField(blank=True, default="")
 
@@ -123,6 +140,14 @@ class Invoice(TimeStampedModel):
         )
     def can_mark_paid(self, user):
         return self.status == self.ST_SENT and (user.is_superuser or user.groups.filter(name="Finance").exists())
+
+
+    def outstanding_amount(self):
+        return (self.total_amount or Decimal("0.00")) - (self.amount_paid or Decimal("0.00"))
+
+
+    def pay_status_label(self):
+        return "Paid" if self.status == self.ST_PAID else "Unpaid"
 
 class InvoiceLine(TimeStampedModel):
     invoice = models.ForeignKey(Invoice, on_delete=CASCADE, related_name="lines")

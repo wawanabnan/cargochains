@@ -1,0 +1,33 @@
+{% extends "adminbase.html" %}
+{% block content %}
+<a href="{% url 'accounting:journal_add' %}" class="btn btn-sm btn-primary">+ Add Journal</a>
+
+  <div class="container-fluid py-3">
+    <h4>Journals</h4>
+
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Number</th>
+          <th>Status</th>
+          <th class="text-end">Debit</th>
+          <th class="text-end">Credit</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for j in journals %}
+          <tr>
+            <td>{{ j.date|date:"d-m-Y" }}</td>
+            <td><a href="{% url 'accounting:journal_detail' j.pk %}">{{ j.number }}</a></td>
+            <td>{% if j.posted %}POSTED{% else %}DRAFT{% endif %}</td>
+            <td class="text-end">{{ j.total_debit }}</td>
+            <td class="text-end">{{ j.total_credit }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-muted">Belum ada journal</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

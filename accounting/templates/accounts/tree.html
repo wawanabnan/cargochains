@@ -1,0 +1,43 @@
+{% extends "adminbase.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Chart of Accounts (Tree)</h4>
+    <div class="d-flex gap-2">
+      <a class="btn btn-sm btn-outline-success" href="{% url 'accounting:account_export' %}">Export CSV</a>
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounting:account_import' %}">Import CSV</a>
+      <a class="btn btn-sm btn-primary" href="{% url 'accounting:account_add' %}">+ Add Account</a>
+    </div>
+  </div>
+
+  <!-- Filter type (optional) -->
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+      <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">-- All Types --</option>
+        {% for k, v in types %}
+          <option value="{{ k }}" {% if k == current_type %}selected{% endif %}>{{ v }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="card-body">
+
+      {% if roots %}
+        <ul class="list-unstyled mb-0">
+          {% for a in roots %}
+            {% include "accounts/node.html" with node=a level=0 %}
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="text-muted">No accounts found.</div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

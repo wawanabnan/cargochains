@@ -15,6 +15,8 @@ def custom_permission_denied(request, exception=None):
 handler403 = custom_permission_denied
 handler404 = custom_page_not_found
 
+def root(request):
+    return redirect("/welcome/")
 
 urlpatterns = [
 
@@ -29,7 +31,9 @@ urlpatterns = [
     path("geo/", include(("geo.urls", "geo"), namespace="geo")),  # wajib kalau pakai {% url 'geo:...' %}
     path("projects/", include("projects.urls")),
     path("purchases/", include("purchases.urls")),
-
+    path("accounting/", include("accounting.urls")),    
+    path("payments/", include("payments.urls", namespace="payments")),
+    path("", include("core.urls")),
     
 
 ]

@@ -1,0 +1,46 @@
+{% extends "adminbase.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h4 class="mb-0">Receipt {{ rcpt.receipt_no|default:"(draft)" }}</h4>
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounting:receipt_list' %}">Back</a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="row mb-2">
+        <div class="col-4 text-muted">Invoice</div>
+        <div class="col-8">{{ rcpt.invoice.number }}</div>
+      </div>
+      <div class="row mb-2">
+        <div class="col-4 text-muted">Customer</div>
+        <div class="col-8">{{ rcpt.customer }}</div>
+      </div>
+      <div class="row mb-2">
+        <div class="col-4 text-muted">Amount</div>
+        <div class="col-8">{{ rcpt.amount }}</div>
+      </div>
+      <div class="row mb-2">
+        <div class="col-4 text-muted">Status</div>
+        <div class="col-8">{{ rcpt.get_status_display }}</div>
+      </div>
+
+      {% if rcpt.journal %}
+      <div class="row mb-2">
+        <div class="col-4 text-muted">Journal</div>
+        <div class="col-8">{{ rcpt.journal.number }}</div>
+      </div>
+      {% endif %}
+
+      <div class="mt-3 d-flex gap-2">
+        {% if rcpt.can_post %}
+          <form method="post" action="{% url 'accounting:receipt_post' rcpt.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-success">Post Receipt</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

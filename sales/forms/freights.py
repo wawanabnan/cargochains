@@ -5,13 +5,15 @@ from django.utils import timezone
 
 from partners.models import Partner, PartnerRole
 from geo.models import Location
-from core.models import Currency, UOM, PaymentTerm
+from core.models.currencies import Currency
+from core.models.uoms import UOM
+from core.models.payment_terms import PaymentTerm
 
 # IMPORTANT: ambil model dari tempat model, BUKAN dari views
 from sales.freight import FreightQuotation, FreightQuotationStatus, FreightOrder
 # ^ kalau ternyata model om bukan di sales/freight.py, ganti ke lokasi model yang benar (sales.models ...)
 
-from core.forms import BootstrapSmallMixin
+from core.forms.bootstrap_mixin import BootstrapSmallMixin
 
 class FreightQuotationForm(BootstrapSmallMixin,forms.ModelForm):
     class Meta:

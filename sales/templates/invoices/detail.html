@@ -35,6 +35,11 @@
       <i class="fa fa-check me-1"></i> Confirm
     </button>
   </form>
+  {% if invoice.journal %}
+  <a href="{% url 'accounting:journal_detail' invoice.journal.id %}">
+    View Journal {{ invoice.journal.number }}
+  </a>
+{% endif %}
 {% endif %}
 
       </div>

@@ -1,0 +1,125 @@
+{% extends "core/setup/_layout.html" %}
+
+{% block setup_content %}
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header"><h6 class="mb-0">Company Profile</h6></div>
+        <div class="card-body">
+          {% include "core/company_form_fields.html" %}
+        </div>
+        <div class="card-footer d-flex justify-content-end">
+          <button class="btn btn-primary btn-sm" type="submit">Save & Next</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-header"><h6 class="mb-0">Notes</h6></div>
+        <div class="card-body small text-muted">
+          Wajib diisi. Digunakan untuk Invoice / PDF / Sales Letter.
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+<script>
+(function(){
+  const urlChildren = "{% url 'geo:location_children' %}";
+
+  const elCountry  = document.getElementById("id_country");
+  const elProvince = document.getElementById("id_province");
+  const elRegency  = document.getElementById("id_regency");
+  const elDistrict = document.getElementById("id_district");
+
+  function resetSelect(el, placeholder) {
+    if (!el) return;
+    el.innerHTML = "";
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = placeholder || "---------";
+    el.appendChild(opt);
+  }
+
+  async function loadChildren(parentId, targetEl, placeholder) {
+    resetSelect(targetEl, placeholder);
+    if (!parentId || !targetEl) return;
+
+    const resp = await fetch(urlChildren + "?parent_id=" + encodeURIComponent(parentId), {
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    });
+    const data = await resp.json();
+    (data.results || []).forEach(it => {
+      const opt = document.createElement("option");
+      opt.value = it.id;
+      opt.textContent = it.name;
+      targetEl.appendChild(opt);
+    });
+  }
+
+  // Init placeholders
+  resetSelect(elProvince, "Select province...");
+  resetSelect(elRegency, "Select regency/city...");
+  resetSelect(elDistrict, "Select district...");
+
+  // When country changes -> load provinces
+  if (elCountry && elProvince) {
+    elCountry.addEventListener("change", async () => {
+      await loadChildren(elCountry.value, elProvince, "Select province...");
+      resetSelect(elRegency, "Select regency/city...");
+      resetSelect(elDistrict, "Select district...");
+    });
+  }
+
+  // When province changes -> load regencies
+  if (elProvince && elRegency) {
+    elProvince.addEventListener("change", async () => {
+      await loadChildren(elProvince.value, elRegency, "Select regency/city...");
+      resetSelect(elDistrict, "Select district...");
+    });
+  }
+
+  // When regency changes -> load districts
+  if (elRegency && elDistrict) {
+    elRegency.addEventListener("change", async () => {
+      await loadChildren(elRegency.value, elDistrict, "Select district...");
+    });
+  }
+
+  // On page load: if editing existing record (has initial selected), preload chain
+  async function preload() {
+    if (!elCountry) return;
+
+    const selectedProvince = elProvince ? elProvince.value : "";
+    const selectedRegency  = elRegency ? elRegency.value : "";
+    const selectedDistrict = elDistrict ? elDistrict.value : "";
+
+    // If country has value and province options empty -> load provinces
+    if (elCountry.value) {
+      const provVal = selectedProvince;
+      await loadChildren(elCountry.value, elProvince, "Select province...");
+      if (provVal) elProvince.value = provVal;
+
+      if (provVal) {
+        const regVal = selectedRegency;
+        await loadChildren(provVal, elRegency, "Select regency/city...");
+        if (regVal) elRegency.value = regVal;
+
+        if (regVal) {
+          const distVal = selectedDistrict;
+          await loadChildren(regVal, elDistrict, "Select district...");
+          if (distVal) elDistrict.value = distVal;
+        }
+      }
+    }
+  }
+
+  preload();
+})();
+</script>
+

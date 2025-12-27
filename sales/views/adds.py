@@ -14,7 +14,7 @@ from django.db import transaction
 from sales.forms.quotations import QuotationHeaderForm
 from sales import models as m
 from geo.models import Location
-from core.models import CoreSetting
+from core.models.settings import CoreSetting
 from core.utils import get_next_number
 
 getcontext().prec = 28

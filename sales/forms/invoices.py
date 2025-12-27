@@ -4,7 +4,7 @@ from django.forms import inlineformset_factory
 from sales.invoice_model import Invoice, InvoiceLine
 from decimal import Decimal
 from django import forms
-from core.models import Tax
+from core.models.taxes import Tax
 from sales_configuration.models import SalesTaxPolicy
 from sales.invoice_model import InvoiceLine
 from decimal import Decimal, InvalidOperation

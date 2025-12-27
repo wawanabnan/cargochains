@@ -6,10 +6,10 @@ from geo.models import Location
 from decimal import Decimal
 from django.utils import timezone
 from django.conf import settings
-from core.models import SalesService 
-from core.models import UOM     
-from core.models import PaymentTerm
-from core.models import Currency
+from core.models.services import SalesService 
+from core.models.uoms import UOM     
+from core.models.payment_terms import PaymentTerm
+from core.models.currencies import Currency
 from sales.invoice_model import *
 from sales.job_order_model import *
 

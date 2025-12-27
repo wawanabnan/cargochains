@@ -1,0 +1,78 @@
+{% extends "adminbase.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Chart of Accounts</h4>
+    <div class="d-flex gap-2">
+      <a class="btn btn-sm btn-outline-success" href="{% url 'accounting:account_export' %}">Export CSV</a>
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounting:account_import' %}">Import CSV</a>
+      <a class="btn btn-sm btn-primary" href="{% url 'accounting:account_add' %}">+ Add Account</a>
+    </div>
+  </div>
+
+  <div class="text-muted small mb-2">COA rows: {{ coa_count }}</div>
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-2" role="tablist">
+    {% for typ, typ_label, accounts in groups %}
+      <li class="nav-item" role="presentation">
+        <button class="nav-link {% if forloop.first %}active{% endif %}"
+                data-bs-toggle="tab"
+                data-bs-target="#tab-{{ typ|slugify }}"
+                type="button" role="tab">
+          {{ typ_label }} <span class="badge text-bg-light ms-1">{{ accounts|length }}</span>
+        </button>
+      </li>
+    {% endfor %}
+  </ul>
+
+  <div class="tab-content">
+    {% for typ, typ_label, accounts in groups %}
+      <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="tab-{{ typ|slugify }}" role="tabpanel">
+        <div class="card">
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm mb-0 align-middle">
+                <thead>
+                  <tr>
+                    <th style="width:140px">Code</th>
+                    <th>Name</th>
+                    <th style="width:100px" class="text-center">Postable</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for a in accounts %}
+                    <tr class="{% if not a.is_postable %}table-light{% endif %}">
+                      <td class="fw-semibold">
+                        {% if a.parent %}<span class="ms-4">↳</span>{% endif %}
+                        {{ a.code }}
+                      </td>
+                      <td>
+                        {% if not a.is_postable %}
+                          <strong>{{ a.name }}</strong>
+                          <span class="badge text-bg-secondary ms-1">GROUP</span>
+                        {% else %}
+                          {{ a.name }}
+                        {% endif %}
+                      </td>
+                      <td class="text-center">
+                        {% if a.is_postable %}
+                          <span class="badge text-bg-success">Yes</span>
+                        {% else %}
+                          <span class="badge text-bg-secondary">No</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

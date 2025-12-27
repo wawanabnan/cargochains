@@ -10,7 +10,7 @@ from django.views.decorators.http import require_POST
 
 from sales.models import SalesQuotation
 from ..models import SalesQuotation, SalesOrder, SalesOrderLine
-from core.models import NumberSequence
+from core.models.number_sequences import NumberSequence
 from core.numbering import next_number
 
 

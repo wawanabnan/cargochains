@@ -65,6 +65,12 @@ tr.clickable-row:hover {
 
 } 
 
+
+.app-sidebar .nav-icon {
+    font-size: 0.9 rem !important;
+    line-height: 1;
+}
+
 .card-body.p-0 .table thead > tr > th:first-of-type, .card-body.p-0 .table thead > tr > td:first-of-type, .card-body.p-0 .table tfoot > tr > th:first-of-type, .card-body.p-0 .table tfoot > tr > td:first-of-type, .card-body.p-0 .table tbody > tr > th:first-of-type, .card-body.p-0 .table tbody > tr > td:first-of-type {
     padding-left: 1rem;
 }
@@ -90,3 +96,4 @@ tr.clickable-row:hover {
 label .form-label,label {
   margin-bottom:1px;
 }
+

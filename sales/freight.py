@@ -3,14 +3,29 @@ from django.db.models import PROTECT
 from django.db import models
 from django.conf import settings
 
-from core.models import TimeStampedModel, SalesService, Currency
+
+from core.models.services import SalesService
+from core.models.currencies import Currency
+from core.models.payment_terms import PaymentTerm
+from core.models.uoms import UOM
+
 from partners.models import Partner
 from geo.models import Location
 from django.db import transaction
-from core.models import NumberSequence
+from core.models.number_sequences import NumberSequence
 from core.utils import get_next_number
-from core.models import PaymentTerm,UOM
 from datetime import date
+
+
+
+
+
+class TimeStampedModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
 
 # ============================
 #   FREIGHT QUOTATION STATUS
@@ -27,7 +42,8 @@ class FreightQuotationStatus(models.TextChoices):
 # ============================
 #   FREIGHT QUOTATION
 # ============================
-class FreightQuotation(TimeStampedModel):
+class FreightQuotation (TimeStampedModel):
+
     """
     1 quotation = 1 origin + 1 destination
     Menyimpan snapshot shipper & consignee (nama, telp, alamat, geo).
@@ -72,6 +88,7 @@ class FreightQuotation(TimeStampedModel):
         on_delete=models.PROTECT,
         related_name="freight_quotations_origin",
     )
+    
     destination = models.ForeignKey(
         Location,
         on_delete=models.PROTECT,
@@ -304,6 +321,10 @@ class FreightQuotation(TimeStampedModel):
         null=True,
         blank=True,
     )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
 
     class Meta:
         db_table = "sales_freight_quotations"
@@ -681,6 +702,8 @@ class FreightOrder(TimeStampedModel):
         on_delete=models.PROTECT,
         related_name="freight_orders_destination_set",
     )
+
+    
 
     sales_service = models.ForeignKey(
         SalesService,

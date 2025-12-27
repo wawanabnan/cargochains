@@ -1,0 +1,126 @@
+{# templates/core/company_form_fields.html #}
+
+{% if form.non_field_errors %}
+  <div class="alert alert-danger py-2">{{ form.non_field_errors }}</div>
+{% endif %}
+
+<div class="row g-2">
+
+  <div class="col-md-6">
+    <label class="form-label mb-1">Company Name <span class="text-danger">*</span></label>
+    {{ form.company_name }}
+    {% if form.company_name.errors %}<div class="text-danger small">{{ form.company_name.errors|striptags }}</div>{% endif %}
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label mb-1">Legal Name <span class="text-danger">*</span></label>
+    {{ form.legal_name }}
+    {% if form.legal_name.errors %}<div class="text-danger small">{{ form.legal_name.errors|striptags }}</div>{% endif %}
+  </div>
+
+  <div class="col-12">
+    <label class="form-label mb-1">Address Line 1 <span class="text-danger">*</span></label>
+    {{ form.address_1 }}
+    {% if form.address_1.errors %}<div class="text-danger small">{{ form.address_1.errors|striptags }}</div>{% endif %}
+  </div>
+
+  <div class="col-12">
+    <label class="form-label mb-1">Address Line 2</label>
+    {{ form.address_2 }}
+    {% if form.address_2.errors %}<div class="text-danger small">{{ form.address_2.errors|striptags }}</div>{% endif %}
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label mb-1">Country</label>
+    {{ form.country }}
+    {% if form.country.errors %}<div class="text-danger small">{{ form.country.errors|striptags }}</div>{% endif %}
+    <div class="text-muted small">Default: Indonesia</div>
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label mb-1">Postal Code</label>
+    {{ form.postal_code }}
+    {% if form.postal_code.errors %}<div class="text-danger small">{{ form.postal_code.errors|striptags }}</div>{% endif %}
+  </div>
+
+  <div class="col-md-4">
+    <label class="form-label mb-1">Province</label>
+    {{ form.province }}
+    {% if form.province.errors %}<div class="text-danger small">{{ form.province.errors|striptags }}</div>{% endif %}
+  </div>
+
+  <div class="col-md-4">
+    <label class="form-label mb-1">Regency/City</label>
+    {{ form.regency }}
+    {% if form.regency.errors %}<div class="text-danger small">{{ form.regency.errors|striptags }}</div>{% endif %}
+  </div>
+
+  <div class="col-md-4">
+    <label class="form-label mb-1">District</label>
+    {{ form.district }}
+    {% if form.district.errors %}<div class="text-danger small">{{ form.district.errors|striptags }}</div>{% endif %}
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label mb-1">Phone <span class="text-danger">*</span></label>
+    {{ form.phone }}
+    {% if form.phone.errors %}<div class="text-danger small">{{ form.phone.errors|striptags }}</div>{% endif %}
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label mb-1">Email <span class="text-danger">*</span></label>
+    {{ form.email }}
+    {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors|striptags }}</div>{% endif %}
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label mb-1">Default Currency <span class="text-danger">*</span></label>
+    {{ form.default_currency }}
+    {% if form.default_currency.errors %}<div class="text-danger small">{{ form.default_currency.errors|striptags }}</div>{% endif %}
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label mb-1">NPWP</label>
+    {{ form.npwp }}
+    {% if form.npwp.errors %}<div class="text-danger small">{{ form.npwp.errors|striptags }}</div>{% endif %}
+    <div class="form-check mt-2">
+      {{ form.is_pkp }}
+      <label class="form-check-label">PKP</label>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label mb-1">Logo</label>
+    <input type="file" name="{{ form.logo.name }}" class="form-control form-control-sm">
+    {% if form.logo.errors %}<div class="text-danger small">{{ form.logo.errors|striptags }}</div>{% endif %}
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label mb-1">Footer Text (PDF)</label>
+    {{ form.footer_text }}
+    {% if form.footer_text.errors %}<div class="text-danger small">{{ form.footer_text.errors|striptags }}</div>{% endif %}
+  </div>
+
+</div>
+
+<hr class="my-3">
+
+<div class="row g-2">
+  <div class="col-12">
+    <div class="text-muted small mb-2">System Behavior (optional, bisa diubah nanti)</div>
+
+    <div class="form-check mb-2">
+      {{ form.enable_multi_currency }} <label class="form-check-label">Enable Multi Currency</label>
+    </div>
+    <div class="form-check mb-2">
+      {{ form.enable_tax }} <label class="form-check-label">Enable Tax</label>
+    </div>
+    <div class="form-check mb-2">
+      {{ form.enable_job_cost }} <label class="form-check-label">Enable Job Cost</label>
+    </div>
+    <div class="form-check mb-2">
+      {{ form.enable_auto_journal }} <label class="form-check-label">Enable Auto Journal</label>
+    </div>
+
+  </div>
+</div>

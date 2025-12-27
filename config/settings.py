@@ -24,7 +24,7 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     'formtools',
     'account.apps.AccountConfig',
-    'core',
+    "core.apps.CoreConfig",
     'sales.apps.SalesConfig',
     'partners',
     "shipments.apps.ShipmentsConfig",
@@ -32,6 +32,8 @@ INSTALLED_APPS = [
     'projects',
     'purchases',
     "sales_configuration",
+    "accounting",
+    'payments'
 ]
 
 INSTALLED_APPS += ["rest_framework", "corsheaders"]
@@ -45,7 +47,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    
+    "core.middleware.InitialSetupMiddleware",
+    "core.middleware_password.ForcePasswordChangeMiddleware",
+
 
 ]
 

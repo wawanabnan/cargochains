@@ -1,0 +1,240 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="d-flex align-items-center justify-content-between">
+      <h4 class="mb-0">Accounting Configuration</h4>
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'accounting:account_list' %}">Chart of Accounts</a>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'accounting:period_lock_list' %}">Period Locks</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+
+    {% if messages %}
+      {% for m in messages %}
+        <div class="alert alert-{{ m.tags }} py-2 mb-3">{{ m }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- STATUS SUMMARY -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="text-muted small">Status Summary</div>
+            <div class="h6 mb-0">{{ acct_status.2 }}</div>
+          </div>
+          <span class="badge text-bg-{{ acct_status.1 }}">
+            FY {{ active_year }}
+          </span>
+        </div>
+
+        <div class="row g-3 mt-1">
+          <div class="col-lg-3 col-md-6">
+            <div class="text-muted small">Active Fiscal Year</div>
+            <div class="fw-semibold">{{ active_year }}</div>
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <div class="text-muted small">Chart of Accounts (Active FY)</div>
+            <div class="fw-semibold">
+              {% if coa_ready %}
+                ✅ Available ({{ coa_count }} accounts)
+              {% else %}
+                ❌ Missing
+              {% endif %}
+            </div>
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <div class="text-muted small">Journal Entries</div>
+            <div class="fw-semibold">{{ journal_count }}</div>
+          </div>
+          <div class="col-lg-3 col-md-6">
+            <div class="text-muted small">Last Locked Period</div>
+            <div class="fw-semibold">
+              {% if last_locked %}
+                {{ last_locked.year }}-{{ last_locked.month|stringformat:"02d" }}
+              {% else %}
+                None
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <!-- LEFT: CONFIG FORM -->
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-header">
+            <div class="fw-semibold">Configuration</div>
+            <div class="text-muted small">Global accounting behavior (no shell/admin needed).</div>
+          </div>
+
+          <div class="card-body">
+            <form method="post" novalidate>
+              {% csrf_token %}
+
+              <div class="mb-3">
+                <label class="form-label small">Active Fiscal Year</label>
+                {{ form.active_fiscal_year }}
+                {% if form.active_fiscal_year.errors %}
+                  <div class="text-danger small mt-1">{{ form.active_fiscal_year.errors|striptags }}</div>
+                {% endif %}
+                <div class="form-text">
+                  Menentukan COA yang tampil, akun yang muncul di autocomplete, dan default tahun saat import/export COA.
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label small">Posting Policy</label>
+                {{ form.posting_policy }}
+                {% if form.posting_policy.errors %}
+                  <div class="text-danger small mt-1">{{ form.posting_policy.errors|striptags }}</div>
+                {% endif %}
+                <div class="form-text">
+                  OPEN_IF_MISSING: jika belum ada record period lock → dianggap OPEN.<br/>
+                  STRICT_REQUIRE: jika belum ada record period lock → dianggap BLOCK (harus dibuat OPEN dulu).
+                </div>
+              </div>
+
+              <hr class="my-3"/>
+
+              <!-- ✅ Sales Invoice Mapping -->
+              <div class="fw-semibold mb-2">Sales Invoice → Journal Mapping</div>
+              <div class="row g-3 mb-3">
+
+                <div class="col-lg-6">
+                  <label class="form-label small">Default AR Account (Accounts Receivable)</label>
+                  {{ form.default_ar_account }}
+                  {% if form.default_ar_account.errors %}
+                    <div class="text-danger small mt-1">{{ form.default_ar_account.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-lg-6">
+                  <label class="form-label small">Default Sales Account (Revenue)</label>
+                  {{ form.default_sales_account }}
+                  {% if form.default_sales_account.errors %}
+                    <div class="text-danger small mt-1">{{ form.default_sales_account.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-lg-6">
+                  <label class="form-label small">Default Tax Payable (Output Tax)</label>
+                  {{ form.default_tax_account }}
+                  {% if form.default_tax_account.errors %}
+                    <div class="text-danger small mt-1">{{ form.default_tax_account.errors|striptags }}</div>
+                  {% endif %}
+                  <div class="form-text">
+                    Dipakai hanya jika invoice.tax_amount &gt; 0.
+                  </div>
+                </div>
+
+              </div>
+
+              <hr class="my-3"/>
+
+              <!-- ✅ Receipt Mapping -->
+              <div class="fw-semibold mb-2">Receipt / Payment Mapping</div>
+              <div class="row g-3 mb-3">
+
+                <div class="col-lg-6">
+                  <label class="form-label small">Default Cash/Bank Account (Receipt)</label>
+                  {{ form.default_cash_account }}
+                  {% if form.default_cash_account.errors %}
+                    <div class="text-danger small mt-1">{{ form.default_cash_account.errors|striptags }}</div>
+                  {% endif %}
+                  <div class="form-text">
+                    Dipakai saat posting Receipt: Dr Cash/Bank.
+                  </div>
+                </div>
+
+                <div class="col-lg-6">
+                  <label class="form-label small">Default PPH Withholding Account</label>
+                  {{ form.default_pph_account }}
+                  {% if form.default_pph_account.errors %}
+                    <div class="text-danger small mt-1">{{ form.default_pph_account.errors|striptags }}</div>
+                  {% endif %}
+                  <div class="form-text">
+                    Dipakai saat Receipt jika ada PPH withheld (PPH ikut payment).
+                  </div>
+                </div>
+
+              </div>
+
+              {% if form.non_field_errors %}
+                <div class="alert alert-danger py-2">
+                  {{ form.non_field_errors }}
+                </div>
+              {% endif %}
+
+              <div class="d-flex gap-2">
+                <button class="btn btn-primary btn-sm" type="submit">Save</button>
+                <a class="btn btn-outline-secondary btn-sm" href="{% url 'accounting:configuration' %}">Refresh</a>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: ACTIONS / SETUP -->
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-header">
+            <div class="fw-semibold">Setup & Actions</div>
+            <div class="text-muted small">Quick access to required operational tools.</div>
+          </div>
+          <div class="card-body">
+
+            {% if not coa_ready %}
+              <div class="alert alert-warning py-2">
+                <div class="fw-semibold">Accounting is not ready</div>
+                Chart of Accounts untuk FY {{ active_year }} belum ada. Import COA sebelum membuat journal.
+              </div>
+            {% endif %}
+
+            <div class="d-flex flex-wrap gap-2">
+              <a class="btn btn-outline-primary btn-sm" href="{% url 'accounting:account_import' %}">
+                Import COA
+              </a>
+              <a class="btn btn-outline-primary btn-sm" href="{% url 'accounting:account_export' %}">
+                Export COA
+              </a>
+              <a class="btn btn-outline-secondary btn-sm" href="{% url 'accounting:account_list' %}">
+                View COA
+              </a>
+              <a class="btn btn-outline-secondary btn-sm" href="{% url 'accounting:period_lock_list' %}">
+                Manage Period Locks
+              </a>
+            </div>
+
+            <hr/>
+
+            <div class="text-muted small">
+              Tips:
+              <ul class="mb-0">
+                <li>Mulai akunting Des 2025 → set Active FY = 2025, import COA 2025.</li>
+                <li>Masuk Jan 2026 → siapkan COA 2026 lalu switch Active FY = 2026.</li>
+                <li>Period Locks dipakai untuk mengunci bulan yang sudah closing.</li>
+                <li>Untuk auto journal invoice/receipt, pastikan mapping AR/Sales/Tax/Cash/PPH sudah diisi.</li>
+              </ul>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

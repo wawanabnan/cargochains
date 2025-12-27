@@ -1,5 +1,5 @@
 from django import forms
-from core.models import Tax
+from core.models.taxes import Tax
 from sales_configuration.models import SalesTaxPolicy
 
 

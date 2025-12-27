@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models import Q, CheckConstraint, F
 from geo.models import Location
 from partners.models import Partner
-from core.models import SalesService 
+from core.models.services import SalesService 
 from django.db.models import PROTECT, CASCADE, F, Sum
 
 class Shipment(models.Model):

@@ -1,0 +1,108 @@
+{% extends "adminbase.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+  <h4 class="mb-2">Add Receipt</h4>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="post" id="receiptForm">
+        {% csrf_token %}
+
+        <div class="row g-3">
+          <div class="col-lg-3">
+            <label class="form-label small">Receipt Date</label>
+            {{ form.receipt_date }}
+          </div>
+
+          <div class="col-lg-5">
+            <label class="form-label small">Invoice</label>
+            {{ form.invoice }}
+          </div>
+
+          <div class="col-lg-4">
+            <label class="form-label small">Customer</label>
+            {{ form.customer_display }}
+          </div>
+
+          <div class="col-lg-3">
+            <label class="form-label small">Amount Received (Cash/Bank)</label>
+            {{ form.amount }}
+          </div>
+
+          <div class="col-lg-3">
+            <label class="form-label small">PPH Withheld</label>
+            {{ form.pph_withheld }}
+            <div class="form-text">Auto dari invoice jika apply PPH.</div>
+          </div>
+
+          <div class="col-lg-6">
+            <label class="form-label small">Cash/Bank Account</label>
+            {{ form.cash_account }}
+          </div>
+
+          <div class="col-lg-12">
+            <label class="form-label small">Notes</label>
+            {{ form.notes }}
+          </div>
+        </div>
+
+        <div class="mt-3 d-flex gap-2">
+          <button class="btn btn-sm btn-primary">Save</button>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'payments:receipt_list' %}">Back</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const invSel = document.getElementById("id_invoice");
+  const custEl = document.getElementById("id_customer_display");
+  const amtEl  = document.getElementById("id_amount");
+  const pphEl  = document.getElementById("id_pph_withheld");
+
+  function setVal(el, v){
+    if(!el) return;
+    el.value = (v === null || v === undefined) ? "" : v;
+  }
+
+  async function loadInvoiceInfo(invoiceId){
+    if(!invoiceId){
+      setVal(custEl, "");
+      setVal(amtEl, "");
+      setVal(pphEl, "0.00");
+      return;
+    }
+
+    const url = "{% url 'payments:api_invoice_receipt_info' %}?invoice_id=" + encodeURIComponent(invoiceId);
+    const res = await fetch(url, {headers: {"X-Requested-With":"XMLHttpRequest"}});
+    if(!res.ok){
+      setVal(custEl, "");
+      return;
+    }
+    const data = await res.json();
+
+    setVal(custEl, data.customer_name || "");
+    // amount default = outstanding
+    setVal(amtEl, data.outstanding || "0.00");
+    // pph default
+    if(data.apply_pph){
+      setVal(pphEl, data.pph_amount || "0.00");
+    } else {
+      setVal(pphEl, "0.00");
+    }
+  }
+
+  if(invSel){
+    invSel.addEventListener("change", function(){
+      loadInvoiceInfo(this.value);
+    });
+    // auto load on page open (kalau invoice sudah terpilih)
+    if(invSel.value){
+      loadInvoiceInfo(invSel.value);
+    }
+  }
+})();
+</script>
+{% endblock %}
