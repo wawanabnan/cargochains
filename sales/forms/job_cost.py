@@ -22,11 +22,19 @@ class JobCostForm(forms.ModelForm):
 
     class Meta:
         model = JobCost
-        fields = ["description", "qty", "price", "amount"]
+        fields = ["description", "category", "vendor", "internal_note","qty", "price", "amount"]
         widgets = {
             "description": forms.TextInput(
                 attrs={"class": "form-control form-control-sm"}
             ),
+            "category": forms.Select(
+                attrs={"class": "form-select form-select-sm"}
+            ),
+            "vendor": forms.Select(
+                attrs={"class": "form-select form-select-sm"}
+            ),
+             "internal_note": forms.TextInput(attrs={"class": "form-control form-control-sm", "placeholder": "Internal note"}),
+
             # qty/price/amount override di __init__, jadi di sini bebas
         }
 
@@ -134,7 +142,6 @@ JobCostFormSet = inlineformset_factory(
     JobOrder,
     JobCost,
     form=JobCostForm,
-    fields=["description", "qty", "price", "amount"],
     extra=0,
     can_delete=True,
 )

@@ -1,0 +1,86 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="d-flex align-items-center justify-content-between">
+      <h4 class="mb-0">{% if object %}Edit Tax{% else %}Add Tax{% endif %}</h4>
+      <a href="{% url 'core:tax_list' %}" class="btn btn-sm btn-outline-secondary">Back</a>
+    </div>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+    <form method="post" class="card">
+      {% csrf_token %}
+      <div class="card-body">
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label small">{{ form.category.label }}</label>
+            {{ form.category }}
+            {% if form.category.errors %}<div class="text-danger small">{{ form.category.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label small">{{ form.code.label }}</label>
+            {{ form.code }}
+            {% if form.code.errors %}<div class="text-danger small">{{ form.code.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label small">{{ form.rate.label }}</label>
+            {{ form.rate }}
+            {% if form.rate.errors %}<div class="text-danger small">{{ form.rate.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-8">
+            <label class="form-label small">{{ form.name.label }}</label>
+            {{ form.name }}
+            {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label small">{{ form.usage.label }}</label>
+            {{ form.usage }}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label small">{{ form.output_account.label }}</label>
+            {{ form.output_account }}
+            <div class="form-text small">Untuk Sales Invoice (Tax Payable / Output VAT).</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label small">{{ form.input_account.label }}</label>
+            {{ form.input_account }}
+            <div class="form-text small">Untuk Purchase Bill (Tax Receivable / Input VAT).</div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="form-check mt-4">
+              {{ form.is_withholding }}
+              <label class="form-check-label">{{ form.is_withholding.label }}</label>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="form-check mt-4">
+              {{ form.is_active }}
+              <label class="form-check-label">{{ form.is_active.label }}</label>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="card-footer d-flex justify-content-end gap-2">
+        <a href="{% url 'core:tax_list' %}" class="btn btn-sm btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-sm btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

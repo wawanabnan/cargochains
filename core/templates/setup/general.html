@@ -1,0 +1,120 @@
+{% extends "setup/setup_base.html" %}
+{% block title %}General Config • CargoChains Setup{% endblock %}
+{% block page_title %}General Configuration{% endblock %}
+{% block page_subtitle %}Konfigurasi awal currency, tax, quotation, dan sales fee.{% endblock %}
+
+{% block content %}
+{% if form.errors %}
+  <div class="alert alert-warning">
+    Harap periksa konfigurasi di bawah.
+  </div>
+{% endif %}
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  <!-- 1) Multi Currency -->
+  <div class="form-check mb-3">
+    {{ form.enable_multi_currency }}
+    <label class="form-check-label">Enable Multi Currency</label>
+  </div>
+
+  <!-- 2) Default Currency -->
+  <div class="mb-3" id="wrapDefaultCurrency">
+    <label class="form-label">Default Currency</label>
+    {{ form.default_currency }}
+    {% if form.default_currency.errors %}
+      <div class="text-danger small mt-1">{{ form.default_currency.errors|striptags }}</div>
+    {% endif %}
+    <div class="text-muted small mt-1" id="hintDefault"></div>
+  </div>
+
+  <div class="mb-3" id="wrapDefaultCurrencyReadonly" style="display:none;">
+    <label class="form-label">Default Currency</label>
+    <input type="text" class="form-control" value="IDR" readonly>
+    <div class="text-muted small mt-1">Multi Currency nonaktif: default currency dikunci ke IDR.</div>
+  </div>
+
+  <!-- 3) Tax -->
+  <div class="form-check mb-3">
+    {{ form.enable_tax }}
+    <label class="form-check-label">Enable Tax</label>
+  </div>
+
+  <!-- Enable Job Cost -->
+<div class="form-check mb-3">
+  {{ form.enable_job_cost }}
+  <label class="form-check-label">Enable Job Cost</label>
+  <div class="text-muted small">
+    Aktifkan pencatatan biaya per job/order.
+  </div>
+</div>
+
+<!-- Enable Auto Journal -->
+<div class="form-check mb-3">
+  {{ form.enable_auto_journal }}
+  <label class="form-check-label">Enable Auto Journal</label>
+  <div class="text-muted small">
+    Otomatis buat journal accounting dari transaksi.
+  </div>
+</div>
+
+
+  <!-- 4) Quotation Valid Day -->
+  <div class="mb-3">
+    <label class="form-label">Quotation Valid Day</label>
+    {{ form.quotation_valid_day }}
+    {% if form.quotation_valid_day.errors %}
+      <div class="text-danger small mt-1">{{ form.quotation_valid_day.errors|striptags }}</div>
+    {% endif %}
+    <div class="text-muted small mt-1">Jumlah hari masa berlaku quotation.</div>
+  </div>
+
+  <!-- 5) Sales Fee (%) -->
+  <div class="mb-3">
+    <label class="form-label">Sales Fee (%)</label>
+    {{ form.sales_fee_percent }}
+    {% if form.sales_fee_percent.errors %}
+      <div class="text-danger small mt-1">{{ form.sales_fee_percent.errors|striptags }}</div>
+    {% endif %}
+    <div class="text-muted small mt-1">Default 20% (bisa diubah nanti).</div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 mt-4">
+    <button type="submit" class="btn btn-primary">
+      Finish <i class="bi bi-check2-circle ms-1"></i>
+    </button>
+  </div>
+</form>
+
+{% block extra_js %}
+<script>
+(function(){
+  const cbMulti = document.querySelector('[name="enable_multi_currency"]');
+  const wrapSel = document.getElementById("wrapDefaultCurrency");
+  const wrapRO  = document.getElementById("wrapDefaultCurrencyReadonly");
+  const sel     = document.querySelector('[name="default_currency"]');
+  const hint    = document.getElementById("hintDefault");
+
+  function applyRule(){
+    const multi = cbMulti && cbMulti.checked;
+
+    if (multi) {
+      if (wrapSel) wrapSel.style.display = "";
+      if (wrapRO)  wrapRO.style.display = "none";
+      if (sel) sel.disabled = false;
+      if (hint) hint.textContent = "Multi Currency aktif: pilih default currency.";
+    } else {
+      if (wrapSel) wrapSel.style.display = "none";
+      if (wrapRO)  wrapRO.style.display = "";
+      if (sel) sel.disabled = true; // server will enforce IDR
+      if (hint) hint.textContent = "";
+    }
+  }
+
+  if (cbMulti) cbMulti.addEventListener("change", applyRule);
+  applyRule();
+})();
+</script>
+{% endblock %}
+{% endblock %}

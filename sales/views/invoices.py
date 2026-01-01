@@ -14,13 +14,17 @@ from django.views.generic import ListView, DetailView, CreateView
 from sales.job_order_model import JobOrder
 from sales.invoice_model import Invoice, InvoiceLine
 from sales.forms.invoices import InvoiceForm, InvoiceLineFormSet
-from sales.utils.invoice import build_invoice_description_from_job
+from sales.utils.invoices import build_invoice_description_from_job
 from decimal import Decimal, ROUND_HALF_UP
 from core.models.taxes import Tax
 from sales.utils.permissions import is_finance
 from django.core.exceptions import PermissionDenied
 from accounting.services.invoice_posting import create_journal_from_invoice
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
+from accounting.services.invoice_posting import create_journal_from_invoice  # sesuaikan path import
+
+from django.core.exceptions import PermissionDenied
 
 
 # =========================================================
@@ -120,6 +124,7 @@ class InvoiceListView(LoginRequiredMixin, ListView):
     paginate_by = 12
 
     def get_queryset(self):
+        
         qs = (
             Invoice.objects
             .all()
@@ -128,7 +133,7 @@ class InvoiceListView(LoginRequiredMixin, ListView):
         )
         return qs
 
-
+    
 class InvoiceDetailView(LoginRequiredMixin, DetailView):
     model = Invoice
     template_name = "invoices/detail.html"
@@ -184,9 +189,11 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
                     fs.forms[0].initial["taxes"] = [ppn11.pk]
 
             ctx["formset"] = fs
-
+        inv = ctx["invoice"]  
         ctx["mode"] = "from_job"
         ctx["job_order"] = self.job
+        ctx["can_confirm"] = inv.can_confirm(self.request.user)
+        #ctx["can_confirm"] = self.object.can_confirm(self.request.user)
         return ctx
     
 class InvoiceCreateManualView(LoginRequiredMixin, View):
@@ -249,36 +256,6 @@ class InvoiceCreateManualView(LoginRequiredMixin, View):
         messages.info(request, f"FORMSET form class: {formset.form.__name__}")
 
         return render(request, self.template_name, {"form": form, "formset": formset, "mode": "manual"})
-
-class InvoiceUpdateView(LoginRequiredMixin, View):
-    template_name = "invoices/form.html"
-
-    def get(self, request, pk):
-        inv = get_object_or_404(Invoice, pk=pk)
-        form = InvoiceForm(instance=inv)
-        formset = InvoiceLineFormSet(instance=inv)
-        return render(request, self.template_name, {"form": form, "formset": formset, "mode": "edit", "invoice": inv})
-
-    @transaction.atomic
-    def post(self, request, pk):
-        inv = get_object_or_404(Invoice, pk=pk)
-        form = InvoiceForm(request.POST, instance=inv)
-        formset = InvoiceLineFormSet(request.POST, instance=inv)
-
-        if form.is_valid() and formset.is_valid():
-            inv = form.save()
-            formset.save()            # ✅ include M2M taxes
-            recalc_invoice_totals(inv)
-
-            messages.success(request, "Invoice berhasil diupdate.")
-            return redirect("sales:invoice_detail", pk=inv.pk)
-
-        messages.error(request, "VALIDATION ERROR — cek detail di bawah.")
-        messages.error(request, f"HEADER(form) errors:\n{form.errors.as_text()}")
-        messages.error(request, f"LINE(formset) non_form_errors:\n{formset.non_form_errors()}")
-        messages.error(request, f"LINE(formset) errors:\n{formset.errors}")
-
-        return render(request, self.template_name, {"form": form, "formset": formset, "mode": "edit", "invoice": inv})
 
 class InvoiceDeleteView(LoginRequiredMixin, View):
     template_name = "sales/invoice_confirm_delete.html"
@@ -568,44 +545,6 @@ class InvoiceChangeStatusView(LoginRequiredMixin, View):
 
         return redirect("sales:invoice_detail", pk=inv.pk)
 
-class InvoiceConfirmView(View):
-
-    def post(self, request, pk):
-        inv = get_object_or_404(Invoice, pk=pk)
-
-        # 1️⃣ permission / workflow guard
-        if not inv.can_confirm(request.user):
-            raise PermissionDenied
-
-        # 2️⃣ idempotent guard (anti double journal)
-        if inv.journal_id:
-            messages.info(
-                request,
-                f"Invoice {inv.number} sudah memiliki journal {inv.journal.number}."
-            )
-            return redirect("sales:invoice_detail", pk=inv.pk)
-
-        try:
-            # 3️⃣ ubah status invoice
-            inv.status = Invoice.ST_SENT
-            inv.save(update_fields=["status"])
-
-            # 4️⃣ 🔥 AUTO CREATE + POST JOURNAL
-            journal = create_journal_from_invoice(inv)
-
-            messages.success(
-                request,
-                f"Invoice {inv.number} berhasil dikonfirmasi "
-                f"dan journal {journal.number} telah dibuat."
-            )
-
-        except ValidationError as e:
-            # rollback otomatis kalau service pakai transaction.atomic
-            messages.error(request, f"Gagal membuat journal: {e}")
-            return redirect("sales:invoice_detail", pk=inv.pk)
-
-        return redirect("sales:invoice_detail", pk=inv.pk)
-
 
 class InvoiceMarkPaidView(View):
     def post(self, request, pk):
@@ -757,3 +696,145 @@ class InvoiceCreateFromJobOrderView(LoginRequiredMixin, CreateView):
 
         messages.success(self.request, "Invoice berhasil dibuat dari Job Order.")
         return redirect("sales:invoice_detail", pk=inv.pk)
+
+
+class InvoiceConfirmView2(View):
+    def post(self, request, pk):
+        inv = get_object_or_404(Invoice, pk=pk)
+
+        if not inv.can_confirm(request.user):
+            raise PermissionDenied
+
+
+        # 2️⃣ idempotent guard (anti double journal)
+        if inv.journal_id:
+            messages.info(
+                request,
+                f"Invoice {inv.number} sudah memiliki journal {inv.journal.number}."
+            )
+            return redirect("sales:invoice_detail", pk=inv.pk)
+
+        try:
+            with transaction.atomic():
+                # 3️⃣ ubah status invoice
+                inv.status = Invoice.ST_SENT
+                inv.save(update_fields=["status"])
+
+                # 4️⃣ 🔥 AUTO CREATE + POST JOURNAL
+                journal = create_journal_from_invoice(inv)
+
+            messages.success(
+                request,
+                f"Invoice {inv.number} berhasil dikonfirmasi "
+                f"dan journal {journal.number} telah dibuat."
+            )
+
+        except ValidationError as e:
+            messages.error(request, f"Gagal membuat journal: {e}")
+
+        return redirect("sales:invoice_detail", pk=inv.pk)
+
+
+
+
+class InvoiceUpdateView(LoginRequiredMixin, View):
+    template_name = "invoices/form.html"
+
+    def get(self, request, pk):
+        inv = get_object_or_404(Invoice, pk=pk)
+
+        form = InvoiceForm(instance=inv)
+        formset = InvoiceLineFormSet(instance=inv)
+        return render(
+            request,
+            self.template_name,
+            {"form": form, "formset": formset, "mode": "edit", "invoice": inv},
+        )
+
+    @transaction.atomic
+    def post(self, request, pk):
+        inv = get_object_or_404(Invoice, pk=pk)
+
+      
+        form = InvoiceForm(request.POST, instance=inv)
+        formset = InvoiceLineFormSet(request.POST, instance=inv)
+
+        if form.is_valid() and formset.is_valid():
+            inv = form.save()
+            formset.save()  # ✅ include M2M taxes
+            recalc_invoice_totals(inv)
+
+            messages.success(request, "Invoice berhasil diupdate.")
+            return redirect("sales:invoice_detail", pk=inv.pk)
+
+        messages.error(request, "VALIDATION ERROR — cek detail di bawah.")
+        messages.error(request, f"HEADER(form) errors:\n{form.errors.as_text()}")
+        messages.error(request, f"LINE(formset) non_form_errors:\n{formset.non_form_errors()}")
+        messages.error(request, f"LINE(formset) errors:\n{formset.errors}")
+
+        return render(
+            request,
+            self.template_name,
+            {"form": form, "formset": formset, "mode": "edit", "invoice": inv},
+        )
+
+
+
+
+from django.views import View
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
+
+from core.models.settings import CoreSetting  # sesuaikan nama model core settings om
+from sales.models import Invoice
+from accounting.services.invoice_posting import create_journal_from_invoice  # sesuai om
+
+
+def get_int_setting(code: str, default: int = 0) -> int:
+    row = CoreSetting.objects.filter(code=code).first()
+    if not row:
+        return default
+    return int(row.int_value or 0)
+
+
+class InvoiceConfirmView(View):
+    def post(self, request, pk):
+        inv = get_object_or_404(Invoice, pk=pk)
+
+        if not inv.can_confirm(request.user):
+            raise PermissionDenied
+
+        if inv.journal_id:
+            messages.info(request, f"Invoice {inv.number} sudah memiliki journal {inv.journal.number}.")
+            return redirect("sales:invoice_detail", pk=inv.pk)
+
+        auto_post = bool(get_int_setting("AUTO_POST_SALES_INVOICE", default=0))
+
+        try:
+            with transaction.atomic():
+                # confirm status
+                inv.status = Invoice.ST_SENT
+                inv.save(update_fields=["status"])
+
+                # auto post journal?
+                if auto_post:
+                    journal = create_journal_from_invoice(inv)
+                    messages.success(
+                        request,
+                        f"Invoice {inv.number} berhasil dikonfirmasi dan journal {journal.number} telah dibuat."
+                    )
+                else:
+                    messages.success(
+                        request,
+                        f"Invoice {inv.number} berhasil dikonfirmasi. (Auto Post Sales Invoice: OFF)"
+                    )
+
+            return redirect("sales:invoice_detail", pk=inv.pk)
+
+        except ValidationError as e:
+            # rollback otomatis karena atomic()
+            msg = " ".join(getattr(e, "messages", [])) or str(e)
+            messages.error(request, msg)
+            return redirect("sales:invoice_detail", pk=inv.pk)

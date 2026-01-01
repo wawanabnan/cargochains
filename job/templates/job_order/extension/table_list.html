@@ -1,0 +1,222 @@
+{% load indo_format %}
+
+{% load indo_format %}
+
+<div class="table-responsive">
+  <table class="table table-hover mb-0 align-middle">
+    <thead class="table-light">
+      <tr>
+        <th style="width: 3%;">
+          <input type="checkbox" id="chk-all">
+        </th>
+
+        <th style="width: 9%">
+          <a href="?sort={% if request.GET.sort == 'number' %}-number{% else %}number{% endif %}&q={{ filter_q|urlencode }}&customer={{ filter_customer }}&service={{ filter_service }}&status={{ filter_status }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+            JOB#
+          </a>
+        </th>
+
+        <th style="width: 8%">
+          <a href="?sort={% if request.GET.sort == 'job_date' %}-job_date{% else %}job_date{% endif %}&q={{ filter_q|urlencode }}&customer={{ filter_customer }}&service={{ filter_service }}&status={{ filter_status }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+            DATE
+          </a>
+        </th>
+
+        <th style="width: 8%">REF#</th>
+
+        <th>
+          <a href="?sort={% if request.GET.sort == 'customer__name' %}-customer__name{% else %}customer__name{% endif %}&q={{ filter_q|urlencode }}&customer={{ filter_customer }}&service={{ filter_service }}&status={{ filter_status }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+            CUSTOMER
+          </a>
+        </th>
+
+        <th style="width: 20%">SERVICES</th>
+        <th class="text-center" style="width:4%">CURR</th>
+        <th class="text-end" style="width: 10%;">TOTAL</th>
+        <th class="text-center" style="width: 8%;">SALES</th>
+        <th style="width: 7%;">INVOICING</th>
+        <th style="width: 7%;">STATUS</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% if job_orders %}
+        {% for jo in job_orders %}
+          <tr class="row-clickable" data-url="{% url 'job:job_order_detail' jo.pk %}">
+
+            <td onclick="event.stopPropagation();">
+              <input type="checkbox" class="row-check" data-id="{{ jo.pk }}">
+            </td>
+
+            <td>{{ jo.number }}</td>
+            <td>{{ jo.job_date|date:"d-m-Y" }}</td>
+            <td>{{ jo.order_number }}</td>
+            <td>{{ jo.customer.company_name|default:jo.customer.name }}</td>
+            <td>{{ jo.service }}</td>
+            <td class="text-center">{{ jo.currency }}</td>
+
+            <td class="text-end">
+              {% if jo.total_amount %}
+                {{ jo.total_amount|indo_number }}
+              {% else %}
+                0
+              {% endif %}
+            </td>
+
+            <td class="text-center">
+              {% if jo.sales_user %}
+                {{ jo.sales_user.username }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+
+            <td>
+              {% if jo.is_invoiced %}
+                <span class="badge bg-success">Invoiced</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Not Invoiced</span>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if jo.status == "DRAFT" %}
+                <span class="badge bg-secondary">Draft</span>
+              {% elif jo.status == "ON_GOING" %}
+                <span class="badge bg-primary">On Going</span>
+              {% elif jo.status == "ON_HOLD" %}
+                <span class="badge bg-warning text-dark">On Hold</span>
+              {% elif jo.status == "COMPLETED" %}
+                <span class="badge bg-success">Completed</span>
+              {% elif jo.status == "CANCELLED" %}
+                <span class="badge bg-danger">Cancelled</span>
+              {% else %}
+                <span class="badge bg-light text-dark">{{ jo.get_status_display }}</span>
+              {% endif %}
+            </td>
+
+          </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="11" class="text-center py-4 text-muted">
+            No Job Orders found.
+          </td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<!-- PAGINATION -->
+<div class="card-footer py-2">
+  <nav aria-label="Job Order pages">
+    <ul class="pagination mb-0 justify-content-end pagination-sm">
+
+      {% with current_sort=request.GET.sort|default:"-job_date" %}
+
+      <!-- Previous -->
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link"
+             href="?page={{ page_obj.previous_page_number }}&sort={{ current_sort }}&q={{ filter_q|urlencode }}&customer={{ filter_customer }}&service={{ filter_service }}&status={{ filter_status }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+            Previous
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">Previous</span>
+        </li>
+      {% endif %}
+
+      <!-- Page numbers -->
+      {% for num in page_obj.paginator.page_range %}
+        {% if num == page_obj.number %}
+          <li class="page-item active">
+            <span class="page-link">{{ num }}</span>
+          </li>
+        {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+          <li class="page-item">
+            <a class="page-link"
+               href="?page={{ num }}&sort={{ current_sort }}&q={{ filter_q|urlencode }}&customer={{ filter_customer }}&service={{ filter_service }}&status={{ filter_status }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+              {{ num }}
+            </a>
+          </li>
+        {% endif %}
+      {% endfor %}
+
+      <!-- Next -->
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link"
+             href="?page={{ page_obj.next_page_number }}&sort={{ current_sort }}&q={{ filter_q|urlencode }}&customer={{ filter_customer }}&service={{ filter_service }}&status={{ filter_status }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+            Next
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">Next</span>
+        </li>
+      {% endif %}
+
+      {% endwith %}
+
+    </ul>
+  </nav>
+</div>
+
+
+        <!-- PAGINATION -->
+      
+<div class="card-footer py-2">
+          <nav aria-label="Job Order pages">
+            <ul class="pagination mb-0 justify-content-end pagination-sm">
+
+              <!-- Previous -->
+              {% if page_obj.has_previous %}
+                <li class="page-item">
+                  <a class="page-link"
+                     href="?page={{ page_obj.previous_page_number }}&q={{ filter_q }}&customer={{ filter_customer }}&service={{ filter_service }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+                    Previous
+                  </a>
+                </li>
+              {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link">Previous</span>
+                </li>
+              {% endif %}
+
+              <!-- Page numbers -->
+              {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                  <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                  </li>
+                {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ num }}&q={{ filter_q }}&customer={{ filter_customer }}&service={{ filter_service }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+                      {{ num }}
+                    </a>
+                  </li>
+                {% endif %}
+              {% endfor %}
+
+              <!-- Next -->
+              {% if page_obj.has_next %}
+                <li class="page-item">
+                  <a class="page-link"
+                     href="?page={{ page_obj.next_page_number }}&q={{ filter_q }}&customer={{ filter_customer }}&service={{ filter_service }}&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}">
+                    Next
+                  </a>
+                </li>
+              {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link">Next</span>
+                </li>
+              {% endif %}
+
+            </ul>
+          </nav>
+</div>
+       

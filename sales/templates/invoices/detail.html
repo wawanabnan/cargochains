@@ -2,15 +2,26 @@
 {% load indo_format %}
 {% block content %}
 
-<div class="app-content-header">
+<!-- HEADER -->
+<div class="app-content-header ">
   <div class="container-fluid">
-    <div class="d-flex align-items-center">
+    <div class="d-flex align-items-center gap-2">
 
-      <!-- LEFT: TITLE -->
-      <h4 class="mb-0">Invoice</h4>
+      <div>
+        <div class="d-flex align-items-center gap-2">
+          <h4 class="mb-0">Invoice</h4>
+          {# status badge #}
+          {{ invoice.pay_status_label }}
+        </div>
+        <div class="text-muted small mt-1">
+          <span class="me-2">No: <span class="text-body fw-semibold">{{ invoice.number }}</span></span>
+          {% if invoice.customer %}
+            <span class="me-2">Customer: <span class="text-body fw-semibold">{{ invoice.customer.name }}</span></span>
+          {% endif %}
+        </div>
+      </div>
 
-      <!-- RIGHT: ACTIONS -->
-      <div class="ms-auto d-flex align-items-center gap-2">
+      <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
 
         <a class="btn btn-outline-secondary btn-sm"
            href="{% url 'sales:invoice_list' %}">
@@ -24,11 +35,11 @@
 
         <a class="btn btn-outline-primary btn-sm"
            href="{% url 'sales:invoice_pdf' invoice.pk %}"
-           target="_blank"
-           rel="noopener">
+           target="_blank" rel="noopener">
           <i class="bi bi-file-earmark-pdf me-1"></i> PDF
         </a>
-      {% if can_confirm %}
+
+              {% if can_confirm %}
   <form method="post" action="{% url 'sales:invoice_confirm' invoice.pk %}">
     {% csrf_token %}
     <button class="btn btn-sm btn-warning">
@@ -47,152 +58,294 @@
   </div>
 </div>
 
-
-
 <div class="app-content">
-   <div class="container-fluid">
+  <div class="container-fluid">
+    <div class="card">
+      <div class="card-header cc-card-header d-none">
+        <div class="d-flex align-items-center">
 
-    <div class="row g-3">
-      <div class="col-12">
-        <div class="card card-body">
+          <!-- LEFT: TITLE -->
+          <div>
+            <h5 class="mb-0">Invoice</h5>
+            <div class="text-muted small">
+              {{ invoice.number }}
+            </div>
+          </div>
 
-          <div class="row g-4">
+          <!-- RIGHT: ACTION BUTTONS -->
+          <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
 
-            <!-- LEFT: HEADER -->
-            <div class="col-lg-6">
-             
-              <div class="row mb-2">
-                <div class="col-5 text-muted">Customer</div>
-                <div class="col-7">
+            <a class="btn btn-secondary btn-sm"
+              href="{% url 'sales:invoice_list' %}">
+              <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+
+            <a class="btn btn-outline-primary btn-sm"
+              href="{% url 'sales:invoice_edit' invoice.pk %}">
+              <i class="bi bi-pencil-square me-1"></i> Edit
+            </a>
+
+            <a class="btn btn-outline-primary btn-sm"
+              href="{% url 'sales:invoice_pdf' invoice.pk %}"
+              target="_blank" rel="noopener">
+              <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+            </a>
+
+            {% if can_confirm %}
+              <form method="post"
+                    action="{% url 'sales:invoice_confirm' invoice.pk %}"
+                    class="d-inline m-0">
+                {% csrf_token %}
+                <button class="btn btn-warning btn-sm">
+                  <i class="bi bi-check2-circle me-1"></i> Confirm
+                </button>
+              </form>
+            {% endif %}
+
+            {% if invoice.journal %}
+              <a class="btn btn-outline-secondary btn-sm"
+                href="{% url 'accounting:journal_detail' invoice.journal.id %}">
+                <i class="bi bi-journal-text me-1"></i>
+                Journal {{ invoice.journal.number }}
+              </a>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+      <div class="card card-body border-0">
+          <div class="row g-3">
+
+            <!-- LEFT -->
+            <div class="col-lg-5">
+              <div class="row cc-kv">
+                <div class="col-4 col-md-3 cc-k">Customer</div>
+                <div class="col-8 col-md-9 cc-v">
                   {% if invoice.customer %}{{ invoice.customer.name }}{% else %}-{% endif %}
                 </div>
               </div>
 
-              <div class="row mb-2">
-                <div class="col-5 text-muted">Invoice Date</div>
-                <div class="col-7">{{ invoice.invoice_date }}</div>
+              <div class="row cc-kv">
+                <div class="col-4 col-md-3 cc-k">Invoice Date</div>
+                <div class="col-8 col-md-9 cc-v">{{ invoice.invoice_date|date:"d-m-Y" }}</div>
               </div>
 
-              <div class="row mb-2">
-                <div class="col-5 text-muted">Due Date</div>
-                <div class="col-7">{{ invoice.due_date }}</div>
-              </div>
-
-              <div class="row mb-2">
-                <div class="col-5 text-muted">Status</div>
-                <div class="col-7">
-                  <span class="badge bg-secondary">{{ invoice.status }}</span>
+              <div class="row cc-kv">
+                <div class="col-4 col-md-3 cc-k">Due Date</div>
+                <div class="col-8 col-md-9 cc-v">
+                  {% if invoice.due_date %}{{ invoice.due_date|date:"d-m-Y" }}{% else %}-{% endif %}
                 </div>
               </div>
 
               {% if invoice.job_order %}
-              <div class="row mb-2">
-                <div class="col-5 text-muted">Job Order</div>
-                <div class="col-7">{{ invoice.job_order.number|indo_currency }}</div>
-              </div>
+                <div class="row cc-kv">
+                  <div class="col-4 col-md-3 cc-k">Job Order</div>
+                  <div class="col-8 col-md-9 cc-v">
+                    <span class="text-body fw-semibold">{{ invoice.job_order.number }}</span>
+                  </div>
+                </div>
               {% endif %}
             </div>
 
-            <!-- RIGHT: TOTALS -->
-            <div class="col-lg-6">
-              <h6 class="mb-3">Totals</h6>
+            <div class="col-lg-2">
 
-              <div class="row mb-2">
-                <div class="col-6 text-muted">Subtotal</div>
-                <div class="col-6 text-end">{{ invoice.subtotal_amount|indo_currency }}</div>
-              </div>
+            </div>
+            <!-- RIGHT TOTALS -->
+            <div class="col-lg-5">
+              <div class="cc-totals">
+                <div class="d-flex justify-content-between cc-total-row">
+                  <div class="text-muted">Subtotal</div>
+                  <div class="text-end">{{ invoice.subtotal_amount|indo_currency }}</div>
+                </div>
 
-              <div class="row mb-2">
-                <div class="col-6 text-muted">Tax</div>
-                <div class="col-6 text-end">{{ invoice.tax_amount|indo_currency }}</div>
-              </div>
+                <div class="d-flex justify-content-between cc-total-row">
+                  <div class="text-muted">Tax</div>
+                  <div class="text-end">{{ invoice.tax_amount|indo_currency }}</div>
+                </div>
 
-              <hr class="my-2">
+                <div class="cc-total-divider"></div>
 
-              <div class="row mb-0">
-                <div class="col-6 fw-semibold">Grand Total</div>
-                <div class="col-6 text-end fw-semibold">{{ invoice.total_amount|indo_currency }}</div>
+                <div class="d-flex justify-content-between cc-total-grand">
+                  <div class="fw-semibold">Grand Total</div>
+                  <div class="text-end fw-semibold">{{ invoice.total_amount|indo_currency }}</div>
+                </div>
+
+                {% if invoice.amount_paid and invoice.amount_paid > 0 %}
+                  <div class="d-flex justify-content-between cc-total-row mt-2">
+                    <div class="text-muted">Paid</div>
+                    <div class="text-end">{{ invoice.amount_paid|indo_currency }}</div>
+                  </div>
+                {% endif %}
               </div>
             </div>
 
           </div>
+    </div>
+  </div>
 
-        </div>
+    <!-- LINES -->
+    <div class="card card-body cc-card mt-0 p-0" style="border-top:0px">
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0 cc-lines">
+          <thead>
+            <tr>
+              <th style="width:56px;">No</th>
+              <th>Description</th>
+              <th class="text-end" style="width:110px;">Qty</th>
+              <th class="text-end" style="width:150px;">Price</th>
+              <th class="text-center" style="width:140px;">Tax</th>
+              <th class="text-end" style="width:160px;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ln in invoice.lines.all %}
+              <tr>
+                <td class="text-muted">{{ forloop.counter }}</td>
+                <td class="cc-desc" style="white-space:pre-line;">{{ ln.description }}</td>
+                <td class="text-end">{{ ln.quantity|indo_number }}</td>
+                <td class="text-end">{{ ln.price|indo_number }}</td>
+                <td class="text-center">
+                  {% for tx in ln.taxes.all %}
+                    <span class="text-muted small">{{ tx.rate }}</span>{% if not forloop.last %}, {% endif %}
+                  {% empty %}
+                    <span class="text-muted">-</span>
+                  {% endfor %}
+                </td>
+                <td class="text-end fw-semibold">{{ ln.amount|indo_currency }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">Belum ada line.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+
+          <tfoot>
+            <tr>
+              <td colspan="5" class="text-end ">Subtotal</td>
+              <td class="text-end">{{ invoice.subtotal_amount|indo_currency }}</td>
+            </tr>
+            <tr>
+              <td colspan="5" class="text-end ">Tax</td>
+              <td class="text-end">{{ invoice.tax_amount|indo_currency }}</td>
+            </tr>
+            <tr>
+              <td colspan="5" class="text-end fw-semibold">Grand Total</td>
+              <td class="text-end fw-semibold">{{ invoice.total_amount|indo_currency }}</td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </div>
 
-      <div class="card card-body mt-3 p-0" >
-       
-
-        <div class="table-responsive p-0">
-          <table class="table table-sm align-middle mb-0 ">
-            <thead>
-              <tr>
-                <th style="width:60px;">No</th>
-                <th>Description</th>
-                <th class="text-end" style="width:120px;">Qty</th>
-                <th class="text-end" style="width:150px;">Price</th>
-                <th class="text-center" style="width:150px;">Tax</th>
-                <th class="text-end" style="width:160px;">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for ln in invoice.lines.all %}
-                <tr>
-                  <td class="text-muted">{{ forloop.counter }}</td>
-                  <td style="white-space:pre-line;">{{ ln.description }}</td>
-                  <td class="text-end">{{ ln.quantity|indo_number }}</td>
-                
-                  <td class="text-end">{{ ln.price|indo_number  }}</td>
-                    <td class="text-center">
-                  {% for tx in ln.taxes.all %}
-                    {{ tx.rate }}{% if not forloop.last %}, {% endif %}
-                  {% empty %}
-                    -
-                  {% endfor %}
-                </td>
-                  <td class="text-end">{{ ln.amount|indo_currency }}</td>
-                </tr>
-              {% empty %}
-                <tr>
-                  <td colspan="5" class="text-center text-muted">Belum ada line.</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colspan="5">Sub Total</td>
-                <td colspan="5"></td>
-                
-
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-
-      </div>
-
-      <div class="row g-3 mt-1">
-        <div class="col-lg-6">
-          <div class="card card-body">
-            <h6 class="mb-2">Notes to Customer</h6>
-            <div class="text-muted" style="white-space:pre-line;">{{ invoice.notes_customer|default:"-" }}</div>
-          </div>
-        </div>
-        <div class="col-lg-6">
-          <div class="card card-body">
-            <h6 class="mb-2">Internal Notes</h6>
-            <div class="text-muted" style="white-space:pre-line;">{{ invoice.notes_internal|default:"-" }}</div>
+    <!-- NOTES -->
+    <div class="row g-3 mt-1">
+      <div class="col-lg-6">
+        <div class="card card-body cc-card">
+          <h6 class="mb-2">Notes to Customer</h6>
+          <div class="text-muted cc-notes" style="white-space:pre-line;">
+            {{ invoice.notes_customer|default:"-" }}
           </div>
         </div>
       </div>
+
+      <div class="col-lg-6">
+        <div class="card card-body cc-card">
+          <h6 class="mb-2">Internal Notes</h6>
+          <div class="text-muted cc-notes" style="white-space:pre-line;">
+            {{ invoice.notes_internal|default:"-" }}
+          </div>
+        </div>
+      </div>
+    </div>
 
   </div>
 </div>
 
 {% endblock %}
+
 {% block extra_css %}
 <style>
- 
-</style>
+ /* ======================================
+   CargoChains – Thin Column Borders
+   ====================================== */
+
+/* vertical borders for header */
+table.cc-lines thead th {
+  border-right: 0px solid #e5e7eb;   /* very light vertical line */
+}
+
+table.cc-lines thead th:last-child {
+  border-right: 0;
+}
+
+/* vertical borders for body */
+table.cc-lines tbody td {
+  border-right: 0px solid #f1f3f5;   /* softer than header */
+  font-size: 0.75rem;
+}
+
+table.cc-lines tbody td:last-child {
+  border-right: 0;
+  
+}
+
+/* vertical borders for footer */
+table.cc-lines tfoot td {
+  border-right: 0px solid #e9ecef;
+}
+
+table.cc-lines tfoot td:last-child {
+  border-right: 0;
+}
+
+/* FORCE thead style (header grey + borders) */
+table.cc-lines thead th {
+  background-color: #F5F5F5 !important;
+  border-bottom: 1px solid #dee2e6 !important;
+  border-right: 0px solid #e5e7eb !important;
+
+  color: #495057 !important;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  padding: 0.55rem 0.75rem;
+}
+
+table.cc-lines thead th:last-child {
+  border-right: 0 !important;
+}
+
+table.cc-lines tfoot td {
+   font-size: 0.75rem;
+   font-weight: 600;
+}
+
+
+/* CargoChains: smaller buttons in card header */
+.cc-card-header .btn {
+  --bs-btn-padding-y: 0.18rem;
+  --bs-btn-padding-x: 0.4rem;
+  --bs-btn-font-size: 0.75rem;
+  --bs-btn-border-radius: 0.5rem;
+}
+
+.cc-card-header .btn i {
+  font-size: 0.8rem;   /* icon ikut mengecil */
+}
+
+.btn {
+  --bs-btn-padding-y: 0.18rem;
+  --bs-btn-padding-x: 0.4rem;
+  --bs-btn-font-size: 0.75rem;
+  --bs-btn-border-radius: 0.5rem;
+}
+
+.btn i {
+  font-size: 0.8rem;   /* icon ikut mengecil */
+}
+
+ </style>
 {% endblock %}

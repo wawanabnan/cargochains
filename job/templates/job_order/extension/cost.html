@@ -1,0 +1,80 @@
+{# ===================== JOB COST INLINE (EST / ACT ONLY) ===================== #}
+
+{{ cost_formset.management_form }}
+
+<table id="jobcost-table" class="table table-bordered mb-0">
+  <thead>
+    <tr class="bg-body-secondary text-muted">
+      <th>Description</th>
+      <th class="text-end">Est. Amount</th>
+      <th class="text-end">Actual Amount</th>
+      <th style="width:32px;"></th>
+    </tr>
+  </thead>
+
+  <tbody id="jobcost-body">
+    {% for f in cost_formset.forms %}
+    <tr class="jobcost-row">
+      {{ f.id }}
+
+      <td class="p-0">
+        {{ f.description }}
+        {{ f.description.errors }}
+      </td>
+
+      <td class="p-0">
+        {{ f.est_amount }}
+        {{ f.est_amount.errors }}
+      </td>
+
+      <td class="p-0">
+        {{ f.actual_amount }}
+        {{ f.actual_amount.errors }}
+      </td>
+
+      <td class="text-center p-0">
+        <button type="button" class="remove-row btn btn-link btn-sm text-danger">
+          <i class="bi bi-x-lg"></i>
+        </button>
+        <span class="d-none">{{ f.DELETE }}</span>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="mt-2">
+  <button type="button" id="btn-jobcost-add" class="btn btn-outline-primary btn-sm">
+    <i class="bi bi-plus me-1"></i> Add Cost
+  </button>
+</div>
+
+<template id="jobcost-empty-row">
+  <tr class="jobcost-row">
+    {{ cost_formset.empty_form.id }}
+
+    <td class="p-0">
+      {{ cost_formset.empty_form.description }}
+    </td>
+
+    <td class="p-0">
+      {{ cost_formset.empty_form.est_amount }}
+    </td>
+
+    <td class="p-0">
+      {{ cost_formset.empty_form.actual_amount }}
+    </td>
+
+    <td class="text-center p-0">
+      <button type="button" class="remove-row btn btn-link btn-sm text-danger">
+        <i class="bi bi-x-lg"></i>
+      </button>
+      <span class="d-none">{{ cost_formset.empty_form.DELETE }}</span>
+    </td>
+  </tr>
+</template>
+
+<style>
+#jobcost-table td.p-0 { padding:0 !important; }
+#jobcost-table td.p-0 input.form-control { width:100%; margin:0 !important; border-radius:0; text-align:right; }
+</style>

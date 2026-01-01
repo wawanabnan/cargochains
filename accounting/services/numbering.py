@@ -12,31 +12,19 @@ def _format_period(dt: date, fmt: str) -> str:
     raise ValueError(f"Invalid period_format: {fmt}")
 
 
+from datetime import date
+from core.utils import get_next_number
+
+
 def next_journal_number(journal_date: date, kind: str = "GJ") -> str:
     """
-    Generate journal number using core_numbering_sequence
-
-    OPEN -> OPEN-YYYY-0001
-    GJ   -> JV-YYYYMM-0001
+    Generate journal number using core.utils.get_next_number()
+    - kind OPEN -> code JOURNAL_OPEN
+    - else      -> code JOURNAL_JV (JV/GJ/etc)
     """
     kind = (kind or "GJ").upper()
+    code = "JOURNAL_OPEN" if kind == "OPEN" else "JOURNAL_JV"
 
-    if kind == "OPEN":
-        seq_code = "JOURNAL_OPEN"
-    else:
-        seq_code = "JOURNAL_JV"
-
-    with transaction.atomic():
-        seq = (
-            NumberSequence.objects
-            .select_for_update()
-            .get(code=seq_code, is_active=True)
-        )
-
-        period = _format_period(journal_date, seq.period_format)
-        number = f"{seq.prefix}-{period}-{str(seq.next_number).zfill(seq.padding)}"
-
-        seq.next_number += 1
-        seq.save(update_fields=["next_number"])
-
-    return number
+    # app_label sesuaikan dengan NumberSequence om.
+    # Kalau semua sequence om pakai app_label="accounting" utk journal, pakai ini:
+    return get_next_number("accounting", code, today=journal_date)

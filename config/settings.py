@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'projects',
     'purchases',
     "sales_configuration",
+    'job',
     "accounting",
     'payments'
 ]
@@ -47,9 +48,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    "core.middleware.InitialSetupMiddleware",
-    "core.middleware_password.ForcePasswordChangeMiddleware",
-
+   
 
 ]
 
@@ -190,3 +189,4 @@ WKHTMLTOPDF_CMD = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+ALLOW_CREATE_SUPERUSER_ON_SETUP = True

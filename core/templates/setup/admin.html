@@ -1,0 +1,25 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="card">
+      <div class="card-body">
+        <h4 class="mb-3">Buat Superuser (Test)</h4>
+
+        <form method="post">
+          {% csrf_token %}
+          {{ form.as_p }}
+
+          <button class="btn btn-primary" type="submit">Create Superuser</button>
+          <a class="btn btn-secondary" href="/welcome/">Back</a>
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,394 @@
+{# templates/sales/job_order_detail.html #}
+{% extends "adminbase.html" %}
+{% load static %}
+
+{% load indo_format %}  {# kalau filter indo_number ada di sini #}
+
+{% block content %}
+
+<div class="app-content-header d-none">
+  <div class="container-fluid">
+  
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1 class="h4 mb-0">Job Order Detail</h1>
+        <div class="text-muted small">
+          Job No: <strong>{{ job.number }}</strong><br>
+          Date: {{ job.job_date|date:"d-m-Y" }}
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{% url 'job:job_order_list' %}"
+           class="btn btn-outline-secondary btn-sm">
+          <i class="fa fa-arrow-left me-1"></i> Back to List
+        </a>
+        <a href=""
+           class="btn btn-primary btn-sm">
+          <i class="fa fa-edit me-1"></i> Edit
+        </a>
+        <form method="post" action="{% url 'sales:invoice_generate_from_job' job.pk %}">
+          {% csrf_token %}
+          <button class="btn btn-sm btn-primary">To Invoice</button>
+        </form>
+
+        <a href="#"
+            class="btn btn-outline-primary btn-sm"
+            target="_blank">
+            <i class="fa fa-file-pdf me-1"></i> Revenue PDF
+          </a>
+
+      </div>
+    </div>
+  </div>
+</div>
+<div class="app-content">
+  <div class="container-fluid">
+    <div class="card shadow-sm">
+      <div class="card-header py-2 ">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <div class="fw-semibold">
+              Job Information
+              <span class="text-muted ms-2">{{ job.job_no|default:job.pk }}</span>
+            </div>
+
+            {# contoh status badge, sesuaikan field status kamu #}
+            {% if job.status %}
+              <span class="badge text-bg-secondary">{{ job.status|title }}</span>
+            {% endif %}
+          </div>
+
+          <div class="d-flex gap-2">
+            {# contoh tombol: edit header / print / dll, sesuaikan url #}
+            <a href="{% url 'job:job_order_edit' job.pk %}" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-pencil"></i> Edit
+            </a>
+            <a href="#" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-printer"></i> Print
+            </a>
+            <a href="{% url 'job:job_order_generate_invoice' job.pk %}" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-printer"></i> To Invoice
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body py-2">
+        <div class="row g-2">
+
+          {# LEFT: core info #}
+          <div class="col-lg-8">
+            <div class="row g-2">
+
+              <div class="col-md-6">
+                <div class="small text-muted">Customer</div>
+                <div class="fw-semibold text-truncate">
+                  {{ job.customer.company_name|default:job.customer.name }}
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="small text-muted">Service</div>
+                <div class="text-truncate">
+                  {{ job.service.name }} <span class="text-muted">({{ job.service.service_group }})</span>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="small text-muted">Cargo</div>
+                <div class="text-truncate">{{ job.cargo_description|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="small text-muted">PIC</div>
+                <div class="text-truncate">{{ job.pic|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="small text-muted">Pickup</div>
+                <div class="text-truncate">{{ job.pickup|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="small text-muted">Delivery</div>
+                <div class="text-truncate">{{ job.delivery|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="small text-muted">Payment Term</div>
+                <div class="text-truncate">{{ job.payment_term.name|default:"-" }}</div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="small text-muted">Sales</div>
+                <div class="text-truncate">
+                  {% if job.sales_user %}
+                    {{ job.sales_user.get_full_name|default:job.sales_user.username }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {# RIGHT: money panel #}
+          <div class="col-lg-4">
+            <div class="border rounded-3 p-2 bg-body-tertiary">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <div class="small text-muted">Currency</div>
+                <div class="fw-semibold">{{ job.currency.code|default:"-" }}</div>
+              </div>
+
+              <div class="d-flex align-items-center justify-content-between">
+                <div class="small text-muted">Total</div>
+                <div class="text-end">{{ job.total_amount|indo_number }}</div>
+              </div>
+
+              <div class="d-flex align-items-center justify-content-between">
+                <div class="small text-muted">Tax</div>
+                <div class="text-end">{{ job.tax_amount|indo_number }}</div>
+              </div>
+
+              <hr class="my-2">
+
+              <div class="d-flex align-items-center justify-content-between">
+                <div class="small text-muted">Grand Total</div>
+                <div class="text-end fw-semibold fs-6">{{ job.grand_total|indo_number }}</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+
+    {#===========================================#}
+    <ul class="nav nav-pills nav-fill  mynav mt-2" 
+                id="myTab" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active " 
+                        id="home-tab" 
+                        data-bs-toggle="tab" data-bs-target="#costTab" 
+                        type="button" role="tab" 
+                        aria-controls="home" aria-selected="true">Job Cost
+                </button>
+              </li>
+               <li class="nav-item" role="presentation">
+                <button class="nav-link" 
+                        id="home-tab" 
+                        data-bs-toggle="tab" data-bs-target="#noteTab" 
+                        type="button" role="tab" 
+                        aria-controls="home" aria-selected="true">Note
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" 
+                        id="profile-tab" 
+                        data-bs-toggle="tab" data-bs-target="#attachmentTab" 
+                        type="button" role="tab" 
+                        aria-controls="profile" aria-selected="false">Attachment
+                </button>
+              </li>
+              
+            
+    </ul>
+
+    
+<script>
+  window.COST_TYPE_META = {{ cost_type_meta_json|default:"{}"|safe }};
+</script>
+
+    <div id="jobcost-alert" class="alert alert-info d-none"></div>
+    <pre id="jobcost-debug"
+     class="small bg-light border rounded p-2 mt-2 d-none"
+     style="max-height: 260px; overflow:auto;"></pre>
+
+   
+ 
+    <div class="tab-content border border-0 mt-3" id="myCargoPriceTab">
+        <div class="tab-pane fade show active" id="costTab" role="tabpanel" aria-labelledby="cargotab">
+          
+            <form method="post" action="{% url 'job:job_order_costs_update' job.pk %}" novalidate id="jobcost-form">
+                {% csrf_token %}
+                {{ cost_formset.management_form }}
+
+                {% if cost_formset.non_form_errors %}
+                  <div class="alert alert-danger py-2 mb-2">{{ cost_formset.non_form_errors }}</div>
+                {% endif %}
+
+                {# error per row biar ketahuan baris mana #}
+                {% for f in cost_formset.forms %}
+                  {% if f.errors %}
+                    <div class="alert alert-danger py-2 mb-2">
+                      <strong>Row {{ forloop.counter }} error:</strong>
+                      {{ f.errors }}
+                    </div>
+                  {% endif %}
+                {% endfor %}
+                
+                <div class="card">
+                  <div class="card-body p-0">
+                      <input type="hidden"  name="jobcost_touched"  id="jobcost-touched" value="0">
+
+                    <div class="table-responsive" id="jobcost-area">
+                        {% include 'job_order/extension/cost_detail.html' %}
+                    </div>
+                  </div>
+
+                  <div class="d-flex justify-content-between align-items-center p-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="btn-jobcost-add">
+                      <i class="bi bi-plus-lg"></i> Add Row
+                    </button>
+
+                    <button type="submit" name="next" value="detail" class="btn btn-primary btn-sm">
+                      <i class="bi bi-save"></i> Save & Continue Costs
+                    </button>
+
+                    <button type="submit" name="next" value="list" class="btn btn-outline-secondary btn-sm">
+                      <i class="bi bi-arrow-left"></i> Save & Back to List
+                    </button>
+
+                  </div>
+                </div>
+                
+            </form>       
+                    
+        </div>
+        <div class="tab-pane fade show active" 
+            id="noteTab" 
+            role="tabpanel" aria-labelledby="notetab">
+            
+
+        </div>
+        <div class="tab-pane fade" id="attachmentTab" 
+              role="tabpanel" aria-labelledby="price-tab">
+                {% include 'job_order/extension/attachment.html' %}
+
+        </div>
+          
+    </div>
+  </div>  
+</div>
+
+{% endblock %}
+{% block extra_css %}
+<style>
+/* ===================== TABS ===================== */
+#myTab { border: none; }
+
+#myTab .nav-link{
+  background-color: #cdcacd !important;
+  border-radius: 0;
+  color: #fff !important;
+  text-transform: uppercase;
+}
+
+#myTab .nav-link.active{
+  background-color: #ab1680 !important;
+  border-radius: 0;
+  color: #fff !important;
+  font-weight: bold;
+}
+
+/* kalau pakai nav-pills lain */
+.mynav .nav-pills .nav-link.active{
+  background-color: blueviolet;
+  color: #F0F8FF;
+}
+
+/* ===================== TAB CONTENT ===================== */
+.tab-content{
+  padding: 0;
+  min-height: 100px;
+  background-color: #fff;
+}
+
+
+</style>
+<style>
+/* tbody td rapet */
+#jobcost-table tbody td{
+  padding: 3px 0 !important;
+  vertical-align: middle !important;
+}
+
+/* input/select rapet, kunci tinggi DI INPUT */
+#jobcost-table .form-control,
+#jobcost-table .form-select{
+  height: 20px !important;
+  min-height: 20px !important;
+  padding: 0 6px !important;
+  line-height: 1.1 !important;
+  font-size: .75rem !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* jangan paksa semua child td punya height tertentu */
+#jobcost-table tbody td > *{
+  display: block;
+}
+
+/* wrapper vendor/note: biarkan d-none bekerja */
+#jobcost-table .js-vendor-wrap,
+#jobcost-table .js-internal-note-wrap{
+  margin: 0 !important;
+}
+
+/* yang tampil saja di-center */
+#jobcost-table .js-vendor-wrap:not(.d-none),
+#jobcost-table .js-internal-note-wrap:not(.d-none){
+  display: flex;
+  align-items: center;
+}
+
+/* tombol delete jangan ngangkat row */
+#jobcost-table .remove-row{
+  padding: 0 !important;
+  line-height: 1 !important;
+  font-size: .75rem !important;
+  width: 18px;
+  height: 18px;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+/* thead & tfoot (kalau mau sama tinggi, atur padding bukan height) */
+#jobcost-table thead th,
+#jobcost-table tfoot td{
+  padding: 0px 6px !important;
+  line-height: 1.1 !important;
+  font-size: .75rem !important;
+   height: 25px !important;       /* samakan dengan input */
+  line-height: 25px !important;
+  vertical-align: middle !important;
+  white-space: nowrap;
+}
+</style>
+
+
+
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script src="{% static 'js/job/jobcost_table.js' %}"></script>
+<script src="{% static 'js/job/jobcost_ajax.js' %}"></script>
+
+
+
+
+
+
+{% endblock %}

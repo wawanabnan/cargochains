@@ -1,0 +1,70 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="app-content-header">
+  <div class="container-fluid d-flex justify-content-between align-items-center">
+    <h4 class="mb-0">Cost Types</h4>
+    <a href="{% url 'job:cost_type_add' %}"
+       class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-plus-lg me-1"></i> Add Cost Type
+    </a>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+    <div class="card">
+      <div class="card-body p-0">
+        <table class="table table-sm table-hover mb-0">
+          <thead>
+            <tr>
+              <th style="width:120px;">Code</th>
+              <th>Name</th>
+              <th style="width:160px;">Group</th>
+              <th>COGS Account</th>
+              <th class="text-center" style="width:80px;">Active</th>
+              <th style="width:80px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for x in items %}
+            <tr class="{% if not x.cogs_account %}table-warning{% endif %}">
+              <td>{{ x.code }}</td>
+              <td>{{ x.name }}</td>
+              <td>{{ x.group|default:"-" }}</td>
+              <td>
+                {% if x.cogs_account %}
+                  {{ x.cogs_account.code }} – {{ x.cogs_account.name }}
+                {% else %}
+                  <span class="text-danger fw-semibold">NOT SET</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if x.is_active %}
+                  <span class="badge bg-success">Yes</span>
+                {% else %}
+                  <span class="badge bg-secondary">No</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a href="{% url 'job:cost_type_edit' x.pk %}"
+                   class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-pencil"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-4">
+                No cost types found
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

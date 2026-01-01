@@ -1,0 +1,73 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="app-content-header">
+  <div class="container-fluid d-flex justify-content-between align-items-center">
+    <h4 class="mb-0">
+      {% if object %}Edit{% else %}Add{% endif %} Cost Type
+    </h4>
+    <a href="{% url 'job:cost_type_list' %}"
+       class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i> Back
+    </a>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+    <div class="card">
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Code</label>
+              {{ form.code }}
+            </div>
+
+            <div class="col-md-5">
+              <label class="form-label">Name</label>
+              {{ form.name }}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Group</label>
+              {{ form.group }}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">COGS Account</label>
+              {{ form.cogs_account }}
+              <div class="form-text">
+                Wajib diisi agar job costing bisa auto jurnal
+              </div>
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label">Sort</label>
+              {{ form.sort_order }}
+            </div>
+
+            <div class="col-md-2 d-flex align-items-center">
+              <div class="form-check mt-4">
+                {{ form.is_active }}
+                <label class="form-check-label">Active</label>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <div class="text-end">
+            <button class="btn btn-primary btn-sm">
+              <i class="bi bi-save me-1"></i> Save
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

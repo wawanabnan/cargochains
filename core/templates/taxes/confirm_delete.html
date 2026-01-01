@@ -1,0 +1,28 @@
+{% extends "adminbase.html" %}
+{% block content %}
+<div class="app-content-header">
+  <div class="container-fluid">
+    <h4 class="mb-0">Delete Tax</h4>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-2">Hapus tax ini?</p>
+        <div class="mb-3">
+          <div><strong>{{ object.code }}</strong> — {{ object.name }}</div>
+          <div class="text-muted small">{{ object.category.code }} • {{ object.rate }}%</div>
+        </div>
+
+        <form method="post" class="d-flex gap-2">
+          {% csrf_token %}
+          <a href="{% url 'core:tax_list' %}" class="btn btn-sm btn-outline-secondary">Cancel</a>
+          <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

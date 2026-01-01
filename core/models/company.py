@@ -18,10 +18,11 @@ class CompanyProfile(models.Model):
     address_1 = models.CharField(max_length=255, blank=True,null=True)
     address_2 = models.CharField(max_length=255, blank=True, null=True)
 
-    country  = models.ForeignKey("geo.Location", on_delete=PROTECT, related_name="+",default=1)
-    province = models.ForeignKey("geo.Location", on_delete=PROTECT, related_name="+", blank=True, null=True)
-    regency  = models.ForeignKey("geo.Location", on_delete=PROTECT, related_name="+", blank=True, null=True)
-    district = models.ForeignKey("geo.Location", on_delete=PROTECT, related_name="+", blank=True, null=True)
+    country  = models.CharField(max_length=100, default="Indonesia", blank=True)
+    province = models.CharField(max_length=100, blank=True, default="")
+    regency  = models.CharField(max_length=100, blank=True, default="")
+    district = models.CharField(max_length=100, blank=True, default="")
+
     postal_code = models.CharField(max_length=10, blank=True, null=True)
 
     enable_job_cost = models.BooleanField(default=True)

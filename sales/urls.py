@@ -59,7 +59,9 @@ from .views.job_order import (
     JobOrderDetailView,
     JobOrderAttachmentUploadView,
     JobOrderAttachmentDeleteView,
-     JobOrderBulkStatusView
+     JobOrderBulkStatusView,
+     JobOrderCostsUpdateView,
+     JobOrderGenerateInvoiceView
     
 )
 
@@ -178,13 +180,18 @@ urlpatterns = [
     path("job-orders/<int:pk>/attachments/<int:att_id>/delete/",
          JobOrderAttachmentDeleteView.as_view(),
          name="job_order_attachment_delete"),
-
-         
     path(
         "job-orders/bulk-status/",
         JobOrderBulkStatusView.as_view(),
         name="joborder_bulk_status",
     ),
+    path("job-orders/<int:pk>/costs/", JobOrderCostsUpdateView.as_view(), name="job_order_costs_update"),
+    path(
+        "job-orders/<int:pk>/generate-invoice/",
+        JobOrderGenerateInvoiceView.as_view(),
+        name="job_order_generate_invoice",
+    ),
+
 
     path("customers/", CustomerListView.as_view(), name="customer_list"),
     path("customers/add/", CustomerCreateView.as_view(), name="customer_add"),

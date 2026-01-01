@@ -20,6 +20,11 @@ from django.db.models import Sum
 from django.http import JsonResponse, HttpResponseBadRequest
 from decimal import Decimal, InvalidOperation
 
+
+from sales.models import JobOrder, Invoice, InvoiceLine
+from sales.utils.invoices import generate_invoice_from_job
+
+
 # ==========================
 # LIST
 # ==========================
@@ -216,6 +221,8 @@ class JobOrderUpdateView(LoginRequiredMixin, View):
         form = JobOrderForm(request.POST, instance=job)
         cost_formset = JobCostFormSet(request.POST, instance=job)
 
+        
+
         if form.is_valid() and cost_formset.is_valid():
             job = form.save(commit=False)
             if not job.sales_user_id:
@@ -248,7 +255,7 @@ class JobOrderDetailView(LoginRequiredMixin, DetailView):
     template_name = "job_orders/detail.html"
     context_object_name = "job"
 
-    def get_context_data(self, **kwargs):
+    def get_context_data2(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         job = self.object
 
@@ -260,6 +267,26 @@ class JobOrderDetailView(LoginRequiredMixin, DetailView):
         ctx["total_cost"] = total_cost
         ctx["attachments"] = job.attachments.all()
         ctx["attachment_form"] = JobOrderAttachmentForm()
+        return ctx
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        job = self.object
+
+ 
+
+        costs = JobCost.objects.filter(job_order=job).order_by("id")
+        total_cost = costs.aggregate(total=Sum("amount"))["total"] or 0
+
+        ctx["costs"] = costs
+        ctx["total_cost"] = total_cost
+
+        # ✅ ini yang baru: formset untuk edit di detail
+        ctx["cost_formset"] = JobCostFormSet(instance=job)
+
+        ctx["attachments"] = job.attachments.all()
+        ctx["attachment_form"] = JobOrderAttachmentForm()
+        ctx["cost_formset"] = JobCostFormSet(instance=job)  # ✅ INI WAJIB
+
         return ctx
     
 
@@ -325,3 +352,57 @@ class JobOrderBulkStatusView(LoginRequiredMixin, View):
             messages.error(request, "Action tidak valid.")
 
         return redirect("sales:job_order_list")
+
+
+from django.db import transaction
+
+class JobOrderCostsUpdateView(LoginRequiredMixin, View):
+    template_name = "job_orders/detail.html"
+
+    @transaction.atomic
+    def post(self, request, pk):
+        job = get_object_or_404(JobOrder, pk=pk)
+
+        cost_formset = JobCostFormSet(request.POST, instance=job)
+        prefix = cost_formset.prefix
+        print("====== JOB COST DEBUG ======")
+        print("PREFIX:", prefix)
+        print("TOTAL_FORMS:", request.POST.get(f"{prefix}-TOTAL_FORMS"))
+        print("INITIAL_FORMS:", request.POST.get(f"{prefix}-INITIAL_FORMS"))
+        print("ID(0):", request.POST.get(f"{prefix}-0-id"))
+        print("POST id keys:", [k for k in request.POST.keys() if k.endswith("-id")])
+        print("================================")
+        # ===== DEBUG END =====        
+        
+        if cost_formset.is_valid():
+            cost_formset.save()
+            messages.success(request, "Job Cost berhasil diupdate.")
+            return redirect("sales:job_order_detail", pk=job.pk)
+
+        # kalau invalid → render halaman detail yang sama (tab cost), tampilkan error
+        messages.error(request, "Ada error pada Job Cost. Silakan dicek.")
+        # tetap tampilkan costs & total untuk panel summary (optional)
+        costs = JobCost.objects.filter(job_order=job).order_by("id")
+        total_cost = costs.aggregate(total=Sum("amount"))["total"] or 0
+
+        return render(request, self.template_name, {
+            "job": job,
+            "cost_formset": cost_formset,
+            "costs": costs,
+            "total_cost": total_cost,
+            "attachments": job.attachments.all(),
+            "attachment_form": JobOrderAttachmentForm(),
+        })
+
+
+class JobOrderGenerateInvoiceView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        job = get_object_or_404(JobOrder, pk=pk)
+
+        invoice = generate_invoice_from_job(job)
+
+        messages.success(
+            request,
+            f"Invoice {invoice.number} berhasil dibuat dari Job {job.number}."
+        )
+        return redirect("sales:invoice_detail", pk=invoice.pk)

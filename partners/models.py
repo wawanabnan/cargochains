@@ -273,6 +273,24 @@ class Customer(Partner):
         verbose_name_plural = "Customers"
 
 
+class VendorManager(models.Manager):
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .filter(roles__code__in=["vendor", "carrier"])  # sesuaikan kode role
+            .distinct()
+        )
+
+class Vendor(Partner):
+    objects = VendorManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = "Vendor"
+        verbose_name_plural = "Vendors"
+
+
 class PartnerRoleTypes(models.Model):
     code = models.CharField(max_length=50, unique=True, blank=True)
     name = models.CharField(max_length=50)

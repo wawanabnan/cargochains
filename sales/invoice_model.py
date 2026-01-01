@@ -14,6 +14,8 @@ from core.utils import get_next_number
 from partners.models import Partner,Customer
 from .job_order_model import JobOrder
 from accounting.models.journal import Journal
+from django.utils.safestring import mark_safe
+from typing import Set
 
 
 class TimeStampedModel(models.Model):
@@ -22,6 +24,7 @@ class TimeStampedModel(models.Model):
 
     class Meta:
         abstract = True
+
 
 class Invoice(TimeStampedModel):
     ST_DRAFT = "DRAFT"
@@ -34,16 +37,25 @@ class Invoice(TimeStampedModel):
         (ST_PAID, "Paid"),
     ]
 
+    # workflow rules
+    CONFIRMABLE_STATUSES = {ST_DRAFT}
+    EDITABLE_STATUSES = {ST_DRAFT}
+    PAYABLE_STATUSES = {ST_SENT}   # untuk "Receive Payment"
+
+    # permission codenames (Django admin)
+    PERM_CONFIRM = "sales.confirm_invoice"           # custom
+    PERM_RECEIVE_PAYMENT = "sales.receive_payment"  # custom
+    PERM_EDIT = "sales.change_invoice"              # built-in
+
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default=ST_DRAFT,   # ✅ WAJIB ST_DRAFT
+        default=ST_DRAFT,
         db_index=True,
     )
-    
+
     number = models.CharField(max_length=30, unique=True, editable=False)
 
-    # optional (jika invoice dari JobOrder)
     job_order = models.ForeignKey(
         JobOrder, on_delete=PROTECT, null=True, blank=True, related_name="invoices"
     )
@@ -55,12 +67,12 @@ class Invoice(TimeStampedModel):
         blank=True,
         related_name="invoice",
     )
+
     customer = models.ForeignKey(
         Customer,
         on_delete=PROTECT,
         related_name="customer_invoices",
         verbose_name="Customer",
-        
     )
 
     tax = models.ForeignKey(Tax, on_delete=models.PROTECT, null=True, blank=True)
@@ -74,13 +86,13 @@ class Invoice(TimeStampedModel):
     subtotal_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
     tax_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
     total_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+
     apply_pph = models.BooleanField(default=False)
     pph_percent = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal("0.00"))
     pph_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
 
-
     amount_paid = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
-    
+
     notes_internal = models.TextField(blank=True, default="")
     notes_customer = models.TextField(blank=True, default="")
 
@@ -95,12 +107,15 @@ class Invoice(TimeStampedModel):
 
     class Meta:
         ordering = ["-invoice_date", "-id"]
+        permissions = [
+            ("confirm_invoice", "Can confirm invoice"),
+            ("receive_payment", "Can create/post receipt for invoice"),
+        ]
 
     def __str__(self):
         return self.number
 
     def clean(self):
-        # kalau manual (tanpa job) -> customer wajib
         if not self.job_order and not self.customer:
             raise ValidationError({"customer": "Customer wajib diisi untuk invoice manual."})
 
@@ -129,33 +144,51 @@ class Invoice(TimeStampedModel):
         if self.status == self.ST_PAID:
             return "PAID"
         return "UNPAID"  # SENT -> UNPAID
-    
-    def can_edit(self, user):
-        return self.status == self.ST_DRAFT and (user.is_superuser or user.groups.filter(name="Sales").exists())
 
-    def can_confirm(self, user):
-        return (
-            self.status == self.ST_DRAFT
-            and (user.is_superuser or user.groups.filter(name="Finance").exists())
-        )
-    def can_mark_paid(self, user):
-        return self.status == self.ST_SENT and (user.is_superuser or user.groups.filter(name="Finance").exists())
-
-
-    def outstanding_amount(self):
+    # ========== helpers ==========
+    def outstanding_amount(self) -> Decimal:
         return (self.total_amount or Decimal("0.00")) - (self.amount_paid or Decimal("0.00"))
 
+    def pay_status_label(self) -> str:
+        if self.status == self.ST_DRAFT:
+            return mark_safe('<span class="badge bg-secondary">DRAFT</span>')
+        if self.status == self.ST_PAID:
+            return mark_safe('<span class="badge bg-success">PAID</span>')
+        return mark_safe('<span class="badge bg-warning text-dark">UNPAID</span>')
 
-    def pay_status_label(self):
-        return "Paid" if self.status == self.ST_PAID else "Unpaid"
+    @staticmethod
+    def _has_perm(user, perm: str) -> bool:
+        return bool(
+            user and user.is_authenticated and
+            (user.is_superuser or user.has_perm(perm))
+        )
+
+    # ========== can_* ==========
+    def can_edit(self, user) -> bool:
+        return (self.status in self.EDITABLE_STATUSES) and self._has_perm(user, self.PERM_EDIT)
+
+    def can_confirm(self, user) -> bool:
+        return (
+            (self.status in self.CONFIRMABLE_STATUSES)
+            and (not self.journal_id)
+            and self._has_perm(user, self.PERM_CONFIRM)
+        )
+
+    def can_receive_payment(self, user) -> bool:
+        return (self.status in self.PAYABLE_STATUSES) and self._has_perm(user, self.PERM_RECEIVE_PAYMENT)
+
+
+  
 
 class InvoiceLine(TimeStampedModel):
     invoice = models.ForeignKey(Invoice, on_delete=CASCADE, related_name="lines")
+  # service = models.ForeignKey("core.Service", on_delete=models.PROTECT, null=True, blank=True)
     description = models.CharField(max_length=255)
     quantity = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("1.00"))
     price = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
     amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
     taxes = models.ManyToManyField(Tax, blank=True, related_name="invoice_lines")
+    uom = models.CharField(max_length=20, blank=True, default="")
 
     sort_order = models.PositiveIntegerField(default=0)
 

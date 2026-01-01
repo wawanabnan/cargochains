@@ -1,0 +1,122 @@
+/* CargoChains - Standard Table (AdminLTE4/BS5) */
+.cc-table .cc-table-main {
+  font-size: 0.875rem;      /* ~14px */
+}
+
+.cc-table .cc-table-main thead th {
+  font-weight: 600;
+  font-size: 0.8125rem;     /* ~13px */
+  text-transform: none;
+  letter-spacing: 0;
+  padding: 0.45rem 0.6rem;
+  border-bottom-width: 1px;
+  vertical-align: middle;
+}
+
+.cc-table .cc-table-main tbody td {
+  padding: 0.40rem 0.6rem;
+  vertical-align: middle;
+}
+
+.cc-table .cc-table-main tbody tr:hover {
+  cursor: default;
+}
+
+/* make badges, buttons, icons feel compact in tables */
+.cc-table .badge {
+  font-size: 0.75rem;
+  padding: 0.35em 0.55em;
+}
+
+.cc-table .btn.btn-sm {
+  --bs-btn-padding-y: 0.2rem;
+  --bs-btn-padding-x: 0.5rem;
+  --bs-btn-font-size: 0.8125rem; /* ~13px */
+  --bs-btn-border-radius: 0.35rem;
+}
+
+.cc-table .text-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.8125rem;
+}
+
+/* optional: tighter last column */
+.cc-table .cc-col-actions {
+  width: 1%;
+  white-space: nowrap;
+}
+
+
+/* CargoChains: custom striped (reversed) */
+.cc-table .cc-striped > tbody > tr:nth-child(odd) > * {
+  background-color: #fff;
+}
+
+.cc-table .cc-striped > tbody > tr:nth-child(even) > * {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* keep hover working nicely */
+.cc-table .cc-striped.table-hover > tbody > tr:hover > * {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+
+/*Checkbox----------------------------------------
+/* CargoChains: status badge for LIST/TABLE */
+.cc-table .badge.cc-status-list {
+  font-size: 0.5rem !important;
+  font-weight: 600;
+  padding: 0.4em 0.65em !important;
+  letter-spacing: 0.04em;
+  border-radius: 0.35rem;
+  line-height: 1.2;
+}
+
+
+/* ======================================
+   CargoChains – Detail Key / Value Layout
+   ====================================== */
+
+/* wrapper row (rapat tapi nyaman) */
+.cc-kv {
+  margin-bottom: 0.35rem;
+}
+
+/* LABEL (LEFT) */
+.cc-k {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+  color: #495057;              /* Bootstrap gray-700 */
+  line-height: 1.4;
+  padding-top: 0.35rem;        /* sejajar vertikal dg value */
+}
+
+/* VALUE (RIGHT) */
+.cc-v {
+  background-color: #f8f9fa;   /* gray-100 */
+  border: 1px solid #e9ecef;   /* gray-200 */
+  border-radius: 0.4rem;
+
+  padding: 0.25rem 0.5rem;
+  font-size: 0.9rem;
+  color: #212529;
+
+  line-height: 1.4;
+  white-space: nowrap;         /* default 1 baris */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* allow multiline only when needed */
+.cc-v.multiline {
+  white-space: normal;
+}
+
+/* optional: empty value look */
+.cc-v:empty::after {
+  content: "-";
+  color: #adb5bd;
+}

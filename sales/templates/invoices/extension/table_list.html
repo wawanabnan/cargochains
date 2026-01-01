@@ -1,10 +1,13 @@
 {% load indo_format %}
-    <div class="table-responsive">
-      <table class="table table-sm table-hover align-middle mb-0">
+
+
+  
+    <div class="table-responsive cc-table">
+      <table class="table table-sm table-hover align-middle mb-0 cc-table-main">
         <thead class="table-light">
           <tr>
             <th style="width: 4%;">
-              <input type="checkbox" id="chk-all">
+              <input type="checkbox" id="chk-all" class="">
             </th>
             <th>Invoice</th>
             <th>Customer</th>
@@ -13,12 +16,13 @@
           </tr>
         </thead>
         <tbody>
+          
           {% for inv in invoices %}
              <tr class="row-clickable"  
                 data-url="{% url 'sales:invoice_detail' inv.pk %}">
    
               <td onclick="event.stopPropagation();">
-                     <input type="checkbox" class="row-check" data-id="{{ inv.pk }}">
+                     <input type="checkbox" class="form-check-input  row-check" data-id="{{ inv.pk }}">
 
                 </td>
 

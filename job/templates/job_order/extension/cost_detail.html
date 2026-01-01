@@ -1,0 +1,138 @@
+{% load indo_format %}
+
+
+<table class="table table-sm mb-0 align-middle" id="jobcost-table">
+  <thead class="table-light">
+    <tr>
+      <th style="width:220px;">Cost Type</th>
+      <th>Description</th>
+      <th style="width:240px;">Vendor / Note</th>
+
+      <th class="text-end" style="width:160px;">Est. Amount</th>
+
+      {% if show_actual %}
+        <th class="text-end" style="width:160px;">Actual Amount</th>
+      {% endif %}
+
+      <th class="text-center" style="width:60px;">Del</th>
+    </tr>
+  </thead>
+
+  <tbody id="jobcost-body">
+    {% for f in cost_formset.forms %}
+      <tr class="jobcost-row">
+        {{ f.id }}
+
+        <td class="p-0">
+          {{ f.cost_type }}
+        </td>
+
+        <td class="p-0">
+          {{ f.description }}
+        </td>
+
+        <td class="p-0">
+          <div class="js-vendor-wrap d-none">
+            {{ f.vendor }}
+          </div>
+          <div class="js-internal-note-wrap">
+            {{ f.internal_note }}
+          </div>
+        </td>
+
+        <td class="p-0 text-end">
+          {{ f.est_amount }}
+        </td>
+
+        {% if show_actual %}
+          <td class="p-0 text-end">
+            {{ f.actual_amount }}
+          </td>
+        {% endif %}
+
+        <td class="text-center p-0">
+          <div class="d-none">
+            {{ f.DELETE }}
+          </div>
+          <button type="button"
+                  class="btn btn-link btn-sm text-danger remove-row"
+                  style="margin:0;padding:0;">
+            x
+          </button>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+
+  <tfoot>
+    <tr class="fw-semibold">
+      <td colspan="3" class="text-end">Estimated Total</td>
+      <td class="text-end">{{ est_total_cost|indo_number }}</td>
+      {% if show_actual %}<td></td>{% endif %}
+      <td></td>
+    </tr>
+
+    {% if show_actual %}
+      <tr class="fw-semibold">
+        <td colspan="3" class="text-end">Actual Total</td>
+        <td></td>
+        <td class="text-end">{{ actual_total_cost|indo_number }}</td>
+        <td></td>
+      </tr>
+    {% endif %}
+
+    <tr class="fw-semibold">
+      <td colspan="3" class="text-end">Total Used</td>
+      {% if show_actual %}
+        <td colspan="2" class="text-end">{{ total_cost|indo_number }}</td>
+      {% else %}
+        <td class="text-end">{{ total_cost|indo_number }}</td>
+      {% endif %}
+      <td></td>
+    </tr>
+  </tfoot>
+</table>
+ 
+<template id="jobcost-empty-row">
+  {% with f=cost_formset.empty_form %}
+    <tr class="jobcost-row">
+      {{ f.id }}
+
+      <td class="p-0">
+        {{ f.cost_type }}
+      </td>
+
+      <td class="p-0">
+        {{ f.description }}
+      </td>
+
+      <td class="p-0">
+        <div class="js-vendor-wrap d-none">
+          {{ f.vendor }}
+        </div>
+        <div class="js-internal-note-wrap">
+          {{ f.internal_note }}
+        </div>
+      </td>
+
+      <td class="p-0 text-end">
+        {{ f.est_amount }}
+      </td>
+
+      {% if show_actual %}
+        <td class="p-0 text-end">
+          {{ f.actual_amount }}
+        </td>
+      {% endif %}
+
+      <td class="text-center p-0">
+        <button type="button" class="btn btn-link btn-sm text-danger remove-row" style="margin:0;padding:0;">
+          x
+        </button>
+        <div class="d-none">
+          {{ f.DELETE }}
+        </div>
+      </td>
+    </tr>
+  {% endwith %}
+</template>

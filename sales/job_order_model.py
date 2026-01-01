@@ -205,15 +205,50 @@ class JobOrder(TimeStampedModel):
         super().save(*args, **kwargs)
 
     
+from decimal import Decimal
+from django.db import models
+from django.db.models import PROTECT
+
+from partners.models import Vendor  # sesuaikan path
+
 
 class JobCost(models.Model):
+    class Category(models.TextChoices):
+        VENDOR = "VENDOR", "Vendor Cost"
+        MOBILIZATION = "MOBILIZATION", "Mobilization"
+        LABOUR = "LABOUR", "Labour"
+        DOCUMENT = "DOCUMENT", "Document"
+        MISC = "MISC", "Misc"
+
     job_order = models.ForeignKey(
-        JobOrder,
+        "sales.JobOrder",
         on_delete=models.CASCADE,
         related_name="costs",
         db_index=True
     )
 
+    # ✅ tambahan
+    category = models.CharField(
+        max_length=20,
+        choices=Category.choices,
+        default=Category.VENDOR,
+        db_index=True,
+    )
+
+    # ✅ tambahan (boleh kosong)
+    vendor = models.ForeignKey(
+        Vendor,
+        on_delete=PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        db_index=True,
+    )
+
+    # ✅ optional: keterangan kalau vendor kosong
+    internal_note = models.CharField(max_length=120, blank=True)
+
+    # existing
     description = models.CharField(max_length=255)
     qty = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -230,10 +265,12 @@ class JobCost(models.Model):
         return f"{self.description} ({self.amount})"
 
     def save(self, *args, **kwargs):
-        # hitung amount otomatis
         self.amount = (self.qty or Decimal("0")) * (self.price or Decimal("0"))
         super().save(*args, **kwargs)
 
+    @property
+    def vendor_label(self):
+        return self.vendor.name if self.vendor else (self.internal_note or "No Vendor / Internal")
 
 
 class JobOrderAttachment(TimeStampedModel):

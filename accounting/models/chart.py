@@ -14,6 +14,7 @@ class Account(models.Model):
     code = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=120)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+
     parent = models.ForeignKey(
         "self",
         null=True,
@@ -21,13 +22,12 @@ class Account(models.Model):
         on_delete=models.PROTECT,
         related_name="children",
     )
+
     chart_year = models.PositiveIntegerField(db_index=True)
 
-
-    is_postable = models.BooleanField(default=True)  # ✅ child/leaf = True, parent/group = False
+    # ✅ child/leaf = True, parent/group = False
+    is_postable = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
-
-    
 
     class Meta:
         constraints = [
@@ -41,15 +41,18 @@ class Account(models.Model):
     def __str__(self):
         return f"{self.code} - {self.name}"
 
-
     def clean(self):
-        errors = {}  # ⬅️ INI YANG KURANG TADI
+        errors = {}
+
+        # 0) parent harus satu chart_year
+        if self.parent_id and self.parent and self.parent.chart_year != self.chart_year:
+            errors["parent"] = "Parent harus dalam chart_year yang sama."
 
         # 1) parent tidak boleh diri sendiri
         if self.parent_id and self.pk and self.parent_id == self.pk:
             errors["parent"] = "Parent tidak boleh diri sendiri."
 
-        # 2) anti cycle (A -> B -> A)
+        # 2) anti-cycle (A -> B -> A)
         if self.parent_id and self.pk:
             seen = {self.pk}
             p = self.parent
@@ -65,6 +68,7 @@ class Account(models.Model):
             errors["type"] = "Type harus sama dengan parent account."
 
         # 4) account yang punya child tidak boleh postable
+        #    (pakai self.pk untuk menghindari query children pada object belum tersimpan)
         if self.pk and self.is_postable and self.children.exists():
             errors["is_postable"] = (
                 "Account ini punya child, tidak boleh Postable. "
@@ -84,5 +88,3 @@ class Account(models.Model):
             Account.objects.filter(pk=self.parent_id, is_postable=True).update(
                 is_postable=False
             )
-
-    

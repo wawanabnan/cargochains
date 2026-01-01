@@ -13,6 +13,12 @@ from django.views import View
 from django.db.models import Q
 from geo.models import Location  # sesuaikan kalau model-nya beda
 
+def children_by_parent(request, parent_id: int):
+    qs = Location.objects.filter(parent_id=parent_id, status="active").order_by("name").values("id","name","kind")
+    return JsonResponse({"results": list(qs)})
+
+
+
 class LocationAutocompleteView(View):
     """Return JSON for autocomplete fields."""
 

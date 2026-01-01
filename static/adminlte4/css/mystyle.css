@@ -97,3 +97,17 @@ label .form-label,label {
   margin-bottom:1px;
 }
 
+
+
+.btn-sm, .btn-group-sm > .btn {
+    --bs-btn-padding-y: 0.25rem;
+    --bs-btn-padding-x: 0.5rem;
+    --bs-btn-font-size: 0.875rem;
+
+}
+
+.col-form-label-sm {
+   
+    font-size: 0.75rem !important;
+    line-height: 0.5rem !important
+}

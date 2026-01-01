@@ -1,16 +1,26 @@
 from django.shortcuts import render, redirect
-from django.urls import reverse
 from core.models.setup import SetupState
-from core.services.bootstrap import ensure_initial_admin
-
 
 def welcome(request):
-    # kalau sudah login, biarkan middleware setup/wizard yang handle
-    if request.user.is_authenticated:
-        return redirect("/")
+    state, _ = SetupState.objects.get_or_create(
+        id=1, defaults={"is_completed": False, "current_step": 1}
+    )
 
-    state = SetupState.objects.first()
-    ctx = {
-        "state": state,
-    }
-    return render(request, "core/welcome.html", ctx)
+    if state.is_completed:
+        return redirect("core:setup_done")
+
+    if state.current_step == 1:
+        return render(request, "setup/welcome.html")
+
+    if state.current_step == 2:
+        return redirect("core:setup_user")
+
+    if state.current_step == 3:
+        return redirect("core:setup_company")
+
+    if state.current_step == 4:
+        return redirect("core:setup_general")
+
+    # ❌ JANGAN reset step di sini
+    # kalau state aneh, lempar balik ke welcome TANPA ubah DB
+    return render(request, "setup/welcome.html")

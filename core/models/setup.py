@@ -1,22 +1,17 @@
+import uuid
 from django.db import models
 
 class SetupState(models.Model):
     is_completed = models.BooleanField(default=False)
-    completed_at = models.DateTimeField(null=True, blank=True)
-    current_step = models.PositiveSmallIntegerField(default=1)
-
-    # === Initial admin bootstrap ===
-    initial_admin_user_id = models.IntegerField(null=True, blank=True)
-    initial_admin_username = models.CharField(max_length=150, null=True, blank=True)
-
-    # tampilkan hanya sekali (dan nanti dihapus setelah password diganti)
-    initial_admin_password = models.CharField(max_length=128, null=True, blank=True)
-
-    # paksa user itu ganti password
-    force_password_change = models.BooleanField(default=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    current_step = models.PositiveIntegerField(default=1)
+    setup_token = models.CharField(max_length=64, null=True, blank=True, db_index=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "core_setup_state"
+
+    def ensure_token(self):
+        if not self.setup_token:
+            self.setup_token = uuid.uuid4().hex
+            self.save(update_fields=["setup_token"])
+        return self.setup_token
