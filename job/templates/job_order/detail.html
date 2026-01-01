@@ -219,16 +219,7 @@
                   <div class="alert alert-danger py-2 mb-2">{{ cost_formset.non_form_errors }}</div>
                 {% endif %}
 
-                {# error per row biar ketahuan baris mana #}
-                {% for f in cost_formset.forms %}
-                  {% if f.errors %}
-                    <div class="alert alert-danger py-2 mb-2">
-                      <strong>Row {{ forloop.counter }} error:</strong>
-                      {{ f.errors }}
-                    </div>
-                  {% endif %}
-                {% endfor %}
-                
+               
                 <div class="card">
                   <div class="card-body p-0">
                       <input type="hidden"  name="jobcost_touched"  id="jobcost-touched" value="0">
@@ -370,6 +361,22 @@
   vertical-align: middle !important;
   white-space: nowrap;
 }
+
+/* tetap worksheet look */
+#jobcost-table .form-control,
+#jobcost-table .form-select {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+#jobcost-table .is-invalid {
+  outline: 1px solid rgba(220, 53, 69, 0.9) !important; /* ← dari 2px ke 1px */
+  outline-offset: -1px;                                /* rapat ke cell */
+  background-color: rgba(220, 53, 69, 0.04) !important; /* lebih soft */
+}
+
+
+
 </style>
 
 

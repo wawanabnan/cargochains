@@ -34,7 +34,7 @@ class JobCost(models.Model):
   
     job_order = models.ForeignKey(JobOrder, on_delete=PROTECT, related_name="job_order_costs")
     cost_type = models.ForeignKey(JobCostType, on_delete=PROTECT, related_name="+")
-    description = models.CharField(max_length=255, blank=True, default="")
+    description = models.CharField(max_length=255, blank=False, default="")
     est_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     actual_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     sort_order = models.IntegerField(default=0)

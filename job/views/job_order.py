@@ -376,100 +376,6 @@ from django.db import transaction
 
 
 
-
-
-class JobOrderCostsUpdateView2(LoginRequiredMixin, View):
-        
-    def post(self, request, pk):
-        job = get_object_or_404(JobOrder, pk=pk)
-
-        formset = JobCostFormSet(request.POST, instance=job)
-        is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
-
-        # ==================================================
-        # ✅ FINAL RULE:
-        # kalau user TIDAK menyentuh apa pun → JANGAN validasi
-        # ==================================================
-        touched = request.POST.get("jobcost_touched") == "1"
-
-        if not touched:
-            if is_ajax:
-                html = render_to_string(
-                    "job_order/extension/cost_detail.html",
-                    {
-                        "job": job,
-                        "cost_formset": JobCostFormSet(instance=job),
-                        "cost_type_meta_json": cost_type_meta_json(),
-                    },
-                    request=request,
-                )
-                return JsonResponse({
-                    "ok": True,
-                    "ajax": True,
-                    "message": "Tidak ada perubahan.",
-                    "html": html,
-                    "debug": {"touched": False},
-                })
-
-            messages.info(request, "Tidak ada perubahan pada Job Cost.")
-            return redirect("job:job_order_detail", pk=job.pk)
-
-        # ==================================================
-        # ⬇️ BARU DI SINI VALIDASI KETAT
-        # ==================================================
-        if not formset.is_valid():
-            debug = {
-                "non_form_errors": formset.non_form_errors(),
-                "forms": [f.errors for f in formset.forms],
-            }
-
-            if is_ajax:
-                html = render_to_string(
-                    "job_order/extension/cost_detail.html",
-                    {
-                        "job": job,
-                        "cost_formset": formset,
-                        "cost_type_meta_json": cost_type_meta_json(),
-                    },
-                    request=request,
-                )
-                return JsonResponse({
-                    "ok": False,
-                    "ajax": True,
-                    "message": "Ada error input. Cek field merah.",
-                    "html": html,
-                    "debug": debug,
-                }, status=400)
-
-            messages.error(request, "Ada error input pada Job Cost.")
-            return redirect("job:job_order_detail", pk=job.pk)
-
-        # ==================================================
-        # ✅ SAVE (karena touched + valid)
-        # ==================================================
-        with transaction.atomic():
-            formset.save()
-
-        if is_ajax:
-            fresh_formset = JobCostFormSet(instance=job)
-            html = render_to_string(
-                "job_order/extension/cost_detail.html",
-                {
-                    "job": job,
-                    "cost_formset": fresh_formset,
-                    "cost_type_meta_json": cost_type_meta_json(),
-                },
-                request=request,
-            )
-            return JsonResponse({
-                "ok": True,
-                "ajax": True,
-                "message": "Tersimpan ✅. Silakan lanjut input cost.",
-                "html": html,
-            })
-
-        messages.success(request, "Job Cost tersimpan.")
-        return redirect("job:job_order_detail", pk=job.pk)
 class JobOrderCostsUpdateView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
@@ -509,6 +415,10 @@ class JobOrderCostsUpdateView(LoginRequiredMixin, View):
         # ==================================================
         # ⬇️ BARU DI SINI VALIDASI KETAT
         # ==================================================
+        print("DESC required:", formset.forms[-1].fields["description"].required)
+        print("DESC model blank:", formset.forms[-1]._meta.model._meta.get_field("description").blank)
+        print("DESC posted:", repr(formset.forms[-1].data.get("job_order_costs-6-description")))
+
         if not formset.is_valid():
 
             # ==================================================

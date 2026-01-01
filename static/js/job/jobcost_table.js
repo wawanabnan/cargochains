@@ -145,11 +145,13 @@
     tbody.appendChild(row);
     totalForms.value = idx + 1;
 
-    // ✅ jangan auto isi 0,00: biar dianggap kosong jika user belum input
+    // ✅ IMPORTANT:
+    // Paksa numeric default "0,00" agar Django menganggap form "changed"
+    // sehingga saat SAVE tanpa isi, formset tetap divalidasi dan row tidak hilang.
     const est = row.querySelector(`input[name="${prefix}-${idx}-est_amount"]`);
     const act = row.querySelector(`input[name="${prefix}-${idx}-actual_amount"]`);
-    if (est) est.value = "";
-    if (act) act.value = "";
+    if (est) est.value = "0,00";
+    if (act) act.value = "0,00";
 
     const ct = row.querySelector(`select[name="${prefix}-${idx}-cost_type"]`);
     if (ct) ct.value = "";

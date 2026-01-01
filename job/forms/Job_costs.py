@@ -73,54 +73,99 @@ class JobCostForm(forms.ModelForm):
                 attrs={"class": "form-control form-control-sm", "placeholder": "Non-vendor text / internal note"}
             ),
         }
-
-      
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # =========================
+        # REQUIRED / OPTIONAL (SAFE)
+        # =========================
+        for nm in ["cost_type", "description", "vendor", "est_amount"]:
+            if nm in self.fields:
+                self.fields[nm].required = True
 
-         # WAJIB
-        self.fields["cost_type"].required = True
-        self.fields["vendor"].required = True
-        self.fields["est_amount"].required = True   # atau actual_amount kalau mau
-        # OPTIONAL
-        self.fields["internal_note"].required = False
+        if "internal_note" in self.fields:
+            self.fields["internal_note"].required = False
 
-        # cost_type queryset (NORMAL) - TANPA WIDGET HACK
-        self.fields["cost_type"].queryset = (
-            JobCostType.objects.filter(is_active=True)
-            .order_by("sort_order", "name")
-        )
-        
-        # hanya untuk row baru (instance belum ada)
-        if not (self.instance and self.instance.pk):
-            self.fields["cost_type"].empty_label = "-- pilih cost type --"
-        else:
-            # opsional: hapus empty label supaya row existing nggak ada placeholder
-            self.fields["cost_type"].empty_label = None
+        # =========================
+        # cost_type queryset + empty label
+        # =========================
+        if "cost_type" in self.fields:
+            self.fields["cost_type"].queryset = (
+                JobCostType.objects.filter(is_active=True)
+                .order_by("sort_order", "name")
+            )
 
+            # hanya untuk row baru (instance belum ada)
+            # NOTE: empty_label hanya berlaku untuk ModelChoiceField
+            if hasattr(self.fields["cost_type"], "empty_label"):
+                if not (self.instance and self.instance.pk):
+                    self.fields["cost_type"].empty_label = "-- pilih cost type --"
+                else:
+                    self.fields["cost_type"].empty_label = None
 
-        # est_amount
-        self.fields["est_amount"].widget.attrs.update({
-            "class": "form-control form-control-sm text-end js-money",
-            "inputmode": "decimal",
-            "autocomplete": "off",
-        })
+            # widget attrs
+            self.fields["cost_type"].widget.attrs.update({
+                "class": "form-select form-select-sm",
+            })
 
-        # actual_amount
-        if "actual_amount" in self.fields:
-            self.fields["actual_amount"].widget.attrs.update({
+        # =========================
+        # description
+        # =========================
+        if "description" in self.fields:
+            self.fields["description"].widget.attrs.update({
+                "class": "form-control form-control-sm",
+                "placeholder": "Description",
+                "autocomplete": "off",
+            })
+
+        # =========================
+        # vendor (kalau ada)
+        # =========================
+        if "vendor" in self.fields:
+            self.fields["vendor"].widget.attrs.update({
+                "class": "form-select form-select-sm",
+            })
+
+        # =========================
+        # internal_note (optional)
+        # =========================
+        if "internal_note" in self.fields:
+            self.fields["internal_note"].widget.attrs.update({
+                "class": "form-control form-control-sm",
+                "placeholder": "Internal note (optional)",
+                "autocomplete": "off",
+            })
+
+        # =========================
+        # est_amount / actual_amount
+        # =========================
+        if "est_amount" in self.fields:
+            self.fields["est_amount"].widget.attrs.update({
                 "class": "form-control form-control-sm text-end js-money",
+                "placeholder": "Est. Amount",
                 "inputmode": "decimal",
                 "autocomplete": "off",
             })
 
-        # initial value (edit)
-        if self.instance and self.instance.pk:
-            self.initial["est_amount"] = fmt_idr(self.instance.est_amount)
-            self.initial["actual_amount"] = fmt_idr(self.instance.actual_amount)
+        if "actual_amount" in self.fields:
+            self.fields["actual_amount"].widget.attrs.update({
+                "class": "form-control form-control-sm text-end js-money",
+                "placeholder": "Actual Amount",
+                "inputmode": "decimal",
+                "autocomplete": "off",
+            })
 
-   
+        # =========================
+        # initial formatted values (edit mode only)
+        # =========================
+        if self.instance and self.instance.pk:
+            if "est_amount" in self.fields:
+                self.initial["est_amount"] = fmt_idr(self.instance.est_amount)
+            if "actual_amount" in self.fields:
+                self.initial["actual_amount"] = fmt_idr(self.instance.actual_amount)
+
+    
+   #.........................................
     def clean_est_amount(self):
         return parse_money(self.cleaned_data.get("est_amount"))
 
