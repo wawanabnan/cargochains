@@ -57,12 +57,22 @@
     }
   }
 
+  function isJobCostDebugEnabled() {
+    return new URLSearchParams(window.location.search).get("debug") === "1";
+  }
+
+
+  function ensureJobCostDebugVisibleIfEnabled() {
+    if (!isJobCostDebugEnabled()) return;
+    const el = document.getElementById("jobcost-debug");
+    if (el) el.classList.remove("d-none");
+  }
+
   // ---- debug helper (optional) ----
   function dumpJobCostDebug(payload) {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("debug") !== "1") return; // ⬅️ kunci utama
+    if (!isJobCostDebugEnabled()) return;
 
-    const el = document.getElementById("jobcost-debug");
+    const el = $(DEBUG_ID);
     if (!el) return;
 
     el.classList.remove("d-none");
@@ -157,6 +167,7 @@
       if (typeof window.initJobCostTable === "function") {
         window.initJobCostTable();
       }
+       ensureJobCostDebugVisibleIfEnabled();
     }
 
     // INVALID 400 => alert + buka wrapper hidden + fokus
@@ -164,7 +175,7 @@
       showJobCostAlert(
         data.message || "Ada error input. Cek field yang disorot.",
         "danger",
-        0
+        4000
       );
 
       const root = getRoot();
@@ -183,6 +194,9 @@
   function bindOnce() {
     const form = $(FORM_ID);
     if (!form) return;
+
+    ensureJobCostDebugVisibleIfEnabled();
+
 
     if (form.dataset.jobcostAjaxBound === "1") return;
     form.dataset.jobcostAjaxBound = "1";
@@ -253,4 +267,34 @@
   })();
 
   document.addEventListener("DOMContentLoaded", bindOnce);
+  // ===============================
+  // CLEAR ERROR STATE ON USER INPUT
+  // ===============================
+  document.addEventListener("input", function (e) {
+    const el = e.target;
+
+    if (
+      !el.matches(
+        "#jobcost-table input, #jobcost-table select, #jobcost-table textarea"
+      )
+    ) {
+      return;
+    }
+
+    // user mulai edit → hapus indikator error
+    el.classList.remove("is-invalid");
+    el.removeAttribute("aria-invalid");
+  });
+
+  document.addEventListener("change", function (e) {
+    const el = e.target;
+
+    if (!el.matches("#jobcost-table select")) return;
+
+    el.classList.remove("is-invalid");
+    el.removeAttribute("aria-invalid");
+  });
+
+
+
 })();
