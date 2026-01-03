@@ -2,7 +2,7 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from projects.models import Project
-from core.utils import get_next_number
+from core.utils.numbering import get_next_number
 
 
 class Command(BaseCommand):

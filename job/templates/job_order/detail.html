@@ -44,34 +44,129 @@
 <div class="app-content">
   <div class="container-fluid">
     <div class="card shadow-sm">
-      <div class="card-header py-2 ">
-        <div class="d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center gap-2">
-            <div class="fw-semibold">
-              Job Information
-              <span class="text-muted ms-2">{{ job.job_no|default:job.pk }}</span>
-            </div>
+      <div class="card-header py-2">
+  <div class="d-flex align-items-center justify-content-between">
 
-            {# contoh status badge, sesuaikan field status kamu #}
-            {% if job.status %}
-              <span class="badge text-bg-secondary">{{ job.status|title }}</span>
-            {% endif %}
-          </div>
-
-          <div class="d-flex gap-2">
-            {# contoh tombol: edit header / print / dll, sesuaikan url #}
-            <a href="{% url 'job:job_order_edit' job.pk %}" class="btn btn-outline-secondary btn-sm">
-              <i class="bi bi-pencil"></i> Edit
-            </a>
-            <a href="#" class="btn btn-outline-primary btn-sm">
-              <i class="bi bi-printer"></i> Print
-            </a>
-            <a href="{% url 'job:job_order_generate_invoice' job.pk %}" class="btn btn-outline-primary btn-sm">
-              <i class="bi bi-printer"></i> To Invoice
-            </a>
-          </div>
-        </div>
+    <!-- LEFT: TITLE + STATUS -->
+    <div class="d-flex align-items-center gap-2">
+      <div class="fw-semibold">
+        Job Information
+        <span class="text-muted ms-2">{{ job.job_no|default:job.pk }}</span>
       </div>
+
+      {% if job.status %}
+        <span class="badge
+          {% if job.status == 'DRAFT' %}text-bg-secondary
+          {% elif job.status == 'IN_PROGRESS' %}text-bg-info
+          {% elif job.status == 'ON_HOLD' %}text-bg-warning
+          {% elif job.status == 'COMPLETED' %}text-bg-success
+          {% elif job.status == 'CANCELLED' %}text-bg-danger
+          {% endif %}
+        ">
+          {{ job.status|title }}
+        </span>
+      {% endif %}
+    </div>
+
+    <!-- RIGHT: ACTION BUTTONS -->
+    <div class="d-flex align-items-center gap-1">
+
+      <!-- EDIT (selama belum completed) -->
+      {% if job.status != 'COMPLETED' %}
+        <a href="{% url 'job:job_order_edit' job.pk %}"
+           class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-pencil"></i> Edit
+        </a>
+      {% endif %}
+
+      <!-- PRINT -->
+      <a href="#"
+         class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-printer"></i> Print
+      </a>
+
+      <!-- TO INVOICE (hanya setelah completed) -->
+      {% if job.status == 'COMPLETED' %}
+        <a href="{% url 'job:job_order_generate_invoice' job.pk %}"
+           class="btn btn-outline-primary btn-sm">
+          <i class="bi bi-receipt"></i> To Invoice
+        </a>
+      {% endif %}
+
+      <!-- ===== STATUS ACTIONS ===== -->
+
+      <!-- CONFIRM: Draft → On Going -->
+      {% if job.status == 'DRAFT' %}
+        <form method="post"
+              action="{% url 'job:job_confirm' job.pk %}">
+          {% csrf_token %}
+          <button class="btn btn-primary btn-sm">
+            <i class="bi bi-check-circle"></i> Confirm
+          </button>
+        </form>
+      {% endif %}
+
+      <!-- ON GOING ACTIONS -->
+      {% if job.status == 'IN_PROGRESS' %}
+
+        <!-- COMPLETE -->
+        <form method="post"
+              action="{% url 'job:job_complete' job.pk %}">
+          {% csrf_token %}
+          <button class="btn btn-success btn-sm">
+            <i class="bi bi-flag"></i> Complete
+          </button>
+        </form>
+
+        <!-- HOLD -->
+        <form method="post"
+              action="{% url 'job:job_hold' job.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="reason" value="On Hold">
+          <button class="btn btn-warning btn-sm">
+            <i class="bi bi-pause-circle"></i> Hold
+          </button>
+        </form>
+
+        <!-- CANCEL -->
+        <form method="post"
+              action="{% url 'job:job_cancel' job.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="reason" value="Cancelled by user">
+          <button class="btn btn-danger btn-sm">
+            <i class="bi bi-x-circle">Cancel</i>
+          </button>
+        </form>
+
+      {% endif %}
+
+      <!-- ON HOLD ACTIONS -->
+      {% if job.status == 'ON_HOLD' %}
+
+        <!-- RESUME -->
+        <form method="post"
+              action="{% url 'job:job_order_resume' job.pk %}">
+          {% csrf_token %}
+          <button class="btn btn-success btn-sm">
+            <i class="bi bi-play-circle"></i> Resume
+          </button>
+        </form>
+
+        <!-- CANCEL -->
+        <form method="post"
+              action="{% url 'job:job_order_cancel' job.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="reason" value="Cancelled while on hold">
+          <button class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-x-circle"></i>
+          </button>
+        </form>
+
+      {% endif %}
+
+    </div>
+  </div>
+</div>
 
       <div class="card-body py-2">
         <div class="row g-2">

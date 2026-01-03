@@ -9,13 +9,14 @@ from core.models.payment_terms import  PaymentTerm
 from core.models.taxes import  Tax
 
 
-from core.utils import get_next_number
+from core.utils.numbering import get_next_number
 from partners.models import Partner
 from partners.models import Customer
 from decimal import Decimal
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 
 
 class TimeStampedModel(models.Model):
@@ -170,14 +171,14 @@ class JobOrder(TimeStampedModel):
     )
 
     ST_DRAFT = "DRAFT"
-    ST_ON_GOING = "ON_GOING"
+    ST_IN_PROGRESS= "IN_PROGRESS"
     ST_ON_HOLD = "ON_HOLD"
     ST_CANCELLED = "CANCELLED"
     ST_COMPLETED = "COMPLETED"
 
     STATUS_CHOICES = [
         (ST_DRAFT, "Draft"),
-        (ST_ON_GOING, "On Going"),
+        (ST_IN_PROGRESS, "In Progress"),
         (ST_ON_HOLD, "On Hold"),
         (ST_CANCELLED, "Cancelled"),
         (ST_COMPLETED, "Completed"),
@@ -213,8 +214,25 @@ class JobOrder(TimeStampedModel):
     )
     cancel_reason = models.CharField(max_length=255, blank=True, null=True)
 
-   
+    
+    STATUS_COLORS = {
+        ST_DRAFT: "secondary",
+        ST_IN_PROGRESS: "info",
+        ST_ON_HOLD: "warning",
+        ST_COMPLETED: "success",
+        ST_CANCELLED: "danger",
+    }
 
+    
+    @property
+    def job_status_label(self):
+        color = self.STATUS_COLORS.get(self.status, "secondary")
+        label = self.get_status_display()
+        return mark_safe(
+            f'<span class="badge text-bg-{color}">{label}</span>'
+        )
+    
+    
     # --- helpers transisi (opsional tapi saya rekomendasikan) ---
     def can_confirm(self):
         return self.status == self.ST_DRAFT
@@ -222,7 +240,7 @@ class JobOrder(TimeStampedModel):
     def confirm(self, user):
         if not self.can_confirm():
             raise ValueError("Job is not in DRAFT.")
-        self.status = self.ST_ON_GOING
+        self.status = self.ST_IN_PROGRESS
         self.confirmed_at = timezone.now()
         self.confirmed_by = user
 
@@ -231,11 +249,11 @@ class JobOrder(TimeStampedModel):
         self.hold_reason = ""
 
     def can_hold(self):
-        return self.status == self.ST_ON_GOING
+        return self.status == self.ST_IN_PROGRESS
 
     def hold(self, user, reason: str):
         if not self.can_hold():
-            raise ValueError("Job is not ON_GOING.")
+            raise ValueError("Job is not IN_PROGRESS.")
         if not (reason or "").strip():
             raise ValueError("Hold reason is required.")
         self.status = self.ST_ON_HOLD
@@ -248,15 +266,15 @@ class JobOrder(TimeStampedModel):
     def resume(self, user):
         if not self.can_resume():
             raise ValueError("Job is not ON_HOLD.")
-        self.status = self.ST_ON_GOING
+        self.status = self.ST_IN_PROGRESS
 
     def can_complete(self):
-        return self.status == self.ST_ON_GOING
+        return self.status == self.ST_IN_PROGRESS
 
     def can_cancel(self):
         # cancel boleh dari draft/ongoing/hold,
         # tapi kalau sudah posted journal, nanti kita bikin fitur reversal (jangan cancel langsung)
-        return self.status in {self.ST_DRAFT, self.ST_ON_GOING, self.ST_ON_HOLD} 
+        return self.status in {self.ST_DRAFT, self.ST_IN_PROGRESS, self.ST_ON_HOLD} 
 
     def cancel(self, user, reason: str):
         if not self.can_cancel():
@@ -268,22 +286,26 @@ class JobOrder(TimeStampedModel):
         self.cancelled_by = user
         self.cancel_reason = reason.strip()
 
-
     def complete(self, user):
-        # 1️⃣ hanya boleh complete dari ON_GOING
-        if self.status != self.ST_ON_GOING:
-            raise ValidationError("Job hanya bisa di-complete dari status On Going.")
+    # 1️⃣ hanya boleh complete dari IN_PROGRESS
+        if self.status != self.ST_IN_PROGRESS:
+            raise ValidationError("Job hanya bisa di-complete dari status In Progress.")
 
-        costs = self.costs.filter(is_active=True)
+        costs = self.job_costs.filter(is_active=True)
 
-        # 2️⃣ wajib actual_amount untuk SEMUA cost line
-        missing_actual = costs.filter(actual_amount__lte=0)
-        if missing_actual.exists():
-            raise ValidationError(
-                "Tidak bisa Complete. Actual Amount wajib diisi untuk semua Job Cost."
-            )
+        # ✅ Accrual basis:
+        # - actual_amount TIDAK wajib saat complete
+        # - boleh complete walau estimate kosong? (pilih salah satu)
 
-        # 3️⃣ update status
+        # Opsi A (tetap wajib ada cost line, tapi tidak wajib estimate > 0)
+        if not costs.exists():
+            raise ValidationError("Tidak bisa Complete: belum ada job cost.")
+
+        # Opsi B (opsional disiplin: minimal ada estimate > 0)
+        # if not costs.filter(est_amount__gt=0).exists():
+        #     raise ValidationError("Tidak bisa Complete: Estimate Amount belum diisi.")
+
+        # 3️⃣ update status (set dulu supaya posting bisa pakai completed_at)
         self.status = self.ST_COMPLETED
         self.completed_at = timezone.now()
         self.completed_by = user
@@ -292,6 +314,8 @@ class JobOrder(TimeStampedModel):
         # 4️⃣ HOOK AUTO POSTING COGS (idempotent di service)
         from job.services.posting import ensure_job_costing_posted
         ensure_job_costing_posted(self)
+
+
 
     class Meta:
       

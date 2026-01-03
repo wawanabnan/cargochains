@@ -24,7 +24,8 @@ from core.models.payment_terms import PaymentTerm
 
 
 
-from core.utils import get_next_number, get_valid_days_default
+from core.utils.numbering import get_next_number
+from core.utils.other_utils import get_valid_days_default
 
 from sales.forms.freights import (
     FreightQuotationForm,

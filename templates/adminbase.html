@@ -64,7 +64,7 @@
     <!--begin::Required Plugin(AdminLTE)-->
     <link rel="stylesheet" href="{% static 'adminlte4/css/adminlte.css' %}" />
     <link rel="stylesheet" href="{% static 'adminlte4/css/mystyle.css' %}" as="style" />
-    <link rel="stylesheet" href="{% static 'adminlte4/css/cargochains.css' %}" as="style" />
+    <link rel="stylesheet" href="{% static 'adminlte4/css/cargochainsmystyle.css' %}" as="style" />
     
 
     <!--end::Required Plugin(AdminLTE)-->
@@ -109,6 +109,8 @@
        
     
       </main>
+      {% include "partials/system_messages.html" %}
+
       <script>
 document.addEventListener("DOMContentLoaded", function () {
   // auto hide alert after 3 seconds

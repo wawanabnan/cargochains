@@ -13,7 +13,7 @@ from partners.models import Partner
 from geo.models import Location
 from django.db import transaction
 from core.models.number_sequences import NumberSequence
-from core.utils import get_next_number
+from core.utils.numbering import get_next_number
 from datetime import date
 
 

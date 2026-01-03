@@ -85,9 +85,3 @@ def get_next_number(app_label: str, code: str, today: date | None = None) -> str
                 seq=seq.last_number,
             )
 
-def get_valid_days_default():
-    try:
-        rec = CoreSetting.objects.get(key=" quotation_valid_days")
-        return int(rec.value)
-    except:
-        return 7  

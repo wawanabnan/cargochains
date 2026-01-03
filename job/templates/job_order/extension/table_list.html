@@ -1,7 +1,5 @@
 {% load indo_format %}
 
-{% load indo_format %}
-
 <div class="table-responsive">
   <table class="table table-hover mb-0 align-middle">
     <thead class="table-light">
@@ -41,38 +39,38 @@
 
     <tbody>
       {% if job_orders %}
-        {% for jo in job_orders %}
-          <tr class="row-clickable" data-url="{% url 'job:job_order_detail' jo.pk %}">
+        {% for job in job_orders %}
+          <tr class="row-clickable" data-url="{% url 'job:job_order_detail' job.pk %}">
 
             <td onclick="event.stopPropagation();">
-              <input type="checkbox" class="row-check" data-id="{{ jo.pk }}">
+              <input type="checkbox" class="row-check" data-id="{{ job.pk }}">
             </td>
 
-            <td>{{ jo.number }}</td>
-            <td>{{ jo.job_date|date:"d-m-Y" }}</td>
-            <td>{{ jo.order_number }}</td>
-            <td>{{ jo.customer.company_name|default:jo.customer.name }}</td>
-            <td>{{ jo.service }}</td>
-            <td class="text-center">{{ jo.currency }}</td>
+            <td>{{ job.number }}</td>
+            <td>{{ job.job_date|date:"d-m-Y" }}</td>
+            <td>{{ job.order_number }}</td>
+            <td>{{ job.customer.company_name|default:job.customer.name }}</td>
+            <td>{{ job.service }}</td>
+            <td class="text-center">{{ job.currency }}</td>
 
             <td class="text-end">
-              {% if jo.total_amount %}
-                {{ jo.total_amount|indo_number }}
+              {% if job.total_amount %}
+                {{ job.total_amount|indo_number }}
               {% else %}
                 0
               {% endif %}
             </td>
 
             <td class="text-center">
-              {% if jo.sales_user %}
-                {{ jo.sales_user.username }}
+              {% if job.sales_user %}
+                {{ job.sales_user.username }}
               {% else %}
                 -
               {% endif %}
             </td>
 
             <td>
-              {% if jo.is_invoiced %}
+              {% if job.is_invoiced %}
                 <span class="badge bg-success">Invoiced</span>
               {% else %}
                 <span class="badge bg-warning text-dark">Not Invoiced</span>
@@ -80,19 +78,8 @@
             </td>
 
             <td>
-              {% if jo.status == "DRAFT" %}
-                <span class="badge bg-secondary">Draft</span>
-              {% elif jo.status == "ON_GOING" %}
-                <span class="badge bg-primary">On Going</span>
-              {% elif jo.status == "ON_HOLD" %}
-                <span class="badge bg-warning text-dark">On Hold</span>
-              {% elif jo.status == "COMPLETED" %}
-                <span class="badge bg-success">Completed</span>
-              {% elif jo.status == "CANCELLED" %}
-                <span class="badge bg-danger">Cancelled</span>
-              {% else %}
-                <span class="badge bg-light text-dark">{{ jo.get_status_display }}</span>
-              {% endif %}
+             {{ job.job_status_label }}
+            
             </td>
 
           </tr>

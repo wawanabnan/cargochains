@@ -9,7 +9,7 @@ from core.models.payment_terms import  PaymentTerm
 from core.models.taxes import  Tax
 
 
-from core.utils import get_next_number
+from core.utils.numbering import get_next_number
 from partners.models import Partner
 from partners.models import Customer
 from decimal import Decimal

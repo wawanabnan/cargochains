@@ -2,7 +2,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView
 
-from job.models.job_costs import JobCostType
+from job.models.costs import JobCostType
 from job.forms.cost_types  import JobCostTypeForm
 
 

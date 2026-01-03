@@ -10,7 +10,7 @@ from core.models.currencies import Currency
 from core.models.payment_terms import  PaymentTerm
 from  core.models.taxes import  Tax
 
-from core.utils import get_next_number
+from core.utils.numbering import get_next_number
 from partners.models import Partner,Customer
 from .job_order_model import JobOrder
 from accounting.models.journal import Journal

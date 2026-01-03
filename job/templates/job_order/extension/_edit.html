@@ -1,0 +1,76 @@
+
+    {# ===== Finance ===== #}
+    <div class="col-lg-4">
+        <div class="card h-100">
+          <div class="card-header">
+            <h6 class="mb-0">Finance</h6>
+          </div>
+          <div class="card-body">
+            
+
+            
+           </div>
+        </div>
+    </div>
+    
+
+    {# ===== Finance ===== #}
+    <div class="col-lg-4">
+        <div class="card h-100">
+          <div class="card-header">
+            <h6 class="mb-0">Finance</h6>
+          </div>
+          <div class="card-body">
+
+             <!-- Tax -->
+            <div class="col-lg-12">
+            <div class="field-block">
+                <label>Apply Tax / PPH</label>
+                <div class="d-flex gap-5 align-items-center">
+                <div class="form-check form-switch m-0">
+                    {{ form.is_tax }} <span class="small ms-1">Tax 1.1%</span>
+                </div>
+                <div class="form-check form-switch m-0">
+                    {{ form.is_pph }} <span class="small ms-1">PPH 2%</span>
+                </div>
+                </div>
+            </div>
+            </div>
+
+            <!-- PPH -->
+            <div class="col-lg-12">
+            <div class="field-block">
+                <label>PPH Amount</label>
+                {{ form.pph_amount }}
+            </div>
+            </div>
+
+             <!-- Tax -->
+            <div class="col-lg-12">
+            <div class="field-block">
+                <label>Tax Amount</label>
+                {{ form.tax_amount }}
+            </div>
+            </div>
+
+            <!-- PPH -->
+            <div class="col-lg-12">
+            <div class="field-block">
+                <label>PPH Amount</label>
+                {{ form.pph_amount }}
+            </div>
+            </div>
+
+            <div class="col-lg-12">
+            <div class="field-block">
+                <label><strong>Grand Total</strong></label>
+                {{ form.grand_total }}
+            </div>
+            </div>
+
+
+          </div>
+        </div>
+      </div>
+
+    </div>

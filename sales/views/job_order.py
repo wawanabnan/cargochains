@@ -15,7 +15,7 @@ from partners.models import Customer
 from core.models.services import Service
 from core.models.currencies import Currency
 from django.views.generic import ListView, CreateView, UpdateView, DetailView
-from core.utils import get_next_number
+from core.utils.numbering import get_next_number
 from django.db.models import Sum
 from django.http import JsonResponse, HttpResponseBadRequest
 from decimal import Decimal, InvalidOperation

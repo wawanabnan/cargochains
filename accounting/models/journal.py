@@ -22,7 +22,26 @@ class Journal(models.Model):
     ref = models.CharField(max_length=50, blank=True)
     description = models.TextField(blank=True)
     posted = models.BooleanField(default=False)
-    ...
+    source_type = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="JOB, INV, PAY, etc"
+    )
+    source_ref = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="Reference number of source document"
+    )
+    currency = models.ForeignKey(
+        "core.Currency",
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True
+    )
 
 
     number = models.CharField(max_length=30, unique=True)  # JV-YYYYMM-0001 dll
@@ -35,6 +54,9 @@ class Journal(models.Model):
     
     class Meta:
         ordering = ["-date", "-id"]
+        indexes = [
+            models.Index(fields=["source_type", "source_ref"]),
+        ]
 
     def __str__(self):
         return self.number

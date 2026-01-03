@@ -2,6 +2,7 @@ from django.urls import path
 from job.views.cost_types import CostTypeListView, CostTypeCreateView, CostTypeUpdateView
 #from job.views.action import complete_job
 
+
 from job.views.action import (
     job_confirm, job_hold, job_resume, job_complete, job_cancel
 )
@@ -54,11 +55,11 @@ urlpatterns = [
         name="job_order_generate_invoice",
     ),
 
-    path("job-orders/<int:pk>/confirm/", job_confirm, name="job_order_confirm"),
-    path("job-orders/<int:pk>/resume/", job_resume, name="job_order_resume"),
-    path("job-orders/<int:pk>/complete/", job_complete, name="job_order_complete"),
-    path("job-orders/<int:pk>/cancel/", job_cancel, name="job_order_cancel"),
 
-
+     path("job-order/<int:pk>/confirm/", job_confirm, name="job_confirm"),
+    path("job-order/<int:pk>/hold/", job_hold, name="job_hold"),
+    path("job-order/<int:pk>/resume/", job_resume, name="job_resume"),
+    path("job-order/<int:pk>/complete/", job_complete, name="job_complete"),
+    path("job-order/<int:pk>/cancel/", job_cancel, name="job_cancel"),
 ]
 

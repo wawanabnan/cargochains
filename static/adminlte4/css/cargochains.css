@@ -3,7 +3,7 @@
   font-size: 0.875rem;      /* ~14px */
 }
 
-.cc-table .cc-table-main thead th {
+.cc-table-main thead th {
   font-weight: 600;
   font-size: 0.8125rem;     /* ~13px */
   text-transform: none;
@@ -24,7 +24,6 @@
 
 /* make badges, buttons, icons feel compact in tables */
 .cc-table .badge {
-  font-size: 0.75rem;
   padding: 0.35em 0.55em;
 }
 
@@ -34,6 +33,8 @@
   --bs-btn-font-size: 0.8125rem; /* ~13px */
   --bs-btn-border-radius: 0.35rem;
 }
+
+
 
 .cc-table .text-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -119,4 +120,66 @@
 .cc-v:empty::after {
   content: "-";
   color: #adb5bd;
+}
+
+
+
+
+
+/*-----------------card--------------------------*/
+
+.cc-card-header {
+ background-color: #f8f9fa;
+}
+
+
+/* CargoChains: smaller buttons in card header */
+.cc-card-header .btn {
+  --bs-btn-padding-y: 0.18rem;
+  --bs-btn-padding-x: 0.4rem;
+  --bs-btn-font-size: 0.75rem;
+  --bs-btn-border-radius: 0.5rem;
+}
+
+.cc-card-header .btn i {
+  font-size: 0.8rem;   /* icon ikut mengecil */
+}
+
+
+.btn i {
+  font-size: 0.8rem;   /* icon ikut mengecil */
+}
+
+.cc-table.cc-table-main .badge {
+    --bs-badge-font-size: 0.65rem;
+    --bs-badge-padding-x: 0.4em;
+    --bs-badge-padding-y: 0.2em;
+}
+
+.ccc-table-main  .btn-sm   {
+   --bs-btn-padding-y: 0.1rem;
+  --bs-btn-padding-x: 0.5rem;
+  --bs-btn-font-size: 0.5rem;
+  --bs-btn-border-radius: 0.5rem;
+ 
+}
+
+
+.cc-table-main tbody td {
+  padding: 0.35rem 0.6rem;
+  vertical-align: middle;
+ 
+}
+
+.cc-table-main tbody td .btn-sm{
+  height: 20px;
+ 
+}
+
+
+.btn2 {
+  --bs-btn-padding-y: 0.18rem;
+  --bs-btn-padding-x: 0.4rem;
+  --bs-btn-font-size: 0.75rem;
+  --bs-btn-border-radius: 0.5rem;
 }

@@ -1,7 +1,7 @@
 
 from django.db import models
 from django.utils import timezone
-from core.utils import get_next_number
+from core.utils.numbering import get_next_number
 from core.models.currencies import Currency
 
 from django.db.models import PROTECT, CASCADE, F, Sum

@@ -1,15 +1,40 @@
 {% load static %}
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>{% block title %}Cargo Chains{% endblock %}</title>
+  <!--begin::Head-->
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Cargochains Dashboard</title>
 
-  <!-- Favicon & Meta -->
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
-  <link rel="preload" href="{% static 'adminlte/css/adminlte.css' %}" as="style" />
-  <link
+    <!--begin::Accessibility Meta Tags-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#007bff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+    <!--end::Accessibility Meta Tags-->
+
+    <!--begin::Primary Meta Tags-->
+    <meta name="title" content="AdminLTE 4 | Sidebar Mini" />
+    <meta name="author" content="ColorlibHQ" />
+    <meta
+      name="description"
+      content="AdminLTE is a Free Bootstrap 5 Admin Dashboard, 30 example pages using Vanilla JS. Fully accessible with WCAG 2.1 AA compliance."
+    />
+    <meta
+      name="keywords"
+      content="bootstrap 5, bootstrap, bootstrap 5 admin dashboard, bootstrap 5 dashboard, bootstrap 5 charts, bootstrap 5 calendar, bootstrap 5 datepicker, bootstrap 5 tables, bootstrap 5 datatable, vanilla js datatable, colorlibhq, colorlibhq dashboard, colorlibhq admin dashboard, accessible admin panel, WCAG compliant"
+    />
+    <!--end::Primary Meta Tags-->
+
+    <!--begin::Accessibility Features-->
+    <!-- Skip links will be dynamically added by accessibility.js -->
+    <meta name="supported-color-schemes" content="light dark" />
+    
+    
+    <!--end::Accessibility Features-->
+
+    <!--begin::Fonts-->
+    <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@fontsource/source-sans-3@5.0.12/index.css"
       integrity="sha256-tXJfXfp6Ewt1ilPzLDtQnJV4hclT9XuaZUKyUvmyr+Q="
@@ -17,62 +42,160 @@
       media="print"
       onload="this.media='all'"
     />
-  <link rel="stylesheet" href="{% static 'adminlte/css/adminlte-fixes.css' %}">
-  <link
+    <!--end::Fonts-->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
+
+    <!--begin::Third Party Plugin(OverlayScrollbars)-->
+    <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/styles/overlayscrollbars.min.css"
       crossorigin="anonymous"
     />
-  
-  <link
+    <!--end::Third Party Plugin(OverlayScrollbars)-->
+
+    <!--begin::Third Party Plugin(Bootstrap Icons)-->
+    <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
       crossorigin="anonymous"
     />
-  <link rel="stylesheet" href="{% static 'adminlte/css/adminlte.css' %}" />
-  <link rel="stylesheet" href="{% static 'adminlte/css/custom.css' %}?v=20250919"/>
-  
-   
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-   {% block extra_css %}{% endblock %}
-   
+    <!--end::Third Party Plugin(Bootstrap Icons)-->
 
+    <!--begin::Required Plugin(AdminLTE)-->
+    <link rel="stylesheet" href="{% static 'adminlte4/css/adminlte.css' %}" />
+    <link rel="stylesheet" href="{% static 'adminlte4/css/mystyle.css' %}" as="style" />
+    <link rel="stylesheet" href="{% static 'adminlte4/css/cargochains.css' %}" as="style" />
+    
 
+    <!--end::Required Plugin(AdminLTE)-->
+  {% block extra_css %}{% endblock %}
 </head>
-<body class="layout-fixed sidebar-expand-lg sidebar-open bg-body-tertiary">
+  <!--end::Head-->
+  <!--begin::Body-->
+  <body class="layout-fixed sidebar-expand-lg sidebar-mini bg-body-tertiary">
+    <!--begin::App Wrapper-->
+    <div class="app-wrapper">
+      <!--begin::Header-->
+      <nav class="app-header navbar navbar-expand bg-body">
+             {% include 'partials/navbar.html' %}
 
-  <!-- Wrapper Start -->
-  <div class="app-wrapper">
+      </nav>
+    
+     
+     
+      <main class="app-main">
 
-   
+        {% if messages %}<!-- DEBUG_HAS_MESSAGES=YES -->{% else %}<!-- DEBUG_HAS_MESSAGES=NO -->{% endif %}
 
-    <!-- Main Content -->
-    <main class="app-main">
-      <div class="app-content content-wrap">
-        
-          {% block content_header %}{% endblock %}
-          {% block content %}
-          <!-- Default content -->
-          {% endblock %}
-       
+      {# ========== GLOBAL ALERT (NON-MODAL) ========== #}
+{% if messages %}
+  <div class="container-fluid pt-2">
+    {% for message in messages %}
+      {% if "modal" not in message.tags %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible show" role="alert">
+          {{ message|safe }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+{% endif %}
+           
+
+
+      </main>
+{% if messages %}
+  {% for message in messages %}
+    {% if "modal" in message.tags %}
+      <div class="modal fade" id="systemMessageModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+
+            <div class="modal-header">
+              <h5 class="modal-title">
+                {% if "error" in message.tags %}
+                  Terjadi Kesalahan
+                {% elif "warning" in message.tags %}
+                  Perhatian
+                {% else %}
+                  Informasi
+                {% endif %}
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+              {{ message|safe }}
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">
+                OK
+              </button>
+            </div>
+
+          </div>
+        </div>
       </div>
-    </main>
 
-  </div> <!-- app-wrapper -->
-  <footer class="app-footer">
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          if (window.bootstrap) {
+            const el = document.getElementById("systemMessageModal");
+            if (el) bootstrap.Modal.getOrCreateInstance(el).show();
+          }
+        });
+      </script>
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // auto hide alert after 3 seconds
+  setTimeout(function () {
+    document.querySelectorAll(".alert.alert-dismissible").forEach(function (el) {
+      // pakai Bootstrap API kalau ada
+      if (window.bootstrap) {
+        const alert = bootstrap.Alert.getOrCreateInstance(el);
+        alert.close();
+      } else {
+        // fallback manual
+        el.classList.remove("show");
+        el.classList.add("fade");
+        setTimeout(() => el.remove(), 300);
+      }
+    });
+  }, 3000); // 3 detik
+});
+</script>
+
+      <!--end::App Main-->
+      <!--begin::Footer-->
+      <footer class="app-footer">
         <!--begin::To the end-->
-        <div class="float-end d-none d-sm-inline">ANTI GLOBALIST</div>
+        <div class="float-end d-none d-sm-inline">PT. Dakara Samudera Hanasta </div>
         <!--end::To the end-->
         <!--begin::Copyright-->
         <strong>
           Copyright &copy; 2025&nbsp;
-          <a href="https://adminlte.io" class="text-decoration-none">CARGO CHAINS</a>.
+          <a href="https://adminlte.io" class="text-decoration-none">CARGOCHAINS</a>.
         </strong>
         All rights reserved.
         <!--end::Copyright-->
       </footer>
-  <!-- Scripts -->
-  <script
+      <!--end::Footer-->
+    </div>
+    <!--end::App Wrapper-->
+    <!--begin::Script-->
+    <!--begin::Third Party Plugin(OverlayScrollbars)-->
+     
+
+    <script
       src="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/browser/overlayscrollbars.browser.es6.min.js"
       crossorigin="anonymous"
     ></script>
@@ -87,12 +210,39 @@
       crossorigin="anonymous"
     ></script>
     <!--end::Required Plugin(Bootstrap 5)--><!--begin::Required Plugin(AdminLTE)-->
-    <script src="{% static 'adminlte/js/adminlte.js' %}"></script>
+    
+    <script src="{% static 'adminlte4/js/adminlte.js' %}"></script>
     <!--end::Required Plugin(AdminLTE)--><!--begin::OverlayScrollbars Configure-->
-    
+    <script>
+      const SELECTOR_SIDEBAR_WRAPPER = '.sidebar-wrapper';
+      const Default = {
+        scrollbarTheme: 'os-theme-light',
+        scrollbarAutoHide: 'leave',
+        scrollbarClickScroll: true,
+      };
+      document.addEventListener('DOMContentLoaded', function () {
+        const sidebarWrapper = document.querySelector(SELECTOR_SIDEBAR_WRAPPER);
+
+        // Disable OverlayScrollbars on mobile devices to prevent touch interference
+        const isMobile = window.innerWidth <= 992;
+
+        if (
+          sidebarWrapper &&
+          OverlayScrollbarsGlobal?.OverlayScrollbars !== undefined &&
+          !isMobile
+        ) {
+          OverlayScrollbarsGlobal.OverlayScrollbars(sidebarWrapper, {
+            scrollbars: {
+              theme: Default.scrollbarTheme,
+              autoHide: Default.scrollbarAutoHide,
+              clickScroll: Default.scrollbarClickScroll,
+            },
+          });
+        }
+      });
+    </script>
    
-    
-  
-  {% block extra_js %}{% endblock %}
-</body>
+    {% block extra_js %}{% endblock %}
+  </body>
+  <!--end::Body-->
 </html>

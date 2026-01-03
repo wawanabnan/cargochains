@@ -5,11 +5,11 @@ from django.urls import reverse
 from django.views import View
 
 from job.models.job_orders import JobOrder,JobOrderAttachment
-from job.models.job_costs import JobCost,JobCostType
+from job.models.costs import JobCost,JobCostType
 
 
 from job.forms.job_orders   import JobOrderForm 
-from job.forms.Job_costs import JobCostFormSet 
+from job.forms.Job_costs import JobCostFormSet
 
 from job.forms.attachment  import JobOrderAttachmentForm
 from django.views.generic import ListView
@@ -18,7 +18,7 @@ from partners.models import Customer
 from core.models.services import Service
 from core.models.currencies import Currency
 from django.views.generic import ListView, CreateView, UpdateView, DetailView
-from core.utils import get_next_number
+from core.utils.numbering import get_next_number
 from django.db.models import Sum
 from django.http import JsonResponse, HttpResponseBadRequest
 from decimal import Decimal, InvalidOperation
@@ -35,12 +35,12 @@ from django.views import View
 from job.models.job_orders import JobOrder
 from job.forms.job_orders import JobOrderForm
 from job.forms.Job_costs import JobCostForm, JobCostFormSet
-
+from job.utils.messages import JobMessages
 
 # views.py
 import json
 from django.utils.safestring import mark_safe
-from job.models.job_costs import JobCostType
+from job.models.costs import JobCostType
 
 def cost_type_meta_json():
     qs = JobCostType.objects.filter(is_active=True).only("id", "requires_vendor", "cost_group")
@@ -210,7 +210,7 @@ class JobOrderCreateView(LoginRequiredMixin, View):
 
 
 class JobOrderUpdateView(LoginRequiredMixin, View):
-    template_name = "job_order/edit_form.html"
+    template_name = "job_order/form.html"
 
     def get_object(self, pk):
         return get_object_or_404(JobOrder, pk=pk)
@@ -503,3 +503,6 @@ class JobOrderGenerateInvoiceView(LoginRequiredMixin, View):
             f"Invoice {invoice.number} berhasil dibuat dari Job {job.number}."
         )
         return redirect("sales:invoice_detail", pk=invoice.pk)
+    
+
+

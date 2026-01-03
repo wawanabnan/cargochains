@@ -15,7 +15,7 @@ from sales.forms.quotations import QuotationHeaderForm
 from sales import models as m
 from geo.models import Location
 from core.models.settings import CoreSetting
-from core.utils import get_next_number
+from core.utils.numbering import get_next_number
 
 getcontext().prec = 28
 DEC2 = Decimal("0.01")

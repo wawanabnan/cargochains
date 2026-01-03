@@ -5,6 +5,7 @@ from accounting.models.chart import Account
 from partners.models import Vendor
 from job.models.job_orders import JobOrder
 
+
 class JobCostType(models.Model):
     code = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=120)
@@ -14,7 +15,14 @@ class JobCostType(models.Model):
 
     # ✅ sumber kebenaran untuk UX: vendor vs non-vendor
     requires_vendor = models.BooleanField(default=True)
-
+    cogs_account = models.ForeignKey(
+        Account,
+        on_delete=PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="COGS account (debit) untuk accrual saat Job Completed",
+    )
     sort_order = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
@@ -32,8 +40,8 @@ class JobCostType(models.Model):
 
 class JobCost(models.Model):
   
-    job_order = models.ForeignKey(JobOrder, on_delete=PROTECT, related_name="job_order_costs")
-    cost_type = models.ForeignKey(JobCostType, on_delete=PROTECT, related_name="+")
+    job_order = models.ForeignKey("job.JobOrder", on_delete=PROTECT, related_name="job_costs")
+    cost_type = models.ForeignKey(JobCostType, on_delete=PROTECT, related_name="job_cost_types")
     description = models.CharField(max_length=255, blank=False, default="")
     est_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     actual_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)

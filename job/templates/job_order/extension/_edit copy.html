@@ -1,0 +1,163 @@
+          <!-- ======================= JOB INFO ======================= -->
+
+ 
+        <div class="row mb-2">
+           <label class="col-sm-4 col-form-label col-form-label-sm">Job Date</label>
+          <div class="col-sm-8">
+            <div class="input-group input-group-sm">
+              {{ form.job_date }}
+              <span class="input-group-text">
+                <i class="fa fa-calendar"></i>
+              </span>
+            </div>
+          </div>       
+        </div>
+        
+          {% if job %}
+          <div class="row mb-2">
+            <label class="col-sm-4 col-form-label">Job Order#</label>
+            <div class="col-sm-8">
+              <input type="text"
+                    class="form-control form-control-sm"
+                    value="{{ job.number }}"
+                    readonly>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="row mb-2">
+            <label class="col-sm-4 col-form-label">Order#</label>
+            <div class="col-sm-8">
+              {{ form.order_number }} {{ form.order_number.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-2">
+
+            <label class="col-sm-4 col-form-label">Customer</label>
+            <div class="col-sm-8">
+              {{ form.customer }} {{ form.customer.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-2">
+            <label class="col-sm-4 col-form-label">Service</label>
+            <div class="col-sm-8">
+              {{ form.service }} {{ form.service.errors }}
+            </div>
+          </div>
+
+        
+          <div class="row mb-2">
+            <label class="col-sm-4 col-form-label">Cargo Description</label>
+            <div class="col-sm-8">
+              {{ form.cargo_description }} {{ form.cargo_description.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-2">
+            <label class="col-sm-4 col-form-label">Quantity</label>
+            <div class="col-sm-8">
+              {{ form.quantity }} {{ form.quantity.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-2">
+            <label class="col-sm-4 col-form-label">Pick Up</label>
+            <div class="col-sm-8">
+              {{ form.pickup }} {{ form.pickup.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-2">
+            <label class="col-sm-4 col-form-label">Delivery</label>
+            <div class="col-sm-8">
+              {{ form.delivery }} {{ form.delivery.errors }}
+            </div>
+          </div>
+
+                    <div class="row mb-2">
+            <label class="col-sm-3 col-form-label">PIC</label>
+            <div class="col-sm-9">
+              {{ form.pic }} {{ form.pic.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-2">
+            <label class="col-sm-3 col-form-label">Payment Term</label>
+            <div class="col-sm-9">
+              {{ form.payment_term }} {{ form.payment_term.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-2">
+            <label class="col-sm-3 col-form-label">Currency</label>
+            <div class="col-sm-9">
+              {{ form.currency }} {{ form.currency.errors }}
+            </div>
+          </div>
+           <div class="row mb-2" id="row-kurs">
+            <label class="col-sm-3 col-form-label col-form-label-sm">Kurs IDR</label>
+            <div class="col-sm-9">
+              <input type="text" name="kurs_idr"
+                    id="id_kurs_idr"
+                    value="{{ form.kurs_idr.value|default:'0,00' }}"
+                    class="form-control form-control-sm text-end">
+            </div>
+          </div>
+
+            <div class="row mb-2">
+            <label class="col-sm-3 col-form-label">Total Amount</label>
+            <div class="col-sm-9">
+              {{ form.total_amount }} {{ form.total_amount.errors }}
+            </div>
+          </div>
+
+          <div class="row mb-2">
+            <label class="col-sm-3 col-form-label">Apply Tax (1,1%)</label>
+            <div class="col-sm-3 d-flex align-items-center">
+              <div class="form-check form-switch">
+                {{ form.is_tax }} {{ form.is_tax.errors }}
+              </div>
+            </div>
+             <label class="col-sm-3 col-form-label">Apply PPH (2 %)</label>
+            <div class="col-sm-3 d-flex align-items-center">
+              <div class="form-check form-switch">
+                {{ form.is_pph }} {{ form.is_tax.errors }}
+              </div>
+            </div>
+          </div>
+
+        
+
+          <div class="row mb-2">
+            <label class="col-sm-3 col-form-label">Tax 1.1 %</label>
+            <div class="col-sm-9">
+              {{ form.tax_amount }} {{ form.tax_amount.errors }}
+            </div>
+          </div>
+
+           <div class="row mb-2">
+            <label class="col-sm-3 col-form-label">PPH 2 % </label>
+            <div class="col-sm-9">
+              {{ form.pph_amount }} {{ form.pph_amount.errors }}
+            </div>
+          </div>
+
+          
+
+
+          <div class="row mb-2">
+            <label class="col-sm-3 col-form-label">Grand Total</label>
+            <div class="col-sm-9">
+              {{ form.grand_total }} {{ form.grand_total.errors }}
+            </div>
+          </div>
+
+
+          <div class="row mb-2">
+            <label class="col-sm-3 col-form-label">Remarks</label>
+            <div class="col-sm-9">
+              {{ form.remarks_internal }} {{ form.remarks_internal.errors }}
+            </div>
+          </div>

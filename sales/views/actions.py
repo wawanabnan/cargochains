@@ -118,7 +118,7 @@ def quotation_generate_so(request, pk):
 
 
 
-    from core.utils import get_next_number
+    from core.utils.numbering import get_next_number
     SEQ_CODE_ORDER_BY_TYPE = {
         "freight": "FREIGHT_ORDER",   # konsisten dengan data di DB
         "charter": "CHARTER_ORDER",

@@ -13,7 +13,7 @@ def _format_period(dt: date, fmt: str) -> str:
 
 
 from datetime import date
-from core.utils import get_next_number
+from core.utils.numbering  import get_next_number
 
 
 def next_journal_number(journal_date: date, kind: str = "GJ") -> str:

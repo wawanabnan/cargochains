@@ -16,6 +16,30 @@ class AccountingSettings(models.Model):
         default=PostingPolicy.OPEN_IF_MISSING,
     )
 
+    auto_post_sales_invoice = models.BooleanField(
+        default=False,
+        help_text="Auto post journal Sales saat Invoice ISSUED (accrual).",
+    )
+
+    auto_post_job_costing = models.BooleanField(
+        default=False,
+        help_text="Auto post journal Accrued COGS saat Job COMPLETED (accrual).",
+    )
+
+    auto_post_customer_receipt = models.BooleanField(
+        default=False,
+        help_text="Auto post journal Customer Receipt saat receipt POSTED/CONFIRMED.",
+    )
+
+    default_accrued_cogs_account = models.ForeignKey(
+        Account,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Default accrued liability untuk COGS accrual (credit) saat Job Completed.",
+    )
+
     default_ar_account = models.ForeignKey(
         Account,
         on_delete=models.PROTECT,
@@ -50,6 +74,7 @@ class AccountingSettings(models.Model):
         help_text="Default Cash/Bank account for receipts/payments",
     )
 
+
     default_pph_account = models.ForeignKey(
         Account,
         on_delete=models.PROTECT,
@@ -66,6 +91,7 @@ class AccountingSettings(models.Model):
             "default_tax_account",
             "default_cash_account",
             "default_pph_account",
+            "default_accrued_cogs_account",
         )
 
         errors = {}
