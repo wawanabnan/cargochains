@@ -214,7 +214,14 @@ class JobOrder(TimeStampedModel):
     )
     cancel_reason = models.CharField(max_length=255, blank=True, null=True)
 
-    
+    complete_journal = models.ForeignKey(
+        "accounting.Journal",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+
     STATUS_COLORS = {
         ST_DRAFT: "secondary",
         ST_IN_PROGRESS: "info",
@@ -291,6 +298,11 @@ class JobOrder(TimeStampedModel):
         if self.status != self.ST_IN_PROGRESS:
             raise ValidationError("Job hanya bisa di-complete dari status In Progress.")
 
+        if self.complete_journal_id:
+            raise ValidationError(
+                "Job ini sudah pernah dibuat jurnal Complete."
+            )
+
         costs = self.job_costs.filter(is_active=True)
 
         # ✅ Accrual basis:
@@ -358,6 +370,7 @@ class JobOrderAttachment(TimeStampedModel):
         blank=True,
         related_name="job_order_user_attachments",
     )
+
 
     class Meta:
         verbose_name = "Job Order Attachment"

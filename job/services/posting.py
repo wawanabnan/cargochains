@@ -1,35 +1,42 @@
-# job/services/posting.py
-
 from decimal import Decimal
 from django.db import transaction
 from django.core.exceptions import ValidationError
 
-from accounting.models.journal import Journal,JournalLine
 from accounting.models.settings import AccountingSettings
+from accounting.models.journal import Journal, JournalLine
 
 
-def ensure_job_costing_posted(job):
+def ensure_job_costing_posted(job, *, user=None):
     """
-    Auto post COGS accrual for job costing (ACCRUAL BASIS).
+    Job Costing Journal (COGS accrual estimate).
     Dipanggil SETIAP job COMPLETE.
-    Idempotent (tidak bisa dobel posting).
+    Idempotent: tidak create journal dobel untuk job yang sama.
+    Opsi B:
+      - auto_create_job_costing_journal: create journal draft
+      - auto_post_job_costing_journal: post journal (lock)
     """
 
     settings = AccountingSettings.get_solo()
-    if not settings.auto_post_job_costing:
+
+    # ✅ Opsi B: jika auto-create OFF, stop (tidak buat journal sama sekali)
+    if not settings.auto_create_job_costing_journal:
         return
 
-    # anti dobel posting (by source_ref)
-    if Journal.objects.filter(
+    # ✅ anti dobel (by source_ref) + backfill FK job.complete_journal
+    existing = Journal.objects.filter(
         source_type="JOB",
         source_ref=job.number,
-    ).exists():
+    ).first()
+
+    if existing:
+        if getattr(job, "complete_journal_id", None) != existing.id:
+            job.complete_journal_id = existing.id
+            job.save(update_fields=["complete_journal"])
         return
 
     # ✅ ACCRUAL: pakai ESTIMATE (est_amount), bukan actual
     costs = job.job_costs.filter(is_active=True).exclude(est_amount__isnull=True)
 
-    # total estimate = 0 → skip posting
     if not costs.exists():
         return
 
@@ -65,6 +72,7 @@ def ensure_job_costing_posted(job):
             source_type="JOB",
             source_ref=job.number,
             currency=job.currency,
+            created_by=user,
         )
 
         # Dr COGS (per cost type mapping)
@@ -83,3 +91,12 @@ def ensure_job_costing_posted(job):
             debit=0,
             credit=total_amount,
         )
+
+        # ✅ link balik ke job supaya complete() bisa blok repeat
+        job.complete_journal = journal
+        job.save(update_fields=["complete_journal"])
+
+        # ✅ Opsi B: auto-post hanya jika flag ini ON
+        if settings.auto_post_job_costing_journal:
+            from accounting.services.posting import post_journal  # local import anti circular
+            post_journal(journal, user=user)

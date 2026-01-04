@@ -8,6 +8,8 @@ from .models.services import Service
 from .models.uoms import UOM
 from .models.settings import CoreSetting
 from .models.setup import SetupState
+from .models.exchange_rates import ExchangeRate
+
 
 
 
@@ -70,3 +72,12 @@ class PaymentTermdmin(admin.ModelAdmin):
 class CompanyInformationAdmin(admin.ModelAdmin):
     list_display = ("brand", "name", "default_currency", "updated_at")
     search_fields = ("brand", "name", "npwp")
+
+
+
+@admin.register(ExchangeRate)
+class ExchangeRateAdmin(admin.ModelAdmin):
+    list_display = ("rate_date", "currency", "rate_to_idr", "source", "is_active")
+    list_filter = ("currency", "is_active")
+    search_fields = ("currency__code", "source")
+    ordering = ("-rate_date", "currency__code")

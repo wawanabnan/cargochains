@@ -5,7 +5,7 @@ from django.views.decorators.http import require_POST
 from core.utils.system_message import SystemMessage
 from job.models.job_orders import JobOrder
 from django.core.exceptions import ValidationError
-
+from job.services.posting  import ensure_job_costing_posted
 
 
 @login_required
@@ -81,6 +81,12 @@ def job_complete(request, pk):
 
     try:
         job.complete(request.user)
+        
+        ensure_job_costing_posted(
+            job,
+            user=request.user
+        )    
+
         SystemMessage.success(
             request,
             f"Job <strong>{job.number}</strong> berhasil di-Complete.",

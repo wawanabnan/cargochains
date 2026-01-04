@@ -5,6 +5,42 @@ from django.db import transaction
 from accounting.services.posting import create_journal, post_journal
 from accounting.models.settings import AccountingSettings
 
+from decimal import Decimal
+from django.core.exceptions import ValidationError
+
+
+
+def _invoice_amounts_base_idr(invoice):
+    """
+    Return tuple: (total_base, subtotal_base, tax_base)
+    Base currency = IDR (Chart of Account)
+
+    Rules:
+    - IDR invoice  -> pakai amount asli
+    - Non-IDR     -> pakai amount IDR (total_idr) + konversi dari rate
+    """
+
+    code = (getattr(invoice.currency, "code", "") or "").upper()
+    rate = getattr(invoice, "exchange_rate", None) or Decimal("1.0")
+
+    if code == "IDR" or not code:
+        total_base = invoice.total_amount
+        subtotal_base = invoice.subtotal_amount
+        tax_base = invoice.tax_amount or Decimal("0.00")
+    else:
+        # wajib sudah lock FX saat confirm
+        total_base = getattr(invoice, "total_idr", None)
+        if total_base is None:
+            raise ValidationError(
+                "⚠️ total_idr belum tersedia.\n"
+                "Invoice non-IDR harus dikonfirmasi (lock FX) sebelum membuat journal."
+            )
+
+        subtotal_base = (invoice.subtotal_amount or Decimal("0.00")) * rate
+        tax_base = (invoice.tax_amount or Decimal("0.00")) * rate
+
+    return total_base, subtotal_base, tax_base
+
 
 def _pick_invoice_service(invoice):
     # 1) dari invoice line.service (kalau ada)
@@ -64,10 +100,43 @@ def create_journal_from_invoice(invoice):
     acc = AccountingSettings.get_solo()
     tax = getattr(acc, "default_tax_account", None)
 
-    lines = [
+    lines_old = [
         {"account": ar, "debit": invoice.total_amount, "credit": Decimal("0.00"), "label": f"Invoice {invoice.number}"},
         {"account": revenue, "debit": Decimal("0.00"), "credit": invoice.subtotal_amount, "label": f"Invoice {invoice.number}"},
     ]
+
+    total_base, sub_base, tax_base = _invoice_amounts_base_idr(invoice)
+
+    lines = [
+        {
+            "account": ar,
+            "debit": total_base,
+            "credit": Decimal("0.00"),
+            "label": f"Invoice {invoice.number}",
+        },
+        {
+            "account": revenue,
+            "debit": Decimal("0.00"),
+            "credit": sub_base,
+            "label": f"Invoice {invoice.number}",
+        },
+    ]
+
+    if tax_base and tax_base > 0:
+        if not tax:
+            raise ValidationError(
+                "⚠️ Invoice memiliki Tax, tapi Default Tax Account belum diset.\n"
+                "Silakan isi di Accounting Settings → Default Tax Account.\n\n"
+                "Proses dibatalkan: Invoice tidak berubah dan journal tidak dibuat."
+            )
+        lines.append(
+            {
+                "account": tax,
+                "debit": Decimal("0.00"),
+                "credit": tax_base,
+                "label": "Output Tax",
+            }
+    )
 
     if invoice.tax_amount and invoice.tax_amount > 0:
         if not tax:
@@ -92,3 +161,6 @@ def create_journal_from_invoice(invoice):
     invoice.save(update_fields=["journal"])
 
     return journal
+
+
+

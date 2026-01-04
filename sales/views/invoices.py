@@ -11,7 +11,9 @@ from django.utils import timezone
 from django.views import View
 from django.views.generic import ListView, DetailView, CreateView
 
-from sales.job_order_model import JobOrder
+#from sales.job_order_model import JobOrder
+from job.models.job_orders import JobOrder
+
 from sales.invoice_model import Invoice, InvoiceLine
 from sales.forms.invoices import InvoiceForm, InvoiceLineFormSet
 from sales.utils.invoices import build_invoice_description_from_job
@@ -25,6 +27,13 @@ from django.db import transaction
 from accounting.services.invoice_posting import create_journal_from_invoice  # sesuaikan path import
 
 from django.core.exceptions import PermissionDenied
+from decimal import Decimal, InvalidOperation
+
+from core.models.settings import CoreSetting  # sesuaikan nama model core settings om
+from accounting.services.invoice_posting import create_journal_from_invoice  # sesuai om
+from core.services.exchange_rates import get_rate_to_idr  # ✅ new
+
+
 
 
 # =========================================================
@@ -48,7 +57,7 @@ def invoice_refresh_payment_status(inv: Invoice, save=True):
     if total > 0 and paid >= total:
         inv.status = "PAID"
     else:
-        inv.status = "UNPAID"
+         inv.status = Invoice.ST_SENT
 
     if save:
         inv.save(update_fields=["status"])
@@ -94,7 +103,8 @@ def recalc_invoice_totals(invoice: Invoice):
     invoice.subtotal_amount = subtotal
     invoice.tax_amount = tax_total
     invoice.total_amount = total
-    invoice.save(update_fields=["subtotal_amount", "tax_amount", "total_amount"])
+    invoice.recalc_total_idr()
+    invoice.save(update_fields=["subtotal_amount", "tax_amount", "total_amount", "exchange_rate", "total_idr"])
 
 from decimal import Decimal
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
@@ -189,12 +199,21 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
                     fs.forms[0].initial["taxes"] = [ppn11.pk]
 
             ctx["formset"] = fs
-        inv = ctx["invoice"]  
-        ctx["mode"] = "from_job"
-        ctx["job_order"] = self.job
-        ctx["can_confirm"] = inv.can_confirm(self.request.user)
-        #ctx["can_confirm"] = self.object.can_confirm(self.request.user)
-        return ctx
+            inv = ctx["invoice"]  
+            ctx["mode"] = "from_job"
+            ctx["job_order"] = self.job
+            ctx["can_confirm"] = inv.can_confirm(self.request.user)
+            #ctx["can_confirm"] = self.object.can_confirm(self.request.user)
+            code = (getattr(inv.currency, "code", "") or "").upper()
+            if code == "IDR" or not code:
+                ctx["suggested_rate"] = Decimal("1.0")
+            else:
+                # ambil rate terbaru <= invoice_date
+                rate = get_rate_to_idr(inv.currency, inv.invoice_date)
+                # fallback: pakai rate invoice kalau sudah pernah diisi, lalu 1
+                ctx["suggested_rate"] = rate or inv.exchange_rate or Decimal("1.0")
+                return ctx
+            
     
 class InvoiceCreateManualView(LoginRequiredMixin, View):
     template_name = "invoices/form.html"
@@ -698,44 +717,6 @@ class InvoiceCreateFromJobOrderView(LoginRequiredMixin, CreateView):
         return redirect("sales:invoice_detail", pk=inv.pk)
 
 
-class InvoiceConfirmView2(View):
-    def post(self, request, pk):
-        inv = get_object_or_404(Invoice, pk=pk)
-
-        if not inv.can_confirm(request.user):
-            raise PermissionDenied
-
-
-        # 2️⃣ idempotent guard (anti double journal)
-        if inv.journal_id:
-            messages.info(
-                request,
-                f"Invoice {inv.number} sudah memiliki journal {inv.journal.number}."
-            )
-            return redirect("sales:invoice_detail", pk=inv.pk)
-
-        try:
-            with transaction.atomic():
-                # 3️⃣ ubah status invoice
-                inv.status = Invoice.ST_SENT
-                inv.save(update_fields=["status"])
-
-                # 4️⃣ 🔥 AUTO CREATE + POST JOURNAL
-                journal = create_journal_from_invoice(inv)
-
-            messages.success(
-                request,
-                f"Invoice {inv.number} berhasil dikonfirmasi "
-                f"dan journal {journal.number} telah dibuat."
-            )
-
-        except ValidationError as e:
-            messages.error(request, f"Gagal membuat journal: {e}")
-
-        return redirect("sales:invoice_detail", pk=inv.pk)
-
-
-
 
 class InvoiceUpdateView(LoginRequiredMixin, View):
     template_name = "invoices/form.html"
@@ -780,18 +761,6 @@ class InvoiceUpdateView(LoginRequiredMixin, View):
 
 
 
-
-from django.views import View
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib import messages
-from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import transaction
-
-from core.models.settings import CoreSetting  # sesuaikan nama model core settings om
-from sales.models import Invoice
-from accounting.services.invoice_posting import create_journal_from_invoice  # sesuai om
-
-
 def get_int_setting(code: str, default: int = 0) -> int:
     row = CoreSetting.objects.filter(code=code).first()
     if not row:
@@ -799,7 +768,7 @@ def get_int_setting(code: str, default: int = 0) -> int:
     return int(row.int_value or 0)
 
 
-class InvoiceConfirmView(View):
+class InvoiceConfirmView2(View):
     def post(self, request, pk):
         inv = get_object_or_404(Invoice, pk=pk)
 
@@ -816,7 +785,8 @@ class InvoiceConfirmView(View):
             with transaction.atomic():
                 # confirm status
                 inv.status = Invoice.ST_SENT
-                inv.save(update_fields=["status"])
+                inv.recalc_total_idr()
+                inv.save(update_fields=["status", "exchange_rate", "total_idr"])
 
                 # auto post journal?
                 if auto_post:
@@ -835,6 +805,76 @@ class InvoiceConfirmView(View):
 
         except ValidationError as e:
             # rollback otomatis karena atomic()
+            msg = " ".join(getattr(e, "messages", [])) or str(e)
+            messages.error(request, msg)
+            return redirect("sales:invoice_detail", pk=inv.pk)
+
+class InvoiceConfirmView(View):
+    def post(self, request, pk):
+        inv = get_object_or_404(Invoice, pk=pk)
+
+        if not inv.can_confirm(request.user):
+            raise PermissionDenied
+
+        if inv.journal_id:
+            messages.info(request, f"Invoice {inv.number} sudah memiliki journal {inv.journal.number}.")
+            return redirect("sales:invoice_detail", pk=inv.pk)
+
+        auto_post = bool(get_int_setting("AUTO_POST_SALES_INVOICE", default=0))
+
+        try:
+            with transaction.atomic():
+                code = (getattr(inv.currency, "code", "") or "").upper()
+
+                # ✅ tentukan rate final (default dari core, bisa di-override modal)
+                if code == "IDR" or not code:
+                    inv.exchange_rate = Decimal("1.0")
+                else:
+                    default_rate = get_rate_to_idr(inv.currency, inv.invoice_date)
+                    if default_rate:
+                        inv.exchange_rate = default_rate
+
+                    rate_str = (request.POST.get("exchange_rate") or "").strip()
+                    if rate_str:
+                        try:
+                            inv.exchange_rate = Decimal(rate_str)
+                        except (InvalidOperation, ValueError):
+                            raise ValidationError(
+                                "Format exchange rate tidak valid. Gunakan titik untuk desimal, contoh 15750.25"
+                            )
+
+                    if not inv.exchange_rate or inv.exchange_rate <= 0:
+                        raise ValidationError(
+                            "Exchange rate wajib diisi (>0) untuk invoice non-IDR. "
+                            "Isi rate di modal atau set di Core Exchange Rates."
+                        )
+
+                # ✅ audit minimal
+                from django.utils import timezone
+                inv.confirmed_at = timezone.now()
+                inv.confirmed_by = request.user
+
+                # confirm status + hitung idr
+                inv.status = Invoice.ST_SENT
+                inv.recalc_total_idr()
+                inv.save(update_fields=["status", "exchange_rate", "total_idr", "confirmed_at", "confirmed_by"])
+
+                # ✅ sesuai rule: AUTO_POST_SALES_INVOICE=1 -> create+post (fungsi already post)
+                if auto_post:
+                    journal = create_journal_from_invoice(inv)
+                    messages.success(
+                        request,
+                        f"Invoice {inv.number} berhasil dikonfirmasi dan journal {journal.number} telah dibuat & diposting."
+                    )
+                else:
+                    messages.success(
+                        request,
+                        f"Invoice {inv.number} berhasil dikonfirmasi. (Auto Post Sales Invoice: OFF → journal tidak dibuat)"
+                    )
+
+            return redirect("sales:invoice_detail", pk=inv.pk)
+
+        except ValidationError as e:
             msg = " ".join(getattr(e, "messages", [])) or str(e)
             messages.error(request, msg)
             return redirect("sales:invoice_detail", pk=inv.pk)

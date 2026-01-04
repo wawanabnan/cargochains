@@ -1,0 +1,67 @@
+{% extends "reports/_base_report.html" %}
+{% load humanize %}
+{% block report_title %}COGS Journal Report{% endblock %}
+{% block report_subtitle %}Posted journals (type COGS) + lines for audit{% endblock %}
+
+{% block report_filters %}
+<form method="get" class="row g-2 align-items-end">
+  <div class="col-sm-4">
+    <label class="form-label small">Date From</label>
+    {{ form.date_from }}
+  </div>
+  <div class="col-sm-4">
+    <label class="form-label small">Date To</label>
+    {{ form.date_to }}
+  </div>
+  <div class="col-sm-4">
+    <div class="form-check mt-4">
+      {{ form.posted_only }}
+      <label class="form-check-label small">Posted only</label>
+    </div>
+  </div>
+
+  <div class="col-12 d-flex gap-2 mt-2">
+    <button class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i> Apply</button>
+    <a class="btn btn-outline-secondary btn-sm" href="."><i class="bi bi-arrow-counterclockwise me-1"></i> Reset</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block report_body %}
+{% for j in journals %}
+  <div class="border rounded p-2 mb-3">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="fw-semibold">
+        {{ j.number|default:"(No Number)" }} — {{ j.date|date:"d-m-Y" }}
+        {% if j.is_posted %}<span class="badge text-bg-success ms-2">POSTED</span>{% endif %}
+      </div>
+      <div class="text-body-secondary small">ID: {{ j.id }}</div>
+    </div>
+
+    <div class="table-responsive mt-2">
+      <table class="table table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Account</th>
+            <th>Description</th>
+            <th class="text-end">Debit</th>
+            <th class="text-end">Credit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ln in j.lines.all %}
+          <tr>
+            <td>{{ ln.account }}</td>
+            <td class="text-body-secondary">{{ ln.memo|default:"" }}</td>
+            <td class="text-end">{{ ln.debit|floatformat:2|intcomma }}</td>
+            <td class="text-end">{{ ln.credit|floatformat:2|intcomma }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% empty %}
+  <div class="text-center text-body-secondary py-4">No journals</div>
+{% endfor %}
+{% endblock %}

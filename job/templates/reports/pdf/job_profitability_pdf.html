@@ -1,0 +1,133 @@
+{% load humanize %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Job Order Detail & Profitability</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; padding: 8mm; }
+    .muted { color: #666; }
+    .h1 { font-size: 18px; font-weight: 700; margin: 0; }
+    .section-title { font-size: 13px; font-weight: 700; margin: 14px 0 6px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 6px; vertical-align: top; }
+    th { background: #f4f4f4; text-align: left; }
+    .text-end { text-align: right; }
+    .grid { width: 100%; border: 0; }
+    .grid td { border: 0; padding: 2px 0; }
+    .label { width: 22%; color: #666; }
+  </style>
+</head>
+<body>
+
+  <!-- TITLE -->
+  <div style="margin-bottom:10px;">
+    <div class="h1">Job Order Detail &amp; Profitability</div>
+    <div class="muted">
+      Generated: {% now "d-m-Y H:i" %}
+    </div>
+  </div>
+
+  <!-- JOB INFORMATION -->
+  <div class="section-title">Job Information</div>
+  <table class="grid">
+    <tr>
+      <td class="label">Job No</td>
+      <td><b>{{ job.number }}</b></td>
+      <td class="label">Job Date</td>
+      <td>{% if job.job_date %}{{ job.job_date|date:"d-m-Y" }}{% else %}-{% endif %}</td>
+    </tr>
+    <tr>
+      <td class="label">Customer</td>
+      <td>{{ job.customer|default:"-" }}</td>
+      <td class="label">Service</td>
+      <td>{{ job.service|default:"-" }}</td>
+    </tr>
+
+    <tr>
+      <td class="label">Reference</td>
+      <td>{{ job.ref_no|default:"-" }}</td>
+      <td class="label">Status</td>
+      <td>{{ job.status|default:"-" }}</td>
+    </tr>
+  </table>
+
+  <!-- SUMMARY -->
+
+  <div class="section-title">Profitability Summary</div>
+<table>
+  <tr>
+    <th style="width:25%;">Revenue ({{ currency_code }})</th>
+    <td class="text-end"><b>{{ revenue_currency_amount|floatformat:2|intcomma }}</b></td>
+    <th style="width:25%;">Kurs</th>
+    <td class="text-end">
+      {% if currency_code != "IDR" %}
+        {{ kurs|floatformat:2|intcomma }}
+      {% else %}
+        -
+      {% endif %}
+    </td>
+  </tr>
+
+  <tr>
+    <th>Revenue (IDR)</th>
+    <td class="text-end"><b>{{ revenue_idr|floatformat:2|intcomma }}</b></td>
+    <th>Total COGS (IDR)</th>
+    <td class="text-end"><b>{{ total_cogs_idr|floatformat:2|intcomma }}</b></td>
+  </tr>
+
+  <tr>
+    <th>Gross Profit (IDR)</th>
+    <td class="text-end"><b>{{ gross_profit_idr|floatformat:2|intcomma }}</b></td>
+    <th></th>
+    <td></td>
+  </tr>
+</table>
+
+{% if currency_code != "IDR" %}
+  <div class="muted" style="margin-top:6px; font-size:11px;">
+    Formula: Revenue (IDR) = Revenue ({{ currency_code }}) × Kurs
+  </div>
+{% endif %}
+
+
+
+  <!-- COGS DETAIL -->
+  <div class="section-title">COGS Detail (Job Cost - Estimation)</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:12%;">Category</th>
+        <th style="width:20%;">Cost Type</th>
+        <th>Description</th>
+        <th style="width:20%;">Vendor</th>
+        <th class="text-end" style="width:16%;">Est Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in costs %}
+      <tr>
+        <td>{{ c.category|default:"" }}</td>
+        <td>{% if c.cost_type %}{{ c.cost_type }}{% endif %}</td>
+        <td>{{ c.description|default:"" }}</td>
+        <td>{% if c.vendor %}{{ c.vendor }}{% endif %}</td>
+        <td class="text-end">{{ c.est_amount|default:0|floatformat:2|intcomma }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="muted" style="text-align:center; padding:14px;">
+          No Job Cost rows.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th colspan="4" class="text-end">TOTAL</th>
+        <th class="text-end">{{ total_cogs_idr|floatformat:2|intcomma }}</th>
+      </tr>
+    </tfoot>
+  </table>
+
+</body>
+</html>

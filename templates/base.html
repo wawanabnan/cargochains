@@ -84,75 +84,15 @@
      
      
       <main class="app-main">
-
-        {% if messages %}<!-- DEBUG_HAS_MESSAGES=YES -->{% else %}<!-- DEBUG_HAS_MESSAGES=NO -->{% endif %}
-
-      {# ========== GLOBAL ALERT (NON-MODAL) ========== #}
-{% if messages %}
-  <div class="container-fluid pt-2">
-    {% for message in messages %}
-      {% if "modal" not in message.tags %}
-        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible show" role="alert">
-          {{ message|safe }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-      {% endif %}
-    {% endfor %}
-  </div>
-{% endif %}
-           
-
-
-      </main>
-{% if messages %}
-  {% for message in messages %}
-    {% if "modal" in message.tags %}
-      <div class="modal fade" id="systemMessageModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-
-            <div class="modal-header">
-              <h5 class="modal-title">
-                {% if "error" in message.tags %}
-                  Terjadi Kesalahan
-                {% elif "warning" in message.tags %}
-                  Perhatian
-                {% else %}
-                  Informasi
-                {% endif %}
-              </h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-
-            <div class="modal-body">
-              {{ message|safe }}
-            </div>
-
-            <div class="modal-footer">
-              <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">
-                OK
-              </button>
-            </div>
-
-          </div>
-        </div>
+         <div class="app-content content-wrap">
+        
+          {% block content_header %}{% endblock %}
+          {% block content %}
+          <!-- Default content -->
+          {% endblock %}
+       
       </div>
-
-      <script>
-        document.addEventListener("DOMContentLoaded", function () {
-          if (window.bootstrap) {
-            const el = document.getElementById("systemMessageModal");
-            if (el) bootstrap.Modal.getOrCreateInstance(el).show();
-          }
-        });
-      </script>
-    {% endif %}
-  {% endfor %}
-{% endif %}
-
-
-
-
+        </main>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {

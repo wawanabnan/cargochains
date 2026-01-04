@@ -1,0 +1,80 @@
+{% extends "reports/_base_report.html" %}
+{% load humanize %}
+
+{% block report_title %}Job Profitability{% endblock %}
+{% block report_subtitle %}
+Job: <span class="fw-semibold">{{ job.number }}</span>
+{% if job.customer %} • Customer: {{ job.customer }}{% endif %}
+{% endblock %}
+
+{% block report_actions %}
+<a class="btn btn-outline-secondary btn-sm" href="javascript:history.back()">
+  <i class="bi bi-arrow-left me-1"></i> Back
+</a>
+{% endblock %}
+
+{% block report_body %}
+
+<div class="row g-3 mb-3">
+  <div class="col-md-3">
+    <div class="text-body-secondary small">Revenue</div>
+    <div class="fw-semibold">{{ profit.revenue|floatformat:2|intcomma }}</div>
+  </div>
+  <div class="col-md-3">
+    <div class="text-body-secondary small">COGS</div>
+    <div class="fw-semibold">{{ profit.cogs|floatformat:2|intcomma }}</div>
+  </div>
+  <div class="col-md-3">
+    <div class="text-body-secondary small">Gross Profit</div>
+    <div class="fw-semibold">{{ profit.gp|floatformat:2|intcomma }}</div>
+  </div>
+  <div class="col-md-3">
+    <div class="text-body-secondary small">Margin</div>
+    <div class="fw-semibold">
+      {% if profit.margin is None %}-{% else %}{{ profit.margin|floatformat:2 }}%{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <div class="fw-semibold">COGS Detail (Journal Lines)</div>
+  <div class="text-body-secondary small">
+    {% if cogs_journal_id %}Journal ID: {{ cogs_journal_id }}{% else %}No COGS Journal{% endif %}
+  </div>
+</div>
+
+<div class="table-responsive">
+  <table class="table table-sm table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th style="width: 28%;">Account</th>
+        <th>Description</th>
+        <th class="text-end" style="width: 14%;">Debit</th>
+        <th class="text-end" style="width: 14%;">Credit</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ln in cogs_lines %}
+      <tr>
+        <td class="fw-semibold">
+          {% if ln.account.code %}{{ ln.account.code }} - {% endif %}
+          {{ ln.account.name|default:ln.account }}
+        </td>
+        <td class="text-body-secondary">
+          {{ ln.memo|default:ln.description|default:"" }}
+        </td>
+        <td class="text-end">{{ ln.debit|floatformat:2|intcomma }}</td>
+        <td class="text-end">{{ ln.credit|floatformat:2|intcomma }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="text-center text-body-secondary py-4">
+          Belum ada COGS journal (Job belum complete / journal belum dibuat).
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

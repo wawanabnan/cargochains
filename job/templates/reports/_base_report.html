@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12 col-xxl-10">
+
+      <div class="card shadow-sm">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <div>
+            <h3 class="card-title mb-0">{% block report_title %}{% endblock %}</h3>
+            <div class="text-body-secondary small">{% block report_subtitle %}{% endblock %}</div>
+          </div>
+          <div class="d-flex gap-2">
+            {% block report_actions %}{% endblock %}
+          </div>
+        </div>
+
+        <div class="card-body">
+          {% block report_filters %}{% endblock %}
+          <hr class="my-3">
+          {% block report_body %}{% endblock %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

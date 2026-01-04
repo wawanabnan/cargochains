@@ -1,0 +1,86 @@
+{% extends "reports/_base_report.html" %}
+{% load humanize %}
+{% block report_title %}Profitability Report{% endblock %}
+{% block report_subtitle %}Revenue (Job) vs COGS (Posted Journal) → GP & Margin{% endblock %}
+
+{% block report_filters %}
+<a href="/job/reports/profitability/{{ r.job.id }}/" class="text-decoration-none">
+  {{ r.job.number }}
+</a>
+
+<form method="get" class="row g-2 align-items-end">
+    {{ form.job_id }}
+
+  <div class="col-sm-3">
+    <label class="form-label small">Date From</label>
+    {{ form.date_from }}
+  </div>
+  <div class="col-sm-3">
+    <label class="form-label small">Date To</label>
+    {{ form.date_to }}
+  </div>
+  <div class="col-sm-4">
+    <label class="form-label small">Customer</label>
+    {{ form.customer }}
+  </div>
+  <div class="col-sm-2">
+    <label class="form-label small">Status</label>
+    {{ form.status }}
+  </div>
+
+  <div class="col-12 d-flex gap-2 mt-2">
+    <button class="btn btn-primary btn-sm">
+      <i class="bi bi-funnel me-1"></i> Apply
+    </button>
+    <a class="btn btn-outline-secondary btn-sm" href=".">
+      <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+    </a>
+  </div>
+</form>
+{% endblock %}
+
+{% block report_body %}
+<div class="table-responsive">
+  <table class="table table-hover table-sm align-middle">
+    <thead class="table-light">
+      <tr>
+        <th style="width: 12%;">Job #</th>
+        <th style="width: 12%;">Date</th>
+        <th>Customer</th>
+        <th class="text-end" style="width: 14%;">Revenue</th>
+        <th class="text-end" style="width: 14%;">COGS</th>
+        <th class="text-end" style="width: 14%;">GP</th>
+        <th class="text-end" style="width: 10%;">Margin</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td class="fw-semibold">{{ r.job.number }}</td>
+        <td>{{ r.job.job_date|date:"d-m-Y" }}</td>
+        <td>{{ r.job.customer }}</td>
+        <td class="text-end">{{ r.revenue|floatformat:2|intcomma }}</td>
+        <td class="text-end">{{ r.cogs|floatformat:2|intcomma }}</td>
+        <td class="text-end">{{ r.gp|floatformat:2|intcomma }}</td>
+        <td class="text-end">
+          {% if r.margin is None %}-{% else %}{{ r.margin|floatformat:2 }}%{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center text-body-secondary py-4">No data</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot class="table-light">
+      <tr>
+        <th colspan="3" class="text-end">TOTAL</th>
+        <th class="text-end">{{ totals.revenue|floatformat:2|intcomma }}</th>
+        <th class="text-end">{{ totals.cogs|floatformat:2|intcomma }}</th>
+        <th class="text-end">{{ totals.gp|floatformat:2|intcomma }}</th>
+        <th class="text-end">
+          {% if totals.margin is None %}-{% else %}{{ totals.margin|floatformat:2 }}%{% endif %}
+        </th>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% endblock %}

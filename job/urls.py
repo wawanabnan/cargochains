@@ -21,6 +21,10 @@ from job.views.job_order import (
     
 )
 
+from django.urls import path, include
+
+from job.views.reports import sales_report, sales_report_pdf
+
 
 app_name = "job"
 
@@ -61,5 +65,10 @@ urlpatterns = [
     path("job-order/<int:pk>/resume/", job_resume, name="job_resume"),
     path("job-order/<int:pk>/complete/", job_complete, name="job_complete"),
     path("job-order/<int:pk>/cancel/", job_cancel, name="job_cancel"),
+       
+    path("reports/job/", sales_report, name="sales_report"),
+    path("reports/job/pdf/", sales_report_pdf, name="sales_report_pdf"),
+         
+
 ]
 

@@ -16,12 +16,12 @@ def _d(v) -> Decimal:
 
 
 @transaction.atomic
-def create_journal(*, number: str, date, description: str = "", ref: str = "", lines: list[dict]) -> Journal:
+def create_journal(*, number: str, date, description: str = "", ref: str = "", lines: list[dict], user=None) -> Journal:
     """
     lines item:
       {"account": Account|id, "debit": 100, "credit": 0, "label": "text"}
     """
-    j = Journal.objects.create(number=number, date=date, description=description, ref=ref, posted=False)
+    j = Journal.objects.create(number=number, date=date, description=description, ref=ref, posted=False,created_by=user)
 
     total_debit = Decimal("0.00")
     total_credit = Decimal("0.00")
@@ -49,7 +49,7 @@ def create_journal(*, number: str, date, description: str = "", ref: str = "", l
 
 
 @transaction.atomic
-def post_journal(journal: Journal) -> Journal:
+def post_journal(journal: Journal,*, user=None) -> Journal:
     """
     Set posted=True. Setelah posted, nanti UI kita lock.
     """
@@ -65,6 +65,7 @@ def post_journal(journal: Journal) -> Journal:
 
 
     journal.posted = True
+    journal.posted_by = user
     journal.full_clean()
     journal.save(update_fields=["posted"])
     return journal

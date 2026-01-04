@@ -84,6 +84,17 @@ class AccountingSettings(models.Model):
         help_text="Account for PPH withholding on customer receipts (PPH ikut payment)",
     )
 
+    auto_create_job_costing_journal = models.BooleanField(
+        default=True,
+        help_text="Jika ON: saat Job Complete, sistem membuat draft journal COGS (accrual estimate)."
+    )
+    
+    auto_post_job_costing_journal = models.BooleanField(
+        default=False,
+        help_text="Jika ON: draft journal COGS langsung di-post (lock) saat Job Complete."
+    )
+
+
     def clean(self):
         fields = (
             "default_ar_account",

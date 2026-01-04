@@ -5,6 +5,7 @@ from django.utils import timezone
 from .chart import Account
 from accounting.services.numbering import next_journal_number  # ✅ konsisten
 from accounting.services.periods import is_period_locked
+from django.conf import settings
 
 
 class Journal(models.Model):
@@ -51,6 +52,24 @@ class Journal(models.Model):
     posted = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
+    # accounting/models/journal.py
+    
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name="+"
+    )
+
+    posted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name="+"
+    )
+
+    posted_at = models.DateTimeField(null=True, blank=True)
+
     
     class Meta:
         ordering = ["-date", "-id"]

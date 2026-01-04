@@ -42,7 +42,7 @@ def detect_line_price_field():
     return "price"
 
 
-def recalc_invoice_totals(invoice):
+def recalc_2invoice_totals(invoice):
     """
     Hitung ulang subtotal & total invoice dari lines
     (simple & aman)
@@ -69,6 +69,36 @@ def recalc_invoice_totals(invoice):
     invoice.save(update_fields=["subtotal_amount", "total_amount"])
 
 
+def recalc_invoice_totals(invoice):
+    """
+    Hitung ulang subtotal & total invoice dari lines
+    subtotal = sum(qty * price)
+    total    = subtotal + tax_amount (kalau ada)
+    """
+    subtotal = 0
+    price_field = detect_line_price_field()
+
+    lines = (
+        invoice.lines.all()
+        if hasattr(invoice, "lines")
+        else invoice.invoiceline_set.all()
+    )
+
+    for line in lines:
+        qty = getattr(line, "quantity", 0) or 0
+        price = getattr(line, price_field, 0) or 0
+        subtotal += qty * price
+
+    if hasattr(invoice, "subtotal_amount"):
+        invoice.subtotal_amount = subtotal
+
+    tax = getattr(invoice, "tax_amount", 0) or 0
+    if hasattr(invoice, "total_amount"):
+        invoice.total_amount = subtotal + tax
+
+    invoice.save(update_fields=["subtotal_amount", "total_amount"])
+
+
 def generate_invoice_from_job(job):
     """
     CORE LOGIC:
@@ -86,7 +116,7 @@ def generate_invoice_from_job(job):
             job_order=job,
             invoice_date=getattr(job, "job_date", None),
             due_date=getattr(job, "job_date", None),
-            status=getattr(Invoice, "STATUS_DRAFT", "DRAFT"),
+            status=Invoice.ST_SENT,
             subtotal_amount=getattr(job, "total_amount", 0) or 0,
             tax_amount=getattr(job, "tax_amount", 0) or 0,
             total_amount=getattr(job, "grand_total", None) or (

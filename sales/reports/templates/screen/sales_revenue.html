@@ -1,0 +1,74 @@
+{% load humanize %}
+
+<h3 class="mb-2">Sales Revenue Report</h3>
+<div class="text-muted small mb-3">Status included: UNPAID + PAID</div>
+
+<form method="get" class="mb-3">
+  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+    <div>
+      <div class="text-muted small">Date From</div>
+      {{ form.date_from }}
+    </div>
+    <div>
+      <div class="text-muted small">Date To</div>
+      {{ form.date_to }}
+    </div>
+    <div>
+      <div class="text-muted small">Customer ID</div>
+      {{ form.customer_id }}
+    </div>
+    <div>
+      <div class="text-muted small">Currency</div>
+      {{ form.currency }}
+    </div>
+    <div>
+      <button class="btn btn-primary btn-sm">Filter</button>
+      <a class="btn btn-outline-secondary btn-sm" href="?">Reset</a>
+    </div>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-sm table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Invoice No</th>
+        <th>Date</th>
+        <th>Customer</th>
+        <th>Curr</th>
+        <th class="text-end">Subtotal</th>
+        <th class="text-end">Tax</th>
+        <th class="text-end">Total</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inv in invoices %}
+      <tr>
+        <td class="fw-semibold">{{ inv.number }}</td>
+        <td>{{ inv.invoice_date|date:"d-m-Y" }}</td>
+        <td>{{ inv.customer }}</td>
+        <td>{% if inv.currency %}{{ inv.currency.code }}{% else %}-{% endif %}</td>
+        <td class="text-end">{{ inv.subtotal_amount|floatformat:2|intcomma }}</td>
+        <td class="text-end">{{ inv.tax_amount|floatformat:2|intcomma }}</td>
+        <td class="text-end">{{ inv.total_amount|floatformat:2|intcomma }}</td>
+        <td>{{ inv.status }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="8" class="text-center text-muted py-4">No data</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+
+    <tfoot class="table-light">
+      <tr>
+        <th colspan="4" class="text-end">TOTAL</th>
+        <th class="text-end">{{ totals.subtotal|floatformat:2|intcomma }}</th>
+        <th class="text-end">{{ totals.tax|floatformat:2|intcomma }}</th>
+        <th class="text-end">{{ totals.total|floatformat:2|intcomma }}</th>
+        <th></th>
+      </tr>
+    </tfoot>
+  </table>
+</div>

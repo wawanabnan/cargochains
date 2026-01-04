@@ -170,11 +170,39 @@
 
               </div>
 
+              <hr class="my-4"/>
+
+            <!-- ================= JOB COSTING AUTOMATION ================= -->
+            <div class="fw-semibold mb-2">
+              Job Costing → Journal Automation
+            </div>
+
+            <div class="form-check form-switch mb-3">
+              {{ form.auto_create_job_costing_journal }}
+              <label class="form-check-label ms-2" for="id_auto_create_job_costing_journal">
+                Auto-create Job Costing Journal
+              </label>
+              <div class="form-text">
+                Saat Job Complete, sistem akan membuat jurnal COGS (accrual estimate).
+              </div>
+            </div>
+
+            <div class="form-check form-switch mb-3">
+              {{ form.auto_post_job_costing_journal }}
+              <label class="form-check-label ms-2" for="id_auto_post_job_costing_journal">
+                Auto-post Job Costing Journal (lock)
+              </label>
+              <div class="form-text">
+                Jurnal langsung diposting & dikunci (audit/compliance).
+              </div>
+            </div>
+
               {% if form.non_field_errors %}
                 <div class="alert alert-danger py-2">
                   {{ form.non_field_errors }}
                 </div>
               {% endif %}
+
 
               <div class="d-flex gap-2">
                 <button class="btn btn-primary btn-sm" type="submit">Save</button>
@@ -236,5 +264,32 @@
 
   </div>
 </div>
+
+{% endblock %}
+
+{% block extra_js  %}
+
+<script>
+
+(function () {
+  const autoCreate = document.getElementById("id_auto_create_job_costing_journal");
+  const autoPost   = document.getElementById("id_auto_post_job_costing_journal");
+
+  if (!autoCreate || !autoPost) return;
+
+  function syncJobCostingSwitch() {
+    if (!autoCreate.checked) {
+      autoPost.checked = false;
+      autoPost.disabled = true;
+    } else {
+      autoPost.disabled = false;
+    }
+  }
+
+  autoCreate.addEventListener("change", syncJobCostingSwitch);
+  syncJobCostingSwitch();
+})();
+
+</script>
 
 {% endblock %}

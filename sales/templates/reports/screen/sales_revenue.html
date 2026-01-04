@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{# atau layout yang om pakai, misalnya "admin/base.html" / "screen/_base.html" #}
+
+{% block title %}Sales Revenue Report{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="card shadow-sm">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <div>
+        <h5 class="mb-0">Sales Revenue Report</h5>
+        <div class="text-muted small">Invoice-based (UNPAID + PAID)</div>
+      </div>
+
+      <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
+        <div>
+          <label class="form-label small mb-1">Date From</label>
+          <input type="date" name="date_from" value="{{ request.GET.date_from }}" class="form-control form-control-sm">
+        </div>
+        <div>
+          <label class="form-label small mb-1">Date To</label>
+          <input type="date" name="date_to" value="{{ request.GET.date_to }}" class="form-control form-control-sm">
+        </div>
+
+        <div>
+          <label class="form-label small mb-1">Customer ID</label>
+          <input type="text" name="customer" value="{{ request.GET.customer }}" class="form-control form-control-sm" placeholder="ID">
+        </div>
+
+        <div>
+          <label class="form-label small mb-1">Currency</label>
+          <input type="text" name="currency" value="{{ request.GET.currency }}" class="form-control form-control-sm" placeholder="IDR / USD">
+        </div>
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary btn-sm">
+            <i class="bi bi-funnel me-1"></i> Filter
+          </button>
+          <a class="btn btn-outline-secondary btn-sm" href="{{ request.path }}">
+            <i class="bi bi-x-circle me-1"></i> Reset
+          </a>
+        </div>
+      </form>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        {% load indo_format %}
+
+<table class="table table-hover table-sm mb-0 align-middle">
+  <thead class="table-light">
+    <tr>
+      <th style="width: 110px;">Date</th>
+      <th style="width: 150px;">Invoice #</th>
+      <th>Customer</th>
+      <th style="width: 90px;">Status</th>
+
+      <th style="width: 70px;">CUR</th>
+      <th class="text-end" style="width: 140px;">Subtotal</th>
+      <th class="text-end" style="width: 120px;">Tax</th>
+      <th class="text-end" style="width: 140px;">Total</th>
+
+      <th class="text-end" style="width: 110px;">Kurs</th>
+      <th class="text-end" style="width: 160px;">Total IDR</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {% for inv in invoices %}
+      <tr>
+        <td class="text-nowrap">{{ inv.invoice_date|date:"Y-m-d" }}</td>
+        <td class="text-nowrap">{{ inv.number }}</td>
+        <td>{{ inv.customer.name|default:"-" }}</td>
+        <td class="text-nowrap">
+          {% if inv.list_status %}{{ inv.list_status }}{% else %}{{ inv.status }}{% endif %}
+        </td>
+
+        <td class="text-nowrap">{{ inv.currency.code|default:"-" }}</td>
+
+        <td class="text-end text-nowrap">
+          {{ inv.subtotal_amount|indo_number:2 }}
+        </td>
+        <td class="text-end text-nowrap">
+          {{ inv.tax_amount|indo_number:2 }}
+        </td>
+        <td class="text-end text-nowrap">
+          {{ inv.total_amount|indo_number:2 }}
+        </td>
+
+        <td class="text-end text-nowrap">
+          {{ inv.exchange_rate|indo_number:4 }}
+        </td>
+        <td class="text-end text-nowrap">
+          {{ inv.total_idr|default_if_none:0|indo_number:2 }}
+        </td>
+      </tr>
+    {% empty %}
+      <tr>
+        <td colspan="10" class="text-center text-muted py-4">No data.</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+
+  <tfoot class="table-light">
+    <tr>
+      <th colspan="5" class="text-end">Totals</th>
+      <th class="text-end text-nowrap">{{ totals.subtotal|indo_number:2 }}</th>
+      <th class="text-end text-nowrap">{{ totals.tax|indo_number:2 }}</th>
+      <th class="text-end text-nowrap">{{ totals.total|indo_number:2 }}</th>
+      <th class="text-end text-nowrap">Grand Total IDR</th>
+      <th class="text-end text-nowrap">{{ totals.total_idr|default_if_none:0|indo_number:2 }}</th>
+    </tr>
+  </tfoot>
+</table>
+
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

@@ -268,6 +268,7 @@ class JobOrderUpdateView(LoginRequiredMixin, View):
 # DETAIL
 # ==========================
 from django.db.models import Sum
+from job.reports.services import ProfitabilityService
 
 class JobOrderDetailView(LoginRequiredMixin, DetailView):
     model = JobOrder
@@ -300,6 +301,11 @@ class JobOrderDetailView(LoginRequiredMixin, DetailView):
         ctx["attachment"] =  job.job_order_attachments.all()
         ctx["attachment_form"] = JobOrderAttachmentForm()
         ctx["cost_type_meta_json"] = cost_type_meta_json()
+
+        svc = ProfitabilityService(revenue_field="amount")  # sesuaikan
+        ctx["profit"] = svc.build_for_job(job)
+        
+
 
         return ctx
 

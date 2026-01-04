@@ -92,6 +92,24 @@ class Invoice(TimeStampedModel):
     pph_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
 
     amount_paid = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+    exchange_rate = models.DecimalField(
+        max_digits=18, decimal_places=6,
+        default=Decimal("1.000000"),
+        help_text="Kurs ke IDR. Wajib diisi jika currency bukan IDR."
+    )
+    total_idr = models.DecimalField(
+        max_digits=18, decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Total dalam IDR (final, dipakai report/journal)."
+    )
+
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name="+",
+    )
 
     notes_internal = models.TextField(blank=True, default="")
     notes_customer = models.TextField(blank=True, default="")
@@ -177,6 +195,24 @@ class Invoice(TimeStampedModel):
     def can_receive_payment(self, user) -> bool:
         return (self.status in self.PAYABLE_STATUSES) and self._has_perm(user, self.PERM_RECEIVE_PAYMENT)
 
+
+    def currency_code(self) -> str:
+        return (getattr(self.currency, "code", None) or "").upper()
+
+    def recalc_total_idr(self):
+        total = self.total_amount or Decimal("0.00")
+        code = self.currency_code()
+
+        if not code or code == "IDR":
+            self.exchange_rate = Decimal("1.000000")
+            self.total_idr = total
+            return
+
+        rate = self.exchange_rate or Decimal("0")
+        if rate <= 0:
+            raise ValidationError({"exchange_rate": "Exchange rate wajib > 0 untuk currency non-IDR."})
+
+        self.total_idr = (total * rate).quantize(Decimal("0.01"))
 
   
 

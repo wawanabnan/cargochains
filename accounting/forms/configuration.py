@@ -14,6 +14,9 @@ class AccountingConfigurationForm(forms.ModelForm):
 
             "default_cash_account",
             "default_pph_account",
+
+            "auto_create_job_costing_journal",
+            "auto_post_job_costing_journal",
         ]
         widgets = {
             "active_fiscal_year": forms.NumberInput(attrs={"class": "form-control form-control-sm"}),
@@ -25,4 +28,13 @@ class AccountingConfigurationForm(forms.ModelForm):
 
             "default_cash_account": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "default_pph_account": forms.Select(attrs={"class": "form-select form-select-sm"}),
+
+             "auto_create_job_costing_journal": forms.CheckboxInput(attrs={
+                "class": "form-check-input",
+                "role": "switch",
+            }),
+            "auto_post_job_costing_journal": forms.CheckboxInput(attrs={
+                "class": "form-check-input",
+                "role": "switch",
+            }),
         }

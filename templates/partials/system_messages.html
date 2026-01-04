@@ -1,58 +1,82 @@
-{# templates/core/partials/system_messages.html #}
+{# core/partials/system_messages.html #}
 {% if messages %}
-  {# --- 1) Kumpulkan modal messages --- #}
-  {% with modal_msgs="" %}
-  {% endwith %}
 
+  {# ========= MODAL MESSAGES ========= #}
   {% for message in messages %}
-    {% with tags=message.tags|default:"" taglist=tags.split %}
-      {% if "modal" in taglist %}
-        {# Render modal 1x per message (atau bisa digabung) #}
-        <div class="modal fade" id="sysmsg-modal-{{ forloop.counter }}" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">
-                  {% if "success" in taglist %}Success{% elif "error" in taglist %}Error
-                  {% elif "warning" in taglist %}Warning{% else %}Info{% endif %}
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
+    {% with tags=message.tags|default:"" %}
+      {% with padded=" "|add:tags|add:" " %}
+        {% if " modal " in padded %}
+          <div
+            class="modal fade"
+            id="sysmsg-modal-{{ forloop.counter }}"
+            tabindex="-1"
+            aria-hidden="true"
+            style="display:none;"
+          >
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
 
-              <div class="modal-body">
-                {{ message|safe }}
-              </div>
+                <div class="modal-header">
+                  <h5 class="modal-title">
+                    {{ message.level_tag|title }}
+                  </h5>
+                  <button type="button"
+                          class="btn-close"
+                          data-bs-dismiss="modal"
+                          aria-label="Close"></button>
+                </div>
 
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">OK</button>
+                <div class="modal-body">
+                  {{ message|safe }}
+                </div>
+
+                <div class="modal-footer">
+                  <button type="button"
+                          class="btn btn-secondary btn-sm"
+                          data-bs-dismiss="modal">
+                    OK
+                  </button>
+                </div>
+
               </div>
             </div>
           </div>
-        </div>
-      {% endif %}
+        {% endif %}
+      {% endwith %}
     {% endwith %}
   {% endfor %}
 
-  {# --- 2) Render non-modal sebagai alert biasa --- #}
+  {# ========= ALERT (NON-MODAL) ========= #}
   {% for message in messages %}
-    {% with tags=message.tags|default:"" taglist=tags.split %}
-      {% if "modal" not in taglist %}
-        <div class="alert alert-{{ message.level_tag }} alert-dismissible fade show" role="alert">
-          {{ message|safe }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-      {% endif %}
+    {% with tags=message.tags|default:"" %}
+      {% with padded=" "|add:tags|add:" " %}
+        {% if " modal " not in padded %}
+          <div class="alert alert-{{ message.level_tag }} alert-dismissible fade show" role="alert">
+            {{ message|safe }}
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Close"></button>
+          </div>
+        {% endif %}
+      {% endwith %}
     {% endwith %}
   {% endfor %}
 
-  {# --- 3) Auto show modal terakhir (atau pertama) --- #}
+  {# ========= AUTO SHOW MODAL (DELAYED) ========= #}
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      // tampilkan modal pertama yang ketemu
-      const el = document.querySelector('.modal[id^="sysmsg-modal-"]');
-      if (!el) return;
-      if (typeof bootstrap === "undefined" || !bootstrap.Modal) return;
-      new bootstrap.Modal(el).show();
+      const modalEl = document.querySelector('[id^="sysmsg-modal-"]');
+      if (!modalEl) return;
+
+      function showModal() {
+        if (typeof bootstrap === "undefined" || !bootstrap.Modal) return;
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+      }
+
+      // delay kecil supaya AdminLTE + Bootstrap sudah settle
+      setTimeout(showModal, 80);
     });
   </script>
+
 {% endif %}

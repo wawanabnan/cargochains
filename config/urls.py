@@ -41,8 +41,14 @@ urlpatterns = [
     path("payments/", include("payments.urls", namespace="payments")),
     path("accounting/", include("accounting.urls",namespace="accounting")),
     path("job/", include("job.urls", namespace="job")),
-    
-
+      path(
+        "job/reports/",
+        include(("job.reports.urls", "job_reports"), namespace="job_reports"),
+    ),
+    path(
+        "sales/reports/",
+        include(("sales.reports.urls", "sales_reports"), namespace="sales_reports"),
+    ),
 ]
 
 if settings.DEBUG:
