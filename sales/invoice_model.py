@@ -16,6 +16,7 @@ from .job_order_model import JobOrder
 from accounting.models.journal import Journal
 from django.utils.safestring import mark_safe
 from typing import Set
+from core.models.services import Service
 
 
 class TimeStampedModel(models.Model):
@@ -57,7 +58,7 @@ class Invoice(TimeStampedModel):
     number = models.CharField(max_length=30, unique=True, editable=False)
 
     job_order = models.ForeignKey(
-        JobOrder, on_delete=PROTECT, null=True, blank=True, related_name="invoices"
+      "job.JobOrder", on_delete=PROTECT, null=True, blank=True, related_name="invoices"
     )
 
     journal = models.OneToOneField(
@@ -218,7 +219,7 @@ class Invoice(TimeStampedModel):
 
 class InvoiceLine(TimeStampedModel):
     invoice = models.ForeignKey(Invoice, on_delete=CASCADE, related_name="lines")
-  # service = models.ForeignKey("core.Service", on_delete=models.PROTECT, null=True, blank=True)
+    service = models.ForeignKey("core.Service", on_delete=models.PROTECT, null=True, blank=True, related_name="+", )
     description = models.CharField(max_length=255)
     quantity = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("1.00"))
     price = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))

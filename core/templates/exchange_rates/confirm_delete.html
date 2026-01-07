@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="card border-danger">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-title m-0 text-danger">Delete Exchange Rate</h3>
+        <a class="btn btn-outline-secondary btn-sm"
+           href="{% url 'core:settings_exchange_rate_list' %}">
+          <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+      </div>
+
+      <form method="post" class="m-0">
+        {% csrf_token %}
+        <div class="card-body">
+          <p class="mb-0">
+            Yakin mau hapus:
+            <b>{{ object.rate_date|date:"Y-m-d" }}</b>
+            <b>{{ object.currency.code }}</b>
+            (1 {{ object.currency.code }} = {{ object.rate_to_idr }} IDR) ?
+          </p>
+        </div>
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <a class="btn btn-outline-secondary btn-sm" href="{% url 'core:settings_exchange_rate_list' %}">Cancel</a>
+          <button class="btn btn-danger btn-sm">
+            <i class="bi bi-trash me-1"></i> Delete
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

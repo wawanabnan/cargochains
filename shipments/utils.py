@@ -8,7 +8,7 @@ try:
 except Exception:
     get_next_number = None  # fallback di bawah
 
-from .models import Shipment
+from .models.shipments import Shipment
 
 
 def next_shipment_number(for_date: date | None = None) -> str:

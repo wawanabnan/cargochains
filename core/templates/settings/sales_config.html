@@ -1,0 +1,180 @@
+{% extends "adminbase.html" %}
+
+
+{% block content %}
+<!-- DEBUG: SALES SETTINGS TEMPLATE v2 -->
+
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="card shadow-sm">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <div>
+          <div class="fw-semibold">Sales Settings</div>
+          <div class="text-secondary small">Default configuration untuk Quotation / Invoice</div>
+        </div>
+      </div>
+
+      <form method="post" novalidate id="sales-settings-form">
+        {% csrf_token %}
+
+        <div class="card-body">
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger py-2">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label small mb-1">Default Currency</label>
+              {{ form.default_currency }}
+              {% if form.default_currency.errors %}<div class="text-danger small mt-1">{{ form.default_currency.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small mb-1">Quotation Valid Day</label>
+              {{ form.quote_valid_day }}
+              <div class="text-secondary small mt-1">0 = tidak pakai masa berlaku (opsional).</div>
+              {% if form.quote_valid_day.errors %}<div class="text-danger small mt-1">{{ form.quote_valid_day.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small mb-1">Sales Fee (%)</label>
+              {{ form.sales_fee_percent }}
+              <input type="hidden" name="sales_fee_percent_raw" id="id_sales_fee_percent_raw" value="">
+              <div class="text-secondary small mt-1">Format Indonesia otomatis (contoh: 2,50).</div>
+              {% if form.sales_fee_percent.errors %}<div class="text-danger small mt-1">{{ form.sales_fee_percent.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          {# templates/core/settings/sales_settings.html #}
+
+          <div class="border rounded p-2 mt-3">
+  <div class="fw-semibold small mb-1">Tax Behavior</div>
+  <div class="text-secondary small mb-3">
+    Taxes are defined per <b>Service/Product</b> and applied on <b>line items</b>.
+    This section only controls behavior (auto apply & override).
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <label class="form-label small mb-1">Tax Mode</label>
+      {{ form.tax_mode }}
+      
+    </div>
+
+    <div class="col-lg-3">
+      <label class="form-label small mb-1">Apply this behavior to</label>
+      {{ form.tax_apply_to }}
+    </div>
+
+    <div class="col-lg-3">
+      <label class="form-label small mb-1 d-block">Auto apply service taxes</label>
+      <div class="form-check form-switch mt-1">
+        {{ form.tax_auto_apply }}
+        <label class="form-check-label small ms-2" for="{{ form.tax_auto_apply.id_for_label }}">
+          Copy taxes from Service/Product to line automatically
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <label class="form-label small mb-1">Customer Notes (Default)</label>
+              {{ form.customer_notes }}
+            </div>
+
+            <div class="col-lg-6">
+              <label class="form-label small mb-1">SLA (Default)</label>
+              {{ form.sla }}
+            </div>
+          </div>
+
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+         <button type="button" class="btn btn-primary btn-sm" id="btn-save-ajax">
+          <i class="bi bi-save me-1"></i> Save
+        </button>
+
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+
+  {# TinyMCE #}
+  <script src="https://cdn.tiny.cloud/1/klpop8ud5zsip7zloht3kglaf0it7sau7hlm7yfscb3cjxsq/tinymce/6/tinymce.min.js"
+          referrerpolicy="origin">
+  </script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("sales-settings-form");
+  const btn = document.getElementById("btn-save-ajax");
+  if (!form || !btn) return;
+
+  async function ajaxSave() {
+    // sync TinyMCE -> textarea
+    if (window.tinymce) tinymce.triggerSave();
+
+    // pastikan raw fee terisi
+    const feeEl = document.querySelector(".js-fee") || document.getElementById("id_sales_fee_percent");
+    const rawEl = document.getElementById("id_sales_fee_percent_raw");
+    if (feeEl && rawEl) {
+      // parse "1.234,56" -> 1234.56
+      let s = (feeEl.value || "").trim();
+      if (s.indexOf(",") >= 0) s = s.replace(/\./g, "").replace(",", ".");
+      const n = parseFloat(s);
+      rawEl.value = isNaN(n) ? "0.00" : (n.toFixed(2));
+    }
+
+    btn.disabled = true;
+    try {
+      const resp = await fetch(window.location.href, {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        body: new FormData(form),
+      });
+
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || !data.ok) {
+        alert((data && data.message) ? data.message : "Save failed");
+        console.log("errors:", data.errors || data);
+        return;
+      }
+
+      alert("Setting has been saved");
+    } catch (err) {
+      alert("Save failed (server/network)");
+      console.log(err);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ✅ Klik tombol -> AJAX save
+  btn.addEventListener("click", function (e) {
+    e.preventDefault();
+    ajaxSave();
+  });
+
+  // ✅ Kalau user tekan Enter -> jangan reload, tetap AJAX
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    ajaxSave();
+  });
+});
+</script>
+
+
+
+{% endblock %}

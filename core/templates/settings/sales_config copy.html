@@ -1,0 +1,283 @@
+{% extends "adminbase.html" %}
+
+{% block content %}
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="card shadow-sm">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <div>
+          <div class="fw-semibold">Sales Settings</div>
+          <div class="text-secondary small">Configuration untuk Quotation / Invoice</div>
+        </div>
+
+        <button class="btn btn-primary btn-sm" type="button" id="btn-save-ajax">
+          <i class="bi bi-save me-1"></i> Save
+        </button>
+      </div>
+
+      <form method="post" novalidate id="sales-settings-form">
+        {% csrf_token %}
+
+        <div class="card-body">
+
+          <div id="save-alert" class="alert d-none py-2 mb-3" role="alert"></div>
+
+          {# --- BASIC SETTINGS --- #}
+          <div class="row g-3">
+
+            <div class="col-md-4">
+              <label class="form-label small mb-1">Default Currency</label>
+              {{ form.default_currency }}
+              {% if form.default_currency.errors %}<div class="text-danger small mt-1">{{ form.default_currency.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small mb-1">Quotation Valid Day</label>
+              {{ form.quote_valid_day }}
+              <div class="text-secondary small mt-1">0 = tidak pakai masa berlaku (valid_until kosong).</div>
+              {% if form.quote_valid_day.errors %}<div class="text-danger small mt-1">{{ form.quote_valid_day.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small mb-1">Sales Fee (%)</label>
+              {{ form.sales_fee_percent }}
+              <input type="hidden" name="sales_fee_percent_raw" id="id_sales_fee_percent_raw" value="">
+              <div class="text-secondary small mt-1">Format Indonesia otomatis (contoh: 2,50).</div>
+              {% if form.sales_fee_percent.errors %}<div class="text-danger small mt-1">{{ form.sales_fee_percent.errors }}</div>{% endif %}
+            </div>
+
+          </div>
+
+          <hr class="my-3">
+
+          {# --- TAX SETTINGS (BEHAVIOR ONLY, SOURCE: SERVICE/PRODUCT) --- #}
+          <div class="border rounded p-2">
+            <div class="fw-semibold small mb-2">Tax Settings (Service/Product driven)</div>
+
+            <div class="row g-3">
+              <div class="col-lg-6">
+                <label class="form-label small mb-1">Tax Mode</label>
+
+                {# Jika form sudah punya field tax_mode, render. Kalau belum, pakai select manual #}
+                {% if form.tax_mode %}
+                  {{ form.tax_mode }}
+                {% else %}
+                  <select class="form-select form-select-sm js-focus-select" name="tax_mode" id="id_tax_mode">
+                    <option value="allow_override">Allow override (default from Service, user can edit per line)</option>
+                    <option value="service_only">Service only (locked, user cannot change per line)</option>
+                    <option value="manual_only">Manual only (ignore Service taxes, user selects manually)</option>
+                  </select>
+                {% endif %}
+
+                <div class="text-secondary small mt-1">
+                  Mengatur apakah tax dari Service otomatis dipakai & apakah user boleh override di line.
+                </div>
+              </div>
+
+              <div class="col-lg-3">
+                <label class="form-label small mb-1">Apply rule to</label>
+
+                {% if form.tax_apply_to %}
+                  {{ form.tax_apply_to }}
+                {% else %}
+                  <select class="form-select form-select-sm js-focus-select" name="tax_apply_to" id="id_tax_apply_to">
+                    <option value="quotation">Quotation lines</option>
+                    <option value="invoice">Invoice lines</option>
+                    <option value="both">Both</option>
+                  </select>
+                {% endif %}
+              </div>
+
+              <div class="col-lg-3">
+                <label class="form-label small mb-1 d-block">Auto apply</label>
+
+                {% if form.tax_auto_apply %}
+                  {{ form.tax_auto_apply }}
+                {% else %}
+                  <div class="form-check form-switch mt-1">
+                    <input class="form-check-input" type="checkbox" id="id_tax_auto_apply" name="tax_auto_apply">
+                    <label class="form-check-label small" for="id_tax_auto_apply">
+                      Auto apply Service taxes
+                    </label>
+                  </div>
+                {% endif %}
+
+                <div class="text-secondary small mt-1">
+                  Jika OFF, tax tidak otomatis diisi walaupun Service punya tax.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          {# --- TinyMCE SETTINGS --- #}
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <label class="form-label small mb-1">Customer Notes (Default)</label>
+              {{ form.customer_notes }}
+            </div>
+
+            <div class="col-lg-6">
+              <label class="form-label small mb-1">SLA (Default)</label>
+              {{ form.sla }}
+            </div>
+          </div>
+
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <button class="btn btn-outline-secondary btn-sm" type="submit" id="btn-save-normal">
+            <i class="bi bi-save me-1"></i> Save (Normal)
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+
+  {# TinyMCE #}
+  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+
+  <script>
+  (function () {
+
+    // ---------- UI alert ----------
+    function showAlert(ok, msg) {
+      const el = document.getElementById("save-alert");
+      if (!el) return;
+      el.classList.remove("d-none", "alert-success", "alert-danger");
+      el.classList.add(ok ? "alert-success" : "alert-danger");
+      el.textContent = msg || (ok ? "Saved" : "Failed");
+      // auto hide after 3s
+      window.clearTimeout(window.__salesSettingAlertTO);
+      window.__salesSettingAlertTO = window.setTimeout(function(){
+        el.classList.add("d-none");
+      }, 3000);
+    }
+
+    // ---------- helper format angka ID ----------
+    function parseID(v) {
+      if (v === null || v === undefined) return 0;
+      let s = String(v).trim();
+      if (!s) return 0;
+      s = s.replace(/\s+/g, "");
+      // "1.234,56" => "1234.56"
+      if (s.indexOf(",") >= 0) s = s.replace(/\./g, "").replace(",", ".");
+      const n = parseFloat(s);
+      return isNaN(n) ? 0 : n;
+    }
+
+    function fmtID(n) {
+      return Number(n || 0).toLocaleString("id-ID", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function selectOnFocus() {
+      document.querySelectorAll(".js-focus-select, input, textarea").forEach(function (el) {
+        el.addEventListener("focus", function () {
+          try { el.select(); } catch (e) {}
+        });
+      });
+    }
+
+    // ---------- Sales Fee input id-ID + hidden raw ----------
+    function initFee() {
+      const feeEl = document.querySelector(".js-fee") || document.getElementById("id_sales_fee_percent");
+      const rawEl = document.getElementById("id_sales_fee_percent_raw");
+      if (!feeEl || !rawEl) return;
+
+      const n0 = parseID(feeEl.value);
+      feeEl.value = fmtID(n0);
+      rawEl.value = (n0 || 0).toFixed(2);
+
+      feeEl.addEventListener("input", function () {
+        const n = parseID(feeEl.value);
+        rawEl.value = (n || 0).toFixed(2);
+      });
+
+      feeEl.addEventListener("blur", function () {
+        const n = parseID(feeEl.value);
+        feeEl.value = fmtID(n);
+        rawEl.value = (n || 0).toFixed(2);
+      });
+    }
+
+    // ---------- TinyMCE init ----------
+    function initTiny() {
+      if (!window.tinymce) return;
+      tinymce.init({
+        selector: "textarea.js-tinymce",
+        height: 300,
+        menubar: false,
+        branding: false,
+        plugins: "lists link table code",
+        toolbar: "undo redo | bold italic underline | bullist numlist | link table | removeformat | code",
+        content_style: "body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;font-size:14px;}"
+      });
+    }
+
+    // ---------- AJAX save (no reload) ----------
+    async function ajaxSave() {
+      const form = document.getElementById("sales-settings-form");
+      const btn = document.getElementById("btn-save-ajax");
+      if (!form) return;
+
+      // pastikan TinyMCE menulis kembali ke textarea
+      if (window.tinymce) tinymce.triggerSave();
+
+      // pastikan raw fee terisi sebelum kirim
+      const feeEl = document.querySelector(".js-fee") || document.getElementById("id_sales_fee_percent");
+      const rawEl = document.getElementById("id_sales_fee_percent_raw");
+      if (feeEl && rawEl) rawEl.value = (parseID(feeEl.value) || 0).toFixed(2);
+
+      const fd = new FormData(form);
+
+      if (btn) btn.disabled = true;
+      try {
+        const resp = await fetch(window.location.href, {
+          method: "POST",
+          headers: {"X-Requested-With": "XMLHttpRequest"},
+          body: fd
+        });
+
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.ok) {
+          showAlert(false, (data && data.message) ? data.message : "Save failed.");
+          if (data && data.errors) console.log("Form errors:", data.errors);
+          return;
+        }
+        showAlert(true, data.message || "Saved.");
+      } catch (e) {
+        showAlert(false, "Save failed (network/server).");
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      selectOnFocus();
+      initFee();
+      initTiny();
+
+      // tombol save AJAX
+      const btn = document.getElementById("btn-save-ajax");
+      if (btn) btn.addEventListener("click", ajaxSave);
+
+      // kalau user tekan Enter atau klik Save(Normal), biarkan submit normal (fallback)
+      // kalau om mau semua submit jadi AJAX, uncomment ini:
+      // const form = document.getElementById("sales-settings-form");
+      // if (form) form.addEventListener("submit", function(e){ e.preventDefault(); ajaxSave(); });
+    });
+
+  })();
+  </script>
+{% endblock %}

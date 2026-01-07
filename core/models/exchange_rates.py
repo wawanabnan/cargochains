@@ -17,6 +17,9 @@ class ExchangeRate(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["rate_date", "currency"], name="uq_rate_date_currency")
+        ]   
         db_table = "core_exchange_rates"
         indexes = [
             models.Index(fields=["currency", "rate_date"]),

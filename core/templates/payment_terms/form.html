@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="app-content">
+  <div class="container-fluid">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <div class="fw-semibold">
+          {% if object %}Edit{% else %}Add{% endif %} Payment Term
+        </div>
+        <a href="{% url 'core:payment_term_list' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="card-body">
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger py-2">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label small">Code</label>
+              {{ form.code }}
+              {% if form.code.errors %}<div class="text-danger small mt-1">{{ form.code.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-5">
+              <label class="form-label small">Name</label>
+              {{ form.name }}
+              {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label small">Days</label>
+              {{ form.days }}
+              {% if form.days.errors %}<div class="text-danger small mt-1">{{ form.days.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label small">DP %</label>
+              {{ form.dp_percent }}
+              {% if form.dp_percent.errors %}<div class="text-danger small mt-1">{{ form.dp_percent.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label small">Sort Order</label>
+              {{ form.sort_order }}
+              {% if form.sort_order.errors %}<div class="text-danger small mt-1">{{ form.sort_order.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end">
+              <div class="form-check">
+                {{ form.is_active }}
+                <label class="form-check-label">Active</label>
+              </div>
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end">
+              <div class="form-check">
+                {{ form.is_default }}
+                <label class="form-check-label">Default</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert alert-light border mt-3 py-2 small mb-0">
+            <b>Note:</b> Default hanya boleh satu. Jika kamu set Default di sini, yang lain otomatis non-default.
+          </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <a href="{% url 'core:payment_term_list' %}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+          <button class="btn btn-primary btn-sm" type="submit">
+            <i class="bi bi-save me-1"></i> Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

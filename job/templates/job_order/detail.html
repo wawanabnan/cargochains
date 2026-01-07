@@ -26,15 +26,14 @@
            class="btn btn-primary btn-sm">
           <i class="fa fa-edit me-1"></i> Edit
         </a>
-        <form method="post" action="{% url 'sales:invoice_generate_from_job' job.pk %}">
+        <form method="post" action="{% url 'job:job_order_generate_invoice' job.pk %}">
           {% csrf_token %}
           <button class="btn btn-sm btn-primary">To Invoice</button>
         </form>
-
         <a href="#"
             class="btn btn-outline-primary btn-sm"
             target="_blank">
-            <i class="fa fa-file-pdf me-1"></i> Revenue PDF
+            <i class="bi bi-file-earmark-pdf"></i> Revenue PDF
           </a>
 
       </div>
@@ -74,20 +73,16 @@
       <a class="btn btn-outline-primary btn-sm"
    href="/job/reports/profitability/{{ job.pk }}/pdf/"
    target="_blank" rel="noopener">
-  <i class="bi bi-file-earmark-pdf me-1"></i> Profitability PDF
+  <i class="bi bi-file-earmark-pdf me-1"></i> Profitability
 </a>
 
 
       <a class="btn btn-outline-primary btn-sm"
    href="/job/reports/profitability/{{ job.pk }}/">
-  <i class="bi bi-graph-up me-1"></i> Profitability
+  <i class="bi bi-graph-up me-1"></i> Profitability <Summary></Summary>
 </a>
 
-         <a class="btn btn-outline-primary btn-sm"
-         href="{% url 'job_reports:profitability' %}?job_id={{ object.id }}">
-        <i class="bi bi-graph-up me-1"></i> Report
-      </a>
-
+    
       {% if object.complete_journal_id %}
       <a class="btn btn-outline-secondary btn-sm"
          href="{% url 'accounting_reports:cogs_journals' %}?journal_id={{ object.complete_journal_id }}">
@@ -104,18 +99,17 @@
         </a>
       {% endif %}
       
-      <!-- PRINT -->
-      <a href="#"
-         class="btn btn-outline-primary btn-sm">
-        <i class="bi bi-printer"></i> Print
-      </a>
+      
 
       <!-- TO INVOICE (hanya setelah completed) -->
-      {% if job.status == 'COMPLETED' %}
-        <a href="{% url 'job:job_order_generate_invoice' job.pk %}"
-           class="btn btn-outline-primary btn-sm">
+       {% if not job.is_invoiced %}
+      <form method="post" action="{% url 'job:job_order_generate_invoice' job.pk %}" class="d-inline">
+
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-primary">
           <i class="bi bi-receipt"></i> To Invoice
-        </a>
+        </button>
+      </form>
       {% endif %}
 
       <!-- ===== STATUS ACTIONS ===== -->
@@ -286,7 +280,7 @@
 
 
     {#===========================================#}
-    <ul class="nav nav-pills nav-fill  mynav mt-2" 
+    <ul class="nav nav-pills nav-fill  mynav mt-0" 
                 id="myTab" role="tablist">
               <li class="nav-item" role="presentation">
                 <button class="nav-link active " 
@@ -391,23 +385,23 @@
 #myTab { border: none; }
 
 #myTab .nav-link{
-  background-color: #cdcacd !important;
+  background-color: #f3f3f3 !important;
   border-radius: 0;
-  color: #fff !important;
+  color: #555 !important;
   text-transform: uppercase;
 }
 
 #myTab .nav-link.active{
-  background-color: #ab1680 !important;
+  background-color: #e4e4e4!important;
   border-radius: 0;
-  color: #fff !important;
+  color:#333 !important;
   font-weight: bold;
 }
 
 /* kalau pakai nav-pills lain */
 .mynav .nav-pills .nav-link.active{
-  background-color: blueviolet;
-  color: #F0F8FF;
+  background-color: #777;
+  color: #555;
 }
 
 /* ===================== TAB CONTENT ===================== */

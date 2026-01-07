@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="card shadow-sm">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <div>
+          <div class="fw-semibold">Payment Terms</div>
+          <div class="text-secondary small">System Settings</div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <form method="get" class="d-flex gap-2">
+            <input type="text" name="q" value="{{ q }}"
+                   class="form-control form-control-sm"
+                   placeholder="Search code / name">
+            <button class="btn btn-outline-secondary btn-sm" type="submit">
+              <i class="bi bi-search"></i>
+            </button>
+          </form>
+
+          <a href="{% url 'core:payment_term_add' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg me-1"></i> Add
+          </a>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 12%">Code</th>
+                <th>Name</th>
+                <th style="width: 10%" class="text-end">Days</th>
+                <th style="width: 12%" class="text-end">DP %</th>
+                <th style="width: 10%" class="text-center">Active</th>
+                <th style="width: 12%" class="text-center">Default</th>
+                <th style="width: 16%" class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for it in items %}
+              <tr>
+                <td class="fw-semibold">{{ it.code }}</td>
+                <td>
+                  {{ it.name }}
+                  {% if it.sort_order %}
+                    <span class="badge text-bg-light ms-2">#{{ it.sort_order }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">{{ it.days }}</td>
+                <td class="text-end">
+                  {% if it.dp_percent is not None %}
+                    {{ it.dp_percent }}
+                  {% else %}
+                    <span class="text-secondary">-</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  {% if it.is_active %}
+                    <span class="badge text-bg-success">Yes</span>
+                  {% else %}
+                    <span class="badge text-bg-secondary">No</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  {% if it.is_default %}
+                    <span class="badge text-bg-warning">Default</span>
+                  {% else %}
+                    <form method="post" action="{% url 'core:payment_term_set_default' it.pk %}">
+                      {% csrf_token %}
+                      <button class="btn btn-outline-warning btn-sm" type="submit" title="Set as default">
+                        <i class="bi bi-star"></i>
+                      </button>
+                    </form>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <a class="btn btn-outline-primary btn-sm"
+                     href="{% url 'core:payment_term_edit' it.pk %}">
+                    <i class="bi bi-pencil-square"></i>
+                  </a>
+                  <a class="btn btn-outline-danger btn-sm"
+                     href="{% url 'core:payment_term_delete' it.pk %}">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center text-secondary py-4">
+                  No data
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {% if is_paginated %}
+      <div class="card-footer">
+        {% include "partials/pagination.html" %}
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

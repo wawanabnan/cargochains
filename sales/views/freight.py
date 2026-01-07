@@ -22,6 +22,7 @@ from core.models.currencies import Currency
 from core.models.services import SalesService
 from core.models.payment_terms import PaymentTerm
 
+from datetime import timedelta
 
 
 from core.utils.numbering import get_next_number
@@ -277,6 +278,9 @@ class FreightQuotationMixin:
         return ctx
 
 
+    # sales/views/quotations.py
+from core.services.core_settings import get_setting,calc_valid_until
+
 class FqCreateView(LoginRequiredMixin, FreightQuotationMixin, CreateView):
     model = FreightQuotation
     form_class = FreightQuotationForm
@@ -289,6 +293,36 @@ class FqCreateView(LoginRequiredMixin, FreightQuotationMixin, CreateView):
     
     def get_success_url(self):
         return reverse("sales:fq_detail", args=[self.object.pk])
+    
+    def get_initial(self):
+        initial = super().get_initial()
+
+        # --- currency ---
+        
+        code = get_setting("sales", "default_currency_code", "IDR")
+
+        # cari object currency
+        cur = Currency.objects.filter(code=code).first()
+
+        # set initial FK: boleh object atau pk
+        if cur:
+            initial.setdefault("currency", cur.pk)  # atau initial.setdefault("currency", cur)
+
+
+        initial.setdefault("valid_until", calc_valid_until())
+
+        # --- notes & sla ---
+        initial.setdefault(
+            "notes_customer",
+            get_setting("sales", "customer_notes", "")
+        )
+        initial.setdefault(
+            "notes_internal",
+            get_setting("sales", "sla", "")
+        )
+
+        return initial
+
 
 
 class FqUpdateView(LoginRequiredMixin, FreightQuotationMixin, UpdateView):

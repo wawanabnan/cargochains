@@ -1,0 +1,67 @@
+{% load string_extras %}
+
+<li class="nav-item {% if request.resolver_match.app_name == 'accounting' %}menu-open{% endif %}">
+  <a href="#" class="nav-link {% if request.resolver_match.app_name == 'accounting' %}active{% endif %}">
+    <i class="nav-icon bi bi-calculator"></i>
+    <p>
+      Settings
+      <i class="nav-arrow bi bi-chevron-right"></i>
+    </p>
+  </a>
+
+  <ul class="nav nav-treeview">
+
+    <li class="nav-item">
+      <a href="{% url 'core:setup_company' %}"
+         class="nav-link {% if request.resolver_match.url_name == 'account_tree' %}active{% endif %}">
+        <i class="nav-icon bi bi-diagram-3"></i>
+        <p>Company</p>
+      </a>
+    </li>
+
+    <li class="nav-item">
+  <a href="{% url 'core:tax_list' %}"
+     class="nav-link {% if request.resolver_match.url_name and 'settings_tax' in request.resolver_match.url_name %}active{% endif %}">
+    <i class="nav-icon bi bi-percent"></i>
+    <p>Taxes</p>
+  </a>
+</li>
+   
+
+<li class="nav-item">
+      <a href="{% url 'core:currency_list' %}"
+         class="nav-link {% if request.resolver_match.url_name == 'journal_list' or request.resolver_match.url_name == 'journal_add' or request.resolver_match.url_name == 'journal_detail' or request.resolver_match.url_name == 'journal_edit' %}active{% endif %}">
+        <i class="nav-icon bi bi-journal-text"></i>
+        <p>Currencies</p>
+      </a>
+    </li>
+    
+  
+<li class="nav-item">
+  <a href="{% url 'core:payment_term_list' %}"
+     class="nav-link {% if request.resolver_match and request.resolver_match.url_name|default:''|startswith:'payment_term_' %}active{% endif %}">
+    <i class="nav-icon bi bi-calendar2-week"></i>
+    <p>Payment Terms</p>
+  </a>
+</li>
+
+
+    <li class="nav-item">
+     <a href="{% url 'core:uom_list' %}"
+   class="nav-link {% if request.resolver_match.url_name and 'settings_uom' in request.resolver_match.url_name %}active{% endif %}">
+  <i class="nav-icon bi bi-rulers"></i>
+  <p>Unit of Measurements</p>
+</a>
+   <li class="nav-item">
+  <a href="{% url 'core:numbering_list' %}"
+     class="nav-link {% if request.resolver_match.url_name and 'settings_numbering' in request.resolver_match.url_name %}active{% endif %}">
+    <i class="nav-icon bi bi-hash"></i>
+    <p>Numbering</p>
+  </a>
+</li>
+
+
+
+   
+  </ul>
+</li>

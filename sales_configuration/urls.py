@@ -7,7 +7,7 @@ from .views.config_page import SalesConfigView
 app_name = "sales_configuration"
 
 urlpatterns = [
-     path("tax/", SalesTaxConfigView.as_view(), name="tax_config"),
+    path("tax/", SalesTaxConfigView.as_view(), name="tax_config"),
     path("", SalesConfigView.as_view(), name="config"),
 
 ]

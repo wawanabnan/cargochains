@@ -9,7 +9,9 @@ class SalesRevenueReportService:
     VALID_STATUSES = [Invoice.ST_SENT, Invoice.ST_PAID]
 
     def get_queryset(self, *, date_from=None, date_to=None, customer_id=None, currency=None):
-        qs = Invoice.objects.filter(status__in=self.VALID_STATUSES).select_related("customer", "currency")
+        qs = Invoice.objects.filter(
+            status__in=self.VALID_STATUSES
+        ).select_related("customer", "currency")
 
         if date_from:
             qs = qs.filter(invoice_date__gte=date_from)
@@ -20,7 +22,8 @@ class SalesRevenueReportService:
         if currency:
             qs = qs.filter(currency__code__iexact=currency)
 
-        return qs.order_by("invoice_date", "number", "id")
+        # 🔥 DESC biar terbaru di atas
+        return qs.order_by("-invoice_date", "-number", "-id")
 
     def build(self, **filters):
         qs = self.get_queryset(**filters)

@@ -41,9 +41,7 @@ from .views.freight import (
 from sales.views.invoices import (
     InvoiceListView, InvoiceUpdateView,
     InvoiceDetailView, InvoiceDeleteView, 
-    InvoiceCreateFromJobOrderView,
     InvoiceCreateManualView,
-    generate_invoice_from_job,
     InvoiceConfirmView
 )
 
@@ -209,26 +207,39 @@ urlpatterns = [
 
     # optional: generate invoice from job order via modal/form
     path("invoices/add/", InvoiceCreateManualView.as_view(), name="invoice_add"),
-    path("invoices/add-from-job/<int:job_order_id>/", InvoiceCreateFromJobOrderView.as_view(), name="invoice_add_from_job"),
     # sales/urls.py
    
-     path(
-        "invoices/generate-from-job/<int:job_order_id>/",
-        generate_invoice_from_job,
-        name="invoice_generate_from_job",
-    ),
+   
      path(
         "invoices/<int:pk>/pdf/",
          InvoicePdfHtmlView.as_view(),
          name="invoice_pdf",
     ),
-  path("invoices/<int:pk>/confirm/", InvoiceConfirmView.as_view(), name="invoice_confirm"),
+
+     path("invoices/<int:pk>/confirm/", InvoiceConfirmView.as_view(), name="invoice_confirm"),
+
 
 
 ]
 
 
 
+
+from sales.views.vendors import (
+    VendorListView, VendorCreateView, VendorUpdateView, VendorDetailView, VendorDeleteView,
+    VendorContactCreateView, VendorContactUpdateView,
+)
+
+urlpatterns += [
+    path("vendors/", VendorListView.as_view(), name="vendor_list"),
+    path("vendors/add/", VendorCreateView.as_view(), name="vendor_add"),
+    path("vendors/<int:pk>/", VendorDetailView.as_view(), name="vendor_detail"),
+    path("vendors/<int:pk>/edit/", VendorUpdateView.as_view(), name="vendor_edit"),
+    path("vendors/<int:pk>/delete/", VendorDeleteView.as_view(), name="vendor_delete"),
+
+    path("vendors/<int:pk>/contacts/add/", VendorContactCreateView.as_view(), name="vendor_contact_add"),
+    path("vendors/contacts/<int:pk>/update/", VendorContactUpdateView.as_view(), name="vendor_contact_update"),
+]
 
 
 

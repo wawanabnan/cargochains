@@ -22,6 +22,7 @@
 
   <!-- TITLE -->
   <div style="margin-bottom:10px;">
+    <h1>Job File</h1>
     <div class="h1">Job Order Detail &amp; Profitability</div>
     <div class="muted">
       Generated: {% now "d-m-Y H:i" %}
@@ -92,14 +93,17 @@
 
 
 
+
+  <br/>
   <!-- COGS DETAIL -->
   <div class="section-title">COGS Detail (Job Cost - Estimation)</div>
   <table>
     <thead>
       <tr>
-        <th style="width:12%;">Category</th>
-        <th style="width:20%;">Cost Type</th>
+       
+        
         <th>Description</th>
+        <th style="width:20%;">Cost Type</th>
         <th style="width:20%;">Vendor</th>
         <th class="text-end" style="width:16%;">Est Amount</th>
       </tr>
@@ -107,15 +111,16 @@
     <tbody>
       {% for c in costs %}
       <tr>
-        <td>{{ c.category|default:"" }}</td>
-        <td>{% if c.cost_type %}{{ c.cost_type }}{% endif %}</td>
+       
+        
         <td>{{ c.description|default:"" }}</td>
+        <td>{% if c.cost_type %}{{ c.cost_type }}{% endif %}</td>
         <td>{% if c.vendor %}{{ c.vendor }}{% endif %}</td>
         <td class="text-end">{{ c.est_amount|default:0|floatformat:2|intcomma }}</td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="5" class="muted" style="text-align:center; padding:14px;">
+        <td colspan="3" class="muted" style="text-align:center; padding:14px;">
           No Job Cost rows.
         </td>
       </tr>
@@ -123,7 +128,7 @@
     </tbody>
     <tfoot>
       <tr>
-        <th colspan="4" class="text-end">TOTAL</th>
+        <th colspan="3" class="text-end">TOTAL</th>
         <th class="text-end">{{ total_cogs_idr|floatformat:2|intcomma }}</th>
       </tr>
     </tfoot>

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-title m-0">
+          {% if object %}Edit Exchange Rate{% else %}Add Exchange Rate{% endif %}
+        </h3>
+
+        <a class="btn btn-outline-secondary btn-sm"
+           href="{% url 'core:settings_exchange_rate_list' %}">
+          <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+      </div>
+
+      <form method="post" class="m-0">
+        {% csrf_token %}
+        <div class="card-body">
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Rate Date</label>
+              {{ form.rate_date }}
+              {% for e in form.rate_date.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Currency</label>
+              {{ form.currency }}
+              {% for e in form.currency.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Rate to IDR</label>
+              {{ form.rate_to_idr }}
+              <div class="form-text">Format: 1 Currency = rate_to_idr IDR</div>
+              {% for e in form.rate_to_idr.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Source</label>
+              {{ form.source }}
+              {% for e in form.source.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-12">
+              <div class="form-check">
+                {{ form.is_active }}
+                <label class="form-check-label">Active</label>
+              </div>
+              {% for e in form.is_active.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <a class="btn btn-outline-secondary btn-sm" href="{% url 'core:settings_exchange_rate_list' %}">Cancel</a>
+          <button class="btn btn-primary btn-sm">
+            <i class="bi bi-save me-1"></i> Save
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

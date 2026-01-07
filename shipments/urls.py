@@ -4,7 +4,9 @@ from django.contrib.auth.decorators import login_required
 
 from .views.details import ShipmentDetailView
 from .views.lists import ShipmentListView
+
 from .views.actions import shipment_confirm, shipment_book, shipment_attach, shipment_detach,shipment_update_parties
+
 from .views.manual_routes import edit_routes
 from .views.routes_inline import route_modal, route_delete
 from .views.routes_schedule import routes_schedule, routes_schedule_export

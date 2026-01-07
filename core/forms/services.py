@@ -1,9 +1,24 @@
 from django import forms
 from core.models.services import Service
 from accounting.models.chart import Account
+from core.models.taxes import Tax
+
+class TaxMultipleChoiceField(forms.ModelMultipleChoiceField):
+    def label_from_instance(self, obj):
+        # obj = instance Tax
+        return f"{obj.rate}%"   # ✅ pakai field rate
+
+
 
 
 class ServiceForm(forms.ModelForm):
+
+    taxes = TaxMultipleChoiceField(
+        queryset=Tax.objects.all(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple
+    )
+
     class Meta:
         model = Service
         fields = [
@@ -11,6 +26,7 @@ class ServiceForm(forms.ModelForm):
             "service_group",
             "revenue_account",
             "receivable_account",
+            "taxes",
             "sort_order",
             "is_active",
         ]
@@ -21,6 +37,11 @@ class ServiceForm(forms.ModelForm):
             "receivable_account": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "sort_order": forms.NumberInput(attrs={"class": "form-control form-control-sm text-end"}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+             "taxes": forms.CheckboxSelectMultiple(
+                attrs={
+                    "class": "form-check-input",
+                }
+            )
         }
 
     def __init__(self, *args, **kwargs):

@@ -16,6 +16,8 @@ from sales.freight import FreightQuotation, FreightQuotationStatus, FreightOrder
 from core.forms.bootstrap_mixin import BootstrapSmallMixin
 
 class FreightQuotationForm(BootstrapSmallMixin,forms.ModelForm):
+
+    
     class Meta:
         model = FreightQuotation
         # sales_user diisi otomatis dari request.user di view
@@ -166,10 +168,10 @@ class FreightQuotationForm(BootstrapSmallMixin,forms.ModelForm):
                 self.initial["quotation_date"] = today
 
             # valid_until: quotation_date + 7 hari
-            if "valid_until" in self.fields and not (
-                self.initial.get("valid_until") or self.fields["valid_until"].initial
-            ):
-                self.initial["valid_until"] = today + timezone.timedelta(days=7)
+           # if "valid_until" in self.fields and not (
+            #    self.initial.get("valid_until") or self.fields["valid_until"].initial
+            #):
+             #   self.initial["valid_until"] = today + timezone.timedelta(days=7)
 
         # 1) Default: semua optional dulu
         for f in self.fields.values():
@@ -318,10 +320,10 @@ class FreightQuotationForm(BootstrapSmallMixin,forms.ModelForm):
             cleaned["status"] = FreightQuotationStatus.DRAFT
 
         # === 2) VALID UNTIL: +7 hari jika kosong ===
-        valid_until = cleaned.get("valid_until")
-        if not valid_until:
-            base_date = cleaned.get("quotation_date") or today
-            cleaned["valid_until"] = base_date + timezone.timedelta(days=7)
+        #valid_until = cleaned.get("valid_until")
+        #if not valid_until:
+        #    base_date = cleaned.get("quotation_date") or today
+        #    cleaned["valid_until"] = base_date + timezone.timedelta(days=7)
 
         # === 3) HEADER WAJIB (tambahan proteksi untuk customer) ===
         if not cleaned.get("customer"):

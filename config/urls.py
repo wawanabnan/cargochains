@@ -33,12 +33,16 @@ urlpatterns = [
 
     # modules
     path("sales/", include("sales.urls", namespace="sales")),
-    path("sales/config/", include("sales_configuration.urls", namespace="sales_configuration")),
+    path("sales/configurations/", include("sales_configuration.urls", namespace="sales_configuration")),
     path("partners/", include("partners.urls", namespace="partners")),
     path("geo/", include(("geo.urls", "geo"), namespace="geo")),
     path("projects/", include("projects.urls")),
     path("purchases/", include("purchases.urls")),
-    path("payments/", include("payments.urls", namespace="payments")),
+
+    #path("payments/", include("payments.urls", namespace="payments")),
+    path("", include(("payments.urls", "payments"), namespace="payments")),
+
+    
     path("accounting/", include("accounting.urls",namespace="accounting")),
     path("job/", include("job.urls", namespace="job")),
       path(

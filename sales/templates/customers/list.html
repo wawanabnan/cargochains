@@ -3,11 +3,13 @@
 
 <div class="app-content-header" style="background-color: #fff;">
     <div class="container-fluid d-flex justify-content-between align-items-center">
-      <h3 class="mb-0">Customers</h3>
-      <a href="{% url 'sales:customer_add' %}" class="btn btn-primary btn-sm">
-        <i class="fa fa-plus me-1"></i> New
-      </a>
-    </div>
+      <h3 class="mb-0">{{ entity_label }} List</h3>
+
+     <a href="{% url 'sales:'|add:entity_urls|add:'_add' %}"
+      class="btn btn-primary btn-sm">
+      <i class="bi bi-plus"></i> New {{ entity_label }}
+    </a>
+
 </div>
 
 <div class="app-content">

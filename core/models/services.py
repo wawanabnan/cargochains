@@ -27,6 +27,13 @@ class Service(models.Model):
         related_name="+",
     )
 
+    taxes = models.ManyToManyField(
+        "core.Tax",           # sesuaikan app label: "core.Tax" / "accounting.Tax" / "sales.Tax"
+        blank=True,
+        related_name="services",
+        help_text="Default taxes untuk invoice line yang memakai service ini."
+    )
+
     sort_order = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
 

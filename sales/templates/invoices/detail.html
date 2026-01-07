@@ -29,7 +29,7 @@
         </a>
 
         <a class="btn btn-outline-primary btn-sm"
-           href="{% url 'sales:invoice_edit' invoice.pk %}">
+           href="{% url 'sales:invoice_edit'  pk=invoice.pk|default:object.pk  %}">
           <i class="bi bi-pencil-square me-1"></i> Edit
         </a>
 
@@ -38,21 +38,29 @@
            target="_blank" rel="noopener">
           <i class="bi bi-file-earmark-pdf me-1"></i> PDF
         </a>
-
-              {% if can_confirm %}
-  <form method="post" action="{% url 'sales:invoice_confirm' invoice.pk %}">
-    {% csrf_token %}
-    <button class="btn btn-sm btn-warning">
-      <i class="fa fa-check me-1"></i> Confirm
-    </button>
-  </form>
-  {% if invoice.journal %}
-  <a href="{% url 'accounting:journal_detail' invoice.journal.id %}">
-    View Journal {{ invoice.journal.number }}
-  </a>
+        {% if can_confirm %}
+  {% with code=invoice.currency.code|default:""|upper %}
+    {% if code == "IDR" or not code %}
+      <form method="post"
+            action="{% url 'sales:invoice_confirm' invoice.pk %}"
+            class="d-inline m-0">
+        {% csrf_token %}
+        <button class="btn btn-warning btn-sm">
+          <i class="bi bi-check2-circle me-1"></i> Confirm
+        </button>
+      </form>
+    {% else %}
+      <button type="button"
+              class="btn btn-warning btn-sm"
+              data-bs-toggle="modal"
+              data-bs-target="#modalConfirmFx">
+        <i class="bi bi-check2-circle me-1"></i> Confirm
+      </button>
+    {% endif %}
+  {% endwith %}
 {% endif %}
-{% endif %}
 
+            
       </div>
     </div>
   </div>
@@ -267,114 +275,63 @@
 <!-------------------------------------------->
 <!-------------------Modal-------------------->
 <!--------------------------------------------> 
-
-
 {% if can_confirm %}
-  {% if invoice.currency.code|upper == "IDR" %}
-    <form method="post" action="{% url 'sales:invoice_confirm' invoice.pk %}" class="m-0 d-inline">
-      {% csrf_token %}
-      <button class="btn btn-warning btn-sm">
-        <i class="bi bi-check2-circle me-1"></i> Confirm
-      </button>
-    </form>
-  {% else %}
-    <button class="btn btn-warning btn-sm"
-            type="button"
-            data-bs-toggle="modal"
-            data-bs-target="#modalConfirmFx">
-      <i class="bi bi-check2-circle me-1"></i> Confirm
-    </button>
+  {% with code=invoice.currency.code|default:""|upper %}
+    {% if code != "IDR" and code %}
+      <div class="modal fade" id="modalConfirmFx" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <form method="post" action="{% url 'sales:invoice_confirm' invoice.pk %}">
+              {% csrf_token %}
 
-    {# Modal confirm + kurs #}
-    <div class="modal fade" id="modalConfirmFx" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <form method="post" action="{% url 'sales:invoice_confirm' invoice.pk %}">
-            {% csrf_token %}
-
-            <div class="modal-header">
-              <h5 class="modal-title">Confirm Invoice (FX)</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-
-            <div class="modal-body">
-              <div class="small text-muted mb-2">
-                Currency: <strong>{{ invoice.currency.code }}</strong>
+              <div class="modal-header">
+                <h5 class="modal-title">Confirm Invoice (FX)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
 
-              <div class="d-flex justify-content-between">
-                <div>Total ({{ invoice.currency.code }})</div>
-                <div><strong>{{ invoice.total_amount|indo_number:2 }}</strong></div>
+              <div class="modal-body">
+                <div class="small text-muted mb-2">
+                  Currency: <strong>{{ invoice.currency.code }}</strong>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                  <div>Total ({{ invoice.currency.code }})</div>
+                  <div><strong>{{ invoice.total_amount|indo_number:2 }}</strong></div>
+                </div>
+
+                <hr class="my-2">
+
+                <label class="form-label">Exchange Rate to IDR</label>
+                <input type="number"
+                       id="fx-rate"
+                       step="0.000001"
+                       min="0"
+                       name="exchange_rate"
+                       class="form-control"
+                       value="{{ suggested_rate }}">
+
+                <div class="form-text">
+                  Contoh: 15750,25 → isi <code>15750.25</code> (pakai titik untuk desimal).
+                </div>
+
+                <div class="mt-3 d-flex justify-content-between">
+                  <div>Estimated Total (IDR)</div>
+                  <div><strong id="fx-total-idr">-</strong></div>
+                </div>
               </div>
 
-              <hr class="my-2">
-
-              <label class="form-label">Exchange Rate to IDR</label>
-              <input type="number"
-                step="0.000001"
-                min="0"
-                name="exchange_rate"
-                class="form-control"
-                value="{{ suggested_rate }}">
-
-
-              <div class="form-text">
-                Contoh: 15750,25 → isi <code>15750.25</code> (pakai titik untuk desimal).
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-warning">Confirm & Lock</button>
               </div>
 
-              <div class="mt-3 d-flex justify-content-between">
-                <div>Estimated Total (IDR)</div>
-                <div><strong id="fx-total-idr">-</strong></div>
-              </div>
-            </div>
-
-            <div class="modal-footer">
-              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button class="btn btn-warning">
-                Confirm & Lock
-              </button>
-            </div>
-
-          </form>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
-
-    <script>
-      (function() {
-        function parseNum(v) {
-          if (!v) return 0;
-          return Number(String(v).replace(",", "."));
-        }
-        function fmtID(n) {
-          try {
-            return Number(n || 0).toLocaleString("id-ID", {minimumFractionDigits: 2, maximumFractionDigits: 2});
-          } catch(e) {
-            return n;
-          }
-        }
-
-        const rateEl = document.getElementById("fx-rate");
-        const outEl = document.getElementById("fx-total-idr");
-        const totalCur = parseNum("{{ invoice.total_amount|default_if_none:0 }}");
-
-        function recalc() {
-          const rate = parseNum(rateEl.value);
-          outEl.textContent = fmtID(totalCur * (rate || 0));
-        }
-
-        if (rateEl) {
-          rateEl.addEventListener("input", recalc);
-          // hitung pertama kali saat modal kebuka
-          document.getElementById("modalConfirmFx").addEventListener("shown.bs.modal", recalc);
-        }
-      })();
-    </script>
-  {% endif %}
+    {% endif %}
+  {% endwith %}
 {% endif %}
-
-
-
 
 
 
@@ -447,4 +404,38 @@ table.cc-lines tfoot td {
 
 
  </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var modal = document.getElementById("modalConfirmFx");
+  var rateEl = document.getElementById("fx-rate");
+  var outEl  = document.getElementById("fx-total-idr");
+  if (!modal || !rateEl || !outEl) return;
+
+  function parseNum(v){
+    if (v === null || v === undefined) return 0;
+    v = String(v).trim();
+    if (!v) return 0;
+    v = v.replace(/\./g, "").replace(",", ".");
+    var n = parseFloat(v);
+    return isNaN(n) ? 0 : n;
+  }
+  function fmtID(n){
+    try { return Number(n||0).toLocaleString("id-ID",{minimumFractionDigits:2, maximumFractionDigits:2}); }
+    catch(e){ return n; }
+  }
+
+  var totalCur = parseNum("{{ invoice.total_amount|default_if_none:0 }}");
+
+  function recalc(){
+    var rate = parseNum(rateEl.value);
+    outEl.textContent = fmtID(totalCur * (rate || 0));
+  }
+
+  rateEl.addEventListener("input", recalc);
+  modal.addEventListener("shown.bs.modal", recalc);
+});
+</script>
 {% endblock %}

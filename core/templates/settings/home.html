@@ -1,0 +1,111 @@
+{% extends "adminbase.html" %}
+{% block content %}
+<div class="app-content">
+  <div class="container-fluid">
+
+    <h3 class="mb-3">System Settings</h3>
+
+    <!-- Finance -->
+    <div class="mb-4">
+      <div class="text-muted small mb-2">Finance</div>
+      <div class="row g-3">
+
+        <div class="col-md-3 col-sm-6">
+          <a href="#" class="text-decoration-none">
+            <div class="card text-center h-100 settings-tile">
+              <div class="card-body">
+                <i class="bi bi-currency-exchange fs-1 text-primary"></i>
+                <div class="fw-semibold mt-2">Currencies</div>
+                <div class="text-muted small">Manage currencies</div>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+          <a href="#" class="text-decoration-none">
+            <div class="card text-center h-100 settings-tile">
+              <div class="card-body">
+                <i class="bi bi-graph-up-arrow fs-1 text-success"></i>
+                <div class="fw-semibold mt-2">Exchange Rates</div>
+                <div class="text-muted small">Currency conversion</div>
+              </div>
+            </div>
+          </a>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Products -->
+    <div class="mb-4">
+      <div class="text-muted small mb-2">Products</div>
+      <div class="row g-3">
+
+        <div class="col-md-3 col-sm-6">
+          <a href="#" class="text-decoration-none">
+            <div class="card text-center h-100 settings-tile">
+              <div class="card-body">
+                <i class="bi bi-rulers fs-1 text-warning"></i>
+                <div class="fw-semibold mt-2">Units of Measure</div>
+                <div class="text-muted small">PCS, KG, CBM</div>
+              </div>
+            </div>
+          </a>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- System -->
+    <div>
+      <div class="text-muted small mb-2">System</div>
+      <div class="row g-3">
+
+        <div class="col-md-3 col-sm-6">
+          <a href="#" class="text-decoration-none">
+            <div class="card text-center h-100 settings-tile">
+              <div class="card-body">
+                <i class="bi bi-hash fs-1 text-danger"></i>
+                <div class="fw-semibold mt-2">Numbering</div>
+                <div class="text-muted small">Document sequences</div>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+          <a href="#" class="text-decoration-none">
+            <div class="card text-center h-100 settings-tile">
+              <div class="card-body">
+                <i class="bi bi-building fs-1 text-secondary"></i>
+                <div class="fw-semibold mt-2">Company</div>
+                <div class="text-muted small">Profile & identity</div>
+              </div>
+            </div>
+          </a>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+
+.settings-tile {
+  transition: all .15s ease-in-out;
+  border: 1px solid var(--bs-border-color);
+}
+.settings-tile:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 .25rem .75rem rgba(0,0,0,.08);
+}
+
+
+</style>
+
+{% endblock %}

@@ -5,7 +5,7 @@ from typing import Optional, Iterable
 from django.db import transaction
 from django.utils import timezone
 
-from shipments.models import Shipment, ShipmentRoute, TransportationType, TransportationAsset
+from shipments.models.shipments import Shipment, ShipmentRoute, TransportationType, TransportationAsset
 from shipments.utils import next_shipment_number
 from geo.models import Location
 

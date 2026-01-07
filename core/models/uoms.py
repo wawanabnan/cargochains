@@ -7,6 +7,8 @@ from django.db import models
         
 
 
+
+
 class UOM(models.Model):
     code = models.CharField(max_length=20, unique=True)  # e.g. KG, CBM, PKG
     name = models.CharField(max_length=100)              # e.g. Kilogram, Cubic Meter

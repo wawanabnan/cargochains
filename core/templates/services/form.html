@@ -22,76 +22,104 @@
 
 <div class="app-content">
   <div class="container-fluid">
+      <form method="post" novalidate>
+  {% csrf_token %}
 
-    <form method="post" novalidate>
-      {% csrf_token %}
+  <div class="card">
+    <div class="card-body">
 
-      <div class="card">
-        <div class="card-body">
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
 
-          {% if form.non_field_errors %}
-            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      <div class="row g-3">
+
+        <div class="col-lg-4">
+          <label class="form-label">{{ form.code.label }}</label>
+          {{ form.code }}
+          {% if form.code.errors %}<div class="text-danger small mt-1">{{ form.code.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="col-lg-8">
+          <label class="form-label">Service Name</label>
+          {{ form.name }}
+          {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="col-lg-4">
+          <label class="form-label">{{ form.service_group.label }}</label>
+          {{ form.service_group }}
+          {% if form.service_group.errors %}<div class="text-danger small mt-1">{{ form.service_group.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="col-lg-4">
+          <label class="form-label">{{ form.revenue_account.label }}</label>
+          {{ form.revenue_account }}
+          {% if form.revenue_account.errors %}<div class="text-danger small mt-1">{{ form.revenue_account.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="col-lg-4">
+          <label class="form-label">{{ form.receivable_account.label }}</label>
+          {{ form.receivable_account }}
+          {% if form.receivable_account.errors %}<div class="text-danger small mt-1">{{ form.receivable_account.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="col-lg-2">
+          <label class="form-label">{{ form.sort_order.label }}</label>
+          {{ form.sort_order }}
+          {% if form.sort_order.errors %}<div class="text-danger small mt-1">{{ form.sort_order.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="col-lg-2 d-flex align-items-end">
+          <div class="form-check">
+            {{ form.is_active }}
+            <label class="form-check-label">{{ form.is_active.label }}</label>
+          </div>
+          {% if form.is_active.errors %}<div class="text-danger small mt-1">{{ form.is_active.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <!-- ============================= -->
+        <!-- ✅ DEFAULT TAXES (CHECKBOX) -->
+        <!-- ============================= -->
+        <div class="col-12">
+          <label class="form-label fw-semibold">Default Taxes</label>
+
+          <div class="border rounded p-2 bg-body">
+            {% for checkbox in form.taxes %}
+              <div class="form-check">
+                {{ checkbox.tag }}
+                <label class="form-check-label">
+                {{ checkbox.choice_label }}
+                </label>
+              </div>
+            {% endfor %}
+          </div>
+
+          {% if form.taxes.errors %}
+            <div class="text-danger small mt-1">
+              {{ form.taxes.errors|striptags }}
+            </div>
           {% endif %}
 
-          <div class="row g-3">
-
-            <div class="col-lg-4">
-              <label class="form-label">{{ form.code.label }}</label>
-              {{ form.code }}
-              {% if form.code.errors %}<div class="text-danger small mt-1">{{ form.code.errors|striptags }}</div>{% endif %}
-            </div>
-
-            <div class="col-lg-8">
-              <label class="form-label">Service Name</label>
-              {{ form.name }}
-              {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors|striptags }}</div>{% endif %}
-            </div>
-
-            <div class="col-lg-4">
-              <label class="form-label">{{ form.service_group.label }}</label>
-              {{ form.service_group }}
-              {% if form.service_group.errors %}<div class="text-danger small mt-1">{{ form.service_group.errors|striptags }}</div>{% endif %}
-            </div>
-
-            <div class="col-lg-4">
-              <label class="form-label">{{ form.revenue_account.label }}</label>
-              {{ form.revenue_account }}
-              {% if form.revenue_account.errors %}<div class="text-danger small mt-1">{{ form.revenue_account.errors|striptags }}</div>{% endif %}
-            </div>
-
-            <div class="col-lg-4">
-              <label class="form-label">{{ form.receivable_account.label }}</label>
-              {{ form.receivable_account }}
-              {% if form.receivable_account.errors %}<div class="text-danger small mt-1">{{ form.receivable_account.errors|striptags }}</div>{% endif %}
-            </div>
-
-            <div class="col-lg-2">
-              <label class="form-label">{{ form.sort_order.label }}</label>
-              {{ form.sort_order }}
-              {% if form.sort_order.errors %}<div class="text-danger small mt-1">{{ form.sort_order.errors|striptags }}</div>{% endif %}
-            </div>
-
-            <div class="col-lg-2 d-flex align-items-end">
-              <div class="form-check">
-                {{ form.is_active }}
-                <label class="form-check-label">{{ form.is_active.label }}</label>
-              </div>
-              {% if form.is_active.errors %}<div class="text-danger small mt-1">{{ form.is_active.errors|striptags }}</div>{% endif %}
-            </div>
-
-            
-          </div>
+          {% if form.taxes.help_text %}
+            <div class="form-text">{{ form.taxes.help_text }}</div>
+          {% endif %}
         </div>
+        <!-- ============================= -->
 
-        <div class="card-footer d-flex justify-content-end gap-2">
-          <a href="{% url 'core:service_list' %}" class="btn btn-sm btn-outline-secondary">Cancel</a>
-          <button class="btn btn-sm btn-primary" type="submit">
-            <i class="bi bi-save"></i> Save
-          </button>
-        </div>
       </div>
+    </div>
 
-    </form>
+    <div class="card-footer d-flex justify-content-end gap-2">
+      <a href="{% url 'core:service_list' %}" class="btn btn-sm btn-outline-secondary">Cancel</a>
+      <button class="btn btn-sm btn-primary" type="submit">
+        <i class="bi bi-save"></i> Save
+      </button>
+    </div>
+  </div>
+</form>
+
+   
   </div>
 </div>
 

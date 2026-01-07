@@ -1,0 +1,21 @@
+{
+  "tax_mode": {
+    "allow_override": {
+      "label": "Boleh override di line",
+      "help": "Default tax diambil dari Service, user boleh tambah atau hapus tax di line."
+    },
+    "service_only": {
+      "label": "Ikuti tax Service (dikunci)",
+      "help": "Tax di line selalu mengikuti Service dan tidak bisa diubah."
+    },
+    "manual_only": {
+      "label": "Pilih tax manual",
+      "help": "Abaikan tax dari Service, user memilih tax sendiri."
+    }
+  },
+  "tax_apply_to": {
+    "quotation": "Line Quotation",
+    "invoice": "Line Invoice",
+    "both": "Quotation & Invoice"
+  }
+}

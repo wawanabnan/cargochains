@@ -1,3 +1,4 @@
+
 <style>
 /* ===============================
    SIDEBAR ICON & TREEVIEW ARROW
@@ -90,62 +91,13 @@
   
 
     <!-- SALES TREE -->
-    <li class="nav-item {% if request.resolver_match.app_name == 'sales' %}menu-open{% endif %}">
-      <a href="#" class="nav-link">
-        <i class="nav-icon bi bi-briefcase"></i>
-        <p class="d-flex align-items-center justify-content-between w-100 mb-0">
-          <span>SALES</span>
-          <i class="bi bi-chevron-right nav-arrow"></i>
-        </p>
-      </a>
+  
+      {% include "partials/sales_menu.html" %}
+      {% include "partials/shipment_menu.html" %}
 
-
-      <ul class="nav nav-treeview">
-         <li class="nav-item">
-          <a href="{% url 'sales:fq_list' %}"
-             class="nav-link {% if request.resolver_match.url_name == 'job_order_list' %}active{% endif %}">
-            <i class="nav-icon bi bi-file-earmark-text"></i>
-            <p>Quotation</p>
-          </a>
-        </li>
-        <!-- JOB ORDERS -->
-        <li class="nav-item">
-          <a href="{% url 'sales:job_order_list' %}"
-             class="nav-link {% if request.resolver_match.url_name == 'job_order_list' %}active{% endif %}">
-            <i class="nav-icon bi bi-file-earmark-text"></i>
-            <p>Job Orders</p>
-          </a>
-        </li>
-         <li class="nav-item">
-          <a href="{% url 'sales:invoice_list' %}"
-             class="nav-link {% if request.resolver_match.url_name == 'job_order_list' %}active{% endif %}">
-            <i class="nav-icon bi bi-file-earmark-text"></i>
-            <p>Invoices</p>
-          </a>
-        </li>
-
-        <!-- CUSTOMERS -->
-        <li class="nav-item">
-          <a href="{% url 'sales:customer_list' %}"
-             class="nav-link {% if request.resolver_match.url_name == 'customer_list' %}active{% endif %}">
-            <i class="nav-icon bi bi-people"></i>
-            <p>Customers</p>
-          </a>
-        </li>
-
-        <!-- REPORTS -->
-        <li class="nav-item">
-          <a href="#"
-             class="nav-link {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
-            <i class="nav-icon bi bi-bar-chart"></i>
-            <p>Reports</p>
-          </a>
-        </li>
-
-      </ul>
-    </li>
           {% include "partials/menu_accounting.html" %}
 
+          {% include "partials/system_setting.html" %}
   </ul>
 </nav>
 

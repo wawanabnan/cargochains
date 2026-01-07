@@ -1,0 +1,69 @@
+<li class="nav-item">
+  <a href="#" class="nav-link">
+    <i class="nav-icon bi bi-bag-check"></i>
+    <p>
+      Sales
+      <i class="nav-arrow bi bi-chevron-right"></i>
+    </p>
+  </a>
+
+  <ul class="nav nav-treeview">
+
+    <li class="nav-item">
+        <a href="{% url 'sales:fq_list' %}"
+             class="nav-link {% if request.resolver_match.url_name == 'job_order_list' %}active{% endif %}">
+           <i class="nav-icon bi bi-file-earmark-text"></i>
+        <p>Quotation</p>
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a href="{% url 'job:job_order_list' %}" class="nav-link">
+
+        
+        <i class="nav-icon bi bi-clipboard-check"></i>
+        <p>Job Order</p>
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a href="#" class="nav-link">
+        <i class="nav-icon bi bi-cash-stack"></i>
+        <p>Costing</p>
+      </a>
+    </li>
+
+    <li class="nav-item">
+  <a href="#" class="nav-link">
+    <i class="nav-icon bi bi-calendar-check"></i>
+    <p>Booking</p>
+  </a>
+</li>
+
+    <li class="nav-item">
+      <a href="{% url 'sales:customer_list' %}" class="nav-link">
+        <i class="nav-icon bi bi-people"></i>
+        <p>Customers</p>
+      </a>
+    </li>
+      <li class="nav-item">
+  <a href="{% url 'core:exchange_rate_list' %}"
+     class="nav-link {% if request.resolver_match.url_name and 'settings_exchange_rate' in request.resolver_match.url_name %}active{% endif %}">
+    <i class="nav-icon bi bi-graph-up-arrow"></i>
+    <p>Exchange Rates</p>
+  </a>
+</li>
+        <li class="nav-item">
+      <a href="{% url 'core:service_list' %}" class="nav-link">
+        <i class="nav-icon bi bi-unity"></i>
+        <p>Services Product</p>
+      </a>
+    </li>
+
+    <a href="{% url 'core:sales_config' %}" class="nav-link">
+  <i class="bi bi-gear"></i>
+  <p>Settings</p>
+</a>
+
+  </ul>
+</li>

@@ -1,0 +1,119 @@
+{% extends "adminbase.html" %}
+{% block content %}
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between gap-2 flex-wrap">
+        <div class="d-flex align-items-center gap-2">
+          <h3 class="card-title m-0">Units of Measure</h3>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <form method="get" class="m-0">
+            <div class="input-group input-group-sm" style="max-width:260px;">
+              <input type="text" name="q" value="{{ q }}" class="form-control"
+                     placeholder="KG / Weight / PCS">
+              <button class="btn btn-outline-secondary" type="submit">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+          </form>
+
+          <a class="btn btn-primary btn-sm"
+             href="{% url 'core:uom_add' %}">
+            <i class="bi bi-plus-lg me-1"></i> Add
+          </a>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-sm mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width:120px;">Code</th>
+                <th style="width:150px">Name</th>
+                <th style="width:160px;">Category</th>
+                <th>Active</th>
+                <th style="width:120px;" class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in rows %}
+              <tr>
+                <td class="fw-semibold">{{ r.code }}</td>
+                <td>{{ r.name }}</td>
+                <td class="text-muted">{{ r.category }}</td>
+                <td>
+                  {% if r.is_active %}
+                    <span class="badge text-bg-success">Yes</span>
+                  {% else %}
+                    <span class="badge text-bg-secondary">No</span>
+                  {% endif %}
+                </td>
+                 <td class="text-end">
+  
+    <a class="btn btn-primary btn-xs text-white"
+       href="{% url 'core:uom_edit' r.pk %}"
+       title="Edit">
+      <i class="bi bi-pencil"></i>
+    </a>
+    <a class="btn btn-danger btn-xs text-white"
+       href="{% url 'core:uom_delete' r.pk %}"
+       title="Delete">
+      <i class="bi bi-trash"></i>
+    </a>
+  
+</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">
+                  No Unit of Measurement
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {% if is_paginated %}
+      <div class="card-footer">
+        {% include "partials/pagination.html" %}
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+{% block extra_css %}
+<style>
+  /* Compact table rows */
+
+  /* Compact table rows */
+.table.table-sm > :not(caption) > * > * {
+  padding: 0.29rem 0.35rem; /* default bs: 0.5rem */
+  vertical-align: middle;
+  line-height: 1.2;
+}
+
+
+.btn-xs {
+  padding: 0.21rem 0.21rem;
+  font-size: 0.65rem;
+  line-height: 1;
+  border-radius: 4px;
+}
+
+.table i.bi {
+  vertical-align: middle;
+  line-height: 1;
+  border-radius: 0;
+  
+ 
+}
+</style>
+{% endblock %}

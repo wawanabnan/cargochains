@@ -28,7 +28,7 @@
         </a>
         <form method="post" action="{% url 'sales:invoice_generate_from_job' job.pk %}">
   {% csrf_token %}
-  <button class="btn btn-sm btn-primary">To Invoice</button>
+  <button class="btn btn-sm btn-primary">To Invoice2</button>
 </form>
 
         <a href="{% url 'sales:job_order_revenue_pdf' job.pk %}"
@@ -65,7 +65,7 @@
           <i class="bi bi-printer"></i> Print
         </a>
         <a href="{% url 'sales:job_order_generate_invoice' job.pk %}" class="btn btn-outline-primary btn-sm">
-          <i class="bi bi-printer"></i> To Invoice
+          <i class="bi bi-printer"></i> To Invoice3
         </a>
       </div>
     </div>

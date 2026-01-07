@@ -8,6 +8,16 @@ class PaymentTerm(models.Model):
     days = models.PositiveSmallIntegerField(default=0)
     description = models.TextField(blank=True, null=True)
 
+    dp_percent = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text="Down Payment (%) misal 20.00. Kosongkan jika tidak ada DP."
+    )
+
+    is_active = models.BooleanField(default=True)
+    is_default = models.BooleanField(default=False)
+    sort_order = models.IntegerField(default=0)
+
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

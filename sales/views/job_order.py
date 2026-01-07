@@ -395,6 +395,10 @@ class JobOrderCostsUpdateView(LoginRequiredMixin, View):
         })
 
 
+
+
+from sales.utils.invoices import generate_invoice_from_job
+
 class JobOrderGenerateInvoiceView(LoginRequiredMixin, View):
     def post(self, request, pk):
         job = get_object_or_404(JobOrder, pk=pk)

@@ -9,6 +9,8 @@ from .models.uoms import UOM
 from .models.settings import CoreSetting
 from .models.setup import SetupState
 from .models.exchange_rates import ExchangeRate
+from .models.taxes   import Tax
+
 
 
 
@@ -81,3 +83,8 @@ class ExchangeRateAdmin(admin.ModelAdmin):
     list_filter = ("currency", "is_active")
     search_fields = ("currency__code", "source")
     ordering = ("-rate_date", "currency__code")
+
+
+@admin.register(Service)
+class ServiceAdmin(admin.ModelAdmin):
+    filter_horizontal = ("taxes",)  # UI M2M yang enak

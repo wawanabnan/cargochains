@@ -1,0 +1,95 @@
+{% extends "adminbase.html" %}
+{% block content %}
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-title m-0">{% if object %}Edit Numbering{% else %}Add Numbering{% endif %}</h3>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'core:numbering_list' %}">
+          <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+      </div>
+
+      <form method="post" class="m-0">
+        {% csrf_token %}
+        <div class="card-body">
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">App Label</label>
+              {{ form.app_label }}
+              {% for e in form.app_label.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Code</label>
+              {{ form.code }}
+              {% for e in form.code.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Name (optional)</label>
+              {{ form.name }}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Prefix</label>
+              {{ form.prefix }}
+              {% for e in form.prefix.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Format</label>
+              {{ form.format }}
+              <div class="form-text">Var yang boleh: <code>{prefix}</code> <code>{year}</code> <code>{month}</code> <code>{day}</code> <code>{seq}</code></div>
+              {% for e in form.format.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Reset</label>
+              {{ form.reset }}
+              {% for e in form.reset.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Padding</label>
+              {{ form.padding }}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Last Number</label>
+              {{ form.last_number }}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Period Year</label>
+              {{ form.period_year }}
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Period Month</label>
+              {{ form.period_month }}
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Preview</label>
+              {{ form.preview }}
+              <div class="form-text">Preview update otomatis saat open/edit (simulasi seq = last_number+1).</div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <a class="btn btn-outline-secondary btn-sm" href="{% url 'core:numbering_list' %}">Cancel</a>
+          <button class="btn btn-primary btn-sm"><i class="bi bi-save me-1"></i> Save</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

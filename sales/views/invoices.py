@@ -132,6 +132,7 @@ class InvoiceListView(LoginRequiredMixin, ListView):
     template_name = "invoices/list.html"
     context_object_name = "invoices"
     paginate_by = 12
+    ordering = ["-number"]
 
     def get_queryset(self):
         
@@ -139,7 +140,7 @@ class InvoiceListView(LoginRequiredMixin, ListView):
             Invoice.objects
             .all()
             .select_related("customer")   # kalau field customer ada
-            .order_by("-created_at")
+            .order_by("-number")
         )
         return qs
 
@@ -168,19 +169,21 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
         total = sub + tax
         return sub, tax, total
 
-
-
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
 
+        # object dari DetailView (karena context_object_name="invoice")
+        inv = ctx["invoice"]
+
+        # ---------- FORMSET ----------
         if self.request.method == "POST":
             ctx["formset"] = InvoiceLineFormSet(self.request.POST)
-
         else:
             fs = InvoiceLineFormSet()
 
-            if fs.forms:
-                price_key = "price"
+            # ✅ hanya set initial jika ada form DAN ada job
+            if fs.forms and self.job:
+                price_key = "price"  # atau logic unit_price jika masih dipakai
 
                 # basis harga: subtotal (sebelum tax)
                 base_amount = getattr(self.job, "subtotal_amount", None)
@@ -199,21 +202,24 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
                     fs.forms[0].initial["taxes"] = [ppn11.pk]
 
             ctx["formset"] = fs
-            inv = ctx["invoice"]  
-            ctx["mode"] = "from_job"
-            ctx["job_order"] = self.job
-            ctx["can_confirm"] = inv.can_confirm(self.request.user)
-            #ctx["can_confirm"] = self.object.can_confirm(self.request.user)
-            code = (getattr(inv.currency, "code", "") or "").upper()
-            if code == "IDR" or not code:
-                ctx["suggested_rate"] = Decimal("1.0")
-            else:
-                # ambil rate terbaru <= invoice_date
-                rate = get_rate_to_idr(inv.currency, inv.invoice_date)
-                # fallback: pakai rate invoice kalau sudah pernah diisi, lalu 1
-                ctx["suggested_rate"] = rate or inv.exchange_rate or Decimal("1.0")
-                return ctx
-            
+
+        # ---------- CONTEXT ----------
+        ctx["mode"] = "from_job" if inv.job_order_id else "manual"
+        ctx["job_order"] = self.job  # atau inv.job_order kalau mau lebih tegas
+        ctx["can_confirm"] = inv.can_confirm(self.request.user)
+
+        # ---------- SUGGESTED FX RATE ----------
+        code = (getattr(inv.currency, "code", "") or "").upper()
+        if code == "IDR" or not code:
+            ctx["suggested_rate"] = Decimal("1.0")
+        else:
+            rate = get_rate_to_idr(inv.currency, inv.invoice_date)
+            ctx["suggested_rate"] = rate or inv.exchange_rate or Decimal("1.0")
+
+        return ctx
+
+
+
     
 class InvoiceCreateManualView(LoginRequiredMixin, View):
     template_name = "invoices/form.html"
@@ -290,200 +296,7 @@ class InvoiceDeleteView(LoginRequiredMixin, View):
         messages.success(request, "Invoice berhasil dihapus.")
         return redirect("sales:invoice_list")
 
-class InvoiceCreateFromJobOrder2View(LoginRequiredMixin, CreateView):
-    model = Invoice
-    form_class = InvoiceForm
-    template_name = "invoices/form.html"
 
-    def dispatch(self, request, *args, **kwargs):
-        self.job = get_object_or_404(JobOrder, pk=kwargs["job_order_id"])
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_initial(self):
-        job = self.job
-        initial = super().get_initial()
-        initial.update({
-            "job_order": job,
-            "invoice_date": timezone.now().date(),
-            "due_date": timezone.now().date(),
-        })
-        if hasattr(Invoice, "customer") and getattr(job, "customer_id", None):
-            initial["customer"] = job.customer_id
-        return initial
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        if self.request.method == "POST":
-            ctx["formset"] = InvoiceLineFormSet(self.request.POST)
-        else:
-            fs = InvoiceLineFormSet()
-            if fs.forms:
-                price_key = "price"
-
-                # ✅ basis harga: subtotal (sebelum tax), fallback aman
-                base_amount = getattr(self.job, "subtotal_amount", None)
-                if base_amount is None:
-                    base_amount = getattr(self.job, "total_amount", 0) or 0
-
-                fs.forms[0].initial = {
-                    "description": build_invoice_description_from_job(self.job),
-                    "quantity": 1,
-                    price_key: base_amount,  # ✅ FIX: jangan pakai total langsung
-                }
-   
-        ctx["formset"] = fs
-
-        ctx["mode"] = "from_job"
-        ctx["job_order"] = self.job
-        return ctx
-
-
-    @transaction.atomic
-    def form_valid(self, form):
-        ctx = self.get_context_data()
-        formset = ctx["formset"]
-
-        if not formset.is_valid():
-            return self.form_invalid(form)
-
-        inv = form.save(commit=False)
-        inv.job_order = self.job
-
-        if hasattr(inv, "created_by_id") and not getattr(inv, "created_by_id", None):
-            inv.created_by = self.request.user
-        if hasattr(inv, "updated_by_id"):
-            inv.updated_by = self.request.user
-
-        if hasattr(inv, "customer_id") and getattr(self.job, "customer_id", None):
-            inv.customer_id = self.job.customer_id
-
-        inv.save()
-
-        formset.instance = inv
-        formset.save()
-
-        ppn11 = get_ppn_11_tax()
-
-        if ppn11:
-            for ln in inv.lines.all():
-                # ✅ seolah klik checkbox PPN: tambahkan tanpa menghapus tax lain
-                ln.taxes.add(ppn11)
-        else:
-            messages.warning(
-                self.request,
-                "Master Tax PPN 1.1% belum tersedia. Pajak pada invoice line kosong."
-            )
-
-        # ✅ recalc dari line (PPN sudah di line)
-        recalc_invoice_totals(inv)
-
-
-        messages.success(self.request, "Invoice berhasil dibuat dari Job Order.")
-        return redirect("sales:invoice_detail", pk=inv.pk)
-class InvoiceCreateFromJobOrder3View(LoginRequiredMixin, CreateView):
-    model = Invoice
-    form_class = InvoiceForm
-    template_name = "invoices/form.html"
-
-    def dispatch(self, request, *args, **kwargs):
-        self.job = get_object_or_404(JobOrder, pk=kwargs["job_order_id"])
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_initial(self):
-        job = self.job
-        initial = super().get_initial()
-        today = timezone.localdate()
-        initial.update({
-            "job_order": job,
-            "invoice_date": today,
-            "due_date": today,
-        })
-        if hasattr(Invoice, "customer") and getattr(job, "customer_id", None):
-            initial["customer"] = job.customer_id
-        return initial
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-
-        if self.request.method == "POST":
-            ctx["formset"] = InvoiceLineFormSet(self.request.POST)
-        else:
-            fs = InvoiceLineFormSet()
-            if fs.forms:
-                f0 = fs.forms[0]
-                price_key = "price"
-
-                # ✅ basis harga: subtotal (sebelum tax), fallback kalau belum ada
-                base_amount = getattr(self.job, "subtotal_amount", None)
-                if base_amount is None:
-                    base_amount = getattr(self.job, "total_amount", 0) or 0
-
-                f0.initial = {
-                    "description": build_invoice_description_from_job(self.job),
-                    "quantity": 1,
-                    price_key: base_amount,
-                }
-
-                # ✅ pajak: murni dari flag job.is_tax (bukan job.tax_amount)
-                if getattr(self.job, "is_tax", False) and "taxes" in f0.fields:
-                    ppn11 = get_ppn_11_tax()
-                    if ppn11:
-                        # auto-centang checkbox tax (UX)
-                        f0.fields["taxes"].initial = [ppn11]
-                    else:
-                        messages.warning(
-                            self.request,
-                            "Master Tax PPN 1.1% belum tersedia. Pajak pada invoice line kosong."
-                        )
-
-            ctx["formset"] = fs
-
-        ctx["mode"] = "from_job"
-        ctx["job_order"] = self.job
-        return ctx
-
-    @transaction.atomic
-    def form_valid(self, form):
-        ctx = self.get_context_data()
-        formset = ctx["formset"]
-
-        if not formset.is_valid():
-            return self.form_invalid(form)
-
-        inv = form.save(commit=False)
-        inv.job_order = self.job
-
-        if hasattr(inv, "created_by_id") and not getattr(inv, "created_by_id", None):
-            inv.created_by = self.request.user
-        if hasattr(inv, "updated_by_id"):
-            inv.updated_by = self.request.user
-
-        if hasattr(inv, "customer_id") and getattr(self.job, "customer_id", None):
-            inv.customer_id = self.job.customer_id
-
-        inv.save()
-
-        formset.instance = inv
-        formset.save()
-
-        # ✅ fallback: kalau job taxable tapi user/POST tidak mengirim taxes, auto add PPN
-        if getattr(self.job, "is_tax", False):
-            ppn11 = get_ppn_11_tax()
-            if ppn11:
-                for ln in inv.lines.all():
-                    if not ln.taxes.exists():
-                        ln.taxes.add(ppn11)
-            else:
-                messages.warning(
-                    self.request,
-                    "Master Tax PPN 1.1% belum tersedia. Pajak pada invoice line kosong."
-                )
-
-        # ✅ recalc dari line (pajak dihitung dari ln.taxes)
-        recalc_invoice_totals(inv)
-
-        messages.success(self.request, "Invoice berhasil dibuat dari Job Order.")
-        return redirect("sales:invoice_detail", pk=inv.pk)
 
 class InvoiceMarkPaidView(LoginRequiredMixin, View):
     def post(self, request, pk):
@@ -494,59 +307,6 @@ class InvoiceMarkPaidView(LoginRequiredMixin, View):
 
         messages.success(request, "Invoice ditandai PAID.")
         return redirect("sales:invoice_detail", pk=inv.pk)
-
-
-@login_required
-@transaction.atomic
-def generate_invoice_from_job(request, job_order_id):
-    if request.method != "POST":
-        messages.error(request, "Aksi tidak valid.")
-        return redirect("sales:job_order_detail", pk=job_order_id)
-
-    job = get_object_or_404(JobOrder, pk=job_order_id)
-
-    if job.is_invoiced and job.invoices.exists():
-        inv = job.invoices.order_by("-id").first()
-        messages.warning(request, f"Job {job.number} sudah pernah dibuat invoice.")
-        return redirect("sales:invoice_detail", pk=inv.pk)
-
-    inv = Invoice.objects.create(
-        job_order=job,
-        invoice_date=job.job_date,
-        due_date=job.job_date,
-        status=getattr(Invoice, "STATUS_UNPAID", "UNPAID"),
-        subtotal_amount=job.total_amount or 0,
-        tax_amount=job.tax_amount or 0,
-        total_amount=getattr(job, "grand_total", None) or ((job.total_amount or 0) + (job.tax_amount or 0)),
-        notes_customer="",
-        notes_internal=f"Generated from JobOrder {job.number}",
-        customer_id=getattr(job, "customer_id", None),
-    )
-
-    desc_main = (job.cargo_description or "").strip() or f"Job Order {job.number}"
-    desc_route = " / ".join([x for x in [
-        job.pickup.strip() if getattr(job, "pickup", None) else "",
-        job.delivery.strip() if getattr(job, "delivery", None) else "",
-    ] if x])
-    description = desc_main if not desc_route else f"{desc_main}\n{desc_route}"
-
-    line_kwargs = dict(
-        invoice=inv,
-        description=description,
-        quantity=getattr(job, "quantity", None) or 1,
-    )
-    price_field = _line_price_field_name()
-    line_kwargs[price_field] = job.total_amount or 0
-
-    InvoiceLine.objects.create(**line_kwargs)
-
-    job.is_invoiced = True
-    job.save(update_fields=["is_invoiced"])
-
-    recalc_invoice_totals(inv)
-
-    messages.success(request, f"Invoice {inv.number} berhasil dibuat dari Job {job.number}.")
-    return redirect("sales:invoice_detail", pk=inv.pk)
 
 
 class InvoiceChangeStatusView(LoginRequiredMixin, View):
@@ -563,159 +323,6 @@ class InvoiceChangeStatusView(LoginRequiredMixin, View):
         inv.save(update_fields=["status", "updated_by"] if hasattr(inv, "updated_by_id") else ["status"])
 
         return redirect("sales:invoice_detail", pk=inv.pk)
-
-
-class InvoiceMarkPaidView(View):
-    def post(self, request, pk):
-        inv = get_object_or_404(Invoice, pk=pk)
-
-        if not inv.can_mark_paid(request.user):
-            raise PermissionDenied
-
-        inv.status = Invoice.ST_PAID
-        inv.save(update_fields=["status"])
-        return redirect("sales:invoice_detail", pk=inv.pk)
-
-class InvoiceCreateFromJobOrderView(LoginRequiredMixin, CreateView):
-    model = Invoice
-    form_class = InvoiceForm
-    template_name = "invoices/form.html"
-
-    def dispatch(self, request, *args, **kwargs):
-        self.job = get_object_or_404(JobOrder, pk=kwargs["job_order_id"])
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_initial(self):
-        initial = super().get_initial()
-        today = timezone.localdate()
-        initial.update({
-            "job_order": self.job,
-            "invoice_date": today,
-            "due_date": today,
-        })
-        if hasattr(Invoice, "customer") and getattr(self.job, "customer_id", None):
-            initial["customer"] = self.job.customer_id
-        return initial
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-
-        if self.request.method == "POST":
-            ctx["formset"] = InvoiceLineFormSet(self.request.POST)
-        else:
-            fs = InvoiceLineFormSet()
-            if fs.forms:
-                f0 = fs.forms[0]
-                price_key = "price"
-
-                # ✅ basis harga: subtotal job (sebelum tax)
-                base_amount = getattr(self.job, "subtotal_amount", None)
-                if base_amount is None:
-                    base_amount = getattr(self.job, "total_amount", 0) or 0
-
-                f0.initial = {
-                    "description": build_invoice_description_from_job(self.job),
-                    "quantity": 1,
-                    price_key: base_amount,
-                }
-
-                # ✅ UX: kalau job taxable, centang tax di UI (master id=2)
-                if getattr(self.job, "is_tax", False) and "taxes" in f0.fields:
-                    try:
-                        ppn = Tax.objects.get(pk=2)
-                        f0.fields["taxes"].initial = [ppn]
-                    except Tax.DoesNotExist:
-                        messages.warning(self.request, "Master Tax PPN (id=2) tidak ditemukan.")
-
-            ctx["formset"] = fs
-
-        ctx["mode"] = "from_job"
-        ctx["job_order"] = self.job
-        return ctx
-
-    @transaction.atomic
-    def form_valid(self, form):
-        ctx = self.get_context_data()
-        formset = ctx["formset"]
-
-        if not formset.is_valid():
-            return self.form_invalid(form)
-
-        # 1) Save header
-        inv = form.save(commit=False)
-        inv.job_order = self.job
-
-        if hasattr(inv, "created_by_id") and not getattr(inv, "created_by_id", None):
-            inv.created_by = self.request.user
-        if hasattr(inv, "updated_by_id"):
-            inv.updated_by = self.request.user
-        if hasattr(inv, "customer_id") and getattr(self.job, "customer_id", None):
-            inv.customer_id = self.job.customer_id
-
-        inv.save()
-
-        # 2) Save lines
-        formset.instance = inv
-        lines = formset.save(commit=False)
-        for ln in lines:
-            # pastikan FK ke invoice benar (umumnya invoice)
-            if hasattr(ln, "invoice_id"):
-                ln.invoice_id = inv.pk
-            ln.save()
-
-        for obj in formset.deleted_objects:
-            obj.delete()
-
-        # simpan m2m lain dari formset (kalau ada)
-        formset.save_m2m()
-
-        # =========================================================
-        # 3) ✅ PAKSA: setiap line punya tax id=2 (tulis langsung through table)
-        # =========================================================
-        if getattr(self.job, "is_tax", False):
-            sample = inv.lines.first()
-            if not sample or not hasattr(sample, "taxes"):
-                messages.warning(self.request, "InvoiceLine tidak punya field M2M 'taxes'.")
-                return redirect("sales:invoice_detail", pk=inv.pk)
-
-            TaxModel = sample.taxes.model
-            Through = sample.taxes.through  # tabel M2M
-
-            # cari field FK ke InvoiceLine & ke TaxModel pada through model
-            line_fk_name = None
-            tax_fk_name = None
-            for f in Through._meta.fields:
-                # ForeignKey ke line model
-                if getattr(f, "remote_field", None) and f.remote_field and f.remote_field.model == sample.__class__:
-                    line_fk_name = f.name
-                # ForeignKey ke tax model
-                if getattr(f, "remote_field", None) and f.remote_field and f.remote_field.model == TaxModel:
-                    tax_fk_name = f.name
-
-            if not line_fk_name or not tax_fk_name:
-                messages.warning(self.request, "Through table taxes tidak standard (FK tidak terdeteksi).")
-                return redirect("sales:invoice_detail", pk=inv.pk)
-
-            try:
-                ppn = TaxModel.objects.get(pk=2)
-            except TaxModel.DoesNotExist:
-                messages.warning(self.request, "Master Tax id=2 tidak ditemukan.")
-                return redirect("sales:invoice_detail", pk=inv.pk)
-
-            line_ids = list(inv.lines.values_list("id", flat=True))
-            if line_ids:
-                # hapus dulu relasi tax lama (biar benar-benar pasti)
-                Through.objects.filter(**{f"{line_fk_name}__in": line_ids}).delete()
-
-                # insert relasi tax id=2 untuk semua line
-                objs = [Through(**{line_fk_name: ln_id, tax_fk_name: ppn.pk}) for ln_id in line_ids]
-                Through.objects.bulk_create(objs)
-
-        # =========================================================
-
-        messages.success(self.request, "Invoice berhasil dibuat dari Job Order.")
-        return redirect("sales:invoice_detail", pk=inv.pk)
-
 
 
 class InvoiceUpdateView(LoginRequiredMixin, View):
@@ -767,47 +374,6 @@ def get_int_setting(code: str, default: int = 0) -> int:
         return default
     return int(row.int_value or 0)
 
-
-class InvoiceConfirmView2(View):
-    def post(self, request, pk):
-        inv = get_object_or_404(Invoice, pk=pk)
-
-        if not inv.can_confirm(request.user):
-            raise PermissionDenied
-
-        if inv.journal_id:
-            messages.info(request, f"Invoice {inv.number} sudah memiliki journal {inv.journal.number}.")
-            return redirect("sales:invoice_detail", pk=inv.pk)
-
-        auto_post = bool(get_int_setting("AUTO_POST_SALES_INVOICE", default=0))
-
-        try:
-            with transaction.atomic():
-                # confirm status
-                inv.status = Invoice.ST_SENT
-                inv.recalc_total_idr()
-                inv.save(update_fields=["status", "exchange_rate", "total_idr"])
-
-                # auto post journal?
-                if auto_post:
-                    journal = create_journal_from_invoice(inv)
-                    messages.success(
-                        request,
-                        f"Invoice {inv.number} berhasil dikonfirmasi dan journal {journal.number} telah dibuat."
-                    )
-                else:
-                    messages.success(
-                        request,
-                        f"Invoice {inv.number} berhasil dikonfirmasi. (Auto Post Sales Invoice: OFF)"
-                    )
-
-            return redirect("sales:invoice_detail", pk=inv.pk)
-
-        except ValidationError as e:
-            # rollback otomatis karena atomic()
-            msg = " ".join(getattr(e, "messages", [])) or str(e)
-            messages.error(request, msg)
-            return redirect("sales:invoice_detail", pk=inv.pk)
 
 class InvoiceConfirmView(View):
     def post(self, request, pk):

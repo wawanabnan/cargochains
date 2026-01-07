@@ -1,0 +1,193 @@
+{% extends "adminbase.html" %}
+{% block content %}
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-title m-0">Company</h3>
+        <a class="btn btn-outline-secondary btn-sm" href="javascript:history.back()">
+          <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" class="m-0">
+        {% csrf_token %}
+
+        <div class="card-body">
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-3">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="row g-3">
+
+            <!-- LEFT -->
+            <div class="col-lg-8">
+
+              <!-- Identity -->
+              <div class="border rounded p-3 mb-3">
+                <div class="fw-semibold mb-2">Identity</div>
+                <div class="row g-3">
+                  <div class="col-md-8">
+                    <label class="form-label">Company Name</label>
+                    {{ form.name }}
+                    {% for e in form.name.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Brand</label>
+                    {{ form.brand }}
+                    {% for e in form.brand.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label">Phone</label>
+                    {{ form.phone }}
+                    {% for e in form.phone.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Email</label>
+                    {{ form.email }}
+                    {% for e in form.email.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Website</label>
+                    {{ form.website }}
+                    {% for e in form.website.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Address -->
+              <div class="border rounded p-3 mb-3">
+                <div class="fw-semibold mb-2">Address</div>
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label">Address 1</label>
+                    {{ form.address_1 }}
+                    {% for e in form.address_1.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Address 2</label>
+                    {{ form.address_2 }}
+                    {% for e in form.address_2.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label">Country</label>
+                    {{ form.country }}
+                    {% for e in form.country.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Province</label>
+                    {{ form.province }}
+                    {% for e in form.province.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Regency</label>
+                    {{ form.regency }}
+                    {% for e in form.regency.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label">District</label>
+                    {{ form.district }}
+                    {% for e in form.district.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Postal Code</label>
+                    {{ form.postal_code }}
+                    {% for e in form.postal_code.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Finance & Compliance -->
+              <div class="border rounded p-3">
+                <div class="fw-semibold mb-2">Finance & Compliance</div>
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Default Currency</label>
+                    {{ form.default_currency }}
+                    {% for e in form.default_currency.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label">NPWP</label>
+                    {{ form.npwp }}
+                    {% for e in form.npwp.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                    <div class="form-check mt-2">
+                      {{ form.is_pkp }}
+                      <label class="form-check-label">PKP</label>
+                    </div>
+                    {% for e in form.is_pkp.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="fw-semibold mb-2">Features</div>
+
+                    <div class="form-check">
+                      {{ form.enable_multi_currency }}
+                      <label class="form-check-label">Enable Multi Currency</label>
+                    </div>
+                    <div class="form-check">
+                      {{ form.enable_tax }}
+                      <label class="form-check-label">Enable Tax</label>
+                    </div>
+                    <div class="form-check">
+                      {{ form.enable_job_cost }}
+                      <label class="form-check-label">Enable Job Cost</label>
+                    </div>
+                    <div class="form-check">
+                      {{ form.enable_auto_journal }}
+                      <label class="form-check-label">Enable Auto Journal</label>
+                    </div>
+                    <div class="form-check mt-2">
+                      {{ form.is_default }}
+                      <label class="form-check-label">Set as Default Company</label>
+                    </div>
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label">Footer Text</label>
+                    {{ form.footer_text }}
+                    {% for e in form.footer_text.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- RIGHT -->
+            <div class="col-lg-4">
+              <div class="border rounded p-3 bg-body-tertiary">
+                <div class="fw-semibold mb-2">Logo</div>
+
+                <label class="form-label">Upload Logo</label>
+                {{ form.logo }}
+                {% for e in form.logo.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+
+                {% if object.logo %}
+                  <div class="mt-3">
+                    <div class="text-muted small mb-1">Current Logo</div>
+                    <img src="{{ object.logo.url }}" alt="logo"
+                         class="bg-white border rounded p-2"
+                         style="max-width: 100%; max-height: 160px;">
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <button class="btn btn-primary btn-sm">
+            <i class="bi bi-save me-1"></i> Save
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
