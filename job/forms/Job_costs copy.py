@@ -4,8 +4,6 @@ from django.forms import inlineformset_factory
 
 from job.models.costs import JobCost, JobCostType
 from job.models.job_orders import JobOrder
-from core.models.currencies import Currency
-from decimal import Decimal, ROUND_HALF_UP
 
 
 # ==============================
@@ -59,12 +57,7 @@ class JobCostForm(forms.ModelForm):
     est_amount = forms.CharField(required=False, label="Est Amount")
     actual_amount = forms.CharField(required=False, label="Actual Amount")
 
-    #qty = forms.CharField(required=False, label="Qty", initial="1,00")
-    qty = forms.CharField(required=False)
-
-
     class Meta:
-        
         model = JobCost
         fields = [
             "cost_type",
@@ -87,36 +80,19 @@ class JobCostForm(forms.ModelForm):
             "internal_note": forms.TextInput(
                 attrs={"class": "form-control form-control-sm", "placeholder": "Non-vendor text / internal note"}
             ),
-            
         }
-
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # =========================
         # REQUIRED / OPTIONAL (SAFE)
         # =========================
-        for nm in ["cost_type", "description",  "est_amount"]:
+        for nm in ["cost_type", "description", "vendor", "est_amount"]:
             if nm in self.fields:
                 self.fields[nm].required = True
 
         if "internal_note" in self.fields:
             self.fields["internal_note"].required = False
-
-
-        # vendor/internal_note jangan dipaksa di level field
-        if "vendor" in self.fields:
-            self.fields["vendor"].required = False
-        if "internal_note" in self.fields:
-            self.fields["internal_note"].required = False
-
-        if "est_amount" in self.fields:
-            self.fields["est_amount"].required = False
-            # buang atribut required kalau sempat kebawa
-            self.fields["est_amount"].widget.attrs.pop("required", None)
-            # readonly agar user tidak edit manual
-            self.fields["est_amount"].widget.attrs["readonly"] = "readonly"
 
         # =========================
         # cost_type queryset + empty label
@@ -168,20 +144,6 @@ class JobCostForm(forms.ModelForm):
                 "autocomplete": "off",
             })
 
-        
-        # =========================
-        # DEFAULT currency = IDR (row baru saja)
-        # =========================
-        if "currency" in self.fields:
-            self.fields["currency"].queryset = Currency.objects.all().order_by("code")
-
-            # hanya untuk row BARU (bukan edit existing)
-            if not (self.instance and self.instance.pk):
-                idr = Currency.objects.filter(code__iexact="IDR").first()
-                if idr:
-                    self.initial.setdefault("currency", idr.pk)
-
-        
         # =========================
         # est_amount / actual_amount
         # =========================
@@ -199,70 +161,7 @@ class JobCostForm(forms.ModelForm):
                 "placeholder": "Actual Amount",
                 "inputmode": "decimal",
                 "autocomplete": "off",
-        })
-            
-        if "est_amount" in self.fields:
-            self.fields["est_amount"].widget.attrs.update({
-            "readonly": "readonly",
-        })
-        # =========================
-        # qty / price / currency / rate
-        # =========================
-        if "qtyyyy" in self.fields:
-            self.fields["qty"].widget.attrs.update({
-                "class": "form-control form-control-sm text-end",
-                "inputmode": "decimal",
-                "autocomplete": "off",
             })
-
-
-        if "qty" in self.fields:
-            self.fields["qty"].widget = forms.TextInput(attrs={
-                "class": "form-control form-control-sm text-end js-money",
-                "inputmode": "decimal",
-                "autocomplete": "off",
-            })
-
-            # edit mode: tampilkan 2 desimal Indo
-            if self.instance and self.instance.pk and self.instance.qty is not None:
-                self.initial["qty"] = fmt_idr(self.instance.qty)
-            else:
-                self.initial.setdefault("qty", "1,00")
-
-
-        if "price" in self.fields:
-            self.fields["price"].widget.attrs.update({
-                "class": "form-control form-control-sm text-end js-money",
-                "placeholder": "Unit Price",
-                "inputmode": "decimal",
-                "autocomplete": "off",
-            })
-
-        if "currency" in self.fields:
-            self.fields["currency"].queryset = Currency.objects.all().order_by("code")
-            self.fields["currency"].widget.attrs.update({
-                "class": "form-select form-select-sm",
-            })
-
-        if "rate" in self.fields:
-            self.fields["rate"].widget.attrs.update({
-                "class": "form-control form-control-sm text-end js-money",
-                "placeholder": "Rate",
-                "inputmode": "decimal",
-                "autocomplete": "off",
-        })
-
-
-        # initial formatted values (edit mode)
-        if self.instance and self.instance.pk:
-            if "qty" in self.fields:
-                self.initial["qty"] = self.instance.qty
-            if "price" in self.fields:
-                self.initial["price"] = fmt_idr(getattr(self.instance, "price", None))
-            if "rate" in self.fields:
-                self.initial["rate"] = fmt_idr(getattr(self.instance, "rate", None))
-
-
 
         # =========================
         # initial formatted values (edit mode only)
@@ -280,15 +179,6 @@ class JobCostForm(forms.ModelForm):
 
     def clean_actual_amount(self):
         return parse_money(self.cleaned_data.get("actual_amount"))
-    
-    def clean_price(self):
-        return parse_money(self.cleaned_data.get("price"))
-
-    def clean_rate(self):
-        v = parse_money(self.cleaned_data.get("rate"))
-        return v if v > 0 else Decimal("1")
-
-
 
     def clean_backup(self):
         cleaned = super().clean()
@@ -311,15 +201,8 @@ class JobCostForm(forms.ModelForm):
         if not cost_type:
             errors["cost_type"] = "Cost Type wajib dipilih."
 
-        #if not vendor and not note:
-        #    errors["internal_note"] = "Jika Vendor kosong, wajib isi keterangan (non-vendor)."
-
-        requires_vendor = bool(getattr(cost_type, "requires_vendor", True))
-
-        if requires_vendor and not vendor:
-            self.add_error("vendor", "Vendor wajib diisi untuk cost type ini.")
-
-
+        if not vendor and not note:
+            errors["internal_note"] = "Jika Vendor kosong, wajib isi keterangan (non-vendor)."
 
         if est <= 0 and act <= 0:
             errors["est_amount"] = "Est Amount wajib diisi (minimal > 0)."
@@ -328,7 +211,6 @@ class JobCostForm(forms.ModelForm):
             raise forms.ValidationError(errors)
 
         return cleaned
-       
 
     def clean(self):
         cleaned = super().clean()
@@ -338,65 +220,23 @@ class JobCostForm(forms.ModelForm):
 
         cost_type = cleaned.get("cost_type")
         vendor = cleaned.get("vendor")
+        est = cleaned.get("est_amount")
+        act = cleaned.get("actual_amount")
 
         # cost_type wajib
         if not cost_type:
             self.add_error("cost_type", "Wajib pilih cost type.")
-            return cleaned  # stop, karena rule lain tergantung cost_type
 
-        # =========================
-        # Parse Decimal aman
-        # =========================
-        qty = cleaned.get("qty") or 0
-        qty = parse_money(qty)  or Decimal("0")
-        
-        if qty is None:
-            qty = Decimal("0")
-
-        if qty <= Decimal("0"):
-            self.add_error("qty", "Qty harus > 0.")    
-
-        price = cleaned.get("price")
-        if not isinstance(price, Decimal):
-            price = parse_money(price)
-
-        rate = cleaned.get("rate")
-        if not isinstance(rate, Decimal):
-            rate = parse_money(rate)
-
-        # =========================
-        # VALIDASI INPUT DASAR
-        # =========================
-        if qty <= Decimal("0"):
-            self.add_error("qty", "Qty harus > 0.")
-
-        if price <= Decimal("0"):
-            self.add_error("price", "Price harus > 0.")
-
-        if rate is None or rate <= Decimal("0"):
-            self.add_error("rate", "Rate harus > 0.")
-            rate = Decimal("0")  # biar amount jadi 0 dan est_amount gagal juga
-
-        # =========================
-        # Vendor rule (INI YANG HILANG)
-        # =========================
-        requires_vendor = bool(getattr(cost_type, "requires_vendor", True))
-        if requires_vendor and not vendor:
-            self.add_error("vendor", "Vendor wajib diisi untuk cost type ini.")
-
-        # =========================
-        # AUTO CALC est_amount
-        # =========================
-        amount = qty * price * rate
-        amount = amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        cleaned["est_amount"] = amount
-
-        # est_amount wajib > 0
-        if amount <= Decimal("0"):
+      
+        # est_amount wajib dan > 0
+        # (kalau est bisa None karena field Char->Decimal, aman)
+        est_val = est if isinstance(est, Decimal) else (Decimal("0") if not est else Decimal(str(est)))
+        if est is None or est_val <= Decimal("0"):
             self.add_error("est_amount", "Estimasi wajib diisi (minimal > 0).")
 
+        # internal_note optional -> tidak divalidasi
+
         return cleaned
-    
 
 JobCostFormSet = inlineformset_factory(
     JobOrder,

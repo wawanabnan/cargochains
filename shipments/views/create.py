@@ -3,9 +3,9 @@ from django.urls import reverse
 from django.shortcuts import redirect
 from django.views.generic import CreateView
 
-from shipments.models import Shipment
+from shipments.models.shipments import Shipment
 from shipments.forms.shipment_create import ShipmentCreateForm
-from core.utils import get_next_number
+from core.utils.numbering import get_next_number
 from partners.models import PartnerRole, PartnerRoleTypes
 
 

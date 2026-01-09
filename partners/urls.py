@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from .views import partners
 from django.contrib.auth.decorators import login_required   # ← ini yang wajib ada
 from django.urls import path, reverse_lazy
 from django.urls import path
@@ -7,7 +7,7 @@ from django.urls import path
 #from .views import PartnerQuickCreateView
 
 
-from .views import (
+from .views.partners import (
     PartnerListView,
     PartnerCreateView,
     PartnerUpdateView,

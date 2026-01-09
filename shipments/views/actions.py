@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404, redirect,render
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from shipments.models import Shipment,ShipmentAttachment
+from shipments.models.shipments import Shipment,ShipmentAttachment
 from shipments.services.transitions import confirm_shipment, book_shipment
 from shipments.forms.shipment_parties import ShipmentPartiesForm
 

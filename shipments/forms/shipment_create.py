@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from shipments.models import Shipment
+from shipments.models.shipments import Shipment
 
 
 class ShipmentCreateForm(forms.ModelForm):

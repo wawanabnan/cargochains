@@ -1,7 +1,7 @@
 # shipments/forms/routes.py
 from django import forms
 from django.db.models import Max
-from shipments.models import ShipmentRoute, TransportationAsset
+from shipments.models.shipments import ShipmentRoute, TransportationAsset
 
 
 # ✅ 1️⃣ Tambahkan ini SEBELUM ShipmentRouteForm

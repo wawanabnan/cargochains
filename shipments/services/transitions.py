@@ -2,7 +2,7 @@
 from django.utils import timezone
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from shipments.models import Shipment
+from shipments.models.shipments import Shipment
 
 @transaction.atomic
 def confirm_shipment(shipment: Shipment, *, user):

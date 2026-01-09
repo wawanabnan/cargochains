@@ -23,6 +23,23 @@
           <a class="btn btn-primary btn-sm" href="{% url 'core:exchange_rate_add' %}">
             <i class="bi bi-plus-lg me-1"></i> Add
           </a>
+       
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btn-pull-bi">
+  Ambil Kurs BI Hari Ini
+</button>
+{% if row.pk %}
+  {% if row.is_active %}
+    <span class="badge bg-success">Active</span>
+  {% else %}
+    <form method="post" action="{% url 'core:exchange_rate_activate' row.pk %}" class="d-inline">
+      {% csrf_token %}
+      <button class="btn btn-sm btn-success">Activate</button>
+    </form>
+  {% endif %}
+{% endif %}
+
+
+
         </div>
       </div>
 
@@ -58,16 +75,38 @@
                     <span class="badge text-bg-secondary">No</span>
                   {% endif %}
                 </td>
-                <td class="text-end">
-                  <a class="btn btn-outline-primary btn-sm py-0 px-2"
-                     href="{% url 'core:exchange_rate_edit' r.pk %}">
-                    <i class="bi bi-pencil-square"></i>
-                  </a>
-                  <a class="btn btn-outline-danger btn-sm py-0 px-2"
-                     href="{% url 'core:exchange_rate_delete' r.pk %}">
-                    <i class="bi bi-trash"></i>
-                  </a>
-                </td>
+                 <td class="text-end">
+  <div class="d-inline-flex align-items-center gap-1">
+
+    <a class="btn btn-outline-primary btn-sm py-0 px-2"
+       href="{% url 'core:exchange_rate_edit' r.pk %}">
+      <i class="bi bi-pencil-square"></i>
+    </a>
+
+    <a class="btn btn-outline-danger btn-sm py-0 px-2"
+       href="{% url 'core:exchange_rate_delete' r.pk %}">
+      <i class="bi bi-trash"></i>
+    </a>
+
+    {% if r.is_active %}
+      <span class="badge bg-success">Active</span>
+    {% else %}
+      <form method="post"
+            action="{% url 'core:exchange_rate_activate' pk=r.pk %}"
+            class="m-0">
+        {% csrf_token %}
+        <button class="btn btn-success btn-sm py-0 px-2">
+          Activate
+        </button>
+      </form>
+    {% endif %}
+
+  </div>
+</td>
+ 
+
+
+
               </tr>
               {% empty %}
               <tr><td colspan="6" class="text-center text-muted py-4">No data</td></tr>
@@ -86,4 +125,44 @@
 
   </div>
 </div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+(function () {
+  const btn = document.getElementById("btn-pull-bi");
+  if (!btn) return;
+
+  btn.addEventListener("click", async function () {
+    if (!confirm("Ambil kurs BI hari ini?")) return;
+
+    const csrf = document.querySelector("[name=csrfmiddlewaretoken]")?.value;
+
+    btn.disabled = true;
+    try {
+      const res = await fetch("/api/exchange-rate/pull-bi/", {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRFToken": csrf || "",
+        },
+        credentials: "same-origin",
+      });
+
+      const data = await res.json();
+      if (data.ok) {
+        alert(`OK ✅ BI pulled: ${data.codes.join(", ")}`);
+        window.location.reload(); // balik ke list & refresh data
+      } else {
+        alert("Gagal: " + (data.error || "unknown"));
+      }
+    } catch (e) {
+      alert("Error: " + e);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
 {% endblock %}

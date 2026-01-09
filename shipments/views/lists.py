@@ -3,7 +3,7 @@ from datetime import datetime
 from urllib.parse import urlencode
 from django.db.models import Q
 from django.views.generic import ListView
-from ..models import Shipment
+from ..models.shipments import Shipment
 
 def _parse_date(s: str):
     s = (s or "").strip()

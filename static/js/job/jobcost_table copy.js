@@ -10,12 +10,72 @@
     return isNaN(n) ? 0 : n;
   }
 
+  function pick(row, prefix, suffix) {
+    return (
+      row.querySelector(`input[name^="${prefix}-"][name$="-${suffix}"]`) ||
+      row.querySelector(`input[name$="-${suffix}"]`)
+    );
+  }
+
+  function calcAmount2(row, prefix) {
+    const qtyEl = pick(row, prefix, "qty");
+    const priceEl = pick(row, prefix, "price");
+    const rateEl = pick(row, prefix, "rate");
+    const estEl = pick(row, prefix, "est_amount");
+
+    if (!qtyEl || !priceEl || !rateEl || !estEl) return;
+
+    const qty = parseID(qtyEl.value);
+    const price = parseID(priceEl.value);
+    const rate = parseID(rateEl.value) || 1;
+
+    const amount = qty * price * rate;
+
+
+    estEl.value = fmtID(amount);
+    estEl.dispatchEvent(new Event("change", { bubbles: true }));
+    if (estEl) {
+      estEl.value = fmtID(amount);
+
+      // ✅ bersihkan merah kalau sudah valid
+      if (amount > 0) estEl.classList.remove("is-invalid");
+    }
+
+  }
+
+  function calcAmount(row) {
+    const qtyEl   = row.querySelector('input[name$="-qty"]');
+    const priceEl = row.querySelector('input[name$="-price"]');
+    const rateEl  = row.querySelector('input[name$="-rate"]');
+    const estEl   = row.querySelector('input[name$="-est_amount"]');
+
+    if (!qtyEl || !priceEl || !rateEl || !estEl) return;
+
+    const qty   = parseID(qtyEl.value);      // aman untuk "1.00" dan "1,00"
+    const price = parseID(priceEl.value);    // "10.000,00"
+    const rate  = parseID(rateEl.value);     // "1,00"
+
+    const amount = qty * price * rate;
+    estEl.value = fmtID(amount);
+
+    // bersihkan merah kalau sudah valid
+    if (amount > 0) estEl.classList.remove("is-invalid");
+
+    updateEstimatedTotal();  // <--- penting
+  }
+
+
+
+
   function fmtID(n) {
     return Number(n || 0).toLocaleString("id-ID", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
   }
+
+
+  
 
   function detectPrefix() {
     const el = document.querySelector('input[id^="id_"][id$="-TOTAL_FORMS"]');
@@ -93,6 +153,9 @@
     format();
   }
 
+
+
+
   // ---------- attach row handlers ----------
   function attachRow(row, prefix) {
     const est = row.querySelector(`input[name^="${prefix}-"][name$="-est_amount"]`);
@@ -100,6 +163,9 @@
 
     bindMoneyInput(est);
     bindMoneyInput(act);
+
+    const qty = row.querySelector('input[name$="-qty"]');
+    bindQtyInput(qty);
 
     // delete (soft delete via formset DELETE)
     const btn = row.querySelector(".remove-row");
@@ -113,7 +179,43 @@
         del.checked = true;
         row.classList.add("d-none");
       });
+
+      const estEl = row.querySelector(`input[name^="${prefix}-"][name$="-est_amount"]`) || row.querySelector(`input[name$="-est_amount"]`);
+      if (estEl && parseID(estEl.value) > 0) {
+        estEl.classList.remove("is-invalid");
+      }
+      
+
     }
+
+
+    //Exchange Rate
+    
+
+
+    // ===== qty / price / rate (suffix-based, no double const) =====
+    const qtyEl   = row.querySelector('input[name$="-qty"]');
+    const priceEl = row.querySelector('input[name$="-price"]');
+    const rateEl  = row.querySelector('input[name$="-rate"]');
+
+    bindQtyInput(qtyEl);
+    bindMoneyInput(priceEl);
+    bindMoneyInput(rateEl);
+
+    // realtime calc + mark touched
+    [qtyEl, priceEl, rateEl].forEach((el) => {
+      if (!el || el.dataset.calcInit) return;
+      el.dataset.calcInit = "1";
+
+      el.addEventListener("input", function () {
+        markTouched();
+        calcAmount(row); // <-- pakai versi calcAmount tanpa prefix
+      });
+    });
+
+    // initial calc
+    calcAmount(row);
+
 
     applyCostTypeMode(row, prefix);
 
@@ -145,16 +247,30 @@
     tbody.appendChild(row);
     totalForms.value = idx + 1;
 
-    // ✅ jangan auto isi 0,00: biar dianggap kosong jika user belum input
+    // ✅ IMPORTANT:
+    // Paksa numeric default "0,00" agar Django menganggap form "changed"
+    // sehingga saat SAVE tanpa isi, formset tetap divalidasi dan row tidak hilang.
     const est = row.querySelector(`input[name="${prefix}-${idx}-est_amount"]`);
     const act = row.querySelector(`input[name="${prefix}-${idx}-actual_amount"]`);
-    if (est) est.value = "";
-    if (act) act.value = "";
+    if (est) est.value = "0,00";
+    if (act) act.value = "0,00";
 
     const ct = row.querySelector(`select[name="${prefix}-${idx}-cost_type"]`);
     if (ct) ct.value = "";
 
+    // ✅ default baru: qty=1,00 price=0,00 rate=1,00
+    const qty = row.querySelector(`input[name="${prefix}-${idx}-qty"]`);
+    const price = row.querySelector(`input[name="${prefix}-${idx}-price"]`);
+    const rate = row.querySelector(`input[name="${prefix}-${idx}-rate"]`);
+
+    if (qty) qty.value = "1.00";        // input type=number -> pakai dot
+    if (price) price.value = "0,00";    // money input -> format ID
+    if (rate) rate.value = "1,00";      // money input -> format ID
+
+
     attachRow(row, prefix);
+    calcAmount(row, prefix);
+
   }
 
   // ======================================================
@@ -208,6 +324,36 @@
       },
       true
     );
+  }
+
+  function bindQtyInput(el) {
+    if (!el || el.dataset.qtyInit) return;
+    el.dataset.qtyInit = "1";
+
+    el.addEventListener("blur", function () {
+      const n = parseID(el.value);
+      el.value = fmtID(n);          // hasil: "2,00"
+    });
+  }
+
+
+  function updateEstimatedTotal(prefix) {
+    const out = document.getElementById("jobcost-est-total");
+    if (!out) return;
+
+    let total = 0;
+
+    document.querySelectorAll("#jobcost-body tr.jobcost-row").forEach((row) => {
+      const del = row.querySelector('input[name$="-DELETE"]');
+      if (del && del.checked) return;
+
+      const est = row.querySelector(`input[name^="${prefix}-"][name$="-est_amount"]`)
+              || row.querySelector('input[name$="-est_amount"]');
+
+      total += parseID(est ? est.value : 0);
+    });
+
+    out.textContent = fmtID(total);
   }
 
   // initial load

@@ -19,10 +19,10 @@ class NumberSequenceForm(forms.ModelForm):
             "last_number", "period_year", "period_month",
         ]
         widgets = {
-            "app_label": forms.TextInput(attrs={"class": "form-control", "placeholder": "sales / shipments"}),
-            "code": forms.TextInput(attrs={"class": "form-control", "placeholder": "INVOICE / FREIGHT_ORDER"}),
-            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Invoice Number"}),
-            "prefix": forms.TextInput(attrs={"class": "form-control", "placeholder": "INV"}),
+            "app_label": forms.TextInput(attrs={"class": "form-control", "placeholder": ""}),
+            "code": forms.TextInput(attrs={"class": "form-control", "placeholder": ""}),
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": ""}),
+            "prefix": forms.TextInput(attrs={"class": "form-control", "placeholder": ""}),
             "format": forms.TextInput(attrs={"class": "form-control"}),
             "padding": forms.NumberInput(attrs={"class": "form-control", "min": "1"}),
 

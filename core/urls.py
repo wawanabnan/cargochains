@@ -38,7 +38,6 @@ from core.views.settings_home import SettingsHomeView
 from core.views.company import CompanyUpdateView
 
 
-
 app_name = "core"
 
 urlpatterns = [
@@ -87,6 +86,7 @@ from core.views.uoms import (
 )
 
 from core.views.sales_config import SalesConfigView
+
 
 urlpatterns += [
     path(
@@ -147,4 +147,18 @@ urlpatterns += [
     path("settings/payment-terms/<int:pk>/edit/", PaymentTermUpdateView.as_view(), name="payment_term_edit"),
     path("settings/payment-terms/<int:pk>/delete/", PaymentTermDeleteView.as_view(), name="payment_term_delete"),
     path("settings/payment-terms/<int:pk>/default/", PaymentTermSetDefaultView.as_view(), name="payment_term_set_default"),
+]
+
+from core.views.exchange_rates import (
+    ExchangeRateLatestAPI,
+    PullBIExchangeRateView,
+    ExchangeRateActivateView
+
+)
+
+urlpatterns += [
+    path("api/exchange-rate/latest/", ExchangeRateLatestAPI.as_view(), name="exchange_rate_latest_api"),
+    path("api/exchange-rate/pull-bi/", PullBIExchangeRateView.as_view(), name="exchange_rate_pull_bi"),
+    path("exchange-rates/<int:pk>/activate/", ExchangeRateActivateView.as_view(), name="exchange_rate_activate"),
+
 ]

@@ -1,6 +1,6 @@
 # shipments/forms.py
 from django import forms
-from shipments.models import Shipment
+from shipments.models.shipments import Shipment
 from partners.models import Partner
 
 class ShipmentPartiesForm(forms.ModelForm):

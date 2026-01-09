@@ -4,7 +4,7 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from django.db.models import Max
 from django.views.decorators.http import require_POST
 
-from shipments.models import Shipment, ShipmentRoute
+from shipments.models.shipments import Shipment, ShipmentRoute
 from shipments.forms.routes import ShipmentRouteForm
 
 TEMPLATE_PARTIAL = "shipments/_routes_form.html"

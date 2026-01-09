@@ -51,8 +51,8 @@ class NumberSequenceListView(LoginRequiredMixin, ListView):
 class NumberSequenceCreateView(LoginRequiredMixin, CreateView):
     model = NumberSequence
     form_class = NumberSequenceForm
-    template_name = "core/settings/numbering_form.html"
-    success_url = reverse_lazy("core:settings_numbering_list")
+    template_name = "number_sequences/form.html"
+    success_url = reverse_lazy("core:numbering_list")
 
     def get_initial(self):
         initial = super().get_initial()
@@ -68,7 +68,7 @@ class NumberSequenceUpdateView(LoginRequiredMixin, UpdateView):
     model = NumberSequence
     form_class = NumberSequenceForm
     template_name = "number_sequences/form.html"
-    success_url = reverse_lazy("core:settings_numbering_list")
+    success_url = reverse_lazy("core:numbering_list")
 
     def get_initial(self):
         initial = super().get_initial()
@@ -83,7 +83,7 @@ class NumberSequenceUpdateView(LoginRequiredMixin, UpdateView):
 class NumberSequenceDeleteView(LoginRequiredMixin, DeleteView):
     model = NumberSequence
     template_name = "number_sequences/confirm_delete.html"
-    success_url = reverse_lazy("core:settings_numbering_list")
+    success_url = reverse_lazy("core:numbering_list")
 
     def delete(self, request, *args, **kwargs):
         messages.success(self.request, "Number sequence berhasil dihapus.")

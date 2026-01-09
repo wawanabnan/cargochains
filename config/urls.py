@@ -27,6 +27,9 @@ urlpatterns = [
 
     # core (welcome + setup wizard)
     path("", include(("core.urls", "core"), namespace="core")),
+    path("", include(("shipments.urls", "shipmenst"), namespace="shipments")),
+
+
 
     # account (login/logout/dashboard)
     path("account/", include("account.urls", namespace="account")),

@@ -3,7 +3,7 @@ from django.http import Http404
 from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import redirect
 from django.urls import reverse
-from .models import Partner
+from ..models import Partner
 
 # Dekorator: pakai admin login + next
 def staff_required(viewfunc):

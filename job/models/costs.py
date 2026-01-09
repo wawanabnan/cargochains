@@ -4,6 +4,8 @@ from django.db.models.deletion import PROTECT
 from accounting.models.chart import Account
 from partners.models import Vendor
 from job.models.job_orders import JobOrder
+from core.models.currencies import Currency
+from decimal import Decimal
 
 
 class JobCostType(models.Model):
@@ -43,6 +45,30 @@ class JobCost(models.Model):
     job_order = models.ForeignKey("job.JobOrder", on_delete=PROTECT, related_name="job_costs")
     cost_type = models.ForeignKey(JobCostType, on_delete=PROTECT, related_name="job_cost_types")
     description = models.CharField(max_length=255, blank=False, default="")
+    
+    qty = models.DecimalField(
+        max_digits=12, decimal_places=2, default=1,
+        help_text="Quantity"
+    )
+    price = models.DecimalField(
+        max_digits=18, decimal_places=2, default=0,
+        help_text="Unit price (foreign or local)"
+    )
+
+    currency = models.ForeignKey(
+        Currency,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        help_text="Currency of price"
+    )
+
+    rate = models.DecimalField(
+        max_digits=18, decimal_places=6,
+        default=1,
+        help_text="Currency rate to Job currency (IDR)"
+    )
+
     est_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     actual_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     sort_order = models.IntegerField(default=0)
@@ -85,3 +111,10 @@ class JobCost(models.Model):
 
     def __str__(self):
         return f"Job#{self.job_id} - {self.cost_type}"
+
+    @property
+    def amount(self):
+        """
+        qty × price × rate
+        """
+        return (self.qty or 0) * (self.price or 0) * (self.rate or Decimal("1"))

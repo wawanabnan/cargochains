@@ -1,0 +1,241 @@
+{% extends "adminbase.html" %}
+{% block content %}
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <div>
+          <div class="fw-semibold">
+            Vendor Booking: {{ booking.number }}
+            <span class="badge bg-info ms-2">{{ booking.get_status_display|default:booking.status }}</span>
+          </div>
+          <div class="text-muted small">
+            Vendor: {{ booking.vendor }} · Currency: {{ booking.currency|default:"-" }}
+            {% if booking.job_order %} · Job: {{ booking.job_order }}{% endif %}
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a class="btn btn-outline-secondary btn-sm" href="{% url 'shipments:vendor_booking_list' %}">
+            <i class="bi bi-arrow-left me-1"></i> Back
+          </a>
+
+          {% if not locked %}
+            <a class="btn btn-outline-primary btn-sm" href="{% url 'shipments:vendor_booking_edit' booking.pk %}">
+              <i class="bi bi-pencil-square me-1"></i> Edit
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card-body">
+
+        <!-- ACTION BAR -->
+        <div class="d-flex flex-wrap gap-2 justify-content-end mb-3">
+          {% if can_send %}
+            <form method="post" action="{% url 'shipments:vendor_booking_send' booking.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-send me-1"></i> Send
+              </button>
+            </form>
+          {% endif %}
+
+          {% if can_confirm %}
+            <form method="post" action="{% url 'shipments:vendor_booking_confirm' booking.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-sm btn-success">
+                <i class="bi bi-check2-circle me-1"></i> Confirm
+              </button>
+            </form>
+          {% endif %}
+
+          {% if can_complete %}
+            <form method="post" action="{% url 'shipments:vendor_booking_complete' booking.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-sm btn-primary">
+                <i class="bi bi-flag me-1"></i> Complete
+              </button>
+            </form>
+          {% endif %}
+
+          {% if can_cancel %}
+            <form method="post" action="{% url 'shipments:vendor_booking_cancel' booking.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-sm btn-outline-danger"
+                      onclick="return confirm('Cancel booking ini?');">
+                <i class="bi bi-x-circle me-1"></i> Cancel
+              </button>
+            </form>
+          {% endif %}
+        </div>
+
+        <!-- SUMMARY GRID -->
+        <div class="row g-3">
+          <div class="col-lg-6">
+            <div class="border rounded p-2">
+              <div class="fw-semibold mb-2">Location</div>
+              <div class="text-muted small mb-1" id="vb-mode-badge"></div>
+
+              <div class="small">
+
+                <div id="wrap-origin">
+                  <span class="text-muted" id="lbl-origin">Origin</span>:
+                  {{ booking.origin_location|default:"-" }}
+                  {% if booking.origin_text %} · {{ booking.origin_text }}{% endif %}
+                </div>
+
+                <div id="wrap-destination">
+                  <span class="text-muted" id="lbl-destination">Destination</span>:
+                  {{ booking.destination_location|default:"-" }}
+                  {% if booking.destination_text %} · {{ booking.destination_text }}{% endif %}
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+          <div class="col-lg-6">
+            <div class="border rounded p-2">
+              <div class="fw-semibold mb-2">Info</div>
+              <div class="small">
+                <div><span class="text-muted">Booking Date:</span> {{ booking.booking_date|default:"-" }}</div>
+                <div><span class="text-muted">Service:</span> {{ booking.service|default:"-" }}</div>
+                <div><span class="text-muted">Payment Term:</span> {{ booking.payment_term|default:"-" }}</div>
+                <div><span class="text-muted">ETD / ETA:</span> {{ booking.etd|default:"-" }} / {{ booking.eta|default:"-" }}</div>
+              </div>
+              <hr class="my-2">
+              <div class="d-flex align-items-center justify-content-between">
+                <div class="text-muted small">Total</div>
+                <div class="fw-semibold">{{ booking.total_amount|default:"0" }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <!-- LINES TABLE (READ ONLY) -->
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div class="fw-semibold">Lines</div>
+          <div class="text-muted small">Estimated Tax = planning only</div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width:18%">Cost Type</th>
+                <th>Description</th>
+                <th class="text-end" style="width:8%">Qty</th>
+                <th style="width:10%">UOM</th>
+                <th class="text-end" style="width:14%">Unit Price</th>
+                <th class="text-end" style="width:14%">Amount</th>
+                <th style="width:16%">Estimated Tax</th>
+                <th class="text-end" style="width:10%">Tax %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ln in lines %}
+              <tr>
+                <td>{{ ln.cost_type }}</td>
+                <td>{{ ln.description }}</td>
+                <td class="text-end">{{ ln.qty }}</td>
+                <td>{{ ln.uom }}</td>
+                <td class="text-end">{{ ln.unit_price }}</td>
+                <td class="text-end">{{ ln.amount }}</td>
+                <td>{{ ln.estimated_tax }}</td>
+                <td class="text-end">{{ ln.estimated_tax_rate }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="8" class="text-center text-muted py-3">Belum ada line.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot class="table-light">
+              <tr>
+                <td colspan="5" class="text-end fw-semibold">Total</td>
+                <td class="text-end fw-semibold">{{ booking.total_amount|default:"0" }}</td>
+                <td colspan="2"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function show(id, yes){
+    var el = $(id);
+    if (!el) return;
+    el.classList.toggle("d-none", !yes);
+  }
+  function setText(id, txt){
+    var el = $(id);
+    if (el) el.textContent = txt;
+  }
+
+  function detectMode(){
+    // baca service name dari halaman (aman & simpel)
+    var svc = "{{ booking.service|default:''|escapejs }}".toLowerCase();
+
+    if (/(trucking|truck|transport|delivery|pickup|shipment|barge|vessel|sea|air|freight)/.test(svc))
+      return "transport";
+    if (/(warehouse|storage|gudang|wh)/.test(svc))
+      return "warehouse";
+    if (/(stevedoring|handling|loading|unloading|bongkar|muat|lashing|stuffing)/.test(svc))
+      return "handling";
+    if (/(survey|inspection|sampling|lab|test)/.test(svc))
+      return "survey";
+    if (/(agency|document|docs|ppjk|clearance)/.test(svc))
+      return "agency";
+    if (/(rental|sewa|equipment|crane|forklift)/.test(svc))
+      return "rental";
+
+    return "service";
+  }
+
+  function apply(){
+    var mode = detectMode();
+
+    // default
+    setText("lbl-origin", "Service Location");
+    setText("lbl-destination", "Destination");
+    show("wrap-origin", true);
+    show("wrap-destination", true);
+
+    if (mode === "transport") {
+      setText("vb-mode-badge", "Mode: Transport");
+      setText("lbl-origin", "Pickup Location");
+      setText("lbl-destination", "Delivery Location");
+      return;
+    }
+
+    if (mode === "rental") {
+      setText("vb-mode-badge", "Mode: Equipment Rental");
+      setText("lbl-origin", "Equipment Location");
+      setText("lbl-destination", "Return Location");
+      return;
+    }
+
+    // non-transport default
+    setText("vb-mode-badge", "Mode: Service");
+    setText("lbl-origin", "Service Location");
+    show("wrap-destination", false);
+  }
+
+  document.addEventListener("DOMContentLoaded", apply);
+})();
+</script>
+{%endblock %}

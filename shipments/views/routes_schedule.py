@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.db.models import Q
 from shipments import models as m
 
-def _booking_no(shp: m.Shipment):
+def _booking_no(shp: m.shipments):
     so = getattr(shp, "sales_order", None)
     return getattr(so, "booking_number", None) or getattr(so, "number", None) or getattr(shp, "so_number", None)
 
