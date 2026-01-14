@@ -69,7 +69,7 @@ class JobCostForm(forms.ModelForm):
         fields = [
             "cost_type",
             "description",
-             "qty",
+            "qty",
             "price",
             "currency",
             "rate",
@@ -77,6 +77,8 @@ class JobCostForm(forms.ModelForm):
             "internal_note",
             "est_amount",
             "actual_amount",
+
+            
         ]
         widgets = {
             "cost_type": forms.Select(attrs={"class": "form-select form-select-sm"}),

@@ -8,23 +8,68 @@ from core.models.currencies import Currency
 from decimal import Decimal
 
 
+from django.db import models
+from django.db.models import PROTECT
+
 class JobCostType(models.Model):
+    class CostGroup(models.TextChoices):
+        TRANSPORT = "TRANSPORT", "Transport"
+        PORT = "PORT", "Port & Terminal"
+        PACKING = "PACKING", "Packing"
+        DOCUMENT = "DOCUMENT", "Documentation"
+        WAREHOUSE = "WAREHOUSE", "Warehouse"
+        OTHER = "OTHER", "Other"
+
+    class ServiceType(models.TextChoices):
+        TRUCK = "TRUCK", "Trucking"
+        SEA = "SEA", "Sea"
+        AIR = "AIR", "Air"
+        PACKING = "PACKING", "Packing"
+        DOCUMENT = "DOCUMENT", "Documentation"
+        OTHER = "OTHER", "Other"
+
     code = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=120)
 
-    # ✅ ganti "group" (keyword SQL) -> cost_group
-    cost_group = models.CharField(max_length=50, blank=True, default="")
+    # ✅ jadi terstruktur biar gampang mapping UI
+    cost_group = models.CharField(
+        max_length=50,
+        blank=True,
+        default=CostGroup.OTHER,
+        choices=CostGroup.choices,
+    )
 
-    # ✅ sumber kebenaran untuk UX: vendor vs non-vendor
+    # ✅ sumber kebenaran UX: vendor vs non-vendor
     requires_vendor = models.BooleanField(default=True)
+
+    # ✅ akun debit COGS untuk accrual saat Job Completed
     cogs_account = models.ForeignKey(
-        Account,
+        "accounting.Account",  # sesuaikan import/path Account om
         on_delete=PROTECT,
         null=True,
         blank=True,
         related_name="+",
         help_text="COGS account (debit) untuk accrual saat Job Completed",
     )
+
+    # ✅ akun credit (liability/AP) pasangan COGS untuk accrual
+    accrued_liability_account = models.ForeignKey(
+        "accounting.Account",  # sesuaikan import/path Account om
+        on_delete=PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Liability/AP account (credit) untuk accrual saat Job Completed",
+    )
+
+    # ✅ default schema modal (operasional)
+    service_type = models.CharField(
+        max_length=20,
+        choices=ServiceType.choices,
+        blank=True,
+        help_text="Default schema modal untuk booking line",
+    )
+
     sort_order = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
@@ -39,7 +84,7 @@ class JobCostType(models.Model):
         return f"{self.name}"
 
 
-
+from job.models.costs import JobCostType
 class JobCost(models.Model):
   
     job_order = models.ForeignKey("job.JobOrder", on_delete=PROTECT, related_name="job_costs")

@@ -2,7 +2,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from partners.models import Partner
+from partners.models import Vendor
 from core.models.currencies import Currency
 from core.models.payment_terms import PaymentTerm
 from geo.models import Location
@@ -13,192 +13,133 @@ from core.models.taxes import Tax
 from core.utils.numbering import get_next_number
 from job.models.job_orders import JobOrder
 from partners.models import Vendor
+from django.db.models import PROTECT, CASCADE
+from django.utils import timezone
+from core.models.currencies import Currency
+from core.models.payment_terms import PaymentTerm  # 
+from decimal import Decimal
 
 class VendorBooking(models.Model):
-    # --- source type ---
-    SRC_QUOTATION = "quotation"
-    SRC_VERBAL = "verbal"
-    SRC_RATE_CARD = "rate_card"
-    SOURCE_CHOICES = [
-        (SRC_QUOTATION, "Quotation"),
-        (SRC_VERBAL, "Verbal / Phone"),
-        (SRC_RATE_CARD, "Rate Card"),
-    ]
-
-    # --- status ---
-    ST_DRAFT = "draft"
-    ST_SENT = "sent"
-    ST_CONFIRMED = "confirmed"
-    ST_COMPLETED = "completed"
-    ST_CANCELLED = "cancelled"
+    ST_DRAFT = "DRAFT"
+    ST_CONFIRMED = "CONFIRMED"
+    ST_CANCELLED = "CANCELLED"
     STATUS_CHOICES = [
         (ST_DRAFT, "Draft"),
-        (ST_SENT, "Sent"),
         (ST_CONFIRMED, "Confirmed"),
-        (ST_COMPLETED, "Completed"),
         (ST_CANCELLED, "Cancelled"),
     ]
 
-    # ✅ boleh null (sementara), tapi hanya Draft
-    job_order = models.ForeignKey(
-        JobOrder,
-        on_delete=models.PROTECT,
-        related_name="vendor_bookings",
-        null=True,
-        blank=True,
-    )
+    booking_no = models.CharField(max_length=50, blank=True, default="")
+    issued_date = models.DateField(default=timezone.localdate)
+    job_order = models.ForeignKey("job.JobOrder", on_delete=CASCADE, related_name="vendor_bookings")
 
-    number = models.CharField(max_length=30, unique=True)
-    booking_date = models.DateField()
-
-     # ✅ tambahan (boleh kosong)
     vendor = models.ForeignKey(
         Vendor,
-        on_delete=models.PROTECT,
+        on_delete=PROTECT,
         null=True,
         blank=True,
         related_name="+",
         db_index=True,
     )
-    service = models.ForeignKey(Service, on_delete=models.PROTECT)
 
-    # ✅ Origin/Destination = segment route per booking (ops)
-    # FK boleh kosong (kalau master Location belum lengkap / terlalu banyak), tetap ada snapshot text
-    origin_location = models.ForeignKey(
-        Location, on_delete=models.PROTECT, related_name="+", null=True, blank=True
+    currency = models.ForeignKey(
+        "core.Currency",  # sesuaikan path Currency om
+        on_delete=PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
     )
-    origin_text = models.CharField(max_length=255, blank=True, default="")
-
-    destination_location = models.ForeignKey(
-        Location, on_delete=models.PROTECT, related_name="+", null=True, blank=True
+    idr_rate = models.DecimalField(
+        max_digits=18,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Rate currency ke IDR (1 currency = X IDR).",
     )
-    destination_text = models.CharField(max_length=255, blank=True, default="")
-
-    # ✅ ops instruction (bukan leg resmi)
-    pickup_note = models.TextField(blank=True, default="")
-    delivery_note = models.TextField(blank=True, default="")
-
-    etd = models.DateField(null=True, blank=True)
-    eta = models.DateField(null=True, blank=True)
-
-    # ✅ currency di header saja
-    currency = models.ForeignKey(Currency, on_delete=models.PROTECT)
-    payment_term = models.ForeignKey(PaymentTerm, on_delete=models.PROTECT)
-
-    source_type = models.CharField(
-        max_length=20, choices=SOURCE_CHOICES, default=SRC_VERBAL
+    payment_term = models.ForeignKey(
+        "core.PaymentTerm",  # sesuaikan path Currency om
+        on_delete=PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
     )
-
-    remarks = models.TextField(blank=True, default="")
-    total_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
-
-    status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default=ST_DRAFT
+    total_amount = models.DecimalField(
+        max_digits=18, decimal_places=2, default=Decimal("0.00")
     )
+    discount_amount = models.DecimalField(
+        max_digits=18, decimal_places=2, default=Decimal("0.00")
+    )
+    discount_rate = models.DecimalField(
+        max_digits=6, decimal_places=2,
+        null=True, blank=True,
+        help_text="Informational only"
+    )
+    total_idr = models.DecimalField(
+        max_digits=18, decimal_places=2, default=Decimal("0.00")
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=ST_DRAFT)
 
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="created_vendor_bookings",
+        "auth.User", on_delete=PROTECT, related_name="+", null=True, blank=True
     )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["-booking_date", "-id"]
-        db_table = "vendor_booking"
+        db_table = "vendor_bookings"
+        ordering = ["-created_at"]
 
-    def __str__(self) -> str:
-        return self.number
+    def __str__(self):
+        return f"{self.booking_no or 'DRAFT'} - {self.job_order_id}"
 
-    def clean(self):
-        # ✅ booking boleh tanpa referensi, tapi hanya Draft
-        if not self.job_order_id and self.status != self.ST_DRAFT:
-            raise ValidationError(
-                "Booking tanpa referensi hanya boleh status Draft. "
-                "Silakan link ke Job Order dulu sebelum Sent/Confirmed/Completed."
-            )
-
-        # ops minimal: origin/destination wajib diisi via FK atau text
-        if not (self.origin_location_id or (self.origin_text or "").strip()):
-            raise ValidationError("Origin wajib diisi (pilih Location atau isi text).")
-        if not (self.destination_location_id or (self.destination_text or "").strip()):
-            raise ValidationError("Destination wajib diisi (pilih Location atau isi text).")
-
-    def recalc_total(self, save=True):
-        total = self.lines.aggregate(s=models.Sum("amount"))["s"] or 0
-        self.total_amount = total
-        if save:
-            self.save(update_fields=["total_amount", "updated_at"])
-
-
-    def save(self, *args, **kwargs):
-        # ✅ auto numbering (sekali saat create)
-        if not self.pk and not self.number:
-            self.number = get_next_number("shipments", "VENDOR_BOOKING")
-        super().save(*args, **kwargs)
+    
+		
 
 class VendorBookingLine(models.Model):
-    booking = models.ForeignKey(
-        VendorBooking, on_delete=models.CASCADE, related_name="lines"
+    booking = models.ForeignKey("shipments.VendorBooking", on_delete=CASCADE, related_name="lines")
+    line_no = models.IntegerField(default=1)
+
+    # ✅ "jenis cost procurement" (bukan produk sales)
+    cost_type = models.ForeignKey(
+        "job.JobCostType",
+        on_delete=PROTECT,
+        related_name="+",
+        null=True,
+        blank=True,
+        help_text="Jenis biaya/vendor work (master Cost Type). Dipilih dari modal.",
     )
 
-    # ✅ item charge harus JobCostType (vendor-only)
-    cost_type = models.ForeignKey(JobCostType, on_delete=models.PROTECT)
+    # ✅ cache schema modal (TRUCK/SEA/AIR/...)
+    service_type = models.CharField(max_length=20, blank=True, default="")
+
+    # ✅ auto description (editable)
     description = models.CharField(max_length=255, blank=True, default="")
+    description_is_manual = models.BooleanField(default=False)
 
-    qty = models.DecimalField(max_digits=12, decimal_places=2, default=1)
-    uom = models.CharField(max_length=20, default="LS")
+    qty = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("1.00"))
+    unit_price = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
 
-    unit_price = models.DecimalField(max_digits=18, decimal_places=2, default=0)
-    amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    uom = models.CharField(max_length=20, blank=True, default="")
+    
+    details = models.JSONField(default=dict, blank=True)
 
-    # Optional expected VAT (not posted)
-    estimated_tax = models.ForeignKey(
-        Tax, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    # ✅ idempotent generate from job cost
+    source_job_cost = models.OneToOneField(
+        "job.JobCost",  # sesuaikan nama model cost line om
+        on_delete=PROTECT,
+        related_name="vendor_booking_line",
+        null=True,
+        blank=True,
     )
-    estimated_tax_rate = models.DecimalField(
-        max_digits=6, decimal_places=2, null=True, blank=True
-    )
-    estimated_tax_amount = models.DecimalField(
-        max_digits=18, decimal_places=2, null=True, blank=True
-    )
-
+    taxes = models.ManyToManyField(Tax, blank=True, related_name="booking_lines")
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["id"]
         db_table = "vendor_booking_lines"
+        ordering = ["booking_id", "line_no"]
 
-    def clean(self):
-        # ✅ internal cost type tidak boleh masuk booking line
-        if self.cost_type_id:
-            if getattr(self.cost_type, "requires_vendor", True) is False:
-                raise ValidationError(
-                    "Cost Type internal tidak boleh dibuat Vendor Booking Line."
-                )
-            if getattr(self.cost_type, "is_active", True) is False:
-                raise ValidationError("Cost Type tidak aktif.")
-
-    def save(self, *args, **kwargs):
-        # amount
-        self.amount = (self.qty or 0) * (self.unit_price or 0)
-
-        # expected tax snapshot
-        if self.expected_tax:
-            if self.expected_tax_rate is None:
-                self.expected_tax_rate = getattr(self.expected_tax, "rate", None)
-
-            if self.expected_tax_rate:
-                self.expected_tax_amount = (self.amount * self.expected_tax_rate) / 100
-            else:
-                self.expected_tax_amount = None
-        else:
-            self.expected_tax_rate = None
-            self.expected_tax_amount = None
-
-        super().save(*args, **kwargs)
-
-        # update total header
-        if self.booking_id:
-            self.booking.recalc_total(save=True)
+    def __str__(self):
+        return f"{self.booking_id}#{self.line_no}"

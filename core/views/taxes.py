@@ -6,6 +6,8 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
 from core.models.taxes import Tax, TaxCategory
 from core.forms.taxes import TaxForm, TaxCategoryForm
+from django.http import JsonResponse
+from django.views import View 
 
 
 class TaxListView(LoginRequiredMixin, ListView):
@@ -112,3 +114,44 @@ class TaxCategoryDeleteView(LoginRequiredMixin, DeleteView):
     model = TaxCategory
     template_name = "taxes/category_confirm_delete.html"
     success_url = reverse_lazy("core:tax_category_list")
+
+class TaxAutocompleteView(View):
+    def get(self, request):
+        q = (request.GET.get("q") or "").strip()
+        ids = request.GET.getlist("ids[]")
+
+        qs = Tax.objects.filter(
+            is_active=True,
+            category__code="PPN",   # 🔥 KUNCI DI SINI
+        ).order_by("name")
+
+        # preload selected (edit mode)
+        if ids:
+            qs = qs.filter(id__in=ids)
+
+        # search
+        elif q:
+            qs = qs.filter(
+                Q(name__icontains=q) |
+                Q(code__icontains=q)
+            )
+
+        qs = qs[:20]
+
+        def fmt_rate(t: Tax) -> str:
+            r = t.rate or 0
+            s = f"{r.normalize():f}" if hasattr(r, "normalize") else str(r)
+            s = s.rstrip("0").rstrip(".") if "." in s else s
+            return f"{s}%"
+
+        results = [
+            {
+                "id": t.id,
+                "text": fmt_rate(t),   # tampil di dropdown & selected: "11%"
+                "title": t.name,       # tooltip: "PPN 11%"
+                # optional kalau mau:
+                # "code": t.code,
+            }
+            for t in qs
+        ]
+        return JsonResponse({"results": results})

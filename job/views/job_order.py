@@ -36,11 +36,8 @@ from job.models.job_orders import JobOrder
 from job.forms.job_orders import JobOrderForm
 from job.forms.Job_costs import JobCostForm, JobCostFormSet
 from job.utils.messages import JobMessages
-
-# views.py
-import json
 from django.utils.safestring import mark_safe
-from job.models.costs import JobCostType
+import json
 
 def cost_type_meta_json():
     qs = JobCostType.objects.filter(is_active=True).only("id", "requires_vendor", "cost_group")

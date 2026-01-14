@@ -6,8 +6,7 @@
     <h4 class="mb-0">
       {% if object %}Edit{% else %}Add{% endif %} Cost Type
     </h4>
-    <a href="{% url 'job:cost_type_list' %}"
-       class="btn btn-outline-secondary btn-sm">
+    <a href="{% url 'job:cost_type_list' %}" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-arrow-left me-1"></i> Back
     </a>
   </div>
@@ -15,58 +14,200 @@
 
 <div class="app-content">
   <div class="container-fluid">
-    <div class="card">
-      <div class="card-body">
-        <form method="post" novalidate>
-          {% csrf_token %}
 
-          <div class="row g-3">
-            <div class="col-md-3">
-              <label class="form-label">Code</label>
-              {{ form.code }}
-            </div>
+    <div class="row g-3 align-items-stretch">
 
-            <div class="col-md-5">
-              <label class="form-label">Name</label>
-              {{ form.name }}
-            </div>
+      <!-- ================= LEFT : FORM ================= -->
+      <div class="col-12 col-lg-8 d-flex">
+        <div class="card h-100 w-100 position-relative">
 
-            <div class="col-md-4">
-              <label class="form-label">Group</label>
-              {{ form.cost_group }}
-            </div>
+          {% if object %}
+          <!-- STATUS BADGES -->
+          <div class="position-absolute top-0 end-0 m-2 d-flex gap-1">
+            {% if object.requires_vendor %}
+              <span class="badge text-bg-info">Requires Vendor</span>
+            {% else %}
+              <span class="badge text-bg-secondary">No Vendor</span>
+            {% endif %}
 
-            <div class="col-md-6">
-              <label class="form-label">COGS Account</label>
-              {{ form.cogs_account }}
-              <div class="form-text">
-                Wajib diisi agar job costing bisa auto jurnal
-              </div>
-            </div>
-
-            <div class="col-md-2">
-              <label class="form-label">Sort</label>
-              {{ form.sort_order }}
-            </div>
-
-            <div class="col-md-2 d-flex align-items-center">
-              <div class="form-check mt-4">
-                {{ form.is_active }}
-                <label class="form-check-label">Active</label>
-              </div>
-            </div>
+            {% if object.is_active %}
+              <span class="badge text-bg-success">Active</span>
+            {% else %}
+              <span class="badge text-bg-danger">Inactive</span>
+            {% endif %}
           </div>
+          {% endif %}
 
-          <hr class="my-4">
+          <div class="card-body d-flex flex-column mt-2">
 
-          <div class="text-end">
-            <button class="btn btn-primary btn-sm">
-              <i class="bi bi-save me-1"></i> Save
-            </button>
+            <form method="post" novalidate class="flex-grow-1">
+              {% csrf_token %}
+
+              <div class="row g-3">
+
+                <div class="col-md-3">
+                  <label class="form-label">Code</label>
+                  {{ form.code }}
+                </div>
+
+                {% if request.user.is_superuser %}  
+                <div class="col-md-5">
+                  <label class="form-label">Cost Name</label>
+                  {{ form.name }}
+                </div>
+                {% endif %}
+
+                <div class="col-md-4">
+                  <label class="form-label">Cost Group</label>
+                  {{ form.cost_group }}
+                  {% if form.cost_group.help_text %}
+                    <div class="text-muted small">{{ form.cost_group.help_text }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">COGS Account (Debit)</label>
+                  {{ form.cogs_account }}
+                  <div class="form-text">
+                    Wajib diisi agar job costing bisa auto jurnal (debit COGS).
+                  </div>
+                </div>
+
+                <div class="col-md-2">
+                  <label class="form-label">Sort</label>
+                  {{ form.sort_order }}
+                </div>
+
+                <!-- FLAGS + ADVANCED BUTTON -->
+                <div class="col-md-4">
+                  <div class="d-flex justify-content-between align-items-end">
+                    <label class="form-label mb-0">Flags</label>
+                    <button class="btn btn-outline-secondary btn-sm"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#advancedCostType"
+                            aria-expanded="false"
+                            aria-controls="advancedCostType">
+                      Advanced
+                    </button>
+                  </div>
+
+                  <div class="d-flex gap-4 mt-2">
+                    <div class="form-check form-switch">
+                      {{ form.requires_vendor }}
+                      <label class="form-check-label">Vendor Required</label>
+                    </div>
+
+                    <div class="form-check form-switch">
+                      {{ form.is_active }}
+                      <label class="form-check-label">Active</label>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- ADVANCED -->
+              <div class="collapse mt-3" id="advancedCostType">
+                <div class="border rounded p-3 bg-body-tertiary">
+                  <div class="row g-3">
+
+                    <div class="col-md-6">
+                      <label class="form-label">Accrued Liability / AP Account (Credit)</label>
+                      {{ form.accrued_liability_account }}
+                      <div class="form-text">
+                        Akun kredit untuk jurnal accrual saat Job Completed (pasangan COGS).
+                      </div>
+                    </div>
+                    {% if request.user.is_superuser %}
+                    <div class="col-md-6">
+                      <label class="form-label">Default Service Type (Modal Schema)</label>
+                      {{ form.service_type }}
+                      <div class="form-text">
+                        Menentukan field modal (TRUCK/SEA/AIR/PACKING/DOCUMENT). Bisa dioverride per line via details JSON.
+                      </div>
+                    </div>
+                     {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <hr class="my-4">
+
+              <div class="text-end">
+                <button class="btn btn-primary btn-sm">
+                  <i class="bi bi-save me-1"></i> Save
+                </button>
+              </div>
+
+            </form>
+
           </div>
-        </form>
+        </div>
       </div>
+
+      <!-- ================= RIGHT : HELP ================= -->
+      <div class="col-12 col-lg-4 d-flex">
+        <div class="card h-100 w-100">
+          <div class="card-body d-flex flex-column">
+
+            <div class="fw-semibold mb-2">
+              <i class="bi bi-info-circle me-1"></i> Panduan Pengisian
+            </div>
+
+            <div class="small text-muted mb-3">
+              Cost Type digunakan untuk mengatur perilaku biaya (vendor), grouping, dan mapping akun jurnal.
+            </div>
+
+            <div class="mb-3">
+              <div class="fw-semibold small">Code</div>
+              <div class="text-muted small">
+                Kode unik & konsisten (contoh: TRUCK_CDD, OCEAN_FREIGHT, AIR_FREIGHT).
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <div class="fw-semibold small">Cost Group</div>
+              <div class="text-muted small">
+                Untuk grouping UI & laporan (TRANSPORT, PACKING, DOCUMENT, dll).
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <div class="fw-semibold small">COGS Account (Debit)</div>
+              <div class="text-muted small">
+                Akun debit accrual saat Job Completed.
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <div class="fw-semibold small">Accrued Liability / AP (Credit)</div>
+              <div class="text-muted small">
+                Akun kredit pasangan COGS untuk accrual saat Job Completed.
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <div class="fw-semibold small">Default Service Type</div>
+              <div class="text-muted small">
+                Dipakai untuk menentukan schema modal vendor booking (TRUCK/SEA/AIR/...).
+              </div>
+            </div>
+
+            <div class="mt-auto">
+              <div class="fw-semibold small">Requires Vendor</div>
+              <div class="text-muted small">
+                <b>ON</b>: wajib pilih vendor saat input job cost.<br>
+                <b>OFF</b>: biaya internal (tanpa vendor).
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
     </div>
+
   </div>
 </div>
 

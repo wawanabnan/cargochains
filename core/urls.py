@@ -33,6 +33,7 @@ from core.views.exchange_rates import (
     ExchangeRateListView, ExchangeRateCreateView, ExchangeRateUpdateView, ExchangeRateDeleteView
 )
 
+from core.views.taxes import TaxAutocompleteView
 
 from core.views.settings_home import SettingsHomeView
 from core.views.company import CompanyUpdateView
@@ -58,6 +59,8 @@ urlpatterns = [
     path("settings/taxes/add/", TaxCreateView.as_view(), name="tax_add"),
     path("setting/taxes/<int:pk>/edit/", TaxUpdateView.as_view(), name="tax_edit"),
     path("taxes/<int:pk>/delete/", TaxDeleteView.as_view(), name="tax_delete"),
+    path("taxes/autocomplete/", TaxAutocompleteView.as_view(), name="tax_autocomplete"),
+
 
     path("settings/tax-categories/", TaxCategoryListView.as_view(), name="tax_category_list"),
     path("settings/tax-categories/add/", TaxCategoryCreateView.as_view(), name="tax_category_add"),

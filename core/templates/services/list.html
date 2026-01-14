@@ -26,26 +26,26 @@
 
     <div class="card">
       <div class="card-body p-0">
-        <div class="table-responsive  cc-table">
+        <div class="table-responsive">
           <table class="table table-sm table-hover mb-0 align-middle cc-table cc-table-main">
             <thead class="table-light">
               <tr>
                 <th style="width: 100px;">Code</th>
                 <th>Name</th>
-                <th style="width: 140px;">Group</th>
-                <th style="width: 200px;">Revenue Account</th>
-                <th style="width: 200px;">Receivable Account</th>
+                <th style="width: 140px;">Service Types</th>
+                <th style="width: 220px;">Revenue Account</th>
+                <th style="width: 220px;">Receivable Account</th>
                 <th style="width: 120px;">Active</th>
-                <th style="width: 160px;" class="text-end">Actions</th>
+                <th style="width: 100px;" class="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
               {% for s in services %}
               <tr>
                 <td>
-                  <a href="{% url 'core:service_detail' s.pk %}">
+                 
                     {{ s.code|default:"-" }}
-                  </a>
+                 
                 </td>
                 <td>{{ s.name }}</td>
                  <td>{{ s.service_group }}</td>
@@ -60,11 +60,11 @@
                   {% endif %}
                 </td>
                 <td class="text-end">
-                  <a class="btn btn-sm btn-secondary"
+                  <a class="btn btn-xs btn-secondary"
                      href="{% url 'core:service_edit' s.pk %}">
                     <i class="bi bi-pencil"></i>
                   </a>
-                  <a class="btn btn-sm btn-danger"
+                  <a class="btn btn-xs btn-danger"
                      href="{% url 'core:service_delete' s.pk %}">
                     <i class="bi bi-trash"></i>
                   </a>
@@ -92,13 +92,13 @@
             <a class="btn btn-sm btn-outline-secondary"
                href="?q={{ request.GET.q }}&page={{ page_obj.previous_page_number }}">Prev</a>
           {% else %}
-            <button class="btn btn-sm btn-outline-secondary" disabled>Prev</button>
+            <button class="btn btn-xs btn-outline-secondary" disabled>Prev</button>
           {% endif %}
           {% if page_obj.has_next %}
             <a class="btn btn-sm btn-outline-secondary"
                href="?q={{ request.GET.q }}&page={{ page_obj.next_page_number }}">Next</a>
           {% else %}
-            <button class="btn btn-sm btn-outline-secondary" disabled>Next</button>
+            <button class="btn btn-xs btn-outline-secondary" disabled>Next</button>
           {% endif %}
         </div>
       </div>
@@ -109,4 +109,40 @@
   </div>
 </div>
 
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Compact table rows */
+
+  /* Compact table rows */
+.table.table-sm > :not(caption) > * > * {
+  padding: 0.32rem 0.35rem; /* default bs: 0.5rem */
+  vertical-align: middle;
+  line-height: 1.2;
+}
+
+
+.btn-xs {
+  padding: 0.23rem 0.23rem;
+  font-size: 0.65rem;
+  line-height: 1;
+  border-radius: 4px;
+}
+
+.table i.bi {
+  vertical-align: middle;
+  line-height: 1;
+  border-radius: 0;
+  
+ 
+}
+
+td.action .btn-xs {
+  padding: 0.21rem 0.21rem;
+  font-size: 0.65rem;
+  line-height: 1;
+  border-radius: 4px;
+}
+</style>
 {% endblock %}

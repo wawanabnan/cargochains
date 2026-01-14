@@ -1,170 +1,157 @@
-# shipments/views/vendor_bookings.py
-from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db import transaction
-from django.http import HttpResponseForbidden
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse
-from django.views import View
-from django.views.generic import DetailView, CreateView, UpdateView
+from django.views.generic import ListView
+from django.shortcuts import get_object_or_404
+
+from job.models.job_orders import JobOrder
+from shipments.models.vendor_bookings import VendorBooking, VendorBookingLine
+from django.views.generic import DetailView
+from shipments.forms.vendor_bookings import VendorBookingForm
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.views.generic import View
 
 from shipments.models.vendor_bookings import VendorBooking
-from shipments.forms.vendor_bookings import VendorBookingForm, VendorBookingLineFormSet
-from django.views.generic import ListView, CreateView, UpdateView, DetailView, DeleteView
+from shipments.views.vendor_booking_base import VendorBookingObjectMixin
+from django.views.generic import ListView, CreateView, DetailView, UpdateView, View
+from django.urls import reverse_lazy
+from django.http import JsonResponse, HttpResponseForbidden, HttpResponseBadRequest
+from shipments.views.vendor_booking_lines import VendorBookingLineDetailsView
+from django.urls import reverse
+from shipments.forms.vendor_bookings import VendorBookingLineFormSet
 
+from job.models.costs import JobCostType
+from core.models.taxes import Tax
 
-def _st(model, name, fallback: str):
-    """ambil konstanta status dari model kalau ada, fallback ke string."""
-    return getattr(model, name, fallback)
+# views.py
+import json
+from django.core.serializers.json import DjangoJSONEncoder
 
-
-ST_DRAFT = _st(VendorBooking, "ST_DRAFT", "draft")
-ST_SENT = _st(VendorBooking, "ST_SENT", "sent")
-ST_CONFIRMED = _st(VendorBooking, "ST_CONFIRMED", "confirmed")
-ST_COMPLETED = _st(VendorBooking, "ST_COMPLETED", "completed")
-ST_CANCELLED = _st(VendorBooking, "ST_CANCELLED", "cancelled")
-
-
-def _booking_min_ready(booking: VendorBooking):
+def build_cost_type_map():
     """
-    Gate minimal sebelum naik status:
-    - vendor ada
-    - currency ada
-    - punya minimal 1 line (non-deleted)
-    - kalau job_order null => hanya boleh draft (jadi saat Send/Confirm wajib ada job_order)
+    Mapping cost_type_id -> meta untuk JS (SEA / AIR / TRUCK)
     """
-    missing = []
-    if not booking.vendor_id:
-        missing.append("Vendor belum diisi.")
-    if not getattr(booking, "currency_id", None):
-        missing.append("Currency belum diisi.")
-    # lines: minimal 1 aktif
-    line_qs = booking.lines.all() if hasattr(booking, "lines") else booking.vendorbookingline_set.all()
-    if not line_qs.exists():
-        missing.append("Booking line masih kosong.")
-    if booking.job_order_id is None:
-        missing.append("Job Order wajib diisi untuk status selain Draft.")
-    return missing
+    qs = JobCostType.objects.filter(is_active=True).values(
+        "id", "code", "name", "cost_group"
+    )
 
+    result = {}
+    for r in qs:
+        code = (r["code"] or "").upper()
+        group = (r["cost_group"] or "").upper()
+        name = (r["name"] or "").upper()
 
-def _recalc_total(booking: VendorBooking) -> None:
-    """Server-side total: sum(qty * unit_price) lines yang tidak dihapus."""
-    line_qs = booking.lines.all() if hasattr(booking, "lines") else booking.vendorbookingline_set.all()
-    total = 0
-    for ln in line_qs:
-        qty = float(getattr(ln, "qty", 0) or 0)
-        unit_price = float(getattr(ln, "unit_price", 0) or 0)
-        total += qty * unit_price
-    booking.total_amount = total
+        service_type = ""
+        if "SEA" in group or "SEA" in code or "SEA" in name:
+            service_type = "SEA"
+        elif "AIR" in group or "AIR" in code or "AIR" in name:
+            service_type = "AIR"
+        elif "TRUCK" in group or "INLAND" in group or "TRUCK" in code or "INLAND" in name:
+            service_type = "TRUCK"
 
+        result[str(r["id"])] = {
+            "id": r["id"],
+            "code": r["code"],
+            "name": r["name"],
+            "cost_group": r["cost_group"],
+            "service_type": service_type,
+        }
 
+    return result
 
 class VendorBookingListView(LoginRequiredMixin, ListView):
-    model = VendorBooking
-    template_name = "vendor_booking/list.html"
-    context_object_name = "rows"
-    paginate_by = 25
+    template_name = "vendor_bookings/list.html"
+    context_object_name = "bookings"
 
     def get_queryset(self):
-        qs = (
+        self.job = get_object_or_404(JobOrder, pk=self.kwargs["job_id"])
+        return (
             VendorBooking.objects
-            .select_related("job_order", "vendor", "currency")
-            .order_by("-booking_date", "-id")
+            .filter(job_order=self.job)
+            .select_related("vendor", "currency", "job_order")
+            .order_by("-created_at")
         )
 
-        q = (self.request.GET.get("q") or "").strip()
-        if q:
-            qs = qs.filter(number__icontains=q)
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["job"] = self.job
+        return ctx
 
-        status = (self.request.GET.get("status") or "").strip()
-        if status:
-            qs = qs.filter(status=status)
-
-        unlinked = (self.request.GET.get("unlinked") or "").strip()
-        if unlinked == "1":
-            qs = qs.filter(job_order__isnull=True)
-
-        return qs
 
 
 class VendorBookingDetailView(LoginRequiredMixin, DetailView):
     model = VendorBooking
-    template_name = "vendor_booking/detail.html"
+    template_name = "vendor_bookings/detail.html"
     context_object_name = "booking"
+
+    def get_queryset(self):
+        return (
+            VendorBooking.objects
+            .select_related("vendor", "currency", "job_order")
+            .prefetch_related("lines")
+        )
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        booking = ctx["booking"]
-        line_qs = booking.lines.all() if hasattr(booking, "lines") else booking.vendorbookingline_set.all()
-        ctx["lines"] = line_qs
-        ctx["can_send"] = booking.status == ST_DRAFT
-        ctx["can_confirm"] = booking.status == ST_SENT
-        ctx["can_complete"] = booking.status == ST_CONFIRMED
-        ctx["can_cancel"] = booking.status in (ST_DRAFT, ST_SENT, ST_CONFIRMED)
-        ctx["locked"] = booking.status in (ST_CONFIRMED, ST_COMPLETED, ST_CANCELLED)
+        ctx["job"] = self.object.job_order
+        ctx["lines"] = self.object.lines.all()
         return ctx
+
 
 
 class VendorBookingCreateView(LoginRequiredMixin, CreateView):
     model = VendorBooking
     form_class = VendorBookingForm
-    template_name = "vendor_booking/form.html"
+    template_name = "vendor_bookings/form.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        self.job = get_object_or_404(JobOrder, pk=self.kwargs["job_id"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        booking = form.save(commit=False)
+        booking.job_order = self.job
+        booking.status = VendorBooking.ST_DRAFT
+        booking.created_by = self.request.user
+        booking.save()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse("shipments:vendor_booking_update", args=[self.object.pk])
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["formset"] = VendorBookingLineFormSet(self.request.POST or None)
+        ctx["job"] = self.job
+        ctx["cost_type_map_json"] = json.dumps(build_cost_type_map(), cls=DjangoJSONEncoder)
+        ctx["is_create"] = True
         return ctx
-
-    @transaction.atomic
-    def form_valid(self, form):
-        ctx = self.get_context_data()
-        formset = ctx["formset"]
-
-        if not formset.is_valid():
-            return self.form_invalid(form)
-
-        obj = form.save()
-        formset.instance = obj
-        formset.save()
-
-        _recalc_total(obj)
-        obj.save(update_fields=["total_amount"])
-
-        messages.success(self.request, "Vendor Booking dibuat.")
-        return redirect("shipments:vendor_booking_detail", pk=obj.pk)
-
-
+    
 class VendorBookingUpdateView(LoginRequiredMixin, UpdateView):
     model = VendorBooking
     form_class = VendorBookingForm
-    template_name = "vendor_booking/form.html"
+    template_name = "vendor_bookings/form.html"
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        booking = self.object
 
         if self.request.POST:
-            ctx["formset"] = VendorBookingLineFormSet(self.request.POST, instance=booking)
+            ctx["formset"] = VendorBookingLineFormSet(self.request.POST, instance=self.object)
         else:
-            ctx["formset"] = VendorBookingLineFormSet(instance=booking)
+            ctx["formset"] = VendorBookingLineFormSet(instance=self.object)
 
-        locked = booking.status in (ST_CONFIRMED, ST_COMPLETED, ST_CANCELLED)
-        if locked:
-            # lock header kecuali notes (opsional)
-            for name, f in ctx["form"].fields.items():
-                if name in ("pickup_note", "delivery_note", "remarks"):
-                    continue
-                f.disabled = True
-            for lf in ctx["formset"].forms:
-                for name, f in lf.fields.items():
-                    f.disabled = True
-                if "DELETE" in lf.fields:
-                    lf.fields["DELETE"].disabled = True
+        qs = JobCostType.objects.all().order_by("name")
+        ctx["cost_types_json"] = list(qs.values("id","code","name","cost_group","service_type"))
+        ctx["cost_type_map_json"] = json.dumps(build_cost_type_map(), cls=DjangoJSONEncoder)
 
-        ctx["locked"] = locked
+        # optional: kalau template juga butuh list lines non-formset
+        ctx["lines"] = self.object.lines.all().order_by("line_no", "id")
+        ctx["taxes"] = Tax.objects.filter(is_active=True).order_by("name") \
+            if hasattr(Tax, "is_active") else Tax.objects.all().order_by("name")
+        ctx["cost_types"] = JobCostType.objects.filter(is_active=True).order_by("sort_order","name") \
+            if hasattr(JobCostType,"is_active") else JobCostType.objects.all().order_by("name")
+
+
         return ctx
 
-    @transaction.atomic
     def form_valid(self, form):
         ctx = self.get_context_data()
         formset = ctx["formset"]
@@ -172,86 +159,56 @@ class VendorBookingUpdateView(LoginRequiredMixin, UpdateView):
         if not formset.is_valid():
             return self.form_invalid(form)
 
-        obj = form.save()
+        self.object = form.save()
+        formset.instance = self.object
         formset.save()
 
-        _recalc_total(obj)
-        obj.save(update_fields=["total_amount"])
+        # optional: hitung total header
+        if hasattr(self.object, "recalc_totals"):
+            self.object.recalc_totals()
 
-        messages.success(self.request, "Vendor Booking tersimpan.")
-        return redirect("shipments:vendor_booking_detail", pk=obj.pk)
+        return redirect("shipments:vendor_booking_edit", pk=self.object.pk)
 
 
-# ===== ACTIONS (POST ONLY) =====
-
-class _BookingActionBase(LoginRequiredMixin, View):
+class VendorBookingSendView(VendorBookingObjectMixin, View):
     def post(self, request, pk):
-        booking = get_object_or_404(VendorBooking, pk=pk)
-        return self.handle(request, booking)
-
-    def handle(self, request, booking: VendorBooking):
-        raise NotImplementedError
-
-
-class VendorBookingSendView(_BookingActionBase):
-    @transaction.atomic
-    def handle(self, request, booking):
-        if booking.status != ST_DRAFT:
-            messages.error(request, "Hanya bisa Send dari status Draft.")
-            return redirect("shipments:vendor_booking_detail", pk=booking.pk)
-
-        missing = _booking_min_ready(booking)
-        if missing:
-            messages.error(request, "Tidak bisa Send:\n- " + "\n- ".join(missing))
-            return redirect("shipments:vendor_booking_detail", pk=booking.pk)
-
-        _recalc_total(booking)
-        booking.status = ST_SENT
-        booking.save(update_fields=["status", "total_amount"])
-        messages.success(request, "Booking dikirim (Sent).")
-        return redirect("shipments:vendor_booking_detail", pk=booking.pk)
+        b = self.get_object()
+        if b.status != VendorBooking.ST_DRAFT:
+            return HttpResponseForbidden("Hanya DRAFT yang bisa dikirim.")
+        # TODO: set sent_at / status if you have it
+        messages.success(request, "✅ Booking marked as sent (still DRAFT unless you add status).")
+        return redirect("shipments:vendor_booking_detail", pk=b.pk)
 
 
-class VendorBookingConfirmView(_BookingActionBase):
-    @transaction.atomic
-    def handle(self, request, booking):
-        if booking.status != ST_SENT:
-            messages.error(request, "Hanya bisa Confirm dari status Sent.")
-            return redirect("shipments:vendor_booking_detail", pk=booking.pk)
-
-        missing = _booking_min_ready(booking)
-        if missing:
-            messages.error(request, "Tidak bisa Confirm:\n- " + "\n- ".join(missing))
-            return redirect("shipments:vendor_booking_detail", pk=booking.pk)
-
-        _recalc_total(booking)
-        booking.status = ST_CONFIRMED
-        booking.save(update_fields=["status", "total_amount"])
-        messages.success(request, "Booking berhasil Confirmed.")
-        return redirect("shipments:vendor_booking_detail", pk=booking.pk)
+class VendorBookingConfirmView(VendorBookingObjectMixin, View):
+    def post(self, request, pk):
+        b = self.get_object()
+        if b.status != VendorBooking.ST_DRAFT:
+            return HttpResponseForbidden("Hanya DRAFT yang bisa confirm.")
+        if not b.vendor_id:
+            return HttpResponseForbidden("Vendor wajib diisi sebelum confirm.")
+        b.status = VendorBooking.ST_CONFIRMED
+        b.save(update_fields=["status"])
+        messages.success(request, "✅ Booking confirmed.")
+        return redirect("shipments:vendor_booking_detail", pk=b.pk)
 
 
-class VendorBookingCompleteView(_BookingActionBase):
-    @transaction.atomic
-    def handle(self, request, booking):
-        if booking.status != ST_CONFIRMED:
-            messages.error(request, "Hanya bisa Complete dari status Confirmed.")
-            return redirect("shipments:vendor_booking_detail", pk=booking.pk)
-
-        booking.status = ST_COMPLETED
-        booking.save(update_fields=["status"])
-        messages.success(request, "Booking Completed.")
-        return redirect("shipments:vendor_booking_detail", pk=booking.pk)
+class VendorBookingCompleteView(VendorBookingObjectMixin, View):
+    def post(self, request, pk):
+        b = self.get_object()
+        if b.status != VendorBooking.ST_CONFIRMED:
+            return HttpResponseForbidden("Hanya CONFIRMED yang bisa complete.")
+        # kalau om punya ST_COMPLETED, tambahkan. Kalau tidak, bisa tetap CONFIRMED + flag complete_at
+        messages.success(request, "✅ Booking completed (implement status/flag sesuai kebutuhan).")
+        return redirect("shipments:vendor_booking_detail", pk=b.pk)
 
 
-class VendorBookingCancelView(_BookingActionBase):
-    @transaction.atomic
-    def handle(self, request, booking):
-        if booking.status not in (ST_DRAFT, ST_SENT, ST_CONFIRMED):
-            messages.error(request, "Tidak bisa Cancel dari status saat ini.")
-            return redirect("shipments:vendor_booking_detail", pk=booking.pk)
-
-        booking.status = ST_CANCELLED
-        booking.save(update_fields=["status"])
-        messages.success(request, "Booking Cancelled.")
-        return redirect("shipments:vendor_booking_detail", pk=booking.pk)
+class VendorBookingCancelView(VendorBookingObjectMixin, View):
+    def post(self, request, pk):
+        b = self.get_object()
+        if b.status == VendorBooking.ST_CANCELLED:
+            return redirect("shipments:vendor_booking_detail", pk=b.pk)
+        b.status = VendorBooking.ST_CANCELLED
+        b.save(update_fields=["status"])
+        messages.success(request, "✅ Booking cancelled.")
+        return redirect("shipments:vendor_booking_detail", pk=b.pk)

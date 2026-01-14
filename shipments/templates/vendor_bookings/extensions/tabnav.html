@@ -1,0 +1,219 @@
+<!-- ===== TABS NAV ===== -->
+<ul class="nav nav-tabs" id="vbTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="tab-general" data-bs-toggle="tab" data-bs-target="#pane-general"
+            type="button" role="tab" aria-controls="pane-general" aria-selected="true">
+      General
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="tab-locations" data-bs-toggle="tab" data-bs-target="#pane-locations"
+            type="button" role="tab" aria-controls="pane-locations" aria-selected="false">
+      Locations
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="tab-notes" data-bs-toggle="tab" data-bs-target="#pane-notes"
+            type="button" role="tab" aria-controls="pane-notes" aria-selected="false">
+      Notes
+    </button>
+  </li>
+</ul>
+
+<!-- ===== TABS CONTENT ===== -->
+<div class="tab-content border border-top-0 rounded-bottom p-3" id="vbTabsContent">
+
+  <!-- ================= GENERAL ================= -->
+  <div class="tab-pane fade show active" id="pane-general" role="tabpanel" aria-labelledby="tab-general">
+    <div class="row g-3">
+
+      <div class="col-lg-6">
+        <div class="row g-2">
+          <div class="col-md-4">
+            <label class="form-label small mb-1">{{ form.number.label }}</label>
+            {{ form.number }}
+            <div class="form-text">Auto-generated</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small mb-1">{{ form.booking_date.label }}</label>
+            {{ form.booking_date }}
+            {% if form.booking_date.errors %}<div class="text-danger small">{{ form.booking_date.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small mb-1">{{ form.status.label }}</label>
+            {{ form.status }}
+            {% if form.status.errors %}<div class="text-danger small">{{ form.status.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label small mb-1">{{ form.job_order.label }}</label>
+            {{ form.job_order }}
+            {% if form.job_order.errors %}<div class="text-danger small">{{ form.job_order.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-12">
+          <div class="form-check mt-1">
+            {{ form.is_transport }}
+            <label class="form-check-label fw-semibold" for="id_is_transport">
+              Booking Transport (melibatkan pemindahan cargo)
+            </label>
+          </div>
+        </div>
+
+          <!-- VENDOR AUTOCOMPLETE (text + hidden + select hidden) -->
+          <div class="col-md-12">
+            <label class="form-label small mb-1">Vendor</label>
+
+            <input type="text" id="vendor_text" class="form-control form-control-sm"
+                   placeholder="Search vendor..." autocomplete="off"
+                   data-url="/partners/autocomplete/?role=vendor"
+                   value="{% if form.instance.vendor %}{{ form.instance.vendor }}{% endif %}">
+            <input type="hidden" id="vendor_id" value="{% if form.instance.vendor_id %}{{ form.instance.vendor_id }}{% endif %}">
+
+            <div class="d-none">{{ form.vendor }}</div>
+            {% if form.vendor.errors %}<div class="text-danger small">{{ form.vendor.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label small mb-1">{{ form.service.label }}</label>
+            {{ form.service }}
+            {% if form.service.errors %}<div class="text-danger small">{{ form.service.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small mb-1">{{ form.currency.label }}</label>
+            {{ form.currency }}
+            {% if form.currency.errors %}<div class="text-danger small">{{ form.currency.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small mb-1">{{ form.payment_term.label }}</label>
+            {{ form.payment_term }}
+            {% if form.payment_term.errors %}<div class="text-danger small">{{ form.payment_term.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label small mb-1">{{ form.etd.label }}</label>
+            {{ form.etd }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small mb-1">{{ form.eta.label }}</label>
+            {{ form.eta }}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label small mb-1">{{ form.source_type.label }}</label>
+            {{ form.source_type }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small mb-1">{{ form.remarks.label }}</label>
+            {{ form.remarks }}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= LOCATIONS ================= -->
+  <div class="tab-pane fade" id="pane-locations" role="tabpanel" aria-labelledby="tab-locations">
+
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <div>
+        <div class="fw-semibold">Locations</div>
+        <div class="text-muted small" id="vb-mode-badge"></div>
+      </div>
+      <div class="text-muted small">
+        Tip: gunakan text untuk detail alamat/gate/site.
+      </div>
+    </div>
+
+    <div class="row g-3">
+
+      <!-- ORIGIN -->
+      <div class="col-lg-6">
+        <div class="card border mb-0">
+          <div class="card-header py-2">
+            <div class="fw-semibold" id="lbl-origin-block">Origin</div>
+          </div>
+          <div class="card-body py-2">
+            <div class="mb-2" id="wrap-origin-location">
+              <label class="form-label small mb-1" id="lbl-origin-location">Service Location</label>
+
+              <input type="text" id="origin_loc_text" class="form-control form-control-sm"
+                     placeholder="Search location..." autocomplete="off"
+                     data-url="/geo/locations/autocomplete/"
+                     value="{% if form.instance.origin_location %}{{ form.instance.origin_location }}{% endif %}">
+              <input type="hidden" id="origin_loc_id" value="{% if form.instance.origin_location_id %}{{ form.instance.origin_location_id }}{% endif %}">
+
+              <div class="d-none">{{ form.origin_location }}</div>
+              {% if form.origin_location.errors %}<div class="text-danger small">{{ form.origin_location.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div id="wrap-origin-text">
+              <label class="form-label small mb-1" id="lbl-origin-text">Detail (optional)</label>
+              <!-- kalau field origin_text bukan textarea, tetap render apa adanya -->
+              {{ form.origin_text }}
+              <div class="form-text">Alamat lengkap / gate / patokan / PIC (opsional).</div>
+              {% if form.origin_text.errors %}<div class="text-danger small">{{ form.origin_text.errors|striptags }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DESTINATION -->
+      <div class="col-lg-6" id="wrap-destination-card">
+        <div class="card border mb-0">
+          <div class="card-header py-2">
+            <div class="fw-semibold" id="lbl-destination-block">Destination</div>
+          </div>
+          <div class="card-body py-2">
+            <div class="mb-2" id="wrap-destination-location">
+              <label class="form-label small mb-1" id="lbl-destination-location">Destination</label>
+
+              <input type="text" id="dest_loc_text" class="form-control form-control-sm"
+                     placeholder="Search location..." autocomplete="off"
+                     data-url="/geo/locations/autocomplete/"
+                     value="{% if form.instance.destination_location %}{{ form.instance.destination_location }}{% endif %}">
+              <input type="hidden" id="dest_loc_id" value="{% if form.instance.destination_location_id %}{{ form.instance.destination_location_id }}{% endif %}">
+
+              <div class="d-none">{{ form.destination_location }}</div>
+              {% if form.destination_location.errors %}<div class="text-danger small">{{ form.destination_location.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div id="wrap-destination-text">
+              <label class="form-label small mb-1" id="lbl-destination-text">Detail (optional)</label>
+              {{ form.destination_text }}
+              <div class="form-text">Alamat lengkap / gate / note (opsional).</div>
+              {% if form.destination_text.errors %}<div class="text-danger small">{{ form.destination_text.errors|striptags }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= NOTES ================= -->
+  <div class="tab-pane fade" id="pane-notes" role="tabpanel" aria-labelledby="tab-notes">
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <label class="form-label fw-semibold" id="lbl-pickup-note">Execution Instruction</label>
+        {{ form.pickup_note }}
+        <div class="form-text">Instruksi pelaksanaan: jadwal, PIC, requirement, dsb.</div>
+        {% if form.pickup_note.errors %}<div class="text-danger small">{{ form.pickup_note.errors|striptags }}</div>{% endif %}
+      </div>
+
+      <div class="col-lg-6" id="wrap-delivery-note">
+        <label class="form-label fw-semibold" id="lbl-delivery-note">Completion / Result Note</label>
+        {{ form.delivery_note }}
+        <div class="form-text">Catatan hasil, dokumen, atau bukti selesai.</div>
+        {% if form.delivery_note.errors %}<div class="text-danger small">{{ form.delivery_note.errors|striptags }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+

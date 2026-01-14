@@ -183,3 +183,61 @@
   --bs-btn-font-size: 0.75rem;
   --bs-btn-border-radius: 0.5rem;
 }
+
+
+/* =========================================
+   TAX SELECT2 BADGE (FORCE) - ALL THEMES
+   Target: .tax-badge-container (added by JS)
+   ========================================= */
+
+/* hilangkan border/background di semua theme */
+.tax-badge-container .select2-selection,
+.tax-badge-container .select2-selection--multiple,
+.tax-badge-container .select2-selection--single {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  outline: none !important;
+  min-height: auto !important;
+}
+
+/* MULTIPLE chips (badge) */
+.tax-badge-container .select2-selection--multiple {
+  padding: 0 !important;
+}
+
+.tax-badge-container .select2-selection--multiple .select2-selection__choice {
+  border: none !important;
+  border-radius: 999px !important;
+  padding: 2px 8px !important;
+  margin: 2px 4px 2px 0 !important;
+  font-size: 0.75rem !important;
+  line-height: 1.4 !important;
+  color: #fff !important;
+  background-color: #0d6efd !important;
+}
+
+.tax-badge-container .select2-selection--multiple .select2-selection__choice__remove {
+  border: none !important;
+  color: #fff !important;
+  margin-right: 4px !important;
+}
+
+.tax-badge-container .select2-selection--multiple .select2-selection__choice__remove:hover {
+  background: transparent !important;
+  color: #ffdddd !important;
+}
+
+/* input typing */
+.tax-badge-container .select2-selection--multiple .select2-search__field {
+  margin-top: 2px !important;
+  font-size: 0.75rem !important;
+}
+
+/* SINGLE (kalau ternyata bukan multiple) */
+.tax-badge-container .select2-selection--single .select2-selection__rendered {
+  padding-left: 0 !important;
+}
+.tax-badge-container .select2-selection--single .select2-selection__arrow {
+  display: none !important;
+}

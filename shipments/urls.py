@@ -51,7 +51,7 @@ urlpatterns = [
 
 
 from django.urls import path
-from shipments.views.vendor_bookings import (
+from shipments.views.vendor_bookings  import (
     VendorBookingListView,
     VendorBookingCreateView,
     VendorBookingUpdateView,
@@ -60,7 +60,13 @@ from shipments.views.vendor_bookings import (
     VendorBookingConfirmView,
     VendorBookingCompleteView,
     VendorBookingCancelView,
+    
 )  
+
+from shipments.views.vendor_booking_actions import generate_vendor_booking
+from shipments.views.vendor_booking_lines import VendorBookingLineDetailsView
+
+
 
 urlpatterns += [
     path("vendor-bookings/", VendorBookingListView.as_view(), name="vendor_booking_list"),
@@ -73,6 +79,14 @@ urlpatterns += [
     path("vendor-bookings/<int:pk>/complete/", VendorBookingCompleteView.as_view(), name="vendor_booking_complete"),
     path("vendor-bookings/<int:pk>/cancel/", VendorBookingCancelView.as_view(), name="vendor_booking_cancel"),
 
+    path(
+        "vendor-booking-lines/<int:pk>/details/",VendorBookingLineDetailsView.as_view(),name="vendor_booking_line_details",
+    ),
 
+
+    path("vendor-bookings/generate/<int:pk>/", generate_vendor_booking, name="vendor_booking_generate"),
     
 ]
+
+
+

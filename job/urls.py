@@ -17,8 +17,14 @@ from job.views.job_order import (
    JobOrderAttachmentDeleteView,
    JobOrderBulkStatusView,
    JobOrderCostsUpdateView,
-   JobOrderGenerateInvoiceView
+   JobOrderGenerateInvoiceView,
+  
     
+)
+
+from job.views.cost_types import (
+     cost_type_export,
+   cost_type_import
 )
 
 from django.urls import path, include
@@ -33,6 +39,9 @@ urlpatterns = [
     path("cost-types/add/", CostTypeCreateView.as_view(), name="cost_type_add"),
     path("cost-types/<int:pk>/edit/", CostTypeUpdateView.as_view(), name="cost_type_edit"),
    # path("order_completes/<int:pk>/complete/", complete_job, name="order_complete"),
+
+    path("cost-types/export/", cost_type_export, name="cost_type_export"),
+    path("cost-types/import/", cost_type_import, name="cost_type_import"),
 
 
     
@@ -69,6 +78,7 @@ urlpatterns = [
     path("reports/job/", sales_report, name="sales_report"),
     path("reports/job/pdf/", sales_report_pdf, name="sales_report_pdf"),
          
+
 
 ]
 

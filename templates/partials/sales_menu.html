@@ -53,16 +53,22 @@
     <p>Exchange Rates</p>
   </a>
 </li>
-        <li class="nav-item">
+  <li class="nav-item">
       <a href="{% url 'core:service_list' %}" class="nav-link">
         <i class="nav-icon bi bi-unity"></i>
-        <p>Services Product</p>
+        <p>Services (Product)</p>
+      </a>
+    </li>
+<li class="nav-item">
+      <a href="{% url 'job:cost_type_list' %}" class="nav-link">
+        <i class="nav-icon bi bi-unity"></i>
+        <p>Cost Types</p>
       </a>
     </li>
 
     <a href="{% url 'core:sales_config' %}" class="nav-link">
-  <i class="bi bi-gear"></i>
-  <p>Settings</p>
+  <i class="nav-icon bi bi-gear"></i>
+  <p>Config</p>
 </a>
 
   </ul>

@@ -1,0 +1,549 @@
+{% extends "adminbase.html" %}
+{% load static %}
+
+{% block content %}
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <div>
+          <h3 class="card-title mb-0">
+            {% if object %}Edit Vendor Booking{% else %}Add Vendor Booking{% endif %}
+          </h3>
+          {% if object %}
+            <div class="text-muted small">
+              {{ object.number }} ·
+              <span class="badge bg-info">{{ object.get_status_display|default:object.status }}</span>
+            </div>
+          {% endif %}
+        </div>
+
+        <a class="btn btn-outline-secondary btn-sm"
+           href="{% if object %}{% url 'shipments:vendor_booking_detail' object.pk %}{% else %}{% url 'shipments:vendor_booking_list' %}{% endif %}">
+          <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="card-body">
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger py-2 small mb-2">
+              {{ form.non_field_errors }}
+            </div>
+          {% endif %}
+
+          <!-- ===================== HEADER (NO NAVTAB) ===================== -->
+          <div class="border rounded p-2 mb-3">
+
+  <!-- JOB INFO (PROMINENT, READ-ONLY) -->
+  <div class="mb-2">
+    <span class="badge bg-secondary me-2">JOB</span>
+
+    {% if object %}
+      <a href="{% url 'job:job_order_detail' object.job_order_id %}"
+         class="fw-semibold text-decoration-none">
+        {{ object.job_order }}
+      </a>
+      <span class="text-muted small ms-1">(#{{ object.job_order_id }})</span>
+    {% elif job %}
+      <a href="{% url 'job:job_order_detail' job.pk %}"
+         class="fw-semibold text-decoration-none">
+        {{ job }}
+      </a>
+      <span class="text-muted small ms-1">(#{{ job.pk }})</span>
+    {% endif %}
+  </div>
+
+  <div class="row g-2">
+
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Issued Date</label>
+      {{ form.issued_date }}
+      {% if form.issued_date.errors %}
+        <div class="text-danger small">{{ form.issued_date.errors|striptags }}</div>
+      {% endif %}
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label small mb-1">Vendor</label>
+      {{ form.vendor }}
+      {% if form.vendor.errors %}
+        <div class="text-danger small">{{ form.vendor.errors|striptags }}</div>
+      {% endif %}
+    </div>
+
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Payment Term</label>
+      {{ form.payment_term }}
+      {% if form.payment_term.errors %}
+        <div class="text-danger small">{{ form.payment_term.errors|striptags }}</div>
+      {% endif %}
+    </div>
+
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Currency</label>
+      {{ form.currency }}
+      {% if form.currency.errors %}
+        <div class="text-danger small">{{ form.currency.errors|striptags }}</div>
+      {% endif %}
+    </div>
+
+    <div class="col-md-2">
+      <label class="form-label small mb-1">IDR Rate</label>
+      {{ form.idr_rate }}
+      <div class="form-text small">Auto from exchange rate</div>
+      {% if form.idr_rate.errors %}
+        <div class="text-danger small">{{ form.idr_rate.errors|striptags }}</div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <div class="row g-2 mt-2">
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Discount Amount</label>
+      {{ form.discount_amount }}
+      {% if form.discount_amount.errors %}
+        <div class="text-danger small">{{ form.discount_amount.errors|striptags }}</div>
+      {% endif %}
+    </div>
+
+    {% if object %}
+    <div class="col-md-3">
+      <label class="form-label small mb-1">Header Total</label>
+      <input type="text" class="form-control form-control-sm text-end"
+             value="{{ object.total_amount|default_if_none:'0' }}" readonly>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label small mb-1">Header Total (IDR)</label>
+      <input type="text" class="form-control form-control-sm text-end"
+             value="{{ object.total_idr|default_if_none:'0' }}" readonly>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if object %}
+    <div class="small text-muted mt-2">
+      Status:
+      <span class="badge {% if locked %}bg-secondary{% else %}bg-success{% endif %}">
+        {% if locked %}LOCKED{% else %}DRAFT{% endif %}
+      </span>
+    </div>
+  {% endif %}
+</div>
+
+          <!-- ===================== /HEADER ===================== -->
+
+
+          <!-- ===== LINES HEADER + ACTIONS ===== -->
+          <div class="d-flex align-items-center justify-content-between mt-3 mb-2">
+            <div>
+              <div class="fw-semibold">Lines</div>
+              <div class="text-muted small">Estimated Tax = planning only</div>
+            </div>
+
+            <div class="d-flex gap-2 align-items-center">
+              <div class="text-muted small me-2">
+                Total: <span id="vb-total-text">0</span>
+              </div>
+              {% if not locked %}
+              <button type="button" class="btn btn-outline-primary btn-sm" id="btn-add-line">
+                <i class="bi bi-plus-lg me-1"></i> Add Line
+              </button>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if formset.non_form_errors %}
+            <div class="alert alert-danger py-2 small mb-2">{{ formset.non_form_errors }}</div>
+          {% endif %}
+
+          <div class="table-responsive">
+            <table class="table table-sm align-middle" id="lines-table">
+              <thead class="table-light">
+                <tr>
+                  <th>Description</th>
+                  <th style="width: 8%" class="text-end">Qty</th>
+                  <th style="width: 10%">UOM</th>
+                  <th style="width: 14%" class="text-end">Unit Price</th>
+                  <th style="width: 10%" >Tax %</th>
+                  <th style="width: 6%" class="text-center">Detail</th>
+                  <th style="width: 3%" class="text-center">Del</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                 {{ formset.management_form }}
+         
+                {% for f in formset %}
+                  <tr>
+                    {{ f.id }}
+                    {{ f.details }}
+
+                    <td>
+                      <div class="d-flex gap-1 align-items-center">
+                        <div class="flex-grow-1">
+                          {{ f.description }}
+
+                        </div>
+
+                        {% if f.instance.pk %}
+                          <button type="button"
+                                class="btn btn-outline-secondary btn-sm py-0 px-2 vb-line-detail-btn"
+                                data-line-id="{{ f.instance.pk }}"
+                                data-bs-toggle="modal"
+                                data-bs-target="#vbDetailModal"
+                                title="Edit Detail">
+                          <i class="bi bi-ui-checks"></i>
+                        </button>
+
+                        {% else %}
+                          <button type="button"
+                                  class="btn btn-outline-secondary btn-sm py-0 px-2"
+                                  disabled
+                                  title="Save booking dulu untuk isi detail">
+                            <i class="bi bi-ui-checks"></i>
+                          </button>
+                        {% endif %}
+                      </div>
+
+                      {% if f.description.errors %}
+                        <div class="text-danger small">{{ f.description.errors|striptags }}</div>
+                      {% endif %}
+                    </td>
+
+                    <td class="text-end">
+                      {{ f.qty }}
+                      {% if f.qty.errors %}<div class="text-danger small">{{ f.qty.errors|striptags }}</div>{% endif %}
+                    </td>
+
+                    <td>
+                      {{ f.uom }}
+                      {% if f.uom.errors %}<div class="text-danger small">{{ f.uom.errors|striptags }}</div>{% endif %}
+                    </td>
+
+                    <td class="text-end">
+                      {{ f.unit_price }}
+                      {% if f.unit_price.errors %}<div class="text-danger small">{{ f.unit_price.errors|striptags }}</div>{% endif %}
+                    </td>
+
+                    <td class="text-end">
+                      {{ f.taxes }}
+                    </td>
+
+                    <td class="text-center">
+                      {% if f.instance.pk %}
+                        <span class="badge bg-light text-muted">OK</span>
+                      {% else %}
+                        <span class="badge bg-light text-muted">New</span>
+                      {% endif %}
+                    </td>
+
+                    <td class="text-center">
+                      {{ f.DELETE }}
+                    </td>
+                  </tr>
+
+                  {% if f.non_field_errors %}
+                    <tr>
+                      <td colspan="9" class="text-danger small">
+                        {{ f.non_field_errors }}
+                      </td>
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          {% if formset.non_form_errors %}
+            <div class="text-danger small">{{ formset.non_form_errors }}</div>
+          {% endif %}
+
+          <!-- EMPTY FORM TEMPLATE (for Add Line JS) -->
+          <script type="text/template" id="empty-line-row">
+            <tr>
+              {{ formset.empty_form.id }}
+              {{ formset.empty_form.details }}
+
+           
+              <td>
+                <div class="d-flex gap-1 align-items-center">
+                  <div class="flex-grow-1">
+                    
+                    {{ formset.empty_form.description }}
+                  </div>
+                  <button type="button"
+                          class="btn btn-outline-secondary btn-sm py-0 px-2"
+                          disabled
+                          title="Save booking dulu untuk isi detail">
+                    <i class="bi bi-ui-checks"></i>
+                  </button>
+                </div>
+              </td>
+
+              <td class="text-end">{{ formset.empty_form.qty }}</td>
+              <td>{{ formset.empty_form.uom }}</td>
+              <td class="text-end">{{ formset.empty_form.unit_price }}</td>
+              <td class="text-end">{{ formset.taxes }}</td>
+              <td class="text-center"><span class="badge bg-light text-muted">New</span></td>
+              <td class="text-center">{{ formset.empty_form.DELETE }}</td>
+            </tr>
+          </script>
+
+        </div>
+
+        <div class="card-footer d-flex gap-2 justify-content-end">
+          <button class="btn btn-primary btn-sm">
+            <i class="bi bi-save me-1"></i> Save
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+{{ cost_types_json|json_script:"vbCostTypesJson" }}
+
+{# ====================================#}
+{#  VB Detail Modal (shell stays here) #}
+{#  ================================== #}
+<div class="modal fade" id="vbDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+
+      {% include "vendor_bookings/extensions/_vb_modal_detail_header.html" %}
+
+      <div class="modal-body">
+        {% include "vendor_bookings/extensions/_vb_modal_section_route.html" %}
+        {% include "vendor_bookings/extensions/_vb_modal_section_schedule.html" %}
+        {% include "vendor_bookings/extensions/_vb_modal_section_transport_info.html" %}
+        {% include "vendor_bookings/extensions/_vb_modal_section_reference.html" %}
+        {% include "vendor_bookings/extensions/_vb_modal_section_note.html" %}
+
+      </div>
+
+      {% include "vendor_bookings/extensions/_vb_modal_detail_footer.html" %}
+
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+/* table row align top */
+#lines-table td,
+#lines-table th {
+  vertical-align: top;
+  padding: 2px 4px;        /* rapat seperti worksheet */
+}
+
+/* remove border & background from inputs */
+#lines-table .form-control,
+#lines-table .form-select,
+#lines-table textarea {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none !important;
+  background-color: transparent;
+  padding: 2px 4px;
+  font-size: 0.875rem;
+}
+
+/* keep focus visible (penting UX) */
+#lines-table .form-control:focus,
+#lines-table .form-select:focus,
+#lines-table textarea:focus {
+  outline: none;
+  box-shadow: inset 0 -1px 0 #0d6efd; /* garis bawah ala Excel */
+  background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* textarea auto-grow look */
+#lines-table textarea.auto-grow {
+  resize: none;
+  overflow: hidden;
+  line-height: 1.25;
+}
+
+/* checkbox & buttons rapih */
+#lines-table .btn {
+  padding: 0 6px;
+  line-height: 1.2;
+}
+
+/* hover row (worksheet feel) */
+#lines-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* ===============================
+   Flatpickr date input (Modal only)
+   =============================== */
+
+/* ukuran & border dasar */
+#vbDetailModal input.vb-date.form-control {
+  height: 30px;                     /* lebih ramping */
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;             /* ~13px */
+  border-radius: 4px;
+  border: 1px solid rgba(13, 110, 253, 0.25); /* biru tipis */
+  background-color: #fdfefe;
+}
+
+/* hover: ada hint interaktif */
+#vbDetailModal input.vb-date.form-control:hover {
+  border-color: rgba(13, 110, 253, 0.45);
+}
+
+/* focus: jelas tapi halus */
+#vbDetailModal input.vb-date.form-control:focus {
+  border-color: #0d6efd; /* bootstrap primary */
+  box-shadow: 0 0 0 0.1rem rgba(13, 110, 253, 0.15);
+  background-color: #fff;
+}
+
+/* placeholder lebih soft */
+#vbDetailModal input.vb-date::placeholder {
+  color: #9aa4af;
+  font-size: 0.75rem;
+}
+
+/* ===============================
+   Flatpickr calendar popup
+   =============================== */
+
+/* ukuran font calendar */
+.flatpickr-calendar {
+  font-size: 0.7rem;
+}
+
+/* header bulan */
+.flatpickr-months .flatpickr-month {
+  color: #0d6efd;
+  font-weight: 600;
+}
+
+/* hari terpilih */
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+  background: #0d6efd;
+  border-color: #0d6efd;
+  color: #fff;
+}
+
+/* hari hari biasa */
+.flatpickr-day:hover {
+  background: rgba(13, 110, 253, 0.1);
+  border-color: transparent;
+}
+
+/* hari ini */
+.flatpickr-day.today {
+  border-color: rgba(13, 110, 253, 0.6);
+}
+
+/* disable box-shadow bawaan */
+.flatpickr-calendar,
+.flatpickr-calendar.open {
+  box-shadow: 0 6px 16px rgba(0,0,0,.12);
+  border-radius: 6px;
+}
+
+
+#vbDetailModal input.vb-date.form-control {
+  line-height: 1.2 !important;
+}
+
+#vbDetailModal input.vb-date.form-control-sm {
+  min-height: 30px !important;
+}
+
+#vbDetailModal input.vb-date.form-control {
+  height: 30px !important;
+  padding: 0.25rem 0.5rem !important;
+  font-size: 0.8125rem !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(13, 110, 253, 0.25) !important;
+  background-color: #fdfefe !important;
+}
+
+/* Popup flatpickr: kecil & ada warna lembut */
+.flatpickr-calendar {
+  font-size: 0.8rem !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(13,110,253,.18) !important;
+  box-shadow: 0 10px 24px rgba(0,0,0,.14) !important;
+}
+
+.flatpickr-months .flatpickr-month {
+  color: #0d6efd !important;
+  font-weight: 600 !important;
+}
+
+.flatpickr-weekdays {
+  background: rgba(13,110,253,.06) !important;
+}
+
+.flatpickr-weekday {
+  color: rgba(13,110,253,.85) !important;
+  font-weight: 600 !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+  background: #0d6efd !important;
+  border-color: #0d6efd !important;
+  color: #fff !important;
+}
+
+.flatpickr-day:hover {
+  background: rgba(13,110,253,.10) !important;
+  border-color: transparent !important;
+}
+
+.flatpickr-day.today {
+  border-color: rgba(13,110,253,.55) !important;
+}
+
+</style>
+<link rel="stylesheet" href="{% static 'vendor/css/select2.min.css' %}">
+<link rel="stylesheet" href="{% static 'vendor/css/flatpickr.min.css' %}">
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="{% static 'vendor/js/select2.full.min.js' %}"></script>
+<script src="{% static 'vendor/js/flatpickr.min.js' %}"></script>
+
+
+<script src="{% static 'js/vendor_bookings/idr_rate.js' %}"></script>
+<script src="{% static 'js/vendor_bookings/insert_update_lines.js' %}"></script>
+<script src="{% static 'js/vendor_bookings/booking_form.js' %}"></script>
+<script src="{% static 'js/vendor_bookings/vb_modal_datepicker.js' %}"></script>
+<script>
+  window.VB = window.VB || {};
+  VB.costTypeMap = {{ cost_type_map_json|safe }};
+</script>
+
+<script src="{% static 'js/vendor_bookings/vb_detail_modal.js' %}"></script>
+
+
+
+{% endblock %}
+
+
+

@@ -1,0 +1,21 @@
+{# templates/vendor_bookings/extensions/_vb_modal_detail.html #}
+
+<div class="modal fade" id="vbDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+
+      {% include "vendor_bookings/extensions/_vb_modal_detail_header.html" %}
+
+      <div class="modal-body">
+        {% include "vendor_bookings/extensions/_vb_modal_section_route.html" %}
+        {% include "vendor_bookings/extensions/_vb_modal_section_schedule.html" %}
+        {% include "vendor_bookings/extensions/_vb_modal_section_transport_info.html" %}
+        {% include "vendor_bookings/extensions/_vb_modal_section_reference.html" %}
+        {% include "vendor_bookings/extensions/_vb_modal_section_note.html" %}
+      </div>
+
+      {% include "vendor_bookings/extensions/_vb_modal_detail_footer.html"  %}
+
+    </div>
+  </div>
+</div>

@@ -1,108 +1,145 @@
-from datetime import date, timedelta
+from django.db import models
+from decimal import Decimal
+from django import forms
+from shipments.models.vendor_bookings import VendorBooking
+from core.models.payment_terms import PaymentTerm
+
+discount_amount = models.DecimalField(
+    max_digits=18,
+    decimal_places=2,
+    default=Decimal("0.00"),
+    help_text="Discount amount (authoritative)"
+)
+
+class VendorBookingForm(forms.ModelForm):
+    
+    class Meta:
+        model = VendorBooking
+        fields = [
+            "issued_date",
+            "vendor",
+            "currency",
+            'payment_term',
+            'currency',
+            "idr_rate",
+            "discount_amount"
+            
+        ]
+        widgets = {
+            "issued_date": forms.DateInput(
+                attrs={
+                    "type": "date",
+                    "class": "form-control form-control-sm",
+                }
+            ),
+            "vendor": forms.Select(
+                attrs={
+                    "class": "form-select form-select-sm",
+                }
+            ),
+            "payment_term": forms.Select(
+                attrs={
+                    "class": "form-select form-select-sm",
+                }
+            ),
+            "currency": forms.Select(
+                attrs={
+                    "class": "form-select form-select-sm",
+                }
+            ),
+
+            "idr_rate": forms.NumberInput(
+                attrs={
+                    "class": "form-control form-control-sm",
+                    "step": "0.000001",
+                }
+            ),
+             "discount_amount": forms.NumberInput(
+                attrs={"class": "form-control form-control-sm text-end", "step": "0.01", "placeholder": "Amount"}
+            ),
+         
+           
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+
+        currency = cleaned.get("currency")
+        idr_rate = cleaned.get("idr_rate")
+        discount_amount = cleaned.get("discount_amount")
+
+        if currency and idr_rate in (None, ""):
+            self.add_error(
+                "idr_rate",
+                "IDR rate wajib diisi jika currency dipilih."
+            )
+
+        if not self.cleaned_data.get("idr_rate"):
+            self.cleaned_data["idr_rate"] = Decimal("1")
+
+        
+
+        if discount_amount is not None and discount_amount < 0:
+            self.add_error(
+                "discount_amount",
+                "Discount amount tidak boleh negatif."
+            )
+
+        return cleaned
+    
+
 
 from django import forms
 from django.forms import inlineformset_factory
 
 from shipments.models.vendor_bookings import VendorBooking, VendorBookingLine
-from job.models.job_orders import JobOrder
-from job.models.costs import JobCostType
+from core.models.taxes import Tax
 
-
-class VendorBookingForm(forms.ModelForm):
+class VendorBookingLineForm(forms.ModelForm):
+  
     class Meta:
-        model = VendorBooking
+        model = VendorBookingLine
         fields = [
-            "number",
-            "booking_date",
-            "job_order",
-            "vendor",
-            "service",
-
-            "origin_location",
-            "origin_text",
-            "destination_location",
-            "destination_text",
-
-            "pickup_note",
-            "delivery_note",
-
-            "etd",
-            "eta",
-            "currency",
-            "payment_term",
-            "source_type",
-            "remarks",
-            "status",
+            "cost_type",
+            "description",
+            "qty",
+            "uom",
+            "unit_price",
+            "details",
+            "taxes",
+            
         ]
         widgets = {
-            "remarks": forms.Textarea(attrs={"rows": 2, "class": "form-control form-control-sm"}),
-            "pickup_note": forms.Textarea(attrs={"rows": 2, "class": "form-control form-control-sm"}),
-            "delivery_note": forms.Textarea(attrs={"rows": 2, "class": "form-control form-control-sm"}),
+            "description": forms.Textarea(attrs={"rows": 1, "readonly": "readonly"}),
+            "qty": forms.NumberInput(attrs={"class": "form-control form-control-sm text-end", "step": "0.0001"}),
+            "uom": forms.TextInput(attrs={"class": "form-control form-control-sm"}),
+            "unit_price": forms.NumberInput(attrs={"class": "form-control form-control-sm text-end", "step": "0.01"}),
+            "details": forms.HiddenInput(),
+            
+            
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # ✅ styling
-        for name, f in self.fields.items():
-            f.widget.attrs.setdefault("class", "form-control form-control-sm")
+        self.fields["description"].widget.attrs["readonly"] = "readonly"
+        self.fields["description"].widget.attrs.setdefault("class", "form-control form-control-sm auto-grow")
 
-        # ✅ Batasi dropdown berat (optional, tapi bikin halaman nggak lemot)
-        # Job Order: ambil yang recent saja (90 hari)
-        if "job_order" in self.fields:
-            since = date.today() - timedelta(days=90)
-            qs = self.fields["job_order"].queryset
-            # sesuaikan bila field JO berbeda
-            if hasattr(qs.model, "job_date"):
-                qs = qs.filter(job_date__gte=since)
-            elif hasattr(qs.model, "created_at"):
-                qs = qs.filter(created_at__date__gte=since)
-            self.fields["job_order"].queryset = qs.order_by("-id")[:300]
+        # taxes M2M - pakai select2 ajax
+        self.fields["taxes"].queryset = Tax.objects.all().order_by("name")
+        self.fields["taxes"].widget = forms.SelectMultiple(attrs={
+            "class": "form-select form-select-sm js-tax-select2",
+            "data-placeholder": "Select tax...",
+            "data-ajax-url": "/taxes/autocomplete/",  # URL endpoint kita buat
+        })
+        self.fields["taxes"].required = False
 
-        # Vendor/Location bisa besar juga → batasi (sementara; nanti idealnya autocomplete)
-        if "vendor" in self.fields:
-            self.fields["vendor"].queryset = self.fields["vendor"].queryset.order_by("name")[:500]
-
-        if "origin_location" in self.fields:
-            self.fields["origin_location"].queryset = self.fields["origin_location"].queryset.order_by("name")[:500]
-        if "destination_location" in self.fields:
-            self.fields["destination_location"].queryset = self.fields["destination_location"].queryset.order_by("name")[:500]
-
-
-class _VendorBookingLineForm(forms.ModelForm):
-    class Meta:
-        model = VendorBookingLine
-        fields = [
-               "cost_type",
-                "description",
-                "qty",
-                "uom",
-                "unit_price",
-                "estimated_tax",
-                "estimated_tax_rate",
-        ]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # ✅ HANYA COST TYPE YANG PERLU VENDOR (internal tidak muncul)
-        self.fields["cost_type"].queryset = (
-            JobCostType.objects
-            .filter(is_active=True, requires_vendor=True)
-            .order_by("sort_order", "name")
-        )
-
-        # styling
-        for name, f in self.fields.items():
-            f.widget.attrs.setdefault("class", "form-control form-control-sm")
-
-        self.fields["description"].widget.attrs.setdefault("placeholder", "Keterangan (optional)")
 
 
 VendorBookingLineFormSet = inlineformset_factory(
     VendorBooking,
     VendorBookingLine,
-    form=_VendorBookingLineForm,
-    extra=1,
+    form=VendorBookingLineForm,
+    extra=0,          # tampilkan line yang ada saja
     can_delete=True,
 )
