@@ -5,13 +5,14 @@ from django.core.exceptions import ValidationError
 
 from accounting.models.settings import AccountingSettings
 from accounting.services.posting import create_journal, post_journal
-from payments.models.receipt import Receipt
+from payments.models.customer_receipt import CustomerReceipt
+
 
 
 def next_receipt_no():
     today = timezone.now().date()
     prefix = f"RCPT-{today:%Y%m}-"
-    last = Receipt.objects.filter(receipt_no__startswith=prefix).order_by("-receipt_no").first()
+    last = CustomerReceipt.objects.filter(receipt_no__startswith=prefix).order_by("-receipt_no").first()
     if not last or not last.receipt_no:
         return prefix + "0001"
     n = int(last.receipt_no.split("-")[-1])
@@ -19,7 +20,7 @@ def next_receipt_no():
 
 
 @transaction.atomic
-def post_receipt(rcpt: Receipt):
+def post_receipt(rcpt: CustomerReceipt):
     if not rcpt.can_post:
         return rcpt.journal
 
@@ -36,7 +37,7 @@ def post_receipt(rcpt: Receipt):
     if not ar:
         raise ValidationError("Set Default AR Account di Accounting Configuration.")
     if not cash:
-        raise ValidationError("Set Default Cash/Bank Account di Accounting Configuration atau pilih di Receipt.")
+        raise ValidationError("Set Default Cash/Bank Account di Accounting Configuration atau pilih di CustomerReceipt.")
 
     pph = rcpt.pph_withheld or Decimal("0.00")
     if pph < 0:
@@ -59,7 +60,7 @@ def post_receipt(rcpt: Receipt):
 
     # journal lines
     lines = [
-        {"account": cash, "debit": rcpt.amount, "credit": Decimal("0.00"), "label": f"Receipt {rcpt.receipt_no}"},
+        {"account": cash, "debit": rcpt.amount, "credit": Decimal("0.00"), "label": f"CustomerReceipt {rcpt.receipt_no}"},
     ]
     if pph > 0:
         lines.append({"account": pph_acc, "debit": pph, "credit": Decimal("0.00"), "label": "PPH Withheld"})
@@ -70,14 +71,14 @@ def post_receipt(rcpt: Receipt):
         number="",
         date=rcpt.receipt_date,
         ref=rcpt.receipt_no,
-        description=f"Receipt {rcpt.receipt_no} for Invoice {inv.number}",
+        description=f"CustomerReceipt {rcpt.receipt_no} for Invoice {inv.number}",
         lines=lines,
     )
     post_journal(j)
 
     # mark posted
     rcpt.journal = j
-    rcpt.status = Receipt.ST_POSTED
+    rcpt.status = CustomerReceipt.ST_POSTED
     rcpt.save(update_fields=["receipt_no", "journal", "status"])
 
     # update invoice payment

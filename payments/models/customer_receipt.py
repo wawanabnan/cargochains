@@ -7,7 +7,7 @@ from accounting.models.journal import Journal
 from sales.invoice_model import Invoice  # sesuaikan path om
 from partners.models import Customer
 
-class Receipt(models.Model):
+class CustomerReceipt(models.Model):
     ST_DRAFT = "draft"
     ST_POSTED = "posted"
     STATUS_CHOICES = [
@@ -43,6 +43,7 @@ class Receipt(models.Model):
 
     class Meta:
         ordering = ["-receipt_date", "-id"]
+        db_table="customer_receipts"
 
     def __str__(self):
         return self.receipt_no or f"RCPT-{self.id}"

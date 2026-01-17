@@ -18,6 +18,7 @@ from django.urls import reverse_lazy
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponseBadRequest
 from shipments.views.vendor_booking_lines import VendorBookingLineDetailsView
 from django.urls import reverse
+from shipments.forms.vendor_bookings import VendorBookingLineFormSet
 
 from job.models.costs import JobCostType
 from core.models.taxes import Tax
@@ -72,6 +73,52 @@ from django.db.models import Sum, F, DecimalField, ExpressionWrapper
 
 
 
+class VendorBookingBaseMixin:
+    model = VendorBooking
+    form_class = VendorBookingForm
+    template_name = "shipments/vendor_booking_form.html"
+
+    def get_success_url(self):
+        return reverse_lazy("shipments:vendor_booking_edit", kwargs={"pk": self.object.pk})
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        if self.request.POST:
+            ctx["lines_formset"] = VendorBookingLineFormSet(self.request.POST, instance=self.object)
+        else:
+            ctx["lines_formset"] = VendorBookingLineFormSet(instance=self.object)
+
+        # ✅ untuk template row dynamic add
+        ctx["empty_line_form"] = ctx["lines_formset"].empty_form
+        return ctx
+
+    def form_valid(self, form):
+        ctx = self.get_context_data()
+        fs = ctx["lines_formset"]
+
+        self.object = form.save(commit=True)
+
+        if fs.is_valid():
+            fs.instance = self.object
+            fs.save()
+
+            job_cost_ids = (
+                self.object.lines
+                .filter(job_cost__isnull=False)
+                .values_list("job_cost_id", flat=True)
+                .distinct()
+            )
+
+            for jc in JobCost.objects.filter(id__in=job_cost_ids):
+                recalc_job_cost_vb(jc)
+
+
+            return redirect(self.get_success_url())
+
+        return self.render_to_response(self.get_context_data(form=form))
+
+
+
 def build_job_vendor_cost_summary(job):
     """
     Summary vendor-required JobCost vs booked VendorBookingLines (per cost_type).
@@ -90,7 +137,7 @@ def build_job_vendor_cost_summary(job):
 
     booked_qs = (
         VendorBookingLine.objects
-          .vendorBookingLine.objects.filter(vendor_booking__job_order=job)
+          .filter(booking__job_order=job)
           .values("cost_type_id")
           .annotate(
               booked_qty=Sum("qty"),
@@ -138,110 +185,6 @@ def build_job_vendor_cost_summary(job):
 
 
 
-from django.db import transaction
-from django.db.models import Q
-
-# pastikan import JobCost ada (di file om belum ada)
-from job.models.costs import JobCost
-
-
-@transaction.atomic
-def sync_vendor_booking_lines(vb):
-    """
-    BUAT/UPDATE lines VendorBooking agar 100% mirror JobCost.
-    - Tidak ada add/remove manual.
-    - Lines dibuat berdasarkan: job_order + booking_group + requires_vendor.
-    - Jika vb.vendor ada -> filter jobcost berdasarkan vendor tsb (PO per vendor).
-    """
-
-    # guard: wajib job_order + booking_group
-    if not vb.job_order_id or not vb.booking_group:
-        return {"ok": False, "added": 0, "updated": 0, "disabled": 0, "reason": "missing job_order/booking_group"}
-
-    # 1) ambil jobcost yang relevan
-    qs = (
-        JobCost.objects
-        .select_related("cost_type", "currency", "vendor")
-        .filter(
-            job_order_id=vb.job_order_id,
-            is_active=True,
-            cost_type__requires_vendor=True,
-            cost_type__cost_group=vb.booking_group,
-        )
-        .order_by("cost_type__sort_order", "id")
-    )
-
-    # PO per vendor (recommended)
-    if vb.vendor_id:
-        qs = qs.filter(vendor_id=vb.vendor_id)
-
-    job_costs = list(qs)
-
-    # 2) existing lines map by job_cost_id
-    existing_lines = {ln.job_cost_id: ln for ln in vb.lines.all()}
-
-    added = 0
-    updated = 0
-    disabled = 0
-    keep_ids = set()
-
-    line_no = 1
-    for jc in job_costs:
-        keep_ids.add(jc.id)
-
-        ln = existing_lines.get(jc.id)
-        is_new = ln is None
-        if is_new:
-            ln = VendorBookingLine(vendor_booking=vb, job_cost=jc)
-
-        # 3) sync snapshot dari jobcost -> line
-        # NOTE: sesuaikan field JobCost om:
-        qty = getattr(jc, "qty", None) or 1
-        price = getattr(jc, "price", None) or 0
-        rate = getattr(jc, "rate", None) or 1
-
-        ln.line_no = line_no
-        ln.cost_type_id = jc.cost_type_id
-        ln.description = (getattr(jc, "description", "") or jc.cost_type.name)[:255]
-        ln.qty = qty
-        ln.unit_price = price
-        ln.currency_id = getattr(jc, "currency_id", None) or vb.currency_id
-        ln.idr_rate = rate
-        ln.amount = qty * price
-        ln.is_active = True
-
-        ln.save()
-        if is_new:
-            added += 1
-        else:
-            updated += 1
-
-        line_no += 1
-
-    # 4) disable lines yang jobcost-nya sudah tidak relevan
-    for jc_id, ln in existing_lines.items():
-        if jc_id not in keep_ids and ln.is_active:
-            ln.is_active = False
-            ln.save(update_fields=["is_active"])
-            disabled += 1
-
-    # 5) recalc JobCost VB (kalau om pakai service ini)
-    try:
-        for jc in job_costs:
-            recalc_job_cost_vb(jc)
-    except Exception:
-        # biarkan silent supaya UX tidak pecah, nanti kita rapihin log
-        pass
-
-    from django.utils import timezone
-
-    vb.last_synced_at = timezone.now()
-    vb.save(update_fields=["last_synced_at"])
-
-    return {"ok": True, "added": added, "updated": updated, "disabled": disabled}
-
-
-
 class VendorBookingListView(LoginRequiredMixin, ListView):
     template_name = "vendor_bookings/list.html"
     context_object_name = "bookings"
@@ -281,6 +224,8 @@ class VendorBookingDetailView(LoginRequiredMixin, DetailView):
         ctx["lines"] = self.object.lines.all()
         return ctx
 
+
+
 class VendorBookingCreateView(LoginRequiredMixin, CreateView):
     model = VendorBooking
     form_class = VendorBookingForm
@@ -290,34 +235,73 @@ class VendorBookingCreateView(LoginRequiredMixin, CreateView):
         self.job = self.get_selected_job()
         return super().dispatch(request, *args, **kwargs)
 
+    def form_valid(self, form):
+        booking = form.save(commit=False)
+        booking.job_order = self.job  # sekarang sudah terisi dari dispatch()
+        booking.status = VendorBooking.ST_DRAFT
+        booking.created_by = self.request.user
+        booking.save()
+        self.object = booking  # pastikan self.object ada untuk formset instance
+        return super().form_valid(form)
+        
     def get_selected_job(self):
-        job_id = self.request.GET.get("job_orders")
+        job_id = self.request.POST.get("job_order") or self.request.GET.get("job_order")
         if not job_id:
             return None
         return get_object_or_404(JobOrder, pk=job_id)
 
-    def form_valid(self, form):
+    def form_valid2(self, form):
         booking = form.save(commit=False)
         booking.job_order = self.job
         booking.status = VendorBooking.ST_DRAFT
         booking.created_by = self.request.user
         booking.save()
-        self.object = booking
+        return super().form_valid(form)
 
-        if booking.booking_group:
-            sync_vendor_booking_lines(booking)
-
-        return redirect("shipments:vendor_booking_edit", pk=booking.pk)
+    def get_success_url(self):
+        return reverse("shipments:vendor_booking_update", args=[self.object.pk])
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["job"] = self.job
-        ctx["job_cost_summary"] = build_job_vendor_cost_summary(self.job) if self.job else []
-        ctx["lines"] = []
+
+        job = None
+        job_id = self.request.POST.get("job_order") or self.request.GET.get("job_order")
+        if job_id:
+            job = JobOrder.objects.filter(pk=job_id).first()
+
+
+        qs = JobCostType.objects.all().order_by("name")
+
+        ctx["cost_types_json"] = list(qs.values("id","code","name","cost_group","service_type"))
+        ctx["cost_type_map_json"] = json.dumps(build_cost_type_map(), cls=DjangoJSONEncoder)
+        ctx["job_cost_summary"] = build_job_vendor_cost_summary(job) if job else []
+        ctx["weight_uoms"] = (
+            UOM.objects
+               .filter(is_active=True, category__iexact="Weight")
+               .order_by("code")
+        )
         ctx["is_create"] = True
+        prefix = "lines"
+        
+          # NOTE: pada create GET, self.object biasanya None → formset tetap bisa dibuat tanpa instance
+        if self.request.POST:
+            ctx["lines_formset"] = VendorBookingLineFormSet(
+                self.request.POST,
+                instance=getattr(self, "object", None),
+                prefix=prefix,
+            )
+        else:
+            ctx["lines_formset"] = VendorBookingLineFormSet(
+                instance=getattr(self, "object", None),
+                prefix=prefix,
+            )
+
+        # optional: kompatibel kalau template masih pakai {{ formset }}
+        ctx["formset"] = ctx["lines_formset"]
+
+        
         return ctx
-
-
+    
 class VendorBookingUpdateView(LoginRequiredMixin, UpdateView):
     model = VendorBooking
     form_class = VendorBookingForm
@@ -325,28 +309,55 @@ class VendorBookingUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["job"] = self.object.job_order
-        ctx["job_cost_summary"] = build_job_vendor_cost_summary(self.object.job_order)
-        ctx["lines"] = self.object.lines.filter(is_active=True).order_by("line_no")
+
+        if self.request.POST:
+            ctx["formset"] = VendorBookingLineFormSet(self.request.POST, instance=self.object)
+        else:
+            ctx["formset"] = VendorBookingLineFormSet(instance=self.object)
+
+
+        job = None
+        job_id = self.request.POST.get("job_order") or self.request.GET.get("job_order")
+        if job_id:
+            job = JobOrder.objects.filter(pk=job_id).first()
+
+
+        qs = JobCostType.objects.all().order_by("name")
+        ctx["cost_types_json"] = list(qs.values("id","code","name","cost_group","service_type"))
+        ctx["cost_type_map_json"] = json.dumps(build_cost_type_map(), cls=DjangoJSONEncoder)
+        ctx["weight_uoms"] = (
+            UOM.objects
+               .filter(is_active=True, category__iexact="Weight")
+               .order_by("code")
+        )
+
+        ctx["job_cost_summary"] = build_job_vendor_cost_summary(job) if job else []
+        # optional: kalau template juga butuh list lines non-formset
+        ctx["lines"] = self.object.lines.all().order_by("line_no", "id")
+        ctx["taxes"] = Tax.objects.filter(is_active=True).order_by("name") \
+            if hasattr(Tax, "is_active") else Tax.objects.all().order_by("name")
+        ctx["cost_types"] = JobCostType.objects.filter(is_active=True).order_by("sort_order","name") \
+            if hasattr(JobCostType,"is_active") else JobCostType.objects.all().order_by("name")
+
+
         return ctx
 
     def form_valid(self, form):
-        if self.object.status != VendorBooking.ST_DRAFT:
-            messages.error(self.request, "Booking sudah CONFIRMED/CANCELLED, tidak bisa diubah.")
-            return redirect("shipments:vendor_booking_edit", pk=self.object.pk)
+        ctx = self.get_context_data()
+        formset = ctx["formset"]
+
+        if not formset.is_valid():
+            return self.form_invalid(form)
 
         self.object = form.save()
-        res = sync_vendor_booking_lines(self.object)
+        formset.instance = self.object
+        formset.save()
 
-        messages.success(self.request, f"✅ Synced from JobCost: +{res['added']}, ~{res['updated']}, -{res['disabled']}")
+        # optional: hitung total header
+        if hasattr(self.object, "recalc_totals"):
+            self.object.recalc_totals()
+
         return redirect("shipments:vendor_booking_edit", pk=self.object.pk)
-
-    def get_form(self, form_class=None):
-        form = super().get_form(form_class)
-        if self.object and self.object.status != VendorBooking.ST_DRAFT:
-            for f in form.fields.values():
-                f.disabled = True
-        return form
 
 
 class VendorBookingSendView(VendorBookingObjectMixin, View):
@@ -361,16 +372,13 @@ class VendorBookingSendView(VendorBookingObjectMixin, View):
 
 class VendorBookingConfirmView(VendorBookingObjectMixin, View):
     def post(self, request, pk):
-        vb = self.get_object()
-        if vb.status != VendorBooking.ST_DRAFT:
+        b = self.get_object()
+        if b.status != VendorBooking.ST_DRAFT:
             return HttpResponseForbidden("Hanya DRAFT yang bisa confirm.")
         if not b.vendor_id:
             return HttpResponseForbidden("Vendor wajib diisi sebelum confirm.")
-        
-        sync_vendor_booking_lines(vb)
-        
-        vb.status = VendorBooking.ST_CONFIRMED
-        vb.save(update_fields=["status"])
+        b.status = VendorBooking.ST_CONFIRMED
+        b.save(update_fields=["status"])
         messages.success(request, "✅ Booking confirmed.")
         return redirect("shipments:vendor_booking_detail", pk=b.pk)
 
@@ -432,21 +440,3 @@ def vb_job_costs_json(request):
         })
 
     return JsonResponse({"ok": True, "items": items})
-
-
-
-class VendorBookingSyncView(VendorBookingObjectMixin, View):
-    def post(self, request, pk):
-        b = self.get_object()
-
-        if b.status != VendorBooking.ST_DRAFT:
-            messages.error(request, "Booking locked. Hanya DRAFT yang bisa sync.")
-            return redirect("shipments:vendor_booking_edit", pk=b.pk)
-
-        res = sync_vendor_booking_lines(b)
-        if res.get("ok"):
-            messages.success(request, f"✅ Sync OK: +{res['added']} new, ~{res['updated']} updated, -{res['disabled']} disabled.")
-        else:
-            messages.error(request, "Sync gagal. Cek header Job Order / Booking Group.")
-
-        return redirect("shipments:vendor_booking_edit", pk=b.pk)

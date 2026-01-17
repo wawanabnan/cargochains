@@ -1,0 +1,118 @@
+<div class="row g-2">
+
+  <!-- BASIC (ALL) -->
+  <div class="col-12" data-vb-group="ALL">
+    <div class="border rounded p-2">
+      <div class="fw-semibold mb-2">Basic</div>
+      <div class="row g-2">
+        <div class="col-lg-4">
+          <label class="form-label small mb-1">Shipper</label>
+          {{ form.shipper_name }}
+        </div>
+        <div class="col-lg-4">
+          <label class="form-label small mb-1">Consignee</label>
+          {{ form.consignee_name }}
+        </div>
+        <div class="col-lg-4">
+          <label class="form-label small mb-1">Notify Party</label>
+          {{ form.notify_party_name }}
+        </div>
+
+        <div class="col-12">
+          <label class="form-label small mb-1">Cargo Information</label>
+          {{ form.cargo_information }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEA -->
+  <div class="col-12 d-none" data-vb-group="SEA">
+    <div class="border rounded p-2">
+      <div class="fw-semibold mb-2">SEA – Shipping Instruction</div>
+      <div class="row g-2">
+        <div class="col-lg-3">
+          <label class="form-label small mb-1">POL</label>
+          {{ form.pol }}
+        </div>
+        <div class="col-lg-3">
+          <label class="form-label small mb-1">POD</label>
+          {{ form.pod }}
+        </div>
+        <div class="col-lg-3">
+          <label class="form-label small mb-1">ETD</label>
+          {{ form.etd }}
+        </div>
+        <div class="col-lg-3">
+          <label class="form-label small mb-1">ETA</label>
+          {{ form.eta }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AIR -->
+  <div class="col-12 d-none" data-vb-group="AIR">
+    <div class="border rounded p-2">
+      <div class="fw-semibold mb-2">AIR – Shipping Line Instruction</div>
+      <div class="row g-2">
+        <div class="col-lg-3">
+          <label class="form-label small mb-1">Origin Airport</label>
+          {{ form.origin_airport }}
+        </div>
+        <div class="col-lg-3">
+          <label class="form-label small mb-1">Destination Airport</label>
+          {{ form.dest_airport }}
+        </div>
+        <div class="col-lg-3">
+          <label class="form-label small mb-1">ETD</label>
+          {{ form.etd }}
+        </div>
+        <div class="col-lg-3">
+          <label class="form-label small mb-1">ETA</label>
+          {{ form.eta }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INLAND / TRUCK -->
+  <div class="col-12 d-none" data-vb-group="INLAND">
+    <div class="border rounded p-2">
+      <div class="fw-semibold mb-2">INLAND – Trucking / Service Order</div>
+      <div class="row g-2">
+        <div class="col-lg-4">
+          <label class="form-label small mb-1">Pickup Location</label>
+          {{ form.pickup_location }}
+        </div>
+        <div class="col-lg-4">
+          <label class="form-label small mb-1">Delivery Location</label>
+          {{ form.delivery_location }}
+        </div>
+        <div class="col-lg-2">
+          <label class="form-label small mb-1">Pickup Date</label>
+          {{ form.pickup_date }}
+        </div>
+        <div class="col-lg-2">
+          <label class="form-label small mb-1">Delivery Date</label>
+          {{ form.delivery_date }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OTHER / WORK ORDER -->
+  <div class="col-12 d-none" data-vb-group="OTHER">
+    <div class="border rounded p-2">
+      <div class="fw-semibold mb-2">Working Order</div>
+      <div class="row g-2">
+        <div class="col-12">
+          <label class="form-label small mb-1">Instruction / Notes</label>
+          {{ form.wo_notes }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+

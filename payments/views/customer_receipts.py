@@ -5,21 +5,21 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views import View
 from django.views.generic import ListView, CreateView, DetailView
 
-from payments.models.receipt import Receipt
-from payments.forms.receipts import ReceiptForm
-from payments.services.receipts import post_receipt
+from payments.models.customer_receipt import  CustomerReceipt
+from payments.forms.customer_receipts  import CustomerReceiptForm
+from payments.services.customer_receipts import CustomerReceipt
 
 
-class ReceiptListView(LoginRequiredMixin, ListView):
-    model = Receipt
+class CustomerReceiptListView(LoginRequiredMixin, ListView):
+    model = CustomerReceipt
     template_name = "receipts/list.html"
     context_object_name = "rows"
     paginate_by = 50
 
 
-class ReceiptCreateView(LoginRequiredMixin, CreateView):
-    model = Receipt
-    form_class = ReceiptForm
+class CustomerReceiptCreateView(LoginRequiredMixin, CreateView):
+    model = CustomerReceipt
+    form_class = CustomerReceiptForm
     template_name = "receipts/form.html"
 
     def form_valid(self, form):
@@ -38,15 +38,15 @@ class ReceiptCreateView(LoginRequiredMixin, CreateView):
         return redirect("payments:receipt_detail", pk=rcpt.pk)
 
 
-class ReceiptDetailView(LoginRequiredMixin, DetailView):
-    model = Receipt
+class CustomerReceiptDetailView(LoginRequiredMixin, DetailView):
+    model = CustomerReceipt
     template_name = "payments/receipts/detail.html"
     context_object_name = "rcpt"
 
 
-class ReceiptPostView(LoginRequiredMixin, View):
+class CustomerReceiptPostView(LoginRequiredMixin, View):
     def post(self, request, pk):
-        rcpt = get_object_or_404(Receipt, pk=pk)
+        rcpt = get_object_or_404(CustomerReceipt, pk=pk)
         if not rcpt.can_post:
             messages.info(request, "Receipt already posted.")
             return redirect("payments:receipt_detail", pk=rcpt.pk)
@@ -57,4 +57,4 @@ class ReceiptPostView(LoginRequiredMixin, View):
         except ValidationError as e:
             messages.error(request, f"Gagal post receipt: {e}")
 
-        return redirect("payments:receipt_detail", pk=rcpt.pk)
+        return redirect("payments:customer_receipts_detail", pk=rcpt.pk)

@@ -8,7 +8,7 @@ from sales.invoice_model import Invoice  # sesuaikan path
 
 @require_GET
 @login_required
-def invoice_receipt_info(request):
+def invoice_customer_receipt_info(request):
     inv_id = request.GET.get("invoice_id")
     if not inv_id:
         return JsonResponse({"error": "missing invoice_id"}, status=400)

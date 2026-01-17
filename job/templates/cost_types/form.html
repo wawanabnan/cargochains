@@ -50,13 +50,7 @@
                   {{ form.code }}
                 </div>
 
-                {% if request.user.is_superuser %}  
-                <div class="col-md-5">
-                  <label class="form-label">Cost Name</label>
-                  {{ form.name }}
-                </div>
-                {% endif %}
-
+            
                 <div class="col-md-4">
                   <label class="form-label">Cost Group</label>
                   {{ form.cost_group }}

@@ -1,4 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
+ // console.log("[BOOT] before any init: TOTAL_FORMS =", document.querySelector('input[id$="-TOTAL_FORMS"]')?.value);
+ // console.log("[BOOT] desc fields =", [...document.querySelectorAll('textarea[name^="lines-"][name$="-description"], input[name^="lines-"][name$="-description"]')].map(x=>x.name));
+
   // ======================================================
   // A) Transport toggle (tab Locations)
   // ======================================================
@@ -463,7 +466,12 @@ document.addEventListener("DOMContentLoaded", function () {
   if (btnAdd && tbody && tmpl && totalForms) {
     if (!btnAdd.dataset.bound_addline) {
       btnAdd.dataset.bound_addline = "1";
-      btnAdd.addEventListener("click", function () {
+      btnAdd.addEventListener("click", function (e) {
+       
+
+        e.preventDefault();
+        e.stopPropagation();
+
         const idx = parseInt(totalForms.value || "0", 10);
         const html = tmpl.innerHTML.replace(/__prefix__/g, String(idx));
         tbody.insertAdjacentHTML("beforeend", html);
@@ -477,6 +485,7 @@ document.addEventListener("DOMContentLoaded", function () {
           window.VB.rebindRow(newRow);
         }
 
+       
         // ✅ taxes select2 (autocomplete) untuk row baru
         initTaxSelect2(newRow);
 
@@ -492,215 +501,288 @@ document.addEventListener("DOMContentLoaded", function () {
 // TAX SELECT2 INITIALIZER
 // ======================================================
   function initTaxSelect2(root) {
-  if (!window.jQuery || !jQuery.fn || typeof jQuery.fn.select2 !== "function") {
-    console.warn("Select2 belum ter-load. Skip initTaxSelect2()");
-    return;
-  }
-
-  const $root = root ? $(root) : $(document);
-
-  $root.find(".js-tax-select2").each(function () {
-    const $el = $(this);
-
-    // sudah di-init?
-    if ($el.data("select2")) return;
-
-    const url = $el.data("ajax-url");
-    if (!url) {
-      console.warn("Tax select2: data-ajax-url kosong", this);
+    if (!window.jQuery || !jQuery.fn || typeof jQuery.fn.select2 !== "function") {
+      console.warn("Select2 belum ter-load. Skip initTaxSelect2()");
       return;
     }
 
-    $el.select2({
-      width: "100%",
-      placeholder: $el.data("placeholder") || "Taxes",
-      allowClear: true,
+    const $root = root ? $(root) : $(document);
 
-      ajax: {
-        url: url,
-        dataType: "json",
-        delay: 250,
-       
-        data: function (params) {
-          // kalau user ngetik -> search normal
-          if (params.term !== undefined) {
-            return { q: params.term || "" }; // term kosong -> minta list default
-          }
+    $root.find(".js-tax-select2").each(function () {
+      const $el = $(this);
 
-          // preload selected ids HANYA SEKALI (untuk edit mode)
-          if (!$el.data("vbPreloadDone")) {
-            $el.data("vbPreloadDone", 1);
-            return { "ids[]": $el.val() || [] };
-          }
+      // sudah di-init?
+      if ($el.data("select2")) return;
 
-          // setelah preload, kalau open tanpa term -> tampilkan list default
-          return { q: "" };
+      const url = $el.data("ajax-url");
+      if (!url) {
+        console.warn("Tax select2: data-ajax-url kosong", this);
+        return;
+      }
+
+      $el.select2({
+        width: "100%",
+        placeholder: $el.data("placeholder") || "Taxes",
+        allowClear: true,
+
+        ajax: {
+          url: url,
+          dataType: "json",
+          delay: 250,
+        
+          data: function (params) {
+            // kalau user ngetik -> search normal
+            if (params.term !== undefined) {
+              return { q: params.term || "" }; // term kosong -> minta list default
+            }
+
+            // preload selected ids HANYA SEKALI (untuk edit mode)
+            if (!$el.data("vbPreloadDone")) {
+              $el.data("vbPreloadDone", 1);
+              return { "ids[]": $el.val() || [] };
+            }
+
+            // setelah preload, kalau open tanpa term -> tampilkan list default
+            return { q: "" };
+          },
+
+          processResults: function (data) {
+            return data; // {results:[{id,text,title}]}
+          },
+          cache: true,
         },
 
-        processResults: function (data) {
-          return data; // {results:[{id,text,title}]}
+        // dropdown: tampil rate, tooltip dari title
+        templateResult: function (item) {
+          if (!item || !item.id) return item.text || "";
+          const $span = $("<span>").text(item.text || "");
+          if (item.title) $span.attr("title", item.title);
+          return $span;
         },
-        cache: true,
-      },
 
-      // dropdown: tampil rate, tooltip dari title
-      templateResult: function (item) {
-        if (!item || !item.id) return item.text || "";
-        const $span = $("<span>").text(item.text || "");
-        if (item.title) $span.attr("title", item.title);
-        return $span;
-      },
+        // selection: tampil rate
+        templateSelection: function (item) {
+          return (item && item.text) ? item.text : "";
+        },
 
-      // selection: tampil rate
-      templateSelection: function (item) {
-        return (item && item.text) ? item.text : "";
-      },
-
-      escapeMarkup: function (m) { return m; },
-    });
-
-    // ======================================================
-    // HARD STYLE APPLY (NO BORDER + BADGE) VIA JS
-    // ======================================================
-    function getContainer() {
-      try {
-        const inst = $el.data("select2");
-        if (inst && inst.$container) return inst.$container;
-      } catch (e) {}
-      // fallback
-      return $el.nextAll(".select2, .select2-container").first();
-    }
-
-    // ==============================
-// UX: klik kolom TAX (td / selection) -> open select2 (anti kedip)
-// - hanya 1 handler (di TD) biar tidak dobel open/close
-// - pakai click + stopPropagation
-// - open di tick berikutnya (setTimeout 0)
-// ==============================
-(function bindTaxCellOpen() {
-  const $td = $el.closest("td");
-  if (!$td.length) return;
-
-  // bind sekali per TD
-  if ($td.data("vbTaxTdBound")) return;
-  $td.data("vbTaxTdBound", 1);
-
-  $td.on("click", function (e) {
-    // klik remove (x) biarkan normal (hapus chip)
-    if ($(e.target).closest(".select2-selection__choice__remove").length) return;
-
-    // kalau user klik dropdown results, jangan ganggu
-    if ($(e.target).closest(".select2-dropdown").length) return;
-
-    // kalau sudah open, jangan toggle (biar nggak kedip)
-    const $c = (typeof getContainer === "function")
-      ? getContainer()
-      : $el.nextAll(".select2, .select2-container").first();
-
-    if ($c && $c.length && $c.hasClass("select2-container--open")) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    // open setelah event click selesai, supaya tidak langsung close
-    setTimeout(function () {
-      $el.select2("open");
-    }, 0);
-  });
-})();
-
-
-    function applyHardStyles() {
-      const $c = getContainer();
-      if (!$c || !$c.length) return;
-
-      $c.addClass("tax-badge-container"); // tetap set class untuk debug
-
-      // selection root (single/multiple)
-      const $sel = $c.find(".select2-selection").first();
-      $sel.css({
-        border: "none",
-        boxShadow: "none",
-        outline: "none",
-        background: "transparent",
-        minHeight: "auto",
-        padding: "0",
+        escapeMarkup: function (m) { return m; },
       });
 
-      // hilangkan arrow kalau single
-      $c.find(".select2-selection__arrow").css({ display: "none" });
+      // ======================================================
+      // HARD STYLE APPLY (NO BORDER + BADGE) VIA JS
+      // ======================================================
+      function getContainer() {
+        try {
+          const inst = $el.data("select2");
+          if (inst && inst.$container) return inst.$container;
+        } catch (e) {}
+        // fallback
+        return $el.nextAll(".select2, .select2-container").first();
+      }
 
-      // inline search field (multiple)
-      $c.find(".select2-search__field").css({
-        fontSize: "0.75rem",
-        marginTop: "2px",
-      });
+      // ==============================
+  // UX: klik kolom TAX (td / selection) -> open select2 (anti kedip)
+  // - hanya 1 handler (di TD) biar tidak dobel open/close
+  // - pakai click + stopPropagation
+  // - open di tick berikutnya (setTimeout 0)
+  // ==============================
+  (function bindTaxCellOpen() {
+    const $td = $el.closest("td");
+    if (!$td.length) return;
 
-      // style chips (multiple)
-      $c.find(".select2-selection__choice").each(function () {
-        $(this).css({
-          backgroundColor: "#0d6efd",
-          color: "#fff",
-          border: "none",
-          borderRadius: "999px",
-          padding: "2px 8px",
-          fontSize: "0.75rem",
-          lineHeight: "1.4",
-          margin: "2px 4px 2px 0",
-        });
-      });
+    // bind sekali per TD
+    if ($td.data("vbTaxTdBound")) return;
+    $td.data("vbTaxTdBound", 1);
 
-      // remove btn (x)
-      $c.find(".select2-selection__choice__remove").css({
-        color: "#fff",
-        border: "none",
-        background: "transparent",
-        marginRight: "4px",
-      });
-      $c.find(".select2-selection__clear").css({ display: "none" });
-      $c.find(".select2-clear").css({ display: "none" });
-      $c.find(".select2-selection__choice__remove").css({ display: "inline-block" });
+    $td.on("click", function (e) {
+      // klik remove (x) biarkan normal (hapus chip)
+      if ($(e.target).closest(".select2-selection__choice__remove").length) return;
 
-    }
+      // kalau user klik dropdown results, jangan ganggu
+      if ($(e.target).closest(".select2-dropdown").length) return;
 
-    // apply sekali setelah init
-    setTimeout(applyHardStyles, 0);
+      // kalau sudah open, jangan toggle (biar nggak kedip)
+      const $c = (typeof getContainer === "function")
+        ? getContainer()
+        : $el.nextAll(".select2, .select2-container").first();
 
-    // apply tiap select/unselect
-    $el.on("select2:select select2:unselect", function () {
+      if ($c && $c.length && $c.hasClass("select2-container--open")) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      // open setelah event click selesai, supaya tidak langsung close
       setTimeout(function () {
-        // tooltip untuk chips
-        const data = $el.select2("data") || [];
-        const $c = getContainer();
-        const $choices = $c.find(".select2-selection__choice");
-        $choices.each(function (i) {
-          const item = data[i];
-          if (item && item.title) $(this).attr("title", item.title);
-        });
-
-        // apply style lagi (chip baru kadang belum kena)
-        applyHardStyles();
+        $el.select2("open");
       }, 0);
     });
+  })();
 
-    // MutationObserver: kalau select2 bikin chip baru, kita style ulang
-    (function observeChoices() {
-      const $c = getContainer();
-      if (!$c || !$c.length) return;
 
-      const target = $c.find(".select2-selection").get(0);
-      if (!target) return;
+      function applyHardStyles() {
+        const $c = getContainer();
+        if (!$c || !$c.length) return;
 
-      const obs = new MutationObserver(function () {
-        applyHardStyles();
+        $c.addClass("tax-badge-container"); // tetap set class untuk debug
+
+        // selection root (single/multiple)
+        const $sel = $c.find(".select2-selection").first();
+        $sel.css({
+          border: "none",
+          boxShadow: "none",
+          outline: "none",
+          background: "transparent",
+          minHeight: "auto",
+          padding: "0",
+        });
+
+        // hilangkan arrow kalau single
+        $c.find(".select2-selection__arrow").css({ display: "none" });
+
+        // inline search field (multiple)
+        $c.find(".select2-search__field").css({
+          fontSize: "0.75rem",
+          marginTop: "2px",
+        });
+
+        // style chips (multiple)
+        $c.find(".select2-selection__choice").each(function () {
+          $(this).css({
+            backgroundColor: "#0d6efd",
+            color: "#fff",
+            border: "none",
+            borderRadius: "999px",
+            padding: "2px 8px",
+            fontSize: "0.75rem",
+            lineHeight: "1.4",
+            margin: "2px 4px 2px 0",
+          });
+        });
+
+        // remove btn (x)
+        $c.find(".select2-selection__choice__remove").css({
+          color: "#fff",
+          border: "none",
+          background: "transparent",
+          marginRight: "4px",
+        });
+        $c.find(".select2-selection__clear").css({ display: "none" });
+        $c.find(".select2-clear").css({ display: "none" });
+        $c.find(".select2-selection__choice__remove").css({ display: "inline-block" });
+
+      }
+
+      // apply sekali setelah init
+      setTimeout(applyHardStyles, 0);
+
+      // apply tiap select/unselect
+      $el.on("select2:select select2:unselect", function () {
+        setTimeout(function () {
+          // tooltip untuk chips
+          const data = $el.select2("data") || [];
+          const $c = getContainer();
+          const $choices = $c.find(".select2-selection__choice");
+          $choices.each(function (i) {
+            const item = data[i];
+            if (item && item.title) $(this).attr("title", item.title);
+          });
+
+          // apply style lagi (chip baru kadang belum kena)
+          applyHardStyles();
+        }, 0);
       });
-      obs.observe(target, { childList: true, subtree: true });
-    })();
+
+      // MutationObserver: kalau select2 bikin chip baru, kita style ulang
+      (function observeChoices() {
+        const $c = getContainer();
+        if (!$c || !$c.length) return;
+
+        const target = $c.find(".select2-selection").get(0);
+        if (!target) return;
+
+        const obs = new MutationObserver(function () {
+          applyHardStyles();
+        });
+        obs.observe(target, { childList: true, subtree: true });
+      })();
+    });
+  }
+
+  // ------------------------------
+// Delete checkbox -> Delete button
+// ------------------------------
+function isExistingRow(tr) {
+  const id = tr.querySelector('input[name$="-id"]');
+  return !!(id && String(id.value || "").trim());
+}
+
+function upgradeDeleteUI(tr) {
+  const cb = tr.querySelector('input[type="checkbox"][name$="-DELETE"]');
+  if (!cb) return;
+
+  cb.classList.add("d-none");
+
+  // cell action: coba td terakhir
+  const cell = cb.closest("td") || tr.lastElementChild;
+  if (!cell) return;
+
+  if (cell.querySelector(".vb-line-del-btn")) return;
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn  btn-lg py-2 px-2 vb-line-del-btn border-0";
+  btn.innerHTML = '<i class="bi bi-x border-0"></i>';
+  btn.title = "Delete line";
+
+  cell.appendChild(btn);
+}
+
+// Delegation (PASANG SEKALI)
+if (!document.body.dataset.vbDelBound) {
+  document.body.dataset.vbDelBound = "1";
+
+  document.addEventListener("click", function (e) {
+    const btn = e.target.closest(".vb-line-del-btn");
+    if (!btn) return;
+
+    e.preventDefault();
+
+    const tr = btn.closest("tr");
+    if (!tr) return;
+
+    const cb = tr.querySelector('input[type="checkbox"][name$="-DELETE"]');
+
+    if (isExistingRow(tr)) {
+      // existing: mark delete + hide
+      if (cb) cb.checked = true;
+      tr.classList.add("d-none");
+    } else {
+      // new: remove row + total_forms--
+      tr.remove();
+      const total = document.querySelector('input[id$="-TOTAL_FORMS"]');
+      if (total) total.value = String(Math.max(0, parseInt(total.value || "0", 10) - 1));
+    }
   });
 }
 
+// upgrade existing rows on load (tanpa id tbody)
+document.querySelectorAll('input[id$="-TOTAL_FORMS"]').forEach(function (tf) {
+  const table = tf.closest("form")?.querySelector("table");
+  if (!table) return;
 
-  initTaxSelect2(document);
-  
+  table.querySelectorAll("tbody tr").forEach(upgradeDeleteUI);
+});
 
+// Expose rebindRow untuk dipanggil add-row
+window.VB = window.VB || {};
+const prevRebind = window.VB.rebindRow;
+window.VB.rebindRow = function (tr) {
+  // kalau sebelumnya sudah ada rebindRow, tetap jalanin
+  if (typeof prevRebind === "function") prevRebind(tr);
+
+  upgradeDeleteUI(tr);
+};
+
+
+  initTaxSelect2(document);  
 });

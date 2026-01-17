@@ -94,7 +94,7 @@
     return map[String(costTypeId)] || null;
   }
 
-  function vendorModeFromCostType(selectEl) {
+  function vendorModeFromCostType2(selectEl) {
     // default aman: jika tidak ada meta, anggap butuh vendor
     if (!selectEl) return true;
     const ctId = selectEl.value;
@@ -105,6 +105,31 @@
 
     return !!meta.requires_vendor; // true => vendor mode, false => internal note mode
   }
+
+function vendorModeFromCostType(selectEl) {
+  if (!selectEl) return true;
+
+  // 1) prioritas: data-requires-vendor dari <option>
+  const opt = selectEl.options && selectEl.selectedIndex >= 0
+    ? selectEl.options[selectEl.selectedIndex]
+    : null;
+
+  const attr = opt ? opt.getAttribute("data-requires-vendor") : null;
+  if (attr === "1") return true;
+  if (attr === "0") return false;
+
+  // 2) fallback: COST_TYPE_META (kalau tersedia)
+  const ctId = selectEl.value;
+  if (!ctId) return true;
+
+  const meta = getCostTypeMeta(ctId);
+  if (!meta) return true;
+
+  return !!meta.requires_vendor;
+}
+
+
+
 
   function applyCostTypeMode(row, prefix) {
     const ct =
@@ -308,7 +333,11 @@ function attachRow(row, prefix) {
     if (!tbody || !tpl || !totalForms) return;
 
     // init existing rows
-    tbody.querySelectorAll("tr.jobcost-row").forEach((row) => attachRow(row, prefix));
+    //tbody.querySelectorAll("tr.jobcost-row").forEach((row) => attachRow(row, prefix));
+    tbody.querySelectorAll("tr.jobcost-row").forEach((row) => {
+      attachRow(row, prefix);
+      applyCostTypeMode(row, prefix); // ✅ WAJIB
+    });
 
     // delegate change cost_type (bind sekali per tbody element)
     if (!tbody.dataset.ctDelegateInit) {

@@ -1,0 +1,449 @@
+{% extends "adminbase.html" %}
+{% load static %}
+
+{% block content %}
+<div class="app-content">
+  <div class="container-fluid">
+
+    <form id="joborder-form" method="post" novalidate>
+      {% csrf_token %}
+      {% if job %}
+        <input type="hidden" name="job_id" value="{{ job.pk }}">
+      {% endif %}
+
+      <!-- Header -->
+      <div class="cc-topbar mb-3">
+        <div>
+          <div class="d-flex align-items-center gap-2">
+            <h3 class="mb-0">Job Order</h3>
+            {% if job %}
+              <span class="badge text-bg-primary">Update</span>
+              <span class="text-muted small">#{{ job.number }}</span>
+            {% else %}
+              <span class="badge text-bg-success">Create</span>
+            {% endif %}
+          </div>
+          <div class="text-muted small">Fill the header in 3 steps</div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a href="{% url 'sales:job_order_list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fa fa-arrow-left me-1"></i> Back
+          </a>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="fa fa-save me-1"></i> Save
+          </button>
+        </div>
+      </div>
+
+      {% if form.errors or form.non_field_errors %}
+        <div class="alert alert-danger d-flex gap-2 align-items-start">
+          <i class="fa fa-triangle-exclamation mt-1"></i>
+          <div class="flex-grow-1">
+            <div class="fw-semibold">Ada error input. Cek field merah.</div>
+            {% if form.non_field_errors %}
+              <div class="mt-1">{{ form.non_field_errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="cc-wrap">
+
+        <!-- Stepper -->
+        <div class="cc-steps shadow-sm mb-3">
+          <button class="cc-step active" type="button" data-step="#step-general">
+            <span class="cc-dot">1</span>
+            <span>
+              <span class="cc-title">General</span>
+              <span class="cc-sub">Customer, service, cargo</span>
+            </span>
+          </button>
+
+          <button class="cc-step" type="button" data-step="#step-route">
+            <span class="cc-dot">2</span>
+            <span>
+              <span class="cc-title">Route</span>
+              <span class="cc-sub">Pickup & delivery</span>
+            </span>
+          </button>
+
+          <button class="cc-step" type="button" data-step="#step-commercial">
+            <span class="cc-dot">3</span>
+            <span>
+              <span class="cc-title">Commercial</span>
+              <span class="cc-sub">Currency & totals</span>
+            </span>
+          </button>
+        </div>
+
+        <!-- Panels -->
+        <div class="cc-panel shadow-sm" id="step-general">
+          <div class="cc-panel-head">
+            <div class="fw-semibold">General</div>
+            <div class="text-muted small">Basic job information</div>
+          </div>
+          <div class="cc-panel-body">
+
+            <div class="cc-field">
+              <div class="cc-label">Job Date</div>
+              <div class="cc-input">
+                <div class="input-group input-group-sm">
+                  {{ form.job_date }}
+                  <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                </div>
+                <div class="cc-err">{{ form.job_date.errors }}</div>
+              </div>
+            </div>
+
+            <div class="cc-field">
+              <div class="cc-label">Order #</div>
+              <div class="cc-input">
+                {{ form.order_number }}
+                <div class="cc-err">{{ form.order_number.errors }}</div>
+              </div>
+            </div>
+
+            <div class="cc-field">
+              <div class="cc-label">Customer</div>
+              <div class="cc-input">
+                {{ form.customer }}
+                <div class="cc-err">{{ form.customer.errors }}</div>
+              </div>
+            </div>
+
+            <div class="cc-field">
+              <div class="cc-label">Service</div>
+              <div class="cc-input">
+                {{ form.service }}
+                <div class="cc-err">{{ form.service.errors }}</div>
+              </div>
+            </div>
+
+            <div class="cc-field">
+              <div class="cc-label">Cargo Description</div>
+              <div class="cc-input">
+                {{ form.cargo_description }}
+                <div class="cc-err">{{ form.cargo_description.errors }}</div>
+              </div>
+            </div>
+
+            <div class="cc-field">
+              <div class="cc-label">Quantity</div>
+              <div class="cc-input">
+                {{ form.quantity }}
+                <div class="cc-err">{{ form.quantity.errors }}</div>
+              </div>
+            </div>
+
+            {% if job %}
+            <div class="cc-field">
+              <div class="cc-label">Job Order #</div>
+              <div class="cc-input">
+                <input type="text" class="form-control form-control-sm" value="{{ job.number }}" readonly>
+              </div>
+            </div>
+            {% endif %}
+
+            <div class="cc-actions">
+              <button class="btn btn-primary btn-sm cc-next" type="button" data-next="#step-route">
+                Next <i class="fa fa-arrow-right ms-1"></i>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="cc-panel shadow-sm d-none" id="step-route">
+          <div class="cc-panel-head">
+            <div class="fw-semibold">Route</div>
+            <div class="text-muted small">Pickup and Delivery</div>
+          </div>
+          <div class="cc-panel-body">
+
+            <div class="cc-field">
+              <div class="cc-label">Pick Up</div>
+              <div class="cc-input">
+                {{ form.pickup }}
+                <div class="cc-err">{{ form.pickup.errors }}</div>
+              </div>
+            </div>
+
+            <div class="cc-field">
+              <div class="cc-label">Delivery</div>
+              <div class="cc-input">
+                {{ form.delivery }}
+                <div class="cc-err">{{ form.delivery.errors }}</div>
+              </div>
+            </div>
+
+            <div class="cc-actions">
+              <button class="btn btn-outline-secondary btn-sm cc-prev" type="button" data-prev="#step-general">
+                <i class="fa fa-arrow-left me-1"></i> Back
+              </button>
+              <button class="btn btn-primary btn-sm cc-next" type="button" data-next="#step-commercial">
+                Next <i class="fa fa-arrow-right ms-1"></i>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="cc-panel shadow-sm d-none" id="step-commercial">
+          <div class="cc-panel-head">
+            <div class="fw-semibold">Commercial</div>
+            <div class="text-muted small">Payment, currency, totals</div>
+          </div>
+          <div class="cc-panel-body">
+
+            <div class="cc-field">
+              <div class="cc-label">PIC</div>
+              <div class="cc-input">
+                {{ form.pic }}
+                <div class="cc-err">{{ form.pic.errors }}</div>
+              </div>
+            </div>
+
+            <div class="cc-field">
+              <div class="cc-label">Payment Term</div>
+              <div class="cc-input">
+                {{ form.payment_term }}
+                <div class="cc-err">{{ form.payment_term.errors }}</div>
+              </div>
+            </div>
+
+            <div class="cc-field">
+              <div class="cc-label">Currency</div>
+              <div class="cc-input">
+                {{ form.currency }}
+                <div class="cc-err">{{ form.currency.errors }}</div>
+              </div>
+            </div>
+
+            <div class="cc-field" id="row-kurs">
+              <div class="cc-label">Kurs IDR</div>
+              <div class="cc-input">
+                <input type="text" name="kurs_idr" id="id_kurs_idr"
+                       value="{{ form.kurs_idr.value|default:'0,00' }}"
+                       class="form-control form-control-sm text-end">
+              </div>
+            </div>
+
+            <div class="cc-split">
+              <div class="cc-box">
+                <div class="cc-box-title">Totals</div>
+
+                <div class="cc-mini">
+                  <div class="cc-mini-label">Total Amount</div>
+                  <div class="cc-mini-input">
+                    {{ form.total_amount }}
+                    <div class="cc-err">{{ form.total_amount.errors }}</div>
+                  </div>
+                </div>
+
+                <div class="cc-mini">
+                  <div class="cc-mini-label">Grand Total</div>
+                  <div class="cc-mini-input">
+                    {{ form.grand_total }}
+                    <div class="cc-err">{{ form.grand_total.errors }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="cc-box">
+                <div class="cc-box-title">Tax & PPH</div>
+
+                <div class="cc-toggle">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <div class="fw-semibold small">Apply Tax</div>
+                      <div class="text-muted small">1.1%</div>
+                    </div>
+                    <div class="form-check form-switch m-0">
+                      {{ form.is_tax }}
+                    </div>
+                  </div>
+                  <div class="mt-2">
+                    {{ form.tax_amount }}
+                    <div class="cc-err">{{ form.tax_amount.errors }}</div>
+                  </div>
+                </div>
+
+                <hr class="my-2">
+
+                <div class="cc-toggle">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <div class="fw-semibold small">Apply PPH</div>
+                      <div class="text-muted small">2%</div>
+                    </div>
+                    <div class="form-check form-switch m-0">
+                      {{ form.is_pph }}
+                    </div>
+                  </div>
+                  <div class="mt-2">
+                    {{ form.pph_amount }}
+                    <div class="cc-err">{{ form.pph_amount.errors }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="cc-field">
+              <div class="cc-label">Internal Remarks</div>
+              <div class="cc-input">
+                {{ form.remarks_internal }}
+                <div class="cc-err">{{ form.remarks_internal.errors }}</div>
+              </div>
+            </div>
+
+            <div class="cc-actions">
+              <button class="btn btn-outline-secondary btn-sm cc-prev" type="button" data-prev="#step-route">
+                <i class="fa fa-arrow-left me-1"></i> Back
+              </button>
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fa fa-save me-1"></i> Save
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .cc-topbar{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;}
+  .cc-wrap{max-width: 980px;margin:0 auto;}
+
+  .cc-steps{
+    border:1px solid rgba(0,0,0,.06);
+    border-radius:16px;
+    padding:10px;
+    background:rgba(0,0,0,.015);
+    display:grid;
+    grid-template-columns: repeat(3, minmax(0,1fr));
+    gap:8px;
+  }
+  .cc-step{
+    border:1px solid rgba(0,0,0,.06);
+    border-radius:14px;
+    background:#fff;
+    padding:10px 12px;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    text-align:left;
+    cursor:pointer;
+  }
+  .cc-step.active{outline:2px solid rgba(13,110,253,.25); border-color: rgba(13,110,253,.25);}
+  .cc-dot{
+    width:28px;height:28px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;
+    background:rgba(13,110,253,.08);
+  }
+  .cc-title{display:block;font-weight:700;font-size:.9rem;line-height:1.1;}
+  .cc-sub{display:block;color:rgba(0,0,0,.55);font-size:.78rem;line-height:1.1;margin-top:2px;}
+
+  .cc-panel{
+    border:1px solid rgba(0,0,0,.06);
+    border-radius:16px;
+    background:#fff;
+  }
+  .cc-panel-head{
+    padding:12px 14px;
+    border-bottom:1px solid rgba(0,0,0,.06);
+    background:rgba(0,0,0,.01);
+    border-top-left-radius:16px;border-top-right-radius:16px;
+    display:flex;justify-content:space-between;gap:10px;align-items:center;
+  }
+  .cc-panel-body{padding:14px;}
+
+  /* Field layout (label column fixed, input column flexible) */
+  .cc-field{
+    display:grid;
+    grid-template-columns: 180px minmax(0,1fr);
+    gap:12px;
+    padding:10px 0;
+    border-bottom:1px dashed rgba(0,0,0,.06);
+  }
+  .cc-field:last-child{border-bottom:0;}
+  .cc-label{font-weight:700;font-size:.8rem;color:rgba(0,0,0,.65);padding-top:6px;}
+  .cc-input .form-control,
+  .cc-input .form-select{border-radius:14px;border:1px solid rgba(0,0,0,.10);}
+
+  .cc-err{color:#dc3545;font-size:.78rem;margin-top:6px;}
+  .cc-err ul{margin:0;padding-left:18px;}
+
+  .cc-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;}
+
+  .cc-split{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:12px;
+    margin: 8px 0 4px;
+  }
+  .cc-box{
+    border:1px solid rgba(0,0,0,.06);
+    border-radius:16px;
+    padding:12px;
+    background:rgba(0,0,0,.01);
+  }
+  .cc-box-title{font-weight:800;font-size:.82rem;color:rgba(0,0,0,.65);margin-bottom:10px;}
+  .cc-mini{display:grid;grid-template-columns: 140px 1fr;gap:10px;align-items:start;margin-bottom:10px;}
+  .cc-mini-label{font-size:.78rem;color:rgba(0,0,0,.6);padding-top:6px;}
+  .cc-toggle .form-control, .cc-toggle .form-select{border-radius:14px;}
+
+  @media (max-width: 991px){
+    .cc-steps{grid-template-columns:1fr;}
+    .cc-field{grid-template-columns:1fr; }
+    .cc-label{padding-top:0;}
+    .cc-split{grid-template-columns:1fr;}
+    .cc-mini{grid-template-columns:1fr;}
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  function showStep(sel){
+    document.querySelectorAll(".cc-panel").forEach(p => p.classList.add("d-none"));
+    const panel = document.querySelector(sel);
+    if (panel) panel.classList.remove("d-none");
+
+    document.querySelectorAll(".cc-step").forEach(b => b.classList.remove("active"));
+    const btn = document.querySelector(`.cc-step[data-step="${sel}"]`);
+    if (btn) btn.classList.add("active");
+  }
+
+  document.addEventListener("click", (e)=>{
+    const stepBtn = e.target.closest(".cc-step");
+    if (stepBtn){
+      showStep(stepBtn.getAttribute("data-step"));
+      return;
+    }
+    const nextBtn = e.target.closest(".cc-next");
+    if (nextBtn){
+      showStep(nextBtn.getAttribute("data-next"));
+      return;
+    }
+    const prevBtn = e.target.closest(".cc-prev");
+    if (prevBtn){
+      showStep(prevBtn.getAttribute("data-prev"));
+      return;
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    showStep("#step-general");
+  });
+})();
+</script>
+{% endblock %}

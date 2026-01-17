@@ -1,0 +1,106 @@
+<div class="row g-2">
+  <div class="col-lg-8">
+
+    <div class="border rounded p-2">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <div>
+          <div class="fw-semibold">Planned Job Cost (Vendor-required)</div>
+          <div class="text-muted small">Auto source of truth. No add/remove line.</div>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 4%;">#</th>
+              <th>Cost Type</th>
+              <th style="width: 14%;" class="text-end">Qty</th>
+              <th style="width: 18%;" class="text-end">Price</th>
+              <th style="width: 18%;" class="text-end">Planned</th>
+              <th style="width: 18%;" class="text-end">Booked</th>
+              <th style="width: 12%;">Status</th>
+            </tr>
+          </thead>
+
+          <tbody>
+          {% if job_cost_summary %}
+            {% for r in job_cost_summary %}
+              <tr>
+                <td class="text-muted">{{ forloop.counter }}</td>
+                <td>
+                  <div class="fw-semibold">{{ r.cost_type_name }}</div>
+                  <div class="text-muted small">ID: {{ r.cost_type_id }}</div>
+                </td>
+                <td class="text-end">{{ r.job_qty|default:"-" }}</td>
+                <td class="text-end">
+                  {{ r.job_currency }} {{ r.job_price|default:"0" }}
+                </td>
+                <td class="text-end">
+                  {{ r.job_currency }} {{ r.plan_amount|default:"0" }}
+                </td>
+                <td class="text-end">
+                  {{ r.job_currency }} {{ r.booked_amount|default:"0" }}
+                </td>
+                <td>
+                  {% if r.status == "Fully booked" %}
+                    <span class="badge text-bg-success">Fully</span>
+                  {% elif r.status == "Partially booked" %}
+                    <span class="badge text-bg-warning">Partial</span>
+                  {% else %}
+                    <span class="badge text-bg-secondary">None</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-muted small">No job cost summary yet. Select Job Order / Booking Group.</td>
+            </tr>
+          {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="col-lg-4">
+    <div class="border rounded p-2">
+      <div class="fw-semibold mb-1">Current Booking Lines</div>
+      <div class="text-muted small mb-2">These are created by system sync from Job Cost.</div>
+
+      <div class="table-responsive" style="max-height: 420px; overflow:auto;">
+        <table class="table table-sm mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Desc</th>
+              <th class="text-end">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% if lines %}
+            {% for ln in lines %}
+              <tr>
+                <td class="text-muted">{{ ln.line_no }}</td>
+                <td>
+                  <div class="fw-semibold">{{ ln.cost_type }}</div>
+                  <div class="text-muted small">{{ ln.description }}</div>
+                </td>
+                <td class="text-end">{{ ln.amount }}</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="3" class="text-muted small">No lines yet. Save header to trigger sync.</td></tr>
+          {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="text-muted small mt-2">
+        *Nanti setelah UX ok, kita buat sync otomatis di save/confirm.
+      </div>
+    </div>
+  </div>
+</div>

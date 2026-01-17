@@ -5,16 +5,7 @@ from accounting.models.chart import Account
 from accounting.models.settings import AccountingSettings
 
   
-SYSTEM_GROUP_CHOICES = [
-    ("TRUCKING", "Trucking"),
-    ("WAREHOUSE", "Warehouse"),
-    ("OCEAN", "Ocean Freight"),
-    ("AIR", "Air Freight"),
-    ("PORT", "Port / Stevedoring"),
-    ("DOC", "Documentation"),
-    ("OTHER", "Other / Internal"),
-]
-   
+
 
 class JobCostTypeForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -38,6 +29,7 @@ class JobCostTypeForm(forms.ModelForm):
             attrs={"class": "form-select form-select-sm"}
         )
 
+
         # merge: pilihan default + value lama yang sudah ada di DB (biar tidak putus)
         existing = (
             JobCostType.objects.exclude(cost_group__isnull=True)
@@ -45,9 +37,7 @@ class JobCostTypeForm(forms.ModelForm):
             .values_list("cost_group", flat=True)
             .distinct()
         )
-        extra = [(g, g) for g in existing if g not in dict(SYSTEM_GROUP_CHOICES)]
-        self.fields["cost_group"].choices = SYSTEM_GROUP_CHOICES + extra
-
+       
         # ✅ Filter COGS account (kalau settings ada)
         year = None
         try:
@@ -85,13 +75,11 @@ class JobCostTypeForm(forms.ModelForm):
             "cost_group",
             "cogs_account",
             "sort_order",
-            "service_type",
             "accrued_liability_account"
         ]
         widgets = {
             "code": forms.TextInput(attrs={"class": "form-control form-control-sm"}),
             "name": forms.TextInput(attrs={"class": "form-control form-control-sm"}),
-            "service_type": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "accrued_liability_account": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "requires_vendor": forms.CheckboxInput(attrs={"class": "form-check-input", "role": "switch"}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input", "role": "switch"}),

@@ -1,9 +1,9 @@
 from django import forms
-from payments.models.receipt import Receipt
+from payments.models.customer_receipt import CustomerReceipt
 from accounting.models.settings import AccountingSettings
 from accounting.models.chart import Account
 
-class ReceiptForm(forms.ModelForm):
+class CustomerReceiptForm(forms.ModelForm):
     # tampil di UI, tapi tidak disimpan dari input user
     customer_display = forms.CharField(
         required=False,
@@ -15,7 +15,7 @@ class ReceiptForm(forms.ModelForm):
     )
 
     class Meta:
-        model = Receipt
+        model = CustomerReceipt
         fields = ["receipt_date", "invoice", "customer_display", "amount", "pph_withheld", "cash_account", "notes"]
         widgets = {
             "receipt_date": forms.DateInput(attrs={"class":"form-control form-control-sm", "type":"date"}),

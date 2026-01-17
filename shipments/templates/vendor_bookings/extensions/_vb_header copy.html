@@ -1,0 +1,137 @@
+<div class="card shadow-sm mb-3">
+  <div class="card-body py-2">
+
+    <!-- TOP BAR: JOB + STATUS + NUMBERS -->
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+      <div class="flex-grow-1">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-secondary">JOB</span>
+
+          {% if object %}
+            <a href="{% url 'job:job_order_detail' object.job_order_id %}"
+               class="fw-semibold text-decoration-none">
+              {{ object.job_order }}
+            </a>
+            <span class="text-muted small">(#{{ object.job_order_id }})</span>
+          {% else %}
+           <div class="vb-jobpick">
+              <label class="form-label small mb-1">Job Order</label>
+              {{ form.job_order }}
+              {% if form.job_order.errors %}
+                <div class="text-danger small">{{ form.job_order.errors|striptags }}</div>
+              {% endif %}
+              <div class="form-text small">
+                Pilih Job Order dulu (manual create).
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if object %}
+        <div class="text-end">
+          <div class="small text-muted mb-1">Status</div>
+          <span class="badge {% if locked %}bg-secondary{% else %}bg-success{% endif %}">
+            {% if locked %}LOCKED{% else %}DRAFT{% endif %}
+          </span>
+        </div>
+      {% endif %}
+    </div>
+
+    <hr class="my-2">
+
+    <!-- MAIN FIELDS (compact grid) -->
+    <div class="row g-2 align-items-end">
+      <div class="col-6 col-md-2">
+        <label class="form-label small mb-1">Issued</label>
+        {{ form.issued_date }}
+        {% if form.issued_date.errors %}<div class="text-danger small">{{ form.issued_date.errors|striptags }}</div>{% endif %}
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label class="form-label small mb-1">Vendor</label>
+        {{ form.vendor }}
+        {% if form.vendor.errors %}<div class="text-danger small">{{ form.vendor.errors|striptags }}</div>{% endif %}
+      </div>
+
+      <div class="col-6 col-md-2">
+        <label class="form-label small mb-1">Booking Type</label>
+        {{ form.booking_group }}
+        {% if form.booking_group.errors %}<div class="text-danger small">{{ form.booking_group.errors|striptags }}</div>{% endif %}
+      </div>
+
+      <div class="col-6 col-md-2">
+        <label class="form-label small mb-1">Letter Type</label>
+        {{ form.letter_type }}
+        {% if form.letter_type.errors %}<div class="text-danger small">{{ form.letter_type.errors|striptags }}</div>{% endif %}
+      </div>
+
+      <div class="col-12 col-md-2">
+        <label class="form-label small mb-1">Payment</label>
+        {{ form.payment_term }}
+        {% if form.payment_term.errors %}<div class="text-danger small">{{ form.payment_term.errors|striptags }}</div>{% endif %}
+      </div>
+
+      <div class="col-6 col-md-2">
+        <label class="form-label small mb-1">Currency</label>
+        {{ form.currency }}
+        {% if form.currency.errors %}<div class="text-danger small">{{ form.currency.errors|striptags }}</div>{% endif %}
+      </div>
+
+      <div class="col-6 col-md-2">
+        <label class="form-label small mb-1">IDR Rate</label>
+        {{ form.idr_rate }}
+        {% if form.idr_rate.errors %}<div class="text-danger small">{{ form.idr_rate.errors|striptags }}</div>{% endif %}
+      </div>
+
+      <div class="col-6 col-md-2">
+        <label class="form-label small mb-1">Discount</label>
+        {{ form.discount_amount }}
+        {% if form.discount_amount.errors %}<div class="text-danger small">{{ form.discount_amount.errors|striptags }}</div>{% endif %}
+      </div>
+
+      <div class="col-6 col-md-3">
+        <label class="form-label small mb-1">VBO No</label>
+        {{ form.vb_number }}
+      </div>
+
+      <div class="col-12 col-md-3">
+        <label class="form-label small mb-1">Letter No</label>
+        {{ form.letter_number }}
+      </div>
+
+      {% if object %}
+        <div class="col-6 col-md-2">
+          <label class="form-label small mb-1">Total</label>
+          <input type="text" class="form-control form-control-sm text-end"
+                 value="{{ object.total_amount|default_if_none:'0' }}" readonly>
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label small mb-1">Total (IDR)</label>
+          <input type="text" class="form-control form-control-sm text-end"
+                 value="{{ object.total_idr|default_if_none:'0' }}" readonly>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+<div class="row g-2 mt-2" data-booking-section="BASIC">
+  {% include 'vendor_bookings/extensions/_vb_basic.html' %}
+</div>
+
+<div class="row g-2 mt-2 d-none" data-booking-section="SEA">
+    {% include 'vendor_bookings/extensions/_vb_sea.html' %}
+
+</div>
+
+<div class="row g-2 mt-2 d-none" data-booking-section="AIR">
+   {% include 'vendor_bookings/extensions/_vb_air.html' %}
+
+</div>
+
+<div class="row g-2 mt-2 d-none" data-booking-section="INLAND">
+   {% include 'vendor_bookings/extensions/_vb_inland.html' %}
+
+</div>

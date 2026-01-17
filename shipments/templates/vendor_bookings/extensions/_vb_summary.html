@@ -1,0 +1,46 @@
+{% if job_cost_summary %}
+  <div class="card mb-2">
+    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+      <strong>Vendor-required Job Costs</strong>
+      <span class="text-muted small">
+        {% if object %}Job: {{ object.job_order }}{% elif job %}Job: {{ job }}{% endif %}
+      </span>
+    </div>
+    <div class="card-body py-2">
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Cost Type</th>
+              <th class="text-end">Plan Qty</th>
+              <th class="text-end">Plan Amount</th>
+              <th class="text-end">Booked Qty</th>
+              <th class="text-end">Booked Amount</th>
+              <th style="width:140px;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in job_cost_summary %}
+              <tr>
+                <td>{{ r.cost_type_name }}</td>
+                <td class="text-end">{{ r.job_qty }}</td>
+                <td class="text-end">{{ r.plan_amount }}</td>
+                <td class="text-end">{{ r.booked_qty }}</td>
+                <td class="text-end">{{ r.booked_amount }}</td>
+                <td>
+                  {% if r.status == "Fully booked" %}
+                    <span class="badge bg-success">Fully booked</span>
+                  {% elif r.status == "Partially booked" %}
+                    <span class="badge bg-warning text-dark">Partially</span>
+                  {% else %}
+                    <span class="badge bg-light text-muted">Not booked</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endif %}

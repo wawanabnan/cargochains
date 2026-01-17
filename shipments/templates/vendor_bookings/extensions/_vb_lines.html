@@ -1,0 +1,132 @@
+   
+
+          {% if formset.non_form_errors %}
+            <div class="alert alert-danger py-2 small mb-2">{{ formset.non_form_errors }}</div>
+          {% endif %}
+             {{ formset.management_form }}
+             
+          <div class="table-responsive">
+            <table class="table table-sm align-middle" id="lines-table">
+              <thead class="table-light">
+                <tr>
+                  <th>Description</th>
+                  <th style="width: 8%" class="text-end">Qty</th>
+                  <th style="width: 10%">UOM</th>
+                  <th style="width: 14%" class="text-end">Unit Price</th>
+                  <th style="width: 10%" >Tax %</th>
+                  <th style="width: 6%" class="text-center">Detail</th>
+                  <th style="width: 3%" class="text-center">Del</th>
+                </tr>
+              </thead>
+
+              <tbody>
+              
+         
+                {% for f in formset %}
+                  <tr>
+                    {{ f.id }}
+                    {{ f.cost_type }} 
+                    {{ f.details }}
+
+                    <td>
+                      <div class="d-flex gap-1 align-items-center">
+                        <div class="flex-grow-1">
+                          {{ f.description }}
+
+                        </div>
+                          <button type="button"
+                                class="btn btn-outline-secondary btn-sm py-0 px-2 vb-line-detail-btn"
+                                {% if f.instance.pk %}data-line-id="{{ f.instance.pk }}"{% endif %}
+                                data-bs-toggle="modal"
+                                data-bs-target="#vbDetailModal"
+                                title="Edit Detail">
+                          <i class="bi bi-ui-checks"></i>
+                        </button>
+                                              
+                      </div>
+
+                      {% if f.description.errors %}
+                        <div class="text-danger small">{{ f.description.errors|striptags }}</div>
+                      {% endif %}
+                    </td>
+
+                    <td class="text-end">
+                      {{ f.qty }}
+                      {% if f.qty.errors %}<div class="text-danger small">{{ f.qty.errors|striptags }}</div>{% endif %}
+                    </td>
+
+                    <td>
+                      {{ f.uom }}
+                      {% if f.uom.errors %}<div class="text-danger small">{{ f.uom.errors|striptags }}</div>{% endif %}
+                    </td>
+
+                    <td class="text-end">
+                      {{ f.unit_price }}
+                      {% if f.unit_price.errors %}<div class="text-danger small">{{ f.unit_price.errors|striptags }}</div>{% endif %}
+                      
+                    </td>
+
+                    <td class="text-end">
+                      {{ f.taxes }}
+                    </td>
+
+                    <td class="text-center">
+                      {% if f.instance.pk %}
+                        <span class="badge bg-light text-muted">OK</span>
+                      {% else %}
+                        <span class="badge bg-light text-muted">New</span>
+                      {% endif %}
+                    </td>
+
+                    <td class="text-center">
+                      {{ f.DELETE }}
+                    </td>
+                  </tr>
+
+                  {% if f.non_field_errors %}
+                    <tr>
+                      <td colspan="9" class="text-danger small">
+                        {{ f.non_field_errors }}
+                      </td>
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          {% if formset.non_form_errors %}
+            <div class="text-danger small">{{ formset.non_form_errors }}</div>
+          {% endif %}
+
+            <script type="text/template" id="empty-line-row">
+            
+              <tr data-vb-row="1">
+                {{ formset.empty_form.id }}
+                {{ formset.empty_form.cost_type }}
+                {{ formset.empty_form.details }}
+
+                <td>
+                  <div class="d-flex gap-1 align-items-center">
+                    <div class="flex-grow-1">
+                      {{ formset.empty_form.description }}
+                    </div>
+                    <button type="button"
+                          class="btn btn-outline-secondary btn-sm py-0 px-2 vb-line-detail-btn"
+                          data-bs-toggle="modal"
+                          data-bs-target="#vbDetailModal"
+                          title="Edit Detail">
+                      <i class="bi bi-ui-checks"></i>
+                    </button>
+                  </div>
+                </td>
+
+                <td class="text-end">{{ formset.empty_form.qty }}</td>
+                <td>{{ formset.empty_form.uom }}</td>
+                <td class="text-end">{{ formset.empty_form.unit_price }}</td>
+                <td class="text-end">{{ formset.empty_form.taxes }}</td>
+                <td class="text-center"><span class="badge bg-light text-muted">New</span></td>
+                <td class="text-center">{{ formset.empty_form.DELETE }}</td>
+              </tr>
+          </script>
+

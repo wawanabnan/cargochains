@@ -2,129 +2,316 @@
 {% load static %}
 
 {% block content %}
-
 <div class="app-content-header">
   <div class="container-fluid">
-    <div class="row">
-      <div class="col-sm-6">
-        <h3 class="mb-0">Job Orders</h3>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+      <div>
+        <div class="d-flex align-items-center gap-2">
+          <h3 class="mb-0">Job Order</h3>
+          {% if job %}
+            <span class="badge text-bg-primary">Update</span>
+            <span class="text-muted small">#{{ job.number }}</span>
+          {% else %}
+            <span class="badge text-bg-success">Create</span>
+          {% endif %}
+        </div>
+        <div class="text-muted small">Header information for job execution and billing</div>
       </div>
-      <div class="col-sm-6">
-        <ol class="breadcrumb float-sm-end">
-          <li class="breadcrumb-item active" aria-current="page">
-            <a href="{% url 'sales:job_order_list' %}" class="btn btn-outline-secondary btn-sm">
-              <i class="fa fa-list me-1"></i> Back to List
-            </a>
 
-          </li>
-        </ol>
+      <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'sales:job_order_list' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="fa fa-arrow-left me-1"></i> Back
+        </a>
+        <button form="joborder-form" type="submit" class="btn btn-primary btn-sm">
+          <i class="fa fa-save me-1"></i> Save
+        </button>
       </div>
     </div>
   </div>
 </div>
 
 <div class="app-content">
-  <div class="container-fluid ">
-    <div class="card">
-      <div class="card-body">
+  <div class="container-fluid">
 
-        {% if form.non_field_errors %}
-          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-        {% endif %}
+    <form id="joborder-form" method="post" novalidate>
+      {% csrf_token %}
+      {% if job %}
+        <input type="hidden" name="job_id" value="{{ job.pk }}">
+      {% endif %}
 
-        {% if form.errors or form.non_field_errors %}
-  <div class="alert alert-danger">
-    <ul class="mb-0">
-      {% for field, errors in form.errors.items %}
-        {% for error in errors %}
-          <li><strong>{{ field }}:</strong> {{ error }}</li>
-        {% endfor %}
-      {% endfor %}
-      {% for error in form.non_field_errors %}
-        <li>{{ error }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-{% endif %}
-        <form method="post" novalidate>
-          {% csrf_token %}
+      {# =================== ERROR SUMMARY (SINGLE BLOCK) =================== #}
+      {% if form.errors or form.non_field_errors %}
+        <div class="alert alert-danger d-flex gap-2 align-items-start mb-3">
+          <i class="fa fa-triangle-exclamation mt-1"></i>
+          <div class="flex-grow-1">
+            <div class="fw-semibold">Ada error input. Cek field merah.</div>
+            {% if form.non_field_errors %}
+              <div class="mt-1">{{ form.non_field_errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
 
-          {% if job %}
-            <input type="hidden" name="job_id" value="{{ job.pk }}">
-          {% endif %}
+      <div class="cc-form">
 
-          <!-- ======================= JOB INFO ======================= -->
-        <div class="container-fluid py-3">
-          <div class="row">
-              <div class="col px-4">
-                {% include 'job_orders/extension/col_1.html' %}
+        {# =================== SECTION: GENERAL =================== #}
+        <div class="card cc-card shadow-sm">
+          <div class="card-header cc-card-header">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="fw-semibold">General</div>
+              <div class="text-muted small">Basic job info</div>
+            </div>
+          </div>
+          <div class="card-body">
 
+            <div class="cc-grid">
+              <div class="cc-field">
+                <label class="form-label">Job Date</label>
+                <div class="input-group input-group-sm">
+                  {{ form.job_date }}
+                  <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                </div>
+                <div class="cc-err">{{ form.job_date.errors }}</div>
               </div>
-              
-              <div class="col px-4">
-                {% include 'job_orders/extension/col_2.html' %}
+
+              <div class="cc-field">
+                <label class="form-label">Order #</label>
+                {{ form.order_number }}
+                <div class="cc-err">{{ form.order_number.errors }}</div>
               </div>
+
+              <div class="cc-field cc-span-2">
+                <label class="form-label">Customer</label>
+                {{ form.customer }}
+                <div class="cc-err">{{ form.customer.errors }}</div>
+              </div>
+
+              <div class="cc-field cc-span-2">
+                <label class="form-label">Service</label>
+                {{ form.service }}
+                <div class="cc-err">{{ form.service.errors }}</div>
+              </div>
+
+              <div class="cc-field cc-span-2">
+                <label class="form-label">Cargo Description</label>
+                {{ form.cargo_description }}
+                <div class="cc-err">{{ form.cargo_description.errors }}</div>
+              </div>
+
+              <div class="cc-field">
+                <label class="form-label">Quantity</label>
+                {{ form.quantity }}
+                <div class="cc-err">{{ form.quantity.errors }}</div>
+              </div>
+
+              {% if job %}
+              <div class="cc-field">
+                <label class="form-label">Job Order #</label>
+                <input type="text" class="form-control form-control-sm" value="{{ job.number }}" readonly>
+              </div>
+              {% endif %}
+            </div>
 
           </div>
-          
+        </div>
+
+        {# =================== SECTION: ROUTE / LOCATION =================== #}
+        <div class="card cc-card shadow-sm">
+          <div class="card-header cc-card-header">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="fw-semibold">Route</div>
+              <div class="text-muted small">Pickup & delivery</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="cc-grid">
+              <div class="cc-field cc-span-2">
+                <label class="form-label">Pick Up</label>
+                {{ form.pickup }}
+                <div class="cc-err">{{ form.pickup.errors }}</div>
+              </div>
+
+              <div class="cc-field cc-span-2">
+                <label class="form-label">Delivery</label>
+                {{ form.delivery }}
+                <div class="cc-err">{{ form.delivery.errors }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# =================== SECTION: COMMERCIAL =================== #}
+        <div class="card cc-card shadow-sm">
+          <div class="card-header cc-card-header">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="fw-semibold">Commercial</div>
+              <div class="text-muted small">Currency & totals</div>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="cc-grid">
+
+              <div class="cc-field cc-span-2">
+                <label class="form-label">PIC</label>
+                {{ form.pic }}
+                <div class="cc-err">{{ form.pic.errors }}</div>
+              </div>
+
+              <div class="cc-field">
+                <label class="form-label">Payment Term</label>
+                {{ form.payment_term }}
+                <div class="cc-err">{{ form.payment_term.errors }}</div>
+              </div>
+
+              <div class="cc-field">
+                <label class="form-label">Currency</label>
+                {{ form.currency }}
+                <div class="cc-err">{{ form.currency.errors }}</div>
+              </div>
+
+              <div class="cc-field cc-span-2" id="row-kurs">
+                <label class="form-label">Kurs IDR</label>
+                <input type="text" name="kurs_idr" id="id_kurs_idr"
+                       value="{{ form.kurs_idr.value|default:'0,00' }}"
+                       class="form-control form-control-sm text-end">
+              </div>
+
+              <div class="cc-field">
+                <label class="form-label">Total Amount</label>
+                {{ form.total_amount }}
+                <div class="cc-err">{{ form.total_amount.errors }}</div>
+              </div>
+
+              <div class="cc-field">
+                <label class="form-label">Grand Total</label>
+                {{ form.grand_total }}
+                <div class="cc-err">{{ form.grand_total.errors }}</div>
+              </div>
+
+              <div class="cc-field cc-span-2">
+                <div class="cc-switches">
+                  <div class="cc-switch">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <div class="fw-semibold small mb-0">Apply Tax</div>
+                        <div class="text-muted small">1.1%</div>
+                      </div>
+                      <div class="form-check form-switch m-0">
+                        {{ form.is_tax }}
+                      </div>
+                    </div>
+                    <div class="mt-2">
+                      <label class="form-label small mb-1">Tax Amount</label>
+                      {{ form.tax_amount }}
+                      <div class="cc-err">{{ form.tax_amount.errors }}</div>
+                    </div>
+                  </div>
+
+                  <div class="cc-switch">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <div class="fw-semibold small mb-0">Apply PPH</div>
+                        <div class="text-muted small">2%</div>
+                      </div>
+                      <div class="form-check form-switch m-0">
+                        {{ form.is_pph }}
+                      </div>
+                    </div>
+                    <div class="mt-2">
+                      <label class="form-label small mb-1">PPH Amount</label>
+                      {{ form.pph_amount }}
+                      <div class="cc-err">{{ form.pph_amount.errors }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="cc-field cc-span-2">
+                <label class="form-label">Internal Remarks</label>
+                {{ form.remarks_internal }}
+                <div class="cc-err">{{ form.remarks_internal.errors }}</div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card-footer bg-body-tertiary">
+            <div class="d-flex justify-content-end gap-2">
+              <a href="{% url 'sales:job_order_list' %}" class="btn btn-outline-secondary">
+                Cancel
+              </a>
+              <button type="submit" class="btn btn-primary">
+                <i class="fa fa-save me-1"></i> Save
+              </button>
+            </div>
+          </div>
 
         </div>
-        
-        
-
-          <hr>
-          <div class="mt-1"></div>
-          <!-- SUBMIT -->
-          <div class="mt-4 d-flex justify-content-end gap-2">
-
-            <a href="{% url 'sales:job_order_list' %}"
-              class="btn btn-outline-secondary">
-              <i class="fa fa-times me-1"></i> Cancel
-            </a>
-
-            <button type="submit" class="btn btn-primary">
-              <i class="fa fa-save me-1"></i>
-              {% if job %}Update{% else %}Create{% endif %}
-            </button>
-
-          </div>
-
-
-        </form>
       </div>
-      
-    </div>
+    </form>
 
   </div>
 </div>
 {% endblock %}
-{% block extra_css %}
-<link rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
+<style>
+  /* Container feel */
+  
+  /* Card polish */
+  .cc-card { border-radius: 14px; border: 1px solid rgba(0,0,0,.06); }
+  .cc-card-header { background: transparent; border-bottom: 1px solid rgba(0,0,0,.06); }
+
+  /* Grid modern (2 columns inside, tapi keseluruhan tetap single-column) */
+  .cc-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 14px;
+  }
+  .cc-span-2 { grid-column: span 2; }
+
+  /* Field style */
+  .cc-field .form-label { font-size: .78rem; font-weight: 600; color: rgba(0,0,0,.72); margin-bottom: 6px; }
+  .cc-field .form-control,
+  .cc-field .form-select { border-radius: 10px; }
+  .cc-field .input-group .form-control { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
+  .cc-field .input-group-text { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
+
+  /* Error */
+  .cc-err ul, .cc-err { margin: 6px 0 0; }
+  .cc-err { font-size: .78rem; color: #dc3545; }
+  .cc-err ul { padding-left: 18px; }
+
+  /* Switch boxes */
+  .cc-switches { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .cc-switch { border: 1px solid rgba(0,0,0,.06); border-radius: 14px; padding: 12px; background: rgba(0,0,0,.015); }
+
+  /* Mobile */
+  @media (max-width: 991px) {
+    .cc-grid { grid-template-columns: 1fr; }
+    .cc-span-2 { grid-column: span 1; }
+    .cc-switches { grid-template-columns: 1fr; }
+  }
+</style>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-
-
+{# JS om tetap dipakai (copy dari versi sebelumnya) #}
 <script>
 (function(){
-
   function parseID(v) {
     if (!v) return 0;
     let s = String(v).trim();
-
-    // Kalau ada koma → style Indonesia: 20.000.000,00
     if (s.indexOf(",") >= 0) {
       s = s.replace(/\./g, "").replace(",", ".");
       const n = parseFloat(s);
       return isNaN(n) ? 0 : n;
     }
-
-    // Kalau TIDAK ada koma → anggap "." itu desimal biasa
     const n = parseFloat(s);
     return isNaN(n) ? 0 : n;
   }
@@ -141,28 +328,22 @@
     const taxEl   = document.getElementById("id_tax_amount");
     const grandEl = document.getElementById("id_grand_total");
     const isTaxEl = document.getElementById("id_is_tax");
-
     const pphEl   = document.getElementById("id_pph_amount");
     const isPphEl = document.getElementById("id_is_pph");
-
     if (!totalEl || !taxEl || !grandEl) return;
 
     let total = parseID(totalEl.value);
     let tax   = (isTaxEl && isTaxEl.checked) ? total * 0.011 : 0;
-    let pph   = (isPphEl && isPphEl.checked) ? total * 0.02 : 0;  // 2% PPH
-
+    let pph   = (isPphEl && isPphEl.checked) ? total * 0.02 : 0;
     let grand = total + tax - pph;
 
     totalEl.value = fmtID(total);
     taxEl.value   = fmtID(tax);
-    if (pphEl) {
-      pphEl.value = fmtID(pph);
-    }
+    if (pphEl) pphEl.value = fmtID(pph);
     grandEl.value = fmtID(grand);
   }
 
   document.addEventListener("DOMContentLoaded", function(){
-
     const totalEl = document.getElementById("id_total_amount");
     const taxEl   = document.getElementById("id_tax_amount");
     const grandEl = document.getElementById("id_grand_total");
@@ -175,19 +356,11 @@
     const kursRow    = document.getElementById("row-kurs");
     const kursInput  = document.getElementById("id_kurs_idr");
 
-    if(!form || !totalEl) return;
-
-    // --- TAMPIL / SEMBUNYIKAN KURS ---
     function toggleKurs() {
       if (!currencyEl || !kursRow || !kursInput) return;
-
       const selected = currencyEl.options[currencyEl.selectedIndex].text.trim();
-      if (selected !== "IDR") {
-        kursRow.style.display = "";
-      } else {
-        kursRow.style.display = "none";
-        kursInput.value = "1,00";
-      }
+      if (selected !== "IDR") kursRow.style.display = "";
+      else { kursRow.style.display = "none"; kursInput.value = "1,00"; }
     }
 
     if (currencyEl) {
@@ -195,73 +368,35 @@
       currencyEl.addEventListener("change", toggleKurs);
     }
 
-    // lock kolom tax & pph (readonly)
     if (taxEl) taxEl.readOnly = true;
     if (pphEl) pphEl.readOnly = true;
 
-    // --- auto-select saat focus ---
-    [totalEl, grandEl].forEach(function(el){
-      if (!el) return;
-      el.addEventListener("focus", ()=> setTimeout(()=>el.select(),0));
-    });
-
-    // kalau mau, PPh juga auto-select
-    if (pphEl) {
-      pphEl.addEventListener("focus", ()=> setTimeout(()=>pphEl.select(),0));
+    if (totalEl) {
+      totalEl.addEventListener("blur", recalc);
+      totalEl.addEventListener("change", recalc);
     }
-
-    // --- perhitungan ---
-    totalEl.addEventListener("blur", recalc);
-    totalEl.addEventListener("change", recalc);
     if (isTaxEl) isTaxEl.addEventListener("change", recalc);
     if (isPphEl) isPphEl.addEventListener("change", recalc);
 
-    // --- format pertama kali ---
     recalc();
 
-    // --- sebelum submit → convert ke number plain (Django Decimal aman) ---
-    form.addEventListener("submit", function(){
-      totalEl.value = parseID(totalEl.value);
-      taxEl.value   = parseID(taxEl.value);
-      grandEl.value = parseID(grandEl.value);
-      if (pphEl) {
-        pphEl.value = parseID(pphEl.value);
-      }
-      if (kursInput) {
-        kursInput.value = parseID(kursInput.value);
-      }
-    });
-
-      if (typeof flatpickr === "undefined") {
-        console.warn("Flatpickr belum ter-load");
-        return;
-      }
-
-      const inputs = document.querySelectorAll(".js-jobdate");
-      if (!inputs.length) return;
-
-      inputs.forEach(function (el) {
-        const fp = flatpickr(el, {
-          dateFormat: "d-m-Y",      // tampilan ke user
-          allowInput: true,
-          clickOpens: true,
-          altInput: false,          // biar tetap pakai form-control yang ada
-          defaultDate: el.value || null,
-          locale: {
-            firstDayOfWeek: 1
-          }
-        });
-
-      // auto show saat got focus
-      el.addEventListener("focus", function () {
-        fp.open();
+    if (form) {
+      form.addEventListener("submit", function(){
+        if (totalEl) totalEl.value = parseID(totalEl.value);
+        if (taxEl) taxEl.value   = parseID(taxEl.value);
+        if (grandEl) grandEl.value = parseID(grandEl.value);
+        if (pphEl) pphEl.value = parseID(pphEl.value);
+        if (kursInput) kursInput.value = parseID(kursInput.value);
       });
-    });
+    }
 
-
+    if (typeof flatpickr !== "undefined") {
+      document.querySelectorAll(".js-jobdate").forEach(function (el) {
+        const fp = flatpickr(el, { dateFormat: "d-m-Y", allowInput: true, clickOpens: true });
+        el.addEventListener("focus", function () { fp.open(); });
+      });
+    }
   });
-
 })();
 </script>
-
 {% endblock %}
