@@ -2,88 +2,43 @@
 {% load static %}
 
 {% block content %}
+
 <div class="app-content-header">
-  <div class="container-fluid">
-    <div class="d-flex align-items-start justify-content-between gap-2 flex-wrap">
-
-      {% if object and object.pk %}
-      {% if object.last_synced_at %}
-        <span class="badge text-bg-light border">
-          Synced: {{ object.last_synced_at|date:"Y-m-d H:i" }}
-        </span>
-      {% else %}
-        <span class="badge text-bg-warning">Not synced</span>
-      {% endif %}
-    {% endif %}
-
-    {% if object and object.pk and object.status == 'DRAFT' %}
-  <form method="post" action="{% url 'shipments:vendor_booking_sync' object.pk %}" class="d-inline">
-    {% csrf_token %}
-    <button class="btn btn-outline-primary btn-sm" type="submit">
-      <i class="bi bi-arrow-repeat me-1"></i> Sync Now
-    </button>
-  </form>
-{% endif %}
-{% if object and object.pk %}
-  {% with jc_updated=object.job_cost_last_update %}
-    {% if object.last_synced_at and jc_updated and jc_updated > object.last_synced_at %}
-      <span class="badge text-bg-danger"
-            title="Job Cost changed after last sync. Click Sync Now.">
-        Job Cost Changed
-      </span>
-    {% endif %}
-  {% endwith %}
-{% endif %}
-
-
-      <!-- LEFT: TITLE -->
-      <div>
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-          <h3 class="mb-0">Vendor Booking</h3>
-
-          {% if object and object.pk %}
-            <span class="badge text-bg-primary">{{ object.status }}</span>
-            {% if object.vb_number %}<span class="badge text-bg-light border">VBO: {{ object.vb_number }}</span>{% endif %}
-            {% if object.letter_number %}<span class="badge text-bg-light border">PO: {{ object.letter_number }}</span>{% endif %}
-          {% else %}
-            <span class="badge text-bg-success">Create</span>
-          {% endif %}
-        </div>
-        <div class="text-muted small">
-          Lines are read-only and always based on Job Cost (Cost Group / Cost Type).
-        </div>
+  <div class="container-fluid d-flex flex-wrap gap-2 justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-0">Vendor Booking</h4>
+      <div class="small text-muted">
+        Job Order: <span class="fw-semibold">{{ vb.job_order }}</span>
+        · Vendor: <span class="fw-semibold">{{ vb.vendor }}</span>
       </div>
+    </div>
 
-      <!-- RIGHT: ACTIONS -->
-      <div class="d-flex align-items-center gap-2">
-        <a href="{% url 'shipments:vendor_booking_list' %}?job_orders={{ job.id }}"
-        class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i> Back
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      {% if vb.status == "CONFIRMED" %}
+        <span class="badge text-bg-success">CONFIRMED</span>
+      {% else %}
+        <span class="badge text-bg-secondary">DRAFT</span>
+      {% endif %}
+
+      <a class="btn btn-outline-secondary btn-sm"
+         href="{% url 'shipments:vendor_booking_from_jobcost' %}?job_order={{ vb.job_order_id }}">
+        Back
       </a>
 
+      <a class="btn btn-outline-primary btn-sm"
+         href="{% url 'shipments:vendor_booking_print' vb.id %}"
+         target="_blank">
+        Print {% if vb.status == "DRAFT" %}<span class="ms-1 badge text-bg-warning">DRAFT</span>{% endif %}
+      </a>
 
-
-        <button form="vb-form" type="submit" class="btn btn-primary btn-sm">
-          <i class="bi bi-save me-1"></i> Save
-        </button>
-
-        {% if object and object.pk %}
-          <form method="post" action="{% url 'shipments:vendor_booking_confirm' object.pk %}" class="d-inline">
-            {% csrf_token %}
-            <button class="btn btn-outline-success btn-sm" {% if object.status != "DRAFT" %}disabled{% endif %}>
-              <i class="bi bi-check2-circle me-1"></i> Confirm
-            </button>
-          </form>
-
-          <form method="post" action="{% url 'shipments:vendor_booking_cancel' object.pk %}" class="d-inline">
-            {% csrf_token %}
-            <button class="btn btn-outline-danger btn-sm">
-              <i class="bi bi-x-circle me-1"></i> Cancel
-            </button>
-          </form>
-        {% endif %}
-      </div>
-
+      {% if vb.status == "DRAFT" %}
+        <form method="post" action="{% url 'shipments:vendor_booking_confirm' vb.id %}" class="d-inline">
+          {% csrf_token %}
+          <button class="btn btn-primary btn-sm" type="submit">
+            Confirm
+          </button>
+        </form>
+      {% endif %}
     </div>
   </div>
 </div>
@@ -91,154 +46,260 @@
 <div class="app-content">
   <div class="container-fluid">
 
-    <form id="vb-form" method="post" novalidate>
+    <form method="post" class="card">
       {% csrf_token %}
+      <div class="card-body p-2">
 
-      <!-- HEADER CARD (COMPACT) -->
-      <div class="card shadow-sm mb-3">
-        <div class="card-body py-2">
-          <div class="row g-2">
-            <!-- Job order (readonly display) -->
-            <div class="col-lg-4">
-              <label class="form-label small mb-1">Job Order</label>
-              <div class="form-control form-control-sm bg-light">
-                {% if job %}#{{ job.number }}{% else %}-{% endif %}
-              </div>
-              {# keep hidden job_order input if exists #}
-              {% if form.job_order %}<div class="d-none">{{ form.job_order }}</div>{% endif %}
-            </div>
-
-            <div class="col-lg-2 col-md-4">
-              <label class="form-label small mb-1">Booking Group</label>
-              {{ form.booking_group }}
-              {% if form.booking_group.errors %}
-                <div class="text-danger small">{{ form.booking_group.errors|striptags }}</div>
-              {% endif %}
-            </div>
-
-            <div class="col-lg-3 col-md-4">
-              <label class="form-label small mb-1">Vendor</label>
-              {{ form.vendor }}
-              {% if form.vendor.errors %}
-                <div class="text-danger small">{{ form.vendor.errors|striptags }}</div>
-              {% endif %}
-            </div>
-
-            <div class="col-lg-3 col-md-4">
-              <label class="form-label small mb-1">Reference No</label>
-              {{ form.reference_no }}
-              {% if form.reference_no.errors %}
-                <div class="text-danger small">{{ form.reference_no.errors|striptags }}</div>
-              {% endif %}
-            </div>
+        <div class="row g-2 mb-2">
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Currency</label>
+            {{ form.currency }}
           </div>
+          <div class="col-md-3">
+            <label class="form-label small mb-1">IDR Rate</label>
+             {{ form.idr_rate }}
+            <div class="small text-muted mt-1 js-idfmt-fixed3" data-source="{{ form.idr_rate.id_for_label }}"></div>
 
-          <hr class="my-2">
+          </div>
+          <div class="col-md-3 text-end">
+            <label class="form-label small mb-1">WHT Rate (%)</label>
+            {{ form.wht_rate }}
+          </div>
+             <div class="col-md-3">
+    <label class="form-label small mb-1">WHT Amount</label>
+    <input class="form-control form-control-sm text-end" value="{{ vb.wht_amount|default:'0' }}" readonly>
+  </div>  
+        
+        </div>
 
-          <!-- PAYMENT / CURRENCY GROUP -->
-          <div class="row g-2 align-items-end">
-            <div class="col-lg-3 col-md-4">
-              <label class="form-label small mb-1">Payment Term</label>
-              {{ form.payment_term }}
-            </div>
-
-            <div class="col-lg-2 col-md-3">
-              <label class="form-label small mb-1">Currency</label>
-              {{ form.currency }}
-            </div>
-
-            <div class="col-lg-2 col-md-3">
-              <label class="form-label small mb-1">IDR Rate</label>
-              {{ form.idr_rate }}
-            </div>
-
-            <div class="col-lg-2 col-md-2">
-              <label class="form-label small mb-1">Discount</label>
-              {{ form.discount }}
-            </div>
-
-            <div class="col-lg-3 col-md-12 text-end">
-              {% if object and object.pk %}
-                <span class="badge text-bg-light border">Lines: {{ lines|length }}</span>
-              {% endif %}
-            </div>
+        <div class="row g-2 mb-2">
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Total Amount</label>
+            <input class="form-control form-control-sm fw-semibold" value="{{ vb.total_amount }}" readonly>
           </div>
         </div>
+
+        <hr class="my-2">
+
+        {{ formset.management_form }}
+
+        <div class="table-responsive">
+          <table class="table table-sm table-worksheet table-bordered mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width:220px">Cost Type</th>
+                <th>Description</th>
+                <th style="width:120px">Group</th>
+                <th style="width:90px">UOM</th>
+                <th style="width:110px" class="text-end">Qty</th>
+                <th style="width:140px" class="text-end">Unit Price</th>
+                <th style="width:140px" class="text-end">Amount</th>
+                <th style="width:220px">Taxes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for f in formset.forms %}
+                {% with line=f.instance %}
+                <tr>
+                  <td class="fw-semibold">
+                    {% if line.cost_type_id %}{{ line.cost_type.name }}{% else %}-{% endif %}
+                  </td>
+                  <td class="small text-muted">
+                    {% if line.job_cost %}{{ line.job_cost.description|default:"" }}{% endif %}
+                  </td>
+                  <td class="small">
+                    {% if line.cost_group %}{{ line.cost_group }}{% else %}{% if line.cost_type %}{{ line.cost_type.cost_group|default:"" }}{% endif %}{% endif %}
+                  </td>
+
+                  <td>{{ f.uom }}</td>
+                  <td class="text-end">{{ f.qty }}</td>
+                  <td class="text-end">
+                    {{ f.unit_price }}
+                    <div class="small text-muted mt-1 js-idfmt" data-source="{{ f.unit_price.id_for_label }}"></div>
+                  </td>
+                  <td class="text-end">
+                    <input class="form-control form-control-sm text-end" value="{{ line.amount }}" readonly>
+                  </td>
+
+                  <td>
+                    {{ f.taxes }}
+                    <div class="mt-1 d-flex flex-wrap gap-1 js-tax-badges" data-source="{{ f.taxes.id_for_label }}"></div>
+                  </td>
+                </tr>
+                {% endwith %}
+              {% empty %}
+                <tr><td colspan="8" class="text-muted">No lines.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
       </div>
+      {% if vb_group %}
+  <hr class="my-2">
+  <div class="p-2">
+    <div class="fw-semibold mb-2">Additional Info ({{ vb_group }})</div>
 
-      <!-- TABS -->
-      <div class="card shadow-sm">
-        <div class="card-header py-2">
-          <ul class="nav nav-tabs card-header-tabs" role="tablist">
-            <li class="nav-item">
-              <a class="nav-link active" data-bs-toggle="tab" href="#tab-lines" role="tab">
-                Lines (Job Cost)
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" data-bs-toggle="tab" href="#tab-header" role="tab">
-                Header Detail
-              </a>
-            </li>
-          </ul>
-        </div>
+    {% if letter_type == "SI" %}
+      {% include "vendor_bookings/partials/form_si.html" %}
+    {% elif letter_type == "SLI" %}
+      {% include "vendor_bookings/partials/form_sli.html" %}
+    {% elif letter_type == "SO" %}
+      {% include "vendor_bookings/partials/form_so.html" %}
+    {% else %}
+      {% include "vendor_bookings/partials/form_wo.html" %}
+    {% endif %}
+  </div>
+{% endif %}
 
-        <div class="card-body p-2">
-          <div class="tab-content">
-
-            <!-- TAB 1: LINES -->
-            <div class="tab-pane fade show active" id="tab-lines" role="tabpanel">
-              {% include "vendor_bookings/extensions/vb_tab_line.html" %}
-            </div>
-
-            <!-- TAB 2: HEADER DETAIL (DYNAMIC) -->
-            <div class="tab-pane fade" id="tab-header" role="tabpanel">
-              {% include "vendor_bookings/extensions/vb_tab_header.html" %}
-            </div>
-
-          </div>
-        </div>
+      {% if vb.status == "DRAFT" %}
+      <div class="card-footer d-flex justify-content-end gap-2">
+        <button class="btn btn-primary btn-sm" type="submit">Save</button>
       </div>
-
+      {% endif %}
     </form>
+
   </div>
 </div>
+
 {% endblock %}
 
-
-{% block extra_css %}
+{% block extra_css%}
 
 <style>
-  .table.table-sm td, .table.table-sm th { padding-top: .35rem; padding-bottom: .35rem; }
-  .form-control-sm, .form-select-sm { min-height: 31px; }
+.tax-pill{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:12px;
+  border:1px solid rgba(0,0,0,.15);
+  background:rgba(0,0,0,.03);
+}
+</style>
+<style>
+/* worksheet table */
+.table-worksheet { font-size: 13px; }
+.table-worksheet td, .table-worksheet th { padding: 0.15rem 0.25rem !important; vertical-align: top; }
+.table-worksheet thead th { font-weight: 600; }
+
+/* inputs look like worksheet */
+.ws-input, .ws-select {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  height: auto !important;
+  line-height: 1.2 !important;
+}
+.ws-input:focus, .ws-select:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* readonly amount cell */
+.ws-readonly {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  text-align: right;
+}
+
+/* taxes pills tighter */
+.tax-pill{
+  display:inline-block;
+  padding:1px 6px;
+  border-radius:999px;
+  font-size:12px;
+  border:1px solid rgba(0,0,0,.15);
+  background:rgba(0,0,0,.03);
+}
 </style>
 
 {% endblock %}
 
-{% block extra_js %}
 
-<script src="{% static 'js/idr_rate.js' %}"></script>
+{% block extra_js%}
+
+<script src="{% static 'js/idr_rate.js' %}">  </script>
+<script src="{% static 'js/tax_select2.js' %}"> </script>
+
+
+<script>
+  document.addEventListener("DOMContentLoaded", function(){
+    if (window.initTaxSelect2) window.initTaxSelect2(document);
+  });
+</script>
 
 <script>
 (function(){
-  function val(id){ var el=document.getElementById(id); return el? (el.value||"") : ""; }
+  function fmtID(n){
+    const x = Number(n || 0);
+    if (Number.isNaN(x)) return "";
+    return x.toLocaleString("id-ID", { maximumFractionDigits: 6 });
+  }
 
-  function toggleHeaderSections(){
-    var group = val("id_booking_group").toUpperCase();
-    document.querySelectorAll("[data-vb-group]").forEach(function(sec){
-      var need = (sec.getAttribute("data-vb-group")||"").toUpperCase();
-      if (!need || need === "ALL") { sec.classList.remove("d-none"); return; }
-      sec.classList.toggle("d-none", need !== group);
+  function bind(){
+    document.querySelectorAll(".js-idfmt").forEach(function(el){
+      const srcId = el.getAttribute("data-source");
+      const inp = document.getElementById(srcId);
+      if(!inp) return;
+
+      function render(){
+        el.textContent = fmtID(inp.value);
+      }
+      inp.addEventListener("input", render);
+      render();
+    });
+     function bindFixed3(){
+    document.querySelectorAll(".js-idfmt-fixed3").forEach(function(el){
+      const srcId = el.getAttribute("data-source");
+      const inp = document.getElementById(srcId);
+      if(!inp) return;
+
+      function render(){
+        el.textContent = fmtIDFixed(inp.value, 3);
+      }
+      inp.addEventListener("input", render);
+      render();
+    });
+  }
+  }
+
+  document.addEventListener("DOMContentLoaded", bind);
+})();
+</script>
+
+<script>
+(function(){
+  function rebuildBadges(selectEl, holder){
+    holder.innerHTML = "";
+    const selected = Array.from(selectEl.selectedOptions || []);
+    selected.forEach(function(opt){
+      const pill = document.createElement("span");
+      pill.className = "tax-pill";
+      pill.textContent = (opt.textContent || "").trim();
+      holder.appendChild(pill);
+    });
+  }
+
+  function bindTaxBadges(scope){
+    const root = scope || document;
+    root.querySelectorAll(".js-tax-badges").forEach(function(holder){
+      const srcId = holder.getAttribute("data-source");
+      const sel = document.getElementById(srcId);
+      if(!sel) return;
+
+      sel.addEventListener("change", function(){
+        rebuildBadges(sel, holder);
+      });
+      rebuildBadges(sel, holder);
     });
   }
 
   document.addEventListener("DOMContentLoaded", function(){
-    toggleHeaderSections();
-    var bg = document.getElementById("id_booking_group");
-    if (bg) bg.addEventListener("change", toggleHeaderSections);
+    bindTaxBadges(document);
   });
 })();
 </script>
+
 {% endblock %}
-
-

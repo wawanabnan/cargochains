@@ -1,0 +1,133 @@
+{% extends "adminbase.html" %}
+{% static %}
+{% block content %}
+
+<div class="app-content-header">
+  <div class="container-fluid d-flex justify-content-between align-items-center">
+    {% if messages %}
+  <div class="p-2">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} py-2 mb-2">
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+    <div>
+      <h4 class="mb-0">Vendor Booking from Job Cost</h4>
+      <div class="small text-muted">
+        {% if job %}Job Order: <span class="fw-semibold">{{ job }}</span>{% endif %}
+      </div>
+    </div>
+    {% if job %}
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'shipments:vendor_booking_list' %}?job_order={{ job.id }}">
+        Back
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+
+    {% if not job %}
+      <div class="alert alert-warning">Job Order belum dipilih.</div>
+    {% else %}
+
+    <form method="post" class="card">
+      {% csrf_token %}
+      <input type="hidden" name="job_order" value="{{ job.id }}">
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width:40px"></th>
+                <th style="width:180px">Vendor</th>
+                <th style="width:120px">Group</th>
+                <th style="width:220px">Cost Lines</th>
+                <th>Description</th>
+                <th style="width:90px">UOM</th>
+                <th style="width:110px" class="text-end">Remaining</th>
+                <th style="width:130px" class="text-end">Unit Price</th>
+                <th style="width:130px" class="text-end">Allocate Qty</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in rows %}
+                <tr>
+                  <td>
+                    <input class="form-check-input" type="checkbox" name="pick" value="{{ r.jc.id }}">
+                  </td>
+                  <td class="small">{{ r.vendor_name }}</td>
+                  <td class="small">{{ r.cost_group }}</td>
+                  <td class="fw-semibold">{{ r.cost_type_name }}</td>
+                  <td class="small text-muted">{{ r.jc.description|default:"" }}</td>
+                  <td class="small">{{ r.uom }}</td>
+                  <td class="text-end">{{ r.remaining }}</td>
+                  <td class="text-end">{{ r.unit_price }}</td>
+                  <td class="text-end">
+                    <input type="number"
+                      name="qty_{{ r.jc.id }}"
+                      class="form-control form-control-sm text-end"
+                      step="0.000001"
+                      min="0"
+                      data-remaining="{{ r.remaining }}"
+                      value="{{ r.remaining }}">
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="9" class="text-muted p-3">Tidak ada JobCost yang available.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-footer d-flex justify-content-end gap-2">
+        <button class="btn btn-primary btn-sm" type="submit">
+          Create Vendor Booking
+        </button>
+      </div>
+    </form>
+
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+
+<script>
+document.addEventListener("change", function(e){
+  const cb = e.target.closest('input[type="checkbox"][name="pick"]');
+  if(!cb) return;
+
+  const tr = cb.closest("tr");
+  const qtyInput = tr.querySelector('input[name^="qty_"]');
+  const remainingCell = tr.querySelector("td.text-end"); // ini terlalu general
+});
+</script>
+<script>
+document.addEventListener("change", function(e){
+  const cb = e.target.closest('input[type="checkbox"][name="pick"]');
+  if(!cb) return;
+
+  const tr = cb.closest("tr");
+  const qtyInput = tr.querySelector('input[name^="qty_"]');
+  if(!qtyInput) return;
+
+  if(cb.checked){
+    if(!qtyInput.value){
+      qtyInput.value = qtyInput.dataset.remaining || "";
+    }
+    qtyInput.focus();
+    qtyInput.select?.();
+  }
+});
+</script>
+{% endblock %}

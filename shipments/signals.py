@@ -57,8 +57,26 @@ def set_shipment_number_and_snap(sender, instance: Shipment, **kwargs):
     if getattr(instance, "agency", None) and not getattr(instance, "agency_snap", None):
         instance.agency_snap = snap_partner(instance.agency)
 
-@receiver(pre_save, sender=Shipment)
-def set_shipment_number_and_snap(sender, instance: Shipment, **kwargs):
-    # ... yang lain tetap ...
-    if getattr(instance, "customer", None) and not getattr(instance, "customer_snap", None):
-        instance.customer_snap = snap_partner(instance.customer)
+
+
+from django.db.models.signals import post_save, post_delete, m2m_changed
+from django.dispatch import receiver
+
+from shipments.models.vendor_bookings import VendorBookingLine
+from shipments.services.vendor_booking_totals import recompute_vendor_booking_totals
+
+
+@receiver(post_save, sender=VendorBookingLine)
+def _vbline_saved(sender, instance, **kwargs):
+    recompute_vendor_booking_totals(instance.vendor_booking)
+
+
+@receiver(post_delete, sender=VendorBookingLine)
+def _vbline_deleted(sender, instance, **kwargs):
+    recompute_vendor_booking_totals(instance.vendor_booking)
+
+
+@receiver(m2m_changed, sender=VendorBookingLine.taxes.through)
+def _vbline_taxes_changed(sender, instance, action, **kwargs):
+    if action in ("post_add", "post_remove", "post_clear"):
+        recompute_vendor_booking_totals(instance.vendor_booking)

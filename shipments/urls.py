@@ -14,6 +14,9 @@ from .views import routes_api
 from shipments.views.routes_inline import route_modal, route_delete, route_delete_confirm
 
 from .views.create import ShipmentCreateView
+from . import views
+#from shipments.models.vendor_bookings import VendorBooking, VendorBookingLine
+
 
 app_name = "shipments"
 
@@ -51,30 +54,79 @@ urlpatterns = [
 
 
 from django.urls import path
-from shipments.views.vendor_bookings  import (
-      VendorBookingCreateView,
-      VendorBookingUpdateView,
-      VendorBookingListView,
-  # vb_job_cost_vendors_json,
-     #vb_job_costs_json,
-    
-)  
 
-#from shipments.views.vendor_booking_actions import generate_vendor_booking
-#from shipments.views.vendor_booking_lines import VendorBookingLineDetailsView
+
+
+from shipments.views import vendor_bookings as views
+from shipments.views.vendor_bookings import (
+    VendorBookingPrintView,
+    VendorBookingConfirmView,
+    VendorBookingFromJobCostWizardView,
+    # VendorBookingCancelView,
+     VendorBookingListView,
+    VendorBookingEditView
+)
+
+
+urlpatterns += [
+    # STEP 2 Wizard
+    path("vendor-bookings/from-jobcost/",VendorBookingFromJobCostWizardView.as_view(),name="vendor_booking_from_jobcost",),
+    path("vendor-bookings/<int:pk>/print/",VendorBookingPrintView.as_view(),name="vendor_booking_print",),
+    path("vendor-bookings/<int:pk>/confirm/", VendorBookingConfirmView.as_view(), name="vendor_booking_confirm"),
+#    path("vendor-bookings/<int:pk>/cSyncancel/", VendorBookingCancelView.as_view(), name="vendor_booking_cancel"),
+    path("vendor-bookings/", VendorBookingListView.as_view(), name="vendor_booking_list"),
+    path("vendor-bookings/<int:pk>/edit/", VendorBookingEditView.as_view(), name="vendor_booking_edit"),
+
+
+]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 urlpatterns += [
-  path("vendor-bookings/", VendorBookingListView.as_view(), name="vendor_booking_list"),
-    path("vendor-bookings/add/", VendorBookingCreateView.as_view(), name="vendor_booking_add"),
+ # path("vendor-bookings/", VendorBookingListView.as_view(), name="vendor_booking_list"),
+  #  path("vendor-bookings/add/", VendorBookingCreateView.as_view(), name="vendor_booking_add"),
   #  path("vendor-bookings/<int:pk>/", VendorBookingDetailView.as_view(), name="vendor_booking_detail"),
-    path("vendor-bookings/<int:pk>/edit/", VendorBookingUpdateView.as_view(), name="vendor_booking_edit"),
-
+    
   #  path("vendor-bookings/<int:pk>/send/", VendorBookingSendView.as_view(), name="vendor_booking_send"),
    # path("vendor-bookings/<int:pk>/confirm/", VendorBookingConfirmView.as_view(), name="vendor_booking_confirm"),
    # path("vendor-bookings/<int:pk>/complete/", VendorBookingCompleteView.as_view(), name="vendor_booking_complete"),
-   # path("vendor-bookings/<int:pk>/cancel/", VendorBookingCancelView.as_view(), name="vendor_booking_cancel"),
+   # path("vendor-bookings/<int:pk>/cSyncancel/", VendorBookingCancelView.as_view(), name="vendor_booking_cancel"),
 
 #    path(
 #        "vendor-booking-lines/<int:pk>/details/",VendorBookingLineDetailsView.as_view(),name="vendor_booking_line_details",
@@ -84,10 +136,16 @@ urlpatterns += [
  #   path("vendor-bookings/generate/<int:pk>/", generate_vendor_booking, name="vendor_booking_generate"),
 #    path("vendor-bookings/job-cost-vendors.json", vb_job_cost_vendors_json, name="vb_job_cost_vendors_json"),
    #path("vendor-bookings/job-costs.json", vb_job_costs_json, name="vb_job_costs_json"),
+   # path("vendor-bookings/<int:pk>/confirm/", VendorBookingConfirmView.as_view(), name="vendor_booking_confirm"),
 
-    path("vendor-bookings/<int:pk>/sync/", views.VendorBookingSyncView.as_view(), name="vendor_booking_sync"),
-    
+   # path("vendor-bookings/<int:pk>/sync/", VendorBookingSyncView.as_view(), name="vendor_booking_sync"),
+#    path("vendor-bookings/<int:pk>/print/", VendorBookingPrintView.as_view(), name="vendor_booking_print"),
+ #   path("vendor-bookings/<int:pk>/print/", VendorBookingCancelView.as_view(), name="vendor_booking_print"),
+ #   path("vendor-bookings/from-jobcost/", views.VendorBookingFromJobCostWizardView.as_view(), name="vendor_booking_from_jobcost"),
+
+
+
+
+
 ]
-
-
 

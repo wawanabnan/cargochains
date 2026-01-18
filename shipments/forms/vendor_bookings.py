@@ -63,6 +63,7 @@ class VendorBookingForm(forms.ModelForm):
             # numbers (readonly in __init__)
             "vb_number",
             "letter_number",
+            'wht_rate'
         ]
         widgets = {
             "issued_date": forms.DateInput(attrs={"type": "date", "class": "form-control form-control-sm"}),
@@ -76,6 +77,10 @@ class VendorBookingForm(forms.ModelForm):
             "letter_type": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "vb_number": forms.TextInput(attrs={"class": "form-control form-control-sm", "readonly": "readonly"}),
             "letter_number": forms.TextInput(attrs={"class": "form-control form-control-sm", "readonly": "readonly"}),
+            "idr_rate": forms.NumberInput(attrs={"class": "form-control form-control-sm", "step": "0.000001"}),
+            "wht_rate": forms.NumberInput(attrs={"class": "form-control form-control-sm", "step": "0.000001"}),
+            
+       
         }
 
     # -----------------------------
@@ -118,6 +123,12 @@ class VendorBookingForm(forms.ModelForm):
         if not (inst and inst.pk):
             job = self.initial.get("job_order") or self.data.get("job_order")
             # kalau mau auto-fill dari job, kita lakukan nanti (perlu lookup JobOrder)
+
+
+        for name in self.fields:
+            if "class" not in self.fields[name].widget.attrs:
+                self.fields[name].widget.attrs["class"] = "form-control form-control-sm"
+     
 
     # -----------------------------
     # Save: fields -> header_json
@@ -197,6 +208,7 @@ from django.forms import inlineformset_factory
 
 from shipments.models.vendor_bookings import VendorBooking, VendorBookingLine
 from core.models.taxes import Tax
+from django.utils import timezone
 
 
 class VendorBookingLineForm(forms.ModelForm):
@@ -213,20 +225,63 @@ class VendorBookingLineForm(forms.ModelForm):
             "amount": forms.NumberInput(attrs={"class": "form-control form-control-sm", "step": "0.01", "readonly": "readonly"}),
             "sort_order": forms.HiddenInput(),
             "is_active": forms.HiddenInput(),
+            
         }
 
     def clean(self):
         cleaned = super().clean()
         if not cleaned.get("job_cost"):
             raise forms.ValidationError("Job Cost wajib.")
+        
+        currency = cleaned.get("currency")
+        idr_rate = cleaned.get("idr_rate")
+        discount_amount = cleaned.get("discount_amount")
+
+        # --- FIX currency/idr_rate ---
+        cur_code = getattr(currency, "code", None) if currency else None
+
+        if not idr_rate:
+            # kalau currency kosong atau IDR -> default 1 (tanpa error)
+            if (not currency) or (cur_code == "IDR"):
+                cleaned["idr_rate"] = Decimal("1")
+            else:
+                # kalau bukan IDR (USD/EUR dst) -> wajib isi rate
+                self.add_error("idr_rate", "IDR rate wajib diisi jika currency bukan IDR.")
+
+        # --- discount validation ---
+        if discount_amount is not None and discount_amount < 0:
+            self.add_error("discount_amount", "Discount amount tidak boleh negatif.")
+
         return cleaned
 
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # field ini akan kita isi dari server / default
+        if "job_order" in self.fields:
+            self.fields["job_order"].required = False
+
+        if "issued_date" in self.fields:
+            self.fields["issued_date"].required = False
+            if not self.initial.get("issued_date"):
+                self.initial["issued_date"] = timezone.now().date()
+
+        if "discount_amount" in self.fields:
+            self.fields["discount_amount"].required = False
+            if self.initial.get("discount_amount") in (None, ""):
+                self.initial["discount_amount"] = Decimal("0")
+
+        if "letter_type" in self.fields:
+            self.fields["letter_type"].required = False
+            if not self.initial.get("letter_type"):
+                self.initial["letter_type"] = "TRUCK_TO"
+ 
 
 VendorBookingLineFormSet = inlineformset_factory(
-    VendorBooking,
-    VendorBookingLine,
+    parent_model=VendorBooking,
+    model=VendorBookingLine,
     form=VendorBookingLineForm,
-    extra=0,          # tampilkan line yang ada saja
-    can_delete=True,
+    extra=0,
+    can_delete=False,
 )

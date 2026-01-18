@@ -19,6 +19,9 @@ from core.models.currencies import Currency
 from core.models.payment_terms import PaymentTerm  # 
 from decimal import Decimal
 from job.constants import SYSTEM_GROUP_CHOICES,CostGroup
+from django.db.models import Max
+from django.core.validators import MinValueValidator
+
 
 class VendorBooking(models.Model):
     ST_DRAFT = "DRAFT"
@@ -68,12 +71,37 @@ class VendorBooking(models.Model):
         default=None,
         help_text="Rate currency ke IDR (1 currency = X IDR).",
     )
+    wht_rate = models.DecimalField(
+        max_digits=9, decimal_places=6,
+        default=Decimal("0"),
+        validators=[MinValueValidator(0)],
+        help_text="PPh/WHT rate (%) dipotong dari pembayaran (mis: 2.0, 4.0)"
+    )
+    wht_amount = models.DecimalField(
+        max_digits=18, decimal_places=2,
+        default=Decimal("0"),
+        validators=[MinValueValidator(0)],
+        help_text="Nilai PPh/WHT (auto dari rate x base)"
+    )
     payment_term = models.ForeignKey(
         "core.PaymentTerm",  # sesuaikan path Currency om
         on_delete=PROTECT,
         related_name="+",
         null=True,
         blank=True,
+    )
+
+    subtotal_amount = models.DecimalField(
+        max_digits=18, decimal_places=2,
+        default=Decimal("0"),
+        validators=[MinValueValidator(0)],
+        help_text="Jumlah sebelum pajak & wht"
+    )
+    tax_amount = models.DecimalField(
+        max_digits=18, decimal_places=2,
+        default=Decimal("0"),
+        validators=[MinValueValidator(0)],
+        help_text="Jumlah pajak dari taxes di lines"
     )
 
     # Tambahan
@@ -137,31 +165,67 @@ class VendorBooking(models.Model):
     def __str__(self):
         return f"{self.booking_no or 'DRAFT'} - {self.job_order_id}"
     
-    def _get_letter_sequence_code(self) -> str:
-        """
-        Mapping letter_type -> NumberSequence.code
-        """
-        if self.letter_type == self.LETTER_SEA_SI:
+    def _get_letter_sequence_code(self):
+        lt = (self.letter_type or "").upper()
+        if lt in ("SEA_SI", "SI"):
             return "SEA_SI"
-        if self.letter_type == self.LETTER_AIR_SLI:
+        if lt in ("AIR_SLI", "SLI"):
             return "AIR_SLI"
+        if lt in ("TRUCK_TO", "SO"):
+            return "TRUCK_TO"
         return "WORKING_ORDER"
 
-    # ==========================
-    # Save override (numbering)
-    # ==========================
-    def save(self, *args, **kwargs):
-        # 1️⃣ Nomor finance (VBO) – universal
-        if not self.pk and not self.vb_number:
-            # app = 'shipments', code = 'VENDOR_BOOKING'
-            self.vb_number = get_next_number("shipments", "VENDOR_BOOKING")
+    
+    def recompute_vendor_booking_totals(vb):
+    # subtotal
+        subtotal = vb.lines.aggregate(s=Sum("amount"))["s"] or Decimal("0")
 
-        # 2️⃣ Nomor surat vendor – tergantung letter_type
-        if not self.pk and not self.letter_number:
-            seq_code = self._get_letter_sequence_code()
-            # contoh:
-            # app = 'shipments', code = 'SEA_SI' / 'AIR_SLI' / 'TRUCK_TO'
-            self.letter_number = get_next_number("shipments", seq_code)
+        # tax total (loop karena tax per line)
+        tax_total = Decimal("0")
+        for ln in vb.lines.all().prefetch_related("taxes"):
+            tax_total += compute_line_tax_amount(ln)
+        tax_total = tax_total.quantize(Decimal("0.01"))
+
+        # wht dari header
+        wht_rate = Decimal(getattr(vb, "wht_rate", 0) or 0) / Decimal("100")
+        # base WHT: biasanya subtotal (tanpa PPN), kalau di bisnis kamu beda tinggal ubah di sini
+        wht_amt = (subtotal * wht_rate).quantize(Decimal("0.01"))
+
+        vb.subtotal_amount = subtotal.quantize(Decimal("0.01"))
+        vb.tax_amount = tax_total
+        vb.wht_amount = wht_amt
+
+        vb.total_amount = (vb.subtotal_amount + vb.tax_amount - vb.wht_amount).quantize(Decimal("0.01"))
+
+        # penting: hindari recursion save() line
+        vb.save(update_fields=["subtotal_amount", "tax_amount", "wht_amount", "total_amount"])
+
+    
+    def save(self, *args, **kwargs):
+        creating = self.pk is None
+
+        # ✅ default issued_date biar tidak invalid
+        if not self.issued_date:
+            self.issued_date = timezone.now().date()
+
+        # ✅ default discount_amount (kalau field ini required)
+        if getattr(self, "discount_amount", None) in (None, ""):
+            self.discount_amount = Decimal("0")
+
+        # ✅ pastikan letter_type ada sebelum ambil sequence code
+        if not self.letter_type:
+            # fallback aman (sesuai desain: TRUCK_TO = SO)
+            self.letter_type = "TRUCK_TO"
+
+        if creating:
+            # 1️⃣ Nomor finance (VBO) – universal
+            if not self.vb_number:
+                self.vb_number = get_next_number("shipments", "VENDOR_BOOKING")
+
+            # 2️⃣ Nomor surat vendor – tergantung letter_type
+            if not self.letter_number:
+                seq_code = self._get_letter_sequence_code()  # SEA_SI / AIR_SLI / TRUCK_TO / WORKING_ORDER
+                self.letter_number = get_next_number("shipments", seq_code)
 
         super().save(*args, **kwargs)
 
@@ -177,8 +241,7 @@ class VendorBooking(models.Model):
         self.header_json = data
 
     
-    from django.db.models import Max
-
+   
     def job_cost_last_update(self):
         # cari updated_at jobcost terkait booking group & vendor
         from job.models.costs import JobCost
@@ -221,7 +284,8 @@ class VendorBookingLine(models.Model):
     
     details = models.JSONField(default=dict, blank=True)
     amount = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
-    
+    cost_group = models.CharField(max_length=50, blank=True, default="")
+
      # ✅ NEW: FK ke JobCost (source of truth)
     job_cost = models.ForeignKey(
         "job.JobCost",
@@ -243,6 +307,7 @@ class VendorBookingLine(models.Model):
 
     
     taxes = models.ManyToManyField(Tax, blank=True, related_name="booking_lines")
+    vat_included = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     sort_order = models.IntegerField(default=0)
@@ -252,6 +317,29 @@ class VendorBookingLine(models.Model):
         db_table = "vendor_booking_lines"
         ordering = ["vendor_booking_id", "line_no"]
 
+
+    def compute_line_tax_amount(line) -> Decimal:
+        """
+        Hitung total pajak add-on dari line.taxes.
+        Asumsi Tax punya field: rate (persen).
+        Kalau Tax kamu beda, tinggal mapping di sini.
+        """
+        base = Decimal(line.amount or 0)
+        total = Decimal("0")
+
+        # M2M case
+        for t in line.taxes.all():
+            rate = Decimal(getattr(t, "rate", 0) or 0) / Decimal("100")
+            total += (base * rate)
+
+        return total.quantize(Decimal("0.01"))
+
+    def recompute_amount(self):
+        q = Decimal(self.qty or 0)
+        p = Decimal(self.unit_price or 0)
+        self.amount = (q * p).quantize(Decimal("0.01"))
+
+    
     def clean(self):
         # ✅ job_cost wajib untuk line vendor booking (karena base on job cost)
         if not self.job_cost_id:
@@ -282,4 +370,6 @@ class VendorBookingLine(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.vendor_booking_id} - {self.cost_type}"
+        return f"{self.vendor_booking_id} - {self.job_cost_id}"
+
+    

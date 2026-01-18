@@ -266,7 +266,7 @@ class VendorBookingDetailView(LoginRequiredMixin, DetailView):
         ctx = super().get_context_data(**kwargs)
         ctx["job"] = self.object.job_order
         ctx["lines"] = self.object.lines.all()
-        return ctx``
+        return ctx
 
 
 from django.utils import timezone
@@ -326,12 +326,9 @@ class VendorBookingUpdateView(LoginRequiredMixin, UpdateView):
     model = VendorBooking
     form_class = VendorBookingForm
     template_name = "vendor_bookings/form.html"
-    context_object_name = "vb"
     
 
     def get_context_data(self, **kwargs):
-
-        
         ctx = super().get_context_data(**kwargs)
          # DEBUG
         print("DEBUG VB EDIT pk =", self.object.pk)
@@ -374,7 +371,7 @@ class VendorBookingSendView(VendorBookingObjectMixin, View):
         return redirect("shipments:vendor_booking_detail", pk=b.pk)
 
 
-class VendorBookingConfirmView2(VendorBookingObjectMixin, View):
+class VendorBookingConfirmView(VendorBookingObjectMixin, View):
     def post(self, request, pk):
         vb = self.get_object()
         if vb.status != VendorBooking.ST_DRAFT:
@@ -469,7 +466,7 @@ class VendorBookingSyncView(LoginRequiredMixin, View):
 
         return redirect("shipments:vendor_booking_edit", pk=b.pk)
 
-class VendorBookingPrintView2(LoginRequiredMixin, DetailView):
+class VendorBookingPrintView(LoginRequiredMixin, DetailView):
     model = VendorBooking
     template_name = "vendor_bookings/print/print_dispatch.html"  # dispatcher template
 
@@ -519,311 +516,260 @@ class VendorBookingPrintView2(LoginRequiredMixin, DetailView):
 
 #############################################################################################
 
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
+from collections import OrderedDict
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Sum
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.generic import TemplateView
+from django.views import View
+from django.views.generic import DetailView
 
-from job.models.job_orders import JobOrder  # sesuaikan path kalau beda
+from job.models.job_orders import JobOrder
 from job.models.costs import JobCost
-from shipments.models.vendor_bookings import VendorBooking, VendorBookingLine  # sesuaikan path kalau beda
+from core.models.currencies import Currency
+from shipments.models.vendor_bookings import VendorBooking, VendorBookingLine
 
 
-def _to_decimal(val: str) -> Decimal:
+def _safe_decimal(v, default="0"):
     try:
-        return Decimal(str(val or "").strip())
-    except (InvalidOperation, ValueError):
-        return Decimal("0")
-
-
-def _norm_group(s: str) -> str:
-    return (s or "").strip().upper()
-
-
-def _get_cost_group_from_jobcost(jc: JobCost) -> str:
-    # sumber kebenaran: JobCostType.cost_group
-    if getattr(jc, "cost_type_id", None) and getattr(jc, "cost_type", None):
-        return _norm_group(getattr(jc.cost_type, "cost_group", "") or "")
-    return ""
-
-
-def _letter_type_from_mode(job: JobOrder) -> str:
-    """
-    RULE ringkasan:
-    SEA -> SI
-    AIR -> SLI
-    INLAND/TRUCK -> SO
-    lainnya -> WO
-    """
-    mode = (getattr(job, "mode", "") or "").upper().strip()
-    if mode == "SEA":
-        return "SI"
-    if mode == "AIR":
-        return "SLI"
-    if mode in ("INLAND", "TRUCK", "TRUCKING"):
-        return "SO"
-    return "WO"
-
-from decimal import Decimal
-
-def _pick_unit_price_from_jobcost(jc):
-    # prioritaskan rate, kalau kosong pakai price
-    r = getattr(jc, "rate", None)
-    if r not in (None, "") and Decimal(r) > 0:
-        return Decimal(r)
-    p = getattr(jc, "price", None)
-    if p not in (None, "") and Decimal(p) > 0:
-        return Decimal(p)
-    # fallback: est_amount/qty kalau ada
-    est = getattr(jc, "est_amount", None)
-    qty = getattr(jc, "qty", None) or 0
-    try:
-        if est is not None and Decimal(qty) > 0:
-            return (Decimal(est) / Decimal(qty))
+        if v in (None, ""):
+            return Decimal(default)
+        return Decimal(str(v))
     except Exception:
-        pass
-    return Decimal("0")
+        return Decimal(default)
 
-class VendorBookingFromJobCostWizardView(LoginRequiredMixin, TemplateView):
-    template_name = "vendor_bookings/from_wizard.html"
 
-    # ---------- helpers ----------
-    def _get_job(self):
-        job_id = self.request.GET.get("job_order") or self.request.POST.get("job_order")
+def _jobcost_unit_price(jc):
+    # sesuaikan nama field JobCost om: price / unit_price
+    return _safe_decimal(getattr(jc, "price", None) or getattr(jc, "unit_price", None) or 0, "0")
+
+
+def _jobcost_uom(jc):
+    return getattr(jc, "uom", "") or ""
+
+
+def _group_to_letter_type(cost_group: str) -> str:
+    g = (cost_group or "").upper()
+    if g == "SEA":
+        return "SEA_SI"
+    if g == "AIR":
+        return "AIR_SLI"
+    if g in ("INLAND", "TRUCK", "TRUCKING"):
+        return "TRUCK_TO"
+    return "WORKING_ORDER"
+
+
+class VendorBookingFromJobCostWizardView(LoginRequiredMixin, View):
+    """
+    STEP 2:
+    Wizard (server-rendered): pilih cost lines yang masih remaining > 0
+    Rule:
+      - 1 VBO = 1 vendor
+      - 1 VBO = 1 cost_group
+      - letter_type otomatis dari cost_group
+      - remaining dihitung dari SUM(VBLine.qty) per job_cost_id
+    """
+    template_name = "vendor_bookings/from_jobcost.html"
+
+    def get(self, request):
+        job_id = request.GET.get("job_order") or request.GET.get("job_orders")
         if not job_id:
-            return None
-        return get_object_or_404(JobOrder, pk=job_id)
+            messages.error(request, "Missing job_order. Use ?job_order=ID")
+            return redirect("shipments:vendor_booking_list")
 
-    def _used_map_for_job(self, job: JobOrder):
-        """
-        Map used qty per job_cost_id:
-        used = SUM(VendorBookingLine.qty) group by job_cost_id
-        """
-        job_cost_ids = list(
-            JobCost.objects.filter(job_order=job).values_list("id", flat=True)
-        )
-        if not job_cost_ids:
-            return {}
+        job = get_object_or_404(JobOrder, pk=job_id)
 
-        sums = (
-            VendorBookingLine.objects
-            .filter(job_cost_id__in=job_cost_ids)
-            .values("job_cost_id")
-            .annotate(used=Sum("qty"))
-        )
-        return {row["job_cost_id"]: (row["used"] or Decimal("0")) for row in sums}
-
-    # ---------- GET ----------
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        job = self._get_job()
-        ctx["job"] = job
-
-        if not job:
-            ctx["rows"] = []
-            return ctx
-
-        used_map = self._used_map_for_job(job)
-
-        # Eligible lines:
-        # - cost_type.requires_vendor=True  (bukan JobCost.requires_vendor)
-        # - vendor terisi
-        qs = (
+        jc_qs = (
             JobCost.objects
             .filter(job_order=job, cost_type__requires_vendor=True)
-            .exclude(vendor__isnull=True)
-            .select_related("vendor", "cost_type")
-            # tampilan rapi: vendor -> group -> id
-            .order_by("vendor__name", "cost_type__cost_group", "id")
+            .select_related("vendor", "cost_type", "currency")
+            .order_by("cost_type__sort_order", "id")
         )
+        if hasattr(JobCost, "is_active"):
+            jc_qs = jc_qs.filter(is_active=True)
 
-        rows = []
-        for jc in qs:
-            qty = jc.qty or Decimal("0")
-            used = used_map.get(jc.id, Decimal("0"))
-            remaining = qty - used
+        # booked qty per job_cost
+        booked = (
+            VendorBookingLine.objects
+            .filter(vendor_booking__job_order=job, is_active=True, job_cost__isnull=False)
+            .values("job_cost_id")
+            .annotate(booked_qty=Sum("qty"))
+        )
+        booked_map = {r["job_cost_id"]: (r["booked_qty"] or Decimal("0")) for r in booked}
 
-            if remaining > 0:
-                cost_group = _get_cost_group_from_jobcost(jc)
-                rows.append({
-                    "jc": jc,
-                    "cost_type_name": (jc.cost_type.name if getattr(jc, "cost_type_id", None) else ""),
-                    "qty": qty,
-                    "used": used,
-                    "remaining": remaining,
-                    "vendor_id": jc.vendor_id,
-                    "vendor_name": (getattr(jc.vendor, "name", str(jc.vendor)) if jc.vendor_id else ""),
-                    "cost_group": cost_group,  # ✅ sudah defined, bukan jc.cost_group
-                })
+        items = []
+        for jc in jc_qs:
+            # wajib ada vendor
+            if not getattr(jc, "vendor_id", None):
+                continue
 
-        ctx["rows"] = rows
-        return ctx
+            total_qty = _safe_decimal(getattr(jc, "qty", None), "0")
+            used_qty = _safe_decimal(booked_map.get(jc.id, 0), "0")
+            remaining = total_qty - used_qty
+            if remaining <= 0:
+                continue
 
-    # ---------- POST ----------
-    def post(self, request, *args, **kwargs):
-        job = self._get_job()
-        if not job:
-            messages.error(request, "Job Order tidak valid.")
-            return redirect("job:job_order_list")  # sesuaikan kalau beda
+            unit_price = _jobcost_unit_price(jc)
+            cost_group = getattr(getattr(jc, "cost_type", None), "cost_group", "") or ""
+            items.append({
+                "id": jc.id,
+                "vendor_id": jc.vendor_id,
+                "vendor_name": getattr(getattr(jc, "vendor", None), "name", "") or "",
+                "cost_type_name": getattr(getattr(jc, "cost_type", None), "name", "") or "",
+                "cost_group": cost_group,
+                "desc": getattr(jc, "description", "") or "",
+                "qty_total": total_qty,
+                "qty_used": used_qty,
+                "qty_remaining": remaining,
+                "uom": _jobcost_uom(jc),
+                "unit_price": unit_price,
+                "currency": getattr(getattr(jc, "currency", None), "code", "") or "",
+            })
 
-        picked_ids = request.POST.getlist("pick")
-        if not picked_ids:
+        # group by (vendor, group)
+        grouped = OrderedDict()
+        for it in items:
+            key = (it["vendor_id"], it["vendor_name"], it["cost_group"])
+            grouped.setdefault(key, []).append(it)
+
+        return render(request, self.template_name, {"job": job, "groups": grouped})
+
+    def post(self, request):
+        job_id = request.POST.get("job_order") or request.POST.get("job_orders")
+        if not job_id:
+            messages.error(request, "Missing job_order.")
+            return redirect("shipments:vendor_booking_list")
+
+        job = get_object_or_404(JobOrder, pk=job_id)
+
+        selected_ids = request.POST.getlist("jc")
+        if not selected_ids:
             messages.error(request, "Pilih minimal 1 cost line.")
-            return redirect(f"{reverse('shipments:vendor_booking_from_jobcost')}?job_order={job.id}")
+            return redirect(f"{request.path}?job_order={job.id}")
 
-        selected = list(
+        jcs = list(
             JobCost.objects
-            .filter(job_order=job, id__in=picked_ids, cost_type__requires_vendor=True)
-            .exclude(vendor__isnull=True)
-            .select_related("vendor", "cost_type")
+            .filter(job_order=job, id__in=selected_ids, cost_type__requires_vendor=True)
+            .select_related("vendor", "cost_type", "currency")
         )
-        if not selected:
-            messages.error(request, "Cost line terpilih tidak valid.")
-            return redirect(f"{reverse('shipments:vendor_booking_from_jobcost')}?job_order={job.id}")
 
-        used_map = self._used_map_for_job(job)
+        vendor_ids = {jc.vendor_id for jc in jcs if jc.vendor_id}
+        if len(vendor_ids) != 1:
+            messages.error(request, "1 VBO hanya untuk 1 vendor. Pilih cost line vendor yang sama.")
+            return redirect(f"{request.path}?job_order={job.id}")
 
-        # server-side LOCK vendor + group (group dari cost_type)
-        locked_vendor_id = selected[0].vendor_id
-        locked_group = _get_cost_group_from_jobcost(selected[0])
+        group_set = {getattr(jc.cost_type, "cost_group", "") or "" for jc in jcs}
+        if len(group_set) != 1:
+            messages.error(request, "1 VBO hanya untuk 1 cost group. Pilih cost line group yang sama.")
+            return redirect(f"{request.path}?job_order={job.id}")
 
-        errors = []
-        lines_payload = []
+        vendor_id = list(vendor_ids)[0]
+        booking_group = list(group_set)[0]
+        letter_type = _group_to_letter_type(booking_group)
 
-        for jc in selected:
-            if jc.vendor_id != locked_vendor_id:
-                errors.append("Vendor tidak konsisten. Pilih cost line dengan vendor yang sama.")
-                break
+        # booked map (untuk remaining)
+        booked = (
+            VendorBookingLine.objects
+            .filter(vendor_booking__job_order=job, is_active=True, job_cost__in=jcs)
+            .values("job_cost_id")
+            .annotate(booked_qty=Sum("qty"))
+        )
+        booked_map = {r["job_cost_id"]: (r["booked_qty"] or Decimal("0")) for r in booked}
 
-            jc_group = _get_cost_group_from_jobcost(jc)
-            if jc_group != locked_group:
-                errors.append("Group tidak konsisten. Pilih cost line dengan cost_group yang sama.")
-                break
-
-            alloc = _to_decimal(request.POST.get(f"qty_{jc.id}", "0"))
-            if alloc <= 0:
-                errors.append(f"Qty allocate harus > 0 untuk line: {jc.cost_type.name if jc.cost_type_id else jc.description}")
-                continue
-
-            qty = jc.qty or Decimal("0")
-            used = used_map.get(jc.id, Decimal("0"))
-            remaining = qty - used
-
-            if alloc > remaining:
-                errors.append(
-                    f"Qty allocate melebihi remaining untuk line: "
-                    f"{jc.cost_type.name if jc.cost_type_id else jc.description} "
-                    f"(remaining {remaining}, input {alloc})"
-                )
-                continue
-
-            lines_payload.append((jc, alloc))
-
-        if errors:
-            for e in errors[:3]:
-                messages.error(request, e)
-            if len(errors) > 3:
-                messages.error(request, f"({len(errors) - 3} error lain)")
-            return redirect(f"{reverse('shipments:vendor_booking_from_jobcost')}?job_order={job.id}")
-
-        if not lines_payload:
-            messages.error(request, "Tidak ada line valid untuk dibuat.")
-            return redirect(f"{reverse('shipments:vendor_booking_from_jobcost')}?job_order={job.id}")
-
-        # Create VendorBooking (DRAFT) — TANPA cost_group (karena field tidak ada)
+        # create VB (numbering auto by model.save)
         vb = VendorBooking(
             job_order=job,
-            vendor_id=locked_vendor_id,
-            letter_type=_letter_type_from_mode(job),
-            status="DRAFT",
-            issued_date=timezone.localdate(),
+            vendor_id=vendor_id,
+            booking_group=booking_group,
+            letter_type=letter_type,
             discount_amount=Decimal("0"),
+            issued_date=timezone.now().date(),
         )
+
+        # default currency IDR + rate 1 (biar aman)
+        cur_idr = Currency.objects.filter(code="IDR").first()
+        if cur_idr:
+            vb.currency = cur_idr
+            vb.idr_rate = Decimal("1")
+
+        vb.status = VendorBooking.ST_DRAFT
+        vb.created_by = request.user
         vb.save()
 
-        # Create lines + snapshot cost_group per line
-        VendorBookingLine.objects.bulk_create([
-            VendorBookingLine(
+        created = 0
+        for jc in jcs:
+            total_qty = _safe_decimal(getattr(jc, "qty", None), "0")
+            used_qty = _safe_decimal(booked_map.get(jc.id, 0), "0")
+            remaining = total_qty - used_qty
+            if remaining <= 0:
+                continue
+
+            req_qty = _safe_decimal(request.POST.get(f"qty_{jc.id}"), str(remaining))
+            if req_qty <= 0:
+                continue
+            if req_qty > remaining:
+                messages.error(request, f"Qty terlalu besar untuk costline #{jc.id}. Remaining={remaining}.")
+                vb.delete()
+                return redirect(f"{request.path}?job_order={job.id}")
+
+            unit_price = _jobcost_unit_price(jc)
+            amount = (req_qty or 0) * (unit_price or 0)
+
+            VendorBookingLine.objects.create(
                 vendor_booking=vb,
-                 cost_type_id=jc.cost_type_id, 
-                qty=alloc,
-                cost_group=_get_cost_group_from_jobcost(jc),  # ✅ snapshot
+                job_cost=jc,
+                cost_type=jc.cost_type,
+                description=getattr(jc, "description", "") or jc.cost_type.name,
+                qty=req_qty,
+                uom=_jobcost_uom(jc),
+                unit_price=unit_price,
+                amount=amount,
+                is_active=True,
             )
-            for (jc, alloc) in lines_payload
-        ])
+            created += 1
 
-        # redirect ke review/action (edit)
-        edit_url = reverse("shipments:vendor_booking_edit", args=[vb.id])  # sesuaikan kalau name beda
-        return redirect(f"{edit_url}?job_order={job.id}")
+        messages.success(request, f"✅ VBO created: {vb.vb_number} / {vb.letter_number} (lines: {created})")
+        return redirect("shipments:vendor_booking_edit", pk=vb.pk)
 
-from decimal import Decimal
-from django.db.models import Sum
 
 class VendorBookingConfirmView(LoginRequiredMixin, View):
+    # STEP 3 Confirm
     def post(self, request, pk):
-        vb = get_object_or_404(
-            VendorBooking.objects.prefetch_related("lines"),
-            pk=pk
-        )
+        vb = get_object_or_404(VendorBooking, pk=pk)
 
-        if vb.status != "DRAFT":
-            messages.warning(request, "Vendor Booking sudah dikonfirmasi.")
-            return redirect(reverse("shipments:vendor_booking_edit", args=[vb.id]))
+        if vb.status != VendorBooking.ST_DRAFT:
+            messages.error(request, "Vendor Booking sudah dikunci.")
+            return redirect("shipments:vendor_booking_edit", pk=vb.pk)
 
-        lines = list(vb.lines.all())
-        if not lines:
-            messages.error(request, "Tidak bisa confirm: belum ada line.")
-            return redirect(reverse("shipments:vendor_booking_edit", args=[vb.id]))
+        if vb.lines.filter(is_active=True).count() == 0:
+            messages.error(request, "Tidak bisa confirm tanpa booking line.")
+            return redirect("shipments:vendor_booking_edit", pk=vb.pk)
 
-        # ✅ VALIDASI AKAD: angka wajib jelas
-        bad = []
-        for ln in lines:
-            if (ln.qty or 0) <= 0:
-                bad.append(f"Line #{ln.id}: qty kosong")
-            if (ln.unit_price or 0) <= 0:
-                bad.append(f"Line #{ln.id}: unit price kosong")
-            # VAT/WHT boleh 0 tapi harus “jelas” (jadi default 0 ok)
-            # kalau kamu mau VAT wajib pilih mode, nanti kita tambah field tax_mode.
+        vb.status = VendorBooking.ST_CONFIRMED
+        vb.save(update_fields=["status"])
 
-        if bad:
-            messages.error(request, "Tidak bisa confirm. Lengkapi harga/qty dulu.")
-            for m in bad[:3]:
-                messages.error(request, m)
-            return redirect(reverse("shipments:vendor_booking_edit", args=[vb.id]))
-
-        vb.status = "CONFIRMED"
-        vb.save()
-        messages.success(request, "Confirmed ✅. Dokumen siap dikirim ke vendor.")
-        return redirect(reverse("shipments:vendor_booking_edit", args=[vb.id]))
+        messages.success(request, "Vendor Booking berhasil dikonfirmasi.")
+        return redirect("shipments:vendor_booking_edit", pk=vb.pk)
 
 
-class VendorBookingPrintView(LoginRequiredMixin, View):
-    def get(self, request, pk):
-        vb = get_object_or_404(
-            VendorBooking.objects
-            .select_related("job_order", "vendor")
-            .prefetch_related("lines__job_cost", "lines__cost_type"),
-            pk=pk
-        )
+class VendorBookingPrintView(LoginRequiredMixin, DetailView):
+    # STEP 3 Print
+    model = VendorBooking
 
-        if vb.status != "CONFIRMED":
-            return HttpResponseForbidden("VBO harus CONFIRMED sebelum print.")
-
-        lt = (vb.letter_type or "").upper().strip()
-
-        # pilih template
-        if lt == "SI":
-            tpl = "vendor_bookings/print/si.html"
-        elif lt == "SLI":
-            tpl = "vendor_bookings/print/sli.html"
-        elif lt == "SO":
-            tpl = "vendor_bookings/print/so.html"
+    def get_template_names(self):
+        vb = self.object
+        # mapping template by letter_type
+        lt = (vb.letter_type or "").lower()
+        # default fallback
+        if lt in ("sea_si", "si"):
+            tpl = "si.html"
+        elif lt in ("air_sli", "sli"):
+            tpl = "sli.html"
+        elif lt in ("truck_to", "so"):
+            tpl = "so.html"
         else:
-            tpl = "vendor_bookings/print/wo.html"
-
-        return render(request, tpl, {"vb": vb})
-
+            tpl = "wo.html"
+        return [f"vendor_bookings/print/{tpl}"]
