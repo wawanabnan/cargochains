@@ -1,0 +1,10 @@
+{# vendor_bookings/_field.html #}
+{% if field %}
+  <div class="{{ col|default:'col-md-6' }}">
+    <label class="form-label small mb-1">{{ label|default:field.label }}</label>
+    {{ field }}
+    {% if field.errors %}
+      <div class="text-danger small">{{ field.errors|striptags }}</div>
+    {% endif %}
+  </div>
+{% endif %}

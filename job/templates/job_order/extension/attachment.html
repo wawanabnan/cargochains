@@ -56,7 +56,7 @@
 
     {# FORM UPLOAD ATTACHMENT #}
     <form method="post"
-          action="{% url 'sales:job_order_attachment_add' job.pk %}"
+          action="{% url 'job:job_order_attachment_add' job.pk %}"
           enctype="multipart/form-data"
           class="row g-2 align-items-end">
       {% csrf_token %}

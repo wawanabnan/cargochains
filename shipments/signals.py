@@ -4,7 +4,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 
 from .models.shipments import Shipment
-from .utils import next_shipment_number
+from  shipments.utils.shipment_number import next_shipment_number
 
 
 @receiver(pre_save, sender=Shipment)

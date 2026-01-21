@@ -1,0 +1,88 @@
+{# SEA - Shipping Instruction #}
+<div class="card mb-3">
+  <div class="card-header py-2 d-flex justify-content-between align-items-center">
+    <strong>{{ vb_title|default:"Shipping Instruction (SEA)" }}</strong>
+    <span class="text-muted small">{{ vb.letter_type }}</span>
+  </div>
+
+  <div class="card-body py-2">
+    <div class="row g-2">
+
+      {# Reference #}
+      {% include "vendor_bookings/_field.html" with field=form.ref_number col="col-md-6"
+         label=vb_labels.ref|default:"B/L Number" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.issued_date col="col-md-3"
+         label=vb_labels.issued_date|default:"Issued Date" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.booking_date col="col-md-3"
+         label=vb_labels.booking_date|default:"Booking Date" %}
+
+      {# Route #}
+      {% include "vendor_bookings/_field.html" with field=form.route_from col="col-md-6"
+         label=vb_labels.route_from|default:"POL (From Port)" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.route_to col="col-md-6"
+         label=vb_labels.route_to|default:"POD (To Port)" %}
+
+      {# Vessel / Voyage #}
+      {% include "vendor_bookings/_field.html" with field=form.carrier_name col="col-md-6"
+         label=vb_labels.carrier|default:"Vessel / Carrier" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.voyage col="col-md-6"
+         label=vb_labels.voyage|default:"Voyage" %}
+
+      {# Schedule #}
+      {% include "vendor_bookings/_field.html" with field=form.etd col="col-md-3"
+         label=vb_labels.etd|default:"ETD" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.eta col="col-md-3"
+         label=vb_labels.eta|default:"ETA" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.cutoff_date col="col-md-3"
+         label=vb_labels.cutoff|default:"Cut-off Date" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.delivery_date col="col-md-3"
+         label=vb_labels.delivery_date|default:"Delivery Date" %}
+
+      {# Cargo / Container #}
+      {% include "vendor_bookings/_field.html" with field=form.incoterm col="col-md-3"
+         label=vb_labels.incoterm|default:"Incoterm" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.service_level col="col-md-3"
+         label=vb_labels.service_level|default:"Service Level" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.container_type col="col-md-3"
+         label=vb_labels.container_type|default:"Container Type" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.container_qty col="col-md-3"
+         label=vb_labels.container_qty|default:"Container Qty" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.gross_weight col="col-md-3"
+         label=vb_labels.gross_weight|default:"Gross Weight" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.volume col="col-md-3"
+         label=vb_labels.volume|default:"Volume (CBM)" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.packages col="col-md-3"
+         label=vb_labels.packages|default:"Packages" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.package_type col="col-md-3"
+         label=vb_labels.package_type|default:"Package Type" %}
+
+      {# Parties (optional) #}
+      {% include "vendor_bookings/_field.html" with field=form.shipper_name col="col-md-6"
+         label=vb_labels.shipper|default:"Shipper" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.consignee_name col="col-md-6"
+         label=vb_labels.consignee|default:"Consignee" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.notify_party col="col-md-6"
+         label=vb_labels.notify_party|default:"Notify Party" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.special_instructions col="col-md-12"
+         label=vb_labels.instructions|default:"Special Instructions / Remarks" %}
+
+    </div>
+  </div>
+</div>

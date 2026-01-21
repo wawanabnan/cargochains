@@ -60,5 +60,8 @@ class Tax(models.Model):
         ordering = ["category__code", "name"]
 
     def __str__(self):
-        r = str(self.rate or 0).replace(".", ",")
-        return f"{self.name} ({r}%)"
+        r = self.rate or 0
+        # rapihin trailing .0
+        if float(r).is_integer():
+            return f"{int(r)}%"
+        return f"{r}%"

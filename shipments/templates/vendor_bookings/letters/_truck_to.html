@@ -1,0 +1,29 @@
+<div class="card mb-3">
+  <div class="card-header py-2">
+    <strong>Trucking Order</strong>
+  </div>
+
+  <div class="card-body py-2">
+    <div class="row g-2">
+
+      {% include "vendor_bookings/_field.html" with field=form.ref_number col="col-md-6" label="Reference" %}
+      {% include "vendor_bookings/_field.html" with field=form.issued_date col="col-md-3" label="Issued Date" %}
+      {% include "vendor_bookings/_field.html" with field=form.booking_date col="col-md-3" label="Booking Date" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.route_from col="col-md-6" label="Pickup Location" %}
+      {% include "vendor_bookings/_field.html" with field=form.route_to col="col-md-6" label="Delivery Location" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.etd col="col-md-3" label="Pickup Date" %}
+      {% include "vendor_bookings/_field.html" with field=form.eta col="col-md-3" label="Delivery Date" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.vehicle_type col="col-md-3" label="Vehicle Type" %}
+      {% include "vendor_bookings/_field.html" with field=form.vehicle_qty col="col-md-3" label="Qty" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.gross_weight col="col-md-3" label="Gross Weight" %}
+      {% include "vendor_bookings/_field.html" with field=form.packages col="col-md-3" label="Packages" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.special_instructions col="col-md-12" label="Instructions / Remarks" %}
+
+    </div>
+  </div>
+</div>

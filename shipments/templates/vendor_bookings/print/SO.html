@@ -1,0 +1,65 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{{ vb.vb_number }} - SO</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; }
+    .wm { position: fixed; inset: 0; display: {% if is_draft %}block{% else %}none{% endif %}; }
+    .wm span { position: absolute; top: 40%; left: 15%; font-size: 90px; opacity: .08; transform: rotate(-20deg); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 6px; vertical-align: top; }
+    th { background: #f6f6f6; }
+    .right { text-align: right; }
+  </style>
+</head>
+<body>
+
+<div class="wm"><span>DRAFT</span></div>
+
+<h2 style="margin:0">SHIPPING ORDER (SO)</h2>
+<div style="margin:6px 0 12px 0;">
+  <div><b>No:</b> {{ vb.vb_number }}</div>
+  <div><b>Vendor:</b> {{ vb.vendor }}</div>
+  <div><b>Date:</b> {{ vb.issued_date }}</div>
+  <div><b>Job Order:</b> {{ vb.job_order }}</div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Cost Line</th>
+      <th>Group</th>
+      <th>UOM</th>
+      <th class="right">Qty</th>
+      <th class="right">Unit Price</th>
+      <th class="right">Amount</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ln in vb.lines.all %}
+    <tr>
+      <td>{{ ln.job_cost.cost_type.name }}</td>
+      <td>{{ ln.cost_group }}</td>
+      <td>{{ ln.uom }}</td>
+      <td class="right">{{ ln.qty }}</td>
+      <td class="right">{{ ln.unit_price }}</td>
+      <td class="right">{{ ln.amount }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div style="margin-top:10px; width: 40%; margin-left:auto;">
+  <table>
+    <tr><td>Sub Total</td><td class="right">{{ totals.subtotal }}</td></tr>
+    <tr><td>Discount</td><td class="right">{{ totals.discount_amount }}</td></tr>
+    <tr><td>Tax Amount</td><td class="right">{{ totals.tax_amount }}</td></tr>
+    <tr><td>WHT (PPh)</td><td class="right">{{ totals.wht_amount }}</td></tr>
+    <tr><th>Total</th><th class="right">{{ totals.total_amount }}</th></tr>
+  </table>
+</div>
+
+</body>
+</html>

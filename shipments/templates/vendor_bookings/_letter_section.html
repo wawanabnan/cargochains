@@ -1,0 +1,7 @@
+{% if vb.letter_type == "SEA_SI" %}
+  {% include "vendor_bookings/letters/_sea_si.html" %}
+{% elif vb.letter_type == "AIR_SLI" %}
+  {% include "vendor_bookings/letters/_air_sli.html" %}
+{% else %}
+  {% include "vendor_bookings/letters/_truck_to.html" %}
+{% endif %}

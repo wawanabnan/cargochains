@@ -1,5 +1,6 @@
 {% extends "adminbase.html" %}
 {% load static %}
+{% load indo_format %}
 
 {% block content %}
 <div class="app-content-header">
@@ -19,7 +20,7 @@
       </div>
 
       <div class="d-flex align-items-center gap-2">
-        <a href="{% url 'sales:job_order_list' %}" class="btn btn-outline-secondary btn-sm">
+        <a href="{% url 'job:job_order_list' %}" class="btn btn-outline-secondary btn-sm">
           <i class="fa fa-arrow-left me-1"></i> Back
         </a>
         <button form="joborder-form" type="submit" class="btn btn-primary btn-sm">
@@ -33,223 +34,208 @@
 <div class="app-content">
   <div class="container-fluid">
 
-    <form id="joborder-form" method="post" novalidate>
-      {% csrf_token %}
-      {% if job %}
-        <input type="hidden" name="job_id" value="{{ job.pk }}">
-      {% endif %}
+<form method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
 
-      {# =================== ERROR SUMMARY (SINGLE BLOCK) =================== #}
-      {% if form.errors or form.non_field_errors %}
-        <div class="alert alert-danger d-flex gap-2 align-items-start mb-3">
-          <i class="fa fa-triangle-exclamation mt-1"></i>
-          <div class="flex-grow-1">
-            <div class="fw-semibold">Ada error input. Cek field merah.</div>
-            {% if form.non_field_errors %}
-              <div class="mt-1">{{ form.non_field_errors }}</div>
-            {% endif %}
-          </div>
+  {# --- HEADER / MAIN FIELDS (ringkas) --- #}
+  
+ <div class="card mb-2">
+  <div class="card-body py-2">
+    <div class="row g-2">
+
+      {# COL 1 #}
+      <div class="col-lg-3 col-md-6">
+        <label class="form-label small text-muted mb-1">Job Date</label>
+        {{ form.job_date }}
+
+        <label class="form-label small text-muted mb-1 mt-2">Job Number</label>
+        {# kalau add new belum ada number, tampilkan placeholder #}
+        <div class="form-control form-control-sm bg-light">
+          {{ job.job_number|default:"(Auto)" }}
         </div>
-      {% endif %}
+      </div>
 
-      <div class="cc-form">
+      {# COL 2 #}
+      <div class="col-lg-3 col-md-6">
+        <label class="form-label small text-muted mb-1">Customer</label>
+        {{ form.customer }}
 
-        {# =================== SECTION: GENERAL =================== #}
-        <div class="card cc-card shadow-sm">
-          <div class="card-header cc-card-header">
-            <div class="d-flex align-items-center justify-content-between">
-              <div class="fw-semibold">General</div>
-              <div class="text-muted small">Basic job info</div>
-            </div>
-          </div>
-          <div class="card-body">
+        <label class="form-label small text-muted mb-1 mt-2">Sales PIC</label>
+        {{ form.sales_user }}
+      </div>
 
-            <div class="cc-grid">
-              <div class="cc-field">
-                <label class="form-label">Job Date</label>
-                <div class="input-group input-group-sm">
-                  {{ form.job_date }}
-                  <span class="input-group-text"><i class="fa fa-calendar"></i></span>
-                </div>
-                <div class="cc-err">{{ form.job_date.errors }}</div>
-              </div>
+      {# COL 3 #}
+      <div class="col-lg-3 col-md-6">
+        <label class="form-label small text-muted mb-1">Mode</label>
+        {{ form.mode }}
 
-              <div class="cc-field">
-                <label class="form-label">Order #</label>
-                {{ form.order_number }}
-                <div class="cc-err">{{ form.order_number.errors }}</div>
-              </div>
+        <label class="form-label small text-muted mb-1 mt-2">Ref</label>
+        {{ form.ref_no }}
+      </div>
 
-              <div class="cc-field cc-span-2">
-                <label class="form-label">Customer</label>
-                {{ form.customer }}
-                <div class="cc-err">{{ form.customer.errors }}</div>
-              </div>
+      {# COL 4 (money panel / currency) #}
+      <div class="col-lg-3 col-md-6">
+        <div class="border rounded-3 p-2 bg-body-tertiary">
 
-              <div class="cc-field cc-span-2">
-                <label class="form-label">Service</label>
-                {{ form.service }}
-                <div class="cc-err">{{ form.service.errors }}</div>
-              </div>
-
-              <div class="cc-field cc-span-2">
-                <label class="form-label">Cargo Description</label>
-                {{ form.cargo_description }}
-                <div class="cc-err">{{ form.cargo_description.errors }}</div>
-              </div>
-
-              <div class="cc-field">
-                <label class="form-label">Quantity</label>
-                {{ form.quantity }}
-                <div class="cc-err">{{ form.quantity.errors }}</div>
-              </div>
-
-              {% if job %}
-              <div class="cc-field">
-                <label class="form-label">Job Order #</label>
-                <input type="text" class="form-control form-control-sm" value="{{ job.number }}" readonly>
-              </div>
-              {% endif %}
-            </div>
-
-          </div>
-        </div>
-
-        {# =================== SECTION: ROUTE / LOCATION =================== #}
-        <div class="card cc-card shadow-sm">
-          <div class="card-header cc-card-header">
-            <div class="d-flex align-items-center justify-content-between">
-              <div class="fw-semibold">Route</div>
-              <div class="text-muted small">Pickup & delivery</div>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="cc-grid">
-              <div class="cc-field cc-span-2">
-                <label class="form-label">Pick Up</label>
-                {{ form.pickup }}
-                <div class="cc-err">{{ form.pickup.errors }}</div>
-              </div>
-
-              <div class="cc-field cc-span-2">
-                <label class="form-label">Delivery</label>
-                {{ form.delivery }}
-                <div class="cc-err">{{ form.delivery.errors }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {# =================== SECTION: COMMERCIAL =================== #}
-        <div class="card cc-card shadow-sm">
-          <div class="card-header cc-card-header">
-            <div class="d-flex align-items-center justify-content-between">
-              <div class="fw-semibold">Commercial</div>
-              <div class="text-muted small">Currency & totals</div>
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <div class="small text-muted">Currency</div>
+            <div class="fw-semibold">
+              {# untuk add new, tampilkan field currency (bukan job.currency) #}
+              {{ form.currency }}
             </div>
           </div>
 
-          <div class="card-body">
-            <div class="cc-grid">
-
-              <div class="cc-field cc-span-2">
-                <label class="form-label">PIC</label>
-                {{ form.pic }}
-                <div class="cc-err">{{ form.pic.errors }}</div>
-              </div>
-
-              <div class="cc-field">
-                <label class="form-label">Payment Term</label>
-                {{ form.payment_term }}
-                <div class="cc-err">{{ form.payment_term.errors }}</div>
-              </div>
-
-              <div class="cc-field">
-                <label class="form-label">Currency</label>
-                {{ form.currency }}
-                <div class="cc-err">{{ form.currency.errors }}</div>
-              </div>
-
-              <div class="cc-field cc-span-2" id="row-kurs">
-                <label class="form-label">Kurs IDR</label>
-                <input type="text" name="kurs_idr" id="id_kurs_idr"
-                       value="{{ form.kurs_idr.value|default:'0,00' }}"
-                       class="form-control form-control-sm text-end">
-              </div>
-
-              <div class="cc-field">
-                <label class="form-label">Total Amount</label>
-                {{ form.total_amount }}
-                <div class="cc-err">{{ form.total_amount.errors }}</div>
-              </div>
-
-              <div class="cc-field">
-                <label class="form-label">Grand Total</label>
-                {{ form.grand_total }}
-                <div class="cc-err">{{ form.grand_total.errors }}</div>
-              </div>
-
-              <div class="cc-field cc-span-2">
-                <div class="cc-switches">
-                  <div class="cc-switch">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div>
-                        <div class="fw-semibold small mb-0">Apply Tax</div>
-                        <div class="text-muted small">1.1%</div>
-                      </div>
-                      <div class="form-check form-switch m-0">
-                        {{ form.is_tax }}
-                      </div>
-                    </div>
-                    <div class="mt-2">
-                      <label class="form-label small mb-1">Tax Amount</label>
-                      {{ form.tax_amount }}
-                      <div class="cc-err">{{ form.tax_amount.errors }}</div>
-                    </div>
-                  </div>
-
-                  <div class="cc-switch">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div>
-                        <div class="fw-semibold small mb-0">Apply PPH</div>
-                        <div class="text-muted small">2%</div>
-                      </div>
-                      <div class="form-check form-switch m-0">
-                        {{ form.is_pph }}
-                      </div>
-                    </div>
-                    <div class="mt-2">
-                      <label class="form-label small mb-1">PPH Amount</label>
-                      {{ form.pph_amount }}
-                      <div class="cc-err">{{ form.pph_amount.errors }}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="cc-field cc-span-2">
-                <label class="form-label">Internal Remarks</label>
-                {{ form.remarks_internal }}
-                <div class="cc-err">{{ form.remarks_internal.errors }}</div>
-              </div>
-
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="small text-muted">Total</div>
+            <div class="text-end">
+              {{ job.total_amount|default:0|indo_number }}
             </div>
           </div>
 
-          <div class="card-footer bg-body-tertiary">
-            <div class="d-flex justify-content-end gap-2">
-              <a href="{% url 'sales:job_order_list' %}" class="btn btn-outline-secondary">
-                Cancel
-              </a>
-              <button type="submit" class="btn btn-primary">
-                <i class="fa fa-save me-1"></i> Save
-              </button>
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="small text-muted">Tax</div>
+            <div class="text-end">
+              {{ job.tax_amount|default:0|indo_number }}
+            </div>
+          </div>
+
+          <hr class="my-2">
+
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="small text-muted">Grand Total</div>
+            <div class="text-end fw-semibold fs-6">
+              {{ job.grand_total|default:0|indo_number }}
             </div>
           </div>
 
         </div>
       </div>
-    </form>
+
+    </div>
+
+    {# ROW 2 (route) - optional, tetap ringkas #}
+    <div class="row g-2 mt-1">
+      <div class="col-lg-3 col-md-6">
+        <label class="form-label small text-muted mb-1">Route From</label>
+        {{ form.route_from }}
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <label class="form-label small text-muted mb-1">Route To</label>
+        {{ form.route_to }}
+      </div>
+
+      <div class="col-lg-6 d-flex align-items-end justify-content-end gap-2">
+        <button type="submit" class="btn btn-primary btn-sm">
+          <i class="bi bi-check2-circle me-1"></i> Save
+        </button>
+        <a href="{% url 'job:job_order_list' %}" class="btn btn-outline-secondary btn-sm">
+          Cancel
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+  {# --- TABS --- #}
+  <div class="card">
+    <div class="card-body p-0">
+
+      <ul class="nav nav-tabs px-2 pt-2" id="jobTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active"
+                  id="tab-costlines"
+                  data-bs-toggle="tab"
+                  data-bs-target="#pane-costlines"
+                  type="button"
+                  role="tab"
+                  aria-controls="pane-costlines"
+                  aria-selected="true">
+            <i class="bi bi-receipt-cutoff me-1"></i> Cost Lines
+          </button>
+        </li>
+
+        <li class="nav-item" role="presentation">
+          <button class="nav-link"
+                  id="tab-attachments"
+                  data-bs-toggle="tab"
+                  data-bs-target="#pane-attachments"
+                  type="button"
+                  role="tab"
+                  aria-controls="pane-attachments"
+                  aria-selected="false">
+            <i class="bi bi-paperclip me-1"></i> Attachments
+          </button>
+        </li>
+
+        <li class="nav-item" role="presentation">
+          <button class="nav-link"
+                  id="tab-notes"
+                  data-bs-toggle="tab"
+                  data-bs-target="#pane-notes"
+                  type="button"
+                  role="tab"
+                  aria-controls="pane-notes"
+                  aria-selected="false">
+            <i class="bi bi-journal-text me-1"></i> Notes
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content p-2" id="jobTabsContent">
+
+        {# TAB 1: COST LINES #}
+        <div class="tab-pane fade show active"
+             id="pane-costlines"
+             role="tabpanel"
+             aria-labelledby="tab-costlines"
+             tabindex="0">
+
+          {# ⚠️ penting: include formset management form #}
+          {{ cost_formset.management_form }}
+
+          {# include partial cost lines table/formset #}
+          {# include "job_order/partials/cost_lines_formset.html" with cost_formset=cost_formset job=job #}
+        </div>
+
+        {# TAB 2: ATTACHMENTS #}
+        <div class="tab-pane fade"
+             id="pane-attachments"
+             role="tabpanel"
+             aria-labelledby="tab-attachments"
+             tabindex="0">
+
+          {# kalau pakai attachment formset #}
+          {% if attachment_formset %}
+            {{ attachment_formset.management_form }}
+            {% include "job_order/partials/attachments_formset.html" with attachment_formset=attachment_formset job=job %}
+          {% else %}
+            <div class="p-2 text-muted small">No attachment module linked.</div>
+          {% endif %}
+        </div>
+
+        {# TAB 3: NOTES #}
+        <div class="tab-pane fade"
+             id="pane-notes"
+             role="tabpanel"
+             aria-labelledby="tab-notes"
+             tabindex="0">
+
+          <div class="p-2">
+            <label class="form-label small text-muted mb-1">Internal Notes</label>
+            {{ form.notes }}
+            {% if form.notes.errors %}
+              <div class="text-danger small mt-1">{{ form.notes.errors|striptags }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</form>
+
 
   </div>
 </div>
@@ -294,6 +280,85 @@
     .cc-span-2 { grid-column: span 1; }
     .cc-switches { grid-template-columns: 1fr; }
   }
+
+
+  /* ===============================
+   FORM STYLING ONLY (SAFE)
+   =============================== */
+
+.cc-card {
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,.06);
+}
+
+.cc-card-header {
+  background: transparent;
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  padding: .6rem .9rem;
+}
+
+.cc-card .card-body {
+  padding: .9rem;
+}
+
+/* 2 kolom, rapat */
+.cc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.cc-span-2 {
+  grid-column: span 2;
+}
+
+/* Field */
+.cc-field .form-label {
+  font-size: .78rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: rgba(0,0,0,.75);
+}
+
+.cc-field .form-control,
+.cc-field .form-select {
+  min-height: 34px;
+  font-size: .875rem;
+  border-radius: 8px;
+}
+
+.cc-field textarea.form-control {
+  min-height: 88px;
+}
+
+/* Error */
+.cc-err {
+  margin-top: 3px;
+  font-size: .75rem;
+  color: #dc3545;
+}
+
+/* Switch group tetap kecil */
+.cc-switches {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.cc-switch {
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 10px;
+  padding: 8px;
+  background: rgba(0,0,0,.015);
+}
+
+/* Mobile */
+@media (max-width: 991px) {
+  .cc-grid { grid-template-columns: 1fr; }
+  .cc-span-2 { grid-column: span 1; }
+  .cc-switches { grid-template-columns: 1fr; }
+}
+
 </style>
 {% endblock %}
 

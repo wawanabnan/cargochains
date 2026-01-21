@@ -155,40 +155,34 @@ urlpatterns = [
     path("freight-orders/<int:pk>/", FoDetailView.as_view(), name="fo_detail"),
     path("freight-orders/<int:pk>/status/", FoStatusUpdateView.as_view(), name="fo_change_status"),
     path("freight-orders/<int:pk>/edit-fields/", FoEditFieldsView.as_view(), name="fo_edit_fields"),
-
-
-
     path(
         "freight-orders/<int:pk>/print/",
         FreightOrderPdfHtmlView.as_view(),
         name="fo_pdf",
     ),
-
-  
     
-    
-    path("job-orders/", JobOrderListView.as_view(), name="job_order_list"),
-    path("job-order/add/", JobOrderCreateView.as_view(), name="job_order_add"),
-    path("job-order/<int:pk>/edit/", JobOrderUpdateView.as_view(), name="job_order_edit"),
-    path("job-order/<int:pk>/", JobOrderDetailView.as_view(), name="job_order_detail"),
-    path("job-orders/<int:pk>/revenue-pdf/",JobOrderRevenuePdfView.as_view(),name="job_order_revenue_pdf"),
-    path("job-orders/<int:pk>/attachments/add/",
-         JobOrderAttachmentUploadView.as_view(),
-         name="job_order_attachment_add"),
-    path("job-orders/<int:pk>/attachments/<int:att_id>/delete/",
-         JobOrderAttachmentDeleteView.as_view(),
-         name="job_order_attachment_delete"),
-    path(
-        "job-orders/bulk-status/",
-        JobOrderBulkStatusView.as_view(),
-        name="joborder_bulk_status",
-    ),
-    path("job-orders/<int:pk>/costs/", JobOrderCostsUpdateView.as_view(), name="job_order_costs_update"),
-    path(
-        "job-orders/<int:pk>/generate-invoice/",
-        JobOrderGenerateInvoiceView.as_view(),
-        name="job_order_generate_invoice",
-    ),
+    #path("job-orders/", JobOrderListView.as_view(), name="job_order_list"),
+    #path("job-order/add/", JobOrderCreateView.as_view(), name="job_order_add"),
+    #path("job-order/<int:pk>/edit/", JobOrderUpdateView.as_view(), name="job_order_edit"),
+    #path("job-order/<int:pk>/", JobOrderDetailView.as_view(), name="job_order_detail"),
+    #path("job-orders/<int:pk>/revenue-pdf/",JobOrderRevenuePdfView.as_view(),name="job_order_revenue_pdf"),
+    #path("job-orders/<int:pk>/attachments/add/",
+    #     JobOrderAttachmentUploadView.as_view(),
+    #     name="job_order_attachment_add"),
+    #path("job-orders/<int:pk>/attachments/<int:att_id>/delete/",
+    #     JobOrderAttachmentDeleteView.as_view(),
+    #     name="job_order_attachment_delete"),
+    #path(
+    #    "job-orders/bulk-status/",
+    #    JobOrderBulkStatusView.as_view(),
+    #    name="joborder_bulk_status",
+    #),
+    #path("job-orders/<int:pk>/costs/", JobOrderCostsUpdateView.as_view(), name="job_order_costs_update"),
+    #path(
+    #    "job-orders/<int:pk>/generate-invoice/",
+    #    JobOrderGenerateInvoiceView.as_view(),
+    #    name="job_order_generate_invoice",
+    #),
 
 
     path("customers/", CustomerListView.as_view(), name="customer_list"),

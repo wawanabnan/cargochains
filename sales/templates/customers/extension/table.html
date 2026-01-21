@@ -14,7 +14,8 @@
                 </thead>
                 <tbody>
                 {% for c in customers %}
-                <tr style="cursor:pointer" onclick="window.location='{% url 'sales:customer_detail' c.pk %}'">
+               <tr style="cursor:pointer" onclick="window.location='{% url 'sales:'|add:entity_urls|add:'_detail' c.pk %}'">
+
                     <td>{{ c.name }}</td>
                     <td>{{ c.regency.name }}</td>
                     <td>{{ c.phone }}</td>

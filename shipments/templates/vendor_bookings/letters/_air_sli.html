@@ -1,0 +1,91 @@
+{# AIR - Shipping Letter of Instruction #}
+<div class="card mb-3">
+  <div class="card-header py-2 d-flex justify-content-between align-items-center">
+    <strong>{{ vb_title|default:"Shipping Letter of Instruction (AIR)" }}</strong>
+    <span class="text-muted small">{{ vb.letter_type }}</span>
+  </div>
+
+  <div class="card-body py-2">
+    <div class="row g-2">
+
+      {# Reference #}
+      {% include "vendor_bookings/_field.html" with field=form.ref_number col="col-md-6"
+         label=vb_labels.ref|default:"AWB Number" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.issued_date col="col-md-3"
+         label=vb_labels.issued_date|default:"Issued Date" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.booking_date col="col-md-3"
+         label=vb_labels.booking_date|default:"Booking Date" %}
+
+      {# Route #}
+      {% include "vendor_bookings/_field.html" with field=form.route_from col="col-md-6"
+         label=vb_labels.route_from|default:"From (Airport)" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.route_to col="col-md-6"
+         label=vb_labels.route_to|default:"To (Airport)" %}
+
+      {# Airline / Flight #}
+      {% include "vendor_bookings/_field.html" with field=form.carrier_name col="col-md-6"
+         label=vb_labels.carrier|default:"Airline" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.flight_no col="col-md-3"
+         label=vb_labels.flight_no|default:"Flight No." %}
+
+      {% include "vendor_bookings/_field.html" with field=form.flight_date col="col-md-3"
+         label=vb_labels.flight_date|default:"Flight Date" %}
+
+      {# Schedule #}
+      {% include "vendor_bookings/_field.html" with field=form.etd col="col-md-3"
+         label=vb_labels.etd|default:"ETD" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.eta col="col-md-3"
+         label=vb_labels.eta|default:"ETA" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.ready_date col="col-md-3"
+         label=vb_labels.ready_date|default:"Cargo Ready Date" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.delivery_date col="col-md-3"
+         label=vb_labels.delivery_date|default:"Delivery Date" %}
+
+      {# Cargo #}
+      {% include "vendor_bookings/_field.html" with field=form.incoterm col="col-md-3"
+         label=vb_labels.incoterm|default:"Incoterm" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.service_level col="col-md-3"
+         label=vb_labels.service_level|default:"Service Level" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.gross_weight col="col-md-3"
+         label=vb_labels.gross_weight|default:"Gross Weight (KG)" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.chargeable_weight col="col-md-3"
+         label=vb_labels.chargeable_weight|default:"Chargeable Weight" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.volume col="col-md-3"
+         label=vb_labels.volume|default:"Volume" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.packages col="col-md-3"
+         label=vb_labels.packages|default:"Packages" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.package_type col="col-md-3"
+         label=vb_labels.package_type|default:"Package Type" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.commodity col="col-md-3"
+         label=vb_labels.commodity|default:"Commodity" %}
+
+      {# Parties (optional) #}
+      {% include "vendor_bookings/_field.html" with field=form.shipper_name col="col-md-6"
+         label=vb_labels.shipper|default:"Shipper" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.consignee_name col="col-md-6"
+         label=vb_labels.consignee|default:"Consignee" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.notify_party col="col-md-6"
+         label=vb_labels.notify_party|default:"Notify Party" %}
+
+      {% include "vendor_bookings/_field.html" with field=form.special_instructions col="col-md-12"
+         label=vb_labels.instructions|default:"Special Instructions / Remarks" %}
+
+    </div>
+  </div>
+</div>

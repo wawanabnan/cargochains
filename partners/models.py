@@ -14,28 +14,30 @@ class Partner(models.Model):
 
     # --- Data umum ---
     name = models.CharField(max_length=120)
-    email = models.CharField(max_length=120, null=True, blank=True)
-    phone = models.CharField(max_length=60, null=True, blank=True)
-    mobile = models.CharField(max_length=30, null=True, blank=True)
 
-    # NOTE: ini masih CharField sesuai model lama.
-    # Nanti kalau mau, bisa diubah ke TextField/JSON untuk multi-url.
-    websites = models.CharField(max_length=30, null=True, blank=True)
+    # ✅ optional string: jangan null, biar konsisten & aman insert
+    email = models.CharField(max_length=120, blank=True, default="")
+    phone = models.CharField(max_length=60, blank=True, default="")
+    mobile = models.CharField(max_length=30, blank=True, default="")
+
+    # ✅ max_length 30 terlalu pendek untuk URL; default empty string
+    websites = models.CharField(max_length=255, blank=True, default="")
 
     company_name = models.CharField(
         max_length=100,
         verbose_name="Company Name",
         blank=True,
-        null=True,
+        default="",
     )
     company_type = models.CharField(
         max_length=10,
         choices=COMPANY_TYPE_CHOICES,
         verbose_name="Company Type",
         blank=True,
-        null=True,
+        default="",
     )
 
+    # ✅ boolean sudah aman (non-null by design)
     is_individual = models.BooleanField(
         default=False,
         help_text="Centang jika perorangan; kosongkan jika perusahaan.",
@@ -45,28 +47,29 @@ class Partner(models.Model):
         help_text="Centang jika PKP (Pengusaha Kena Pajak).",
     )
 
+    # ✅ optional string: jangan null
     tax = models.CharField(
         "NPWP",
         max_length=50,
-        null=True,
         blank=True,
+        default="",
         help_text="NPWP perusahaan / perorangan."
     )
 
     job_title = models.CharField(
         "Job Title",
         max_length=100,
-        null=True,
         blank=True,
+        default="",
         help_text="Jabatan contact utama, misal: Direktur, Owner, Procurement."
     )
 
     # --- Alamat (legacy) ---
-    # Tetap dipertahankan untuk data lama / display bebas / luar negeri.
-    address = models.TextField(null=True, blank=True)
-    country = models.CharField(max_length=100, null=True, blank=True)
-    city = models.CharField(max_length=100, null=True, blank=True)
-    post_code = models.CharField(max_length=20, null=True, blank=True)
+    # ✅ optional text/string: jangan null
+    address = models.TextField(blank=True, default="")
+    country = models.CharField(max_length=100, blank=True, default="")
+    city = models.CharField(max_length=100, blank=True, default="")
+    post_code = models.CharField(max_length=20, blank=True, default="")
 
     # --- Alamat terstruktur (baru, untuk Indonesia & pakai geo.Location) ---
     location = models.ForeignKey(
@@ -78,16 +81,18 @@ class Partner(models.Model):
         related_name="partners",
         help_text="Pilih lokasi administrasi (kelurahan/kecamatan/kota) jika diketahui.",
     )
+
+    # ✅ optional string: jangan null
     address_line1 = models.CharField(
         max_length=200,
-        null=True,
         blank=True,
+        default="",
         help_text="Jalan, nomor rumah, komplek, gedung.",
     )
     address_line2 = models.CharField(
         max_length=200,
-        null=True,
         blank=True,
+        default="",
         help_text="RT/RW, blok, lantai, atau info tambahan lain.",
     )
 
@@ -101,7 +106,6 @@ class Partner(models.Model):
         db_index=True,
         db_column="province_id"
     )
-
     regency = models.ForeignKey(
         Location,
         on_delete=models.SET_NULL,
@@ -112,7 +116,6 @@ class Partner(models.Model):
         db_index=True,
         db_column="regency_id"
     )
-
     district = models.ForeignKey(
         Location,
         on_delete=models.SET_NULL,
@@ -123,7 +126,6 @@ class Partner(models.Model):
         db_index=True,
         db_column="district_id"
     )
-
     village = models.ForeignKey(
         Location,
         on_delete=models.SET_NULL,
@@ -141,19 +143,20 @@ class Partner(models.Model):
         blank=True,
         on_delete=models.CASCADE,
         related_name="contacts",
-        limit_choices_to={"is_individual": False},  # hanya partner perusahaan
+        limit_choices_to={"is_individual": False},
     )
 
     bank_name = models.CharField(max_length=120, blank=True, default="")
     bank_account = models.CharField(max_length=60, blank=True, default="")
     bank_account_name = models.CharField(max_length=120, blank=True, default="")
+
+    # ✅ decimal default sudah aman
     balance = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
 
     is_sales_contact = models.BooleanField(
         default=False,
         help_text="Centang jika contact ini dipakai untuk Quotation / Sales Order.",
     )
-
     is_billing_contact = models.BooleanField(
         default=False,
         help_text="Centang jika contact ini dipakai untuk Invoice / Billing.",
@@ -170,8 +173,6 @@ class Partner(models.Model):
         help_text="PIC sales/AM yang bertanggung jawab.",
     )
 
-    # --- Roles (multi choice) ---
-    # Ini cuma "shortcut" ManyToMany, pakai tabel existing partner_roles
     roles = models.ManyToManyField(
         "PartnerRoleTypes",
         through="PartnerRole",
@@ -180,7 +181,6 @@ class Partner(models.Model):
         help_text="Peran partner (Customer, Vendor, Carrier, Agent, dll).",
     )
 
-  
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -195,10 +195,6 @@ class Partner(models.Model):
 
     @property
     def roles_display(self):
-        """
-        Mengembalikan string daftar role:
-        contoh: 'Customer, Vendor, Carrier'
-        """
         qs = (
             PartnerRole.objects.filter(partner=self)
             .select_related("role_type")
@@ -209,25 +205,14 @@ class Partner(models.Model):
 
     @property
     def full_address_lines(self) -> list[str]:
-        """
-        Format (setiap bagian satu baris):
-        - address_line1
-        - address_line2
-        - village + " - " + district
-        - regency
-        - province
-        """
         lines = []
 
-        # Alamat baris 1
         if self.address_line1:
             lines.append(self.address_line1)
 
-        # Alamat baris 2 (opsional)
         if self.address_line2:
             lines.append(self.address_line2)
 
-        # Village - District
         vd = []
         if self.village:
             vd.append(self.village.name)
@@ -235,23 +220,18 @@ class Partner(models.Model):
             vd.append(self.district.name)
 
         if vd:
-            # gabungkan jadi "Kelurahan - Kecamatan"
             lines.append(" - ".join(vd))
 
-        # Regency (Kota/Kabupaten)
         if self.regency:
             lines.append(self.regency.name)
 
-        # Province
         if self.province:
             lines.append(self.province.name)
 
         return lines
 
-
     @property
     def full_address_text(self) -> str:
-        """Multi-line address using newline."""
         return "\n".join(self.full_address_lines)
 
 
@@ -260,9 +240,10 @@ class CustomerManager(models.Manager):
         return (
             super()
             .get_queryset()
-            .filter(roles__code="customer")  # roles -> PartnerRoleTypes via M2M
+            .filter(roles__code__iexact="customer")  # aman upper/lower
             .distinct()
         )
+
 
 class Customer(Partner):
     objects = CustomerManager()
@@ -282,6 +263,7 @@ class VendorManager(models.Manager):
             .distinct()
         )
 
+
 class Vendor(Partner):
     objects = VendorManager()
 
@@ -292,8 +274,10 @@ class Vendor(Partner):
 
 
 class PartnerRoleTypes(models.Model):
-    code = models.CharField(max_length=50, unique=True, blank=True)
+    # ✅ UNIQUE + blank=True itu rawan ("" duplikat). Lebih aman: jangan blank.
+    code = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=50)
+
     is_active = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -331,18 +315,23 @@ class PartnerRole(models.Model):
         verbose_name_plural = "Partner Roles"
 
     def __str__(self):
-        return f"{self.partner.name} → {self.role}"
+        return f"{self.partner.name} → {self.role_type.name}"
 
-    @property
-    def role(self):
-        return self.role_type
 
-    # ini sebenarnya lebih cocok di admin, tapi aku biarkan karena sudah ada
-    def roles_display(self, obj):
-        qs = (
-            PartnerRole.objects.filter(partner=obj)
-            .select_related("role_type")
-            .values_list("role_type__name", flat=True)
-        )
-        names = sorted(set(qs))
-        return ", ".join(names) if names else "-"
+
+
+from partners.models import Partner, PartnerRoleTypes, PartnerRole
+
+names = [
+    "Pelayaran Sumber Karya Samudera",
+    "SAII RESOURCES Pte ltd",
+    "Abdi Karya Indo 99",
+    "Orecon Putra Perkasa",
+    "Anda Auto Indonesia",
+    "Tracon",
+    "Indocahaya Wira Nusantara",
+    "Rajawali Emas Ancora Lestari",
+    "Ezmar Transmitra Cargo",
+]
+
+# ambil role CUSTOMER

@@ -6,12 +6,14 @@ from partners.models import Vendor
 from job.models.job_orders import JobOrder
 from core.models.currencies import Currency
 from decimal import Decimal
-
+from core.models.taxes import Tax
 
 from django.db import models
 from django.db.models import PROTECT
 from job.constants import SYSTEM_GROUP_CHOICES, CostGroup
 from django.core.validators import MinValueValidator
+from core.models.uoms import UOM
+
 
 class JobCostType(models.Model):
        
@@ -24,6 +26,16 @@ class JobCostType(models.Model):
         blank=True,
         choices=SYSTEM_GROUP_CHOICES,
     )
+    uom = models.ForeignKey(
+        UOM,
+        related_name="cost_line_uoms",
+        on_delete=PROTECT,
+        null=True,
+        blank=True,
+        help_text="Default UOM untuk cost line (mis: LS, TRIP, CNTR, CBM, KG)"
+    )
+
+    taxes = models.ManyToManyField(Tax, blank=True, related_name="cost_lines_taxes")
 
     # ✅ sumber kebenaran UX: vendor vs non-vendor
     requires_vendor = models.BooleanField(default=True)
@@ -124,7 +136,19 @@ class JobCost(models.Model):
         default=1,
         help_text="Currency rate to Job currency (IDR)"
     )
+    uom = models.CharField(
+        max_length=20,
+        blank=True,
+        default="",
+        help_text="Default UOM untuk cost line (mis: CNTR, CBM, KG, SHIPMENT, TRIP, DOC)",
+    )
 
+    tax = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        default=0,
+        help_text="Estimated amount (system or manual)"
+    )
     est_amount = models.DecimalField(
         max_digits=18,
         decimal_places=2,
@@ -216,3 +240,12 @@ class JobCost(models.Model):
         Convenience flag for UI / filtering
         """
         return self.vb_status != self.VB_FULL
+    
+    def save(self, *args, **kwargs):
+        if self.cost_type_id and not self.uom:
+            ct = getattr(self, "cost_type", None)
+            if ct and getattr(ct, "uom", None):
+                # ct.uom adalah FK -> ambil code
+                self.uom = ct.uom.code
+        super().save(*args, **kwargs)
+

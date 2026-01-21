@@ -1,0 +1,48 @@
+{
+  "vendor_booking": {
+    "SEA_SI": {
+      "title": "Shipping Instruction (SI)",
+      "labels": {
+        "route_from": "POL (From Port)",
+        "route_to": "POD (To Port)",
+        "reference_no": "B/L Number",
+        "etd": "ETD",
+        "eta": "ETA",
+        "remarks": "Shipping Instruction"
+      }
+    },
+    "AIR_SLI": {
+      "title": "Shipping Letter of Instruction (SLI)",
+      "labels": {
+        "route_from": "From (Airport)",
+        "route_to": "To (Airport)",
+        "reference_no": "AWB Number",
+        "etd": "ETD",
+        "eta": "ETA",
+        "remarks": "Handling Instruction"
+      }
+    },
+    "TRUCK_TO": {
+      "title": "Trucking Order (TO)",
+      "labels": {
+        "route_from": "Pickup Location",
+        "route_to": "Dropoff Location",
+        "reference_no": "Reference",
+        "etd": "Pickup Date",
+        "eta": "Delivery Date",
+        "remarks": "Trucking Instruction"
+      }
+    },
+    "DEFAULT": {
+      "title": "Vendor Booking",
+      "labels": {
+        "route_from": "From",
+        "route_to": "To",
+        "reference_no": "Reference",
+        "etd": "Date",
+        "eta": "ETA",
+        "remarks": "Notes"
+      }
+    }
+  }
+}

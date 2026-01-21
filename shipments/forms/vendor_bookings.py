@@ -89,6 +89,14 @@ class VendorBookingForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        if not self.instance.pk and not self.initial.get("idr_rate"):
+            self.initial["idr_rate"] = 1
+
+        self.fields["idr_rate"].widget.attrs.update({
+        "readonly": "readonly",
+        "class": "form-control form-control-sm text-end js-idr-rate",
+        })
+
         # readonly numbers (safety)
         self.fields["vb_number"].disabled = True
         self.fields["letter_number"].disabled = True
@@ -116,6 +124,53 @@ class VendorBookingForm(forms.ModelForm):
         self.fields["delivery_location"].initial = data.get("delivery_location", "")
         self.fields["pickup_date"].initial = data.get("pickup_date") or None
         self.fields["delivery_date"].initial = data.get("delivery_date") or None
+
+        # ✅ job_order: untuk update biasanya sudah ada instance, jangan bikin required nabrak
+        if "job_order" in self.fields:
+            self.fields["job_order"].required = False
+            if self.instance and self.instance.job_order_id:
+                self.initial.setdefault("job_order", self.instance.job_order_id)
+
+        # ✅ booking_group wajib di model, tapi pada update harusnya sudah ada
+        if "booking_group" in self.fields:
+            self.fields["booking_group"].required = False
+            if self.instance and self.instance.booking_group:
+                self.initial.setdefault("booking_group", self.instance.booking_group)
+
+        # ✅ discount_amount default 0
+        if "discount_amount" in self.fields:
+            self.fields["discount_amount"].required = False
+            if self.instance and self.instance.discount_amount is not None:
+                self.initial.setdefault("discount_amount", self.instance.discount_amount)
+            else:
+                self.initial.setdefault("discount_amount", Decimal("0"))
+
+        # ✅ letter_type default aman
+        if "letter_type" in self.fields:
+            self.fields["letter_type"].required = False
+            if self.instance and self.instance.letter_type:
+                self.initial.setdefault("letter_type", self.instance.letter_type)
+            else:
+                self.initial.setdefault("letter_type", "TRUCK_TO")
+
+        # ✅ wht_rate default 0
+        if "wht_rate" in self.fields:
+            self.fields["wht_rate"].required = False
+            if self.instance and self.instance.wht_rate is not None:
+                self.initial.setdefault("wht_rate", self.instance.wht_rate)
+            else:
+                self.initial.setdefault("wht_rate", Decimal("0"))
+
+        if "cost_type" in self.fields:
+            self.fields["cost_type"].required = False
+
+            # issued_date default
+            if "issued_date" in self.fields:
+                self.fields["issued_date"].required = False
+                if self.instance and self.instance.issued_date:
+                    self.initial.setdefault("issued_date", self.instance.issued_date)
+                else:
+                    self.initial.setdefault("issued_date", timezone.localdate())
 
         print(">>> VendorBookingForm LOADED, JobOrder count =", JobOrder.objects.count())
 
@@ -212,16 +267,24 @@ from django.utils import timezone
 
 
 class VendorBookingLineForm(forms.ModelForm):
+    taxes = forms.ModelMultipleChoiceField(
+        queryset=Tax.objects.all().order_by("name"),
+        required=False,
+        widget=forms.SelectMultiple(attrs={
+            "class": "vb-taxes",
+            "multiple": "multiple",
+        })
+    )
     class Meta:
         model = VendorBookingLine
-        fields = ["job_cost", "cost_type", "description", "qty", "uom", "unit_price", "amount", "sort_order", "is_active"]
+        fields = ["job_cost", "cost_type", "description", "qty", "uom", "unit_price", "amount", "taxes"]
         widgets = {
             "job_cost": forms.HiddenInput(),
             "cost_type": forms.HiddenInput(),  # auto-sync dari job_cost
             "description": forms.TextInput(attrs={"class": "form-control form-control-sm"}),
-            "qty": forms.NumberInput(attrs={"class": "form-control form-control-sm", "step": "0.01"}),
             "uom": forms.TextInput(attrs={"class": "form-control form-control-sm"}),
-            "unit_price": forms.NumberInput(attrs={"class": "form-control form-control-sm", "step": "0.01"}),
+            "unit_price": forms.TextInput(attrs={"class": "ws-input text-end js-idmoney", "inputmode": "decimal"}),
+            "qty": forms.TextInput(attrs={"class": "ws-input text-end js-idqty", "inputmode": "decimal"}),
             "amount": forms.NumberInput(attrs={"class": "form-control form-control-sm", "step": "0.01", "readonly": "readonly"}),
             "sort_order": forms.HiddenInput(),
             "is_active": forms.HiddenInput(),
@@ -279,9 +342,8 @@ class VendorBookingLineForm(forms.ModelForm):
  
 
 VendorBookingLineFormSet = inlineformset_factory(
-    parent_model=VendorBooking,
-    model=VendorBookingLine,
+    VendorBooking, VendorBookingLine,
     form=VendorBookingLineForm,
     extra=0,
-    can_delete=False,
+    can_delete=False
 )
