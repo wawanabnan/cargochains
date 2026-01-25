@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.views import View
 
 from job.models.job_orders import JobOrder,JobOrderAttachment
-from job.models.costs import JobCost,JobCostType
+from job.models.job_costs import JobCost,JobCostType
 
 
 from job.forms.job_orders   import JobOrderForm 
@@ -37,6 +37,7 @@ from job.forms.job_orders import JobOrderForm
 from job.forms.Job_costs import JobCostForm, JobCostFormSet
 from job.utils.messages import JobMessages
 from django.utils.safestring import mark_safe
+from core.models.taxes import Tax
 import json
 
 def cost_type_meta_json():
@@ -141,12 +142,15 @@ class JobOrderListView(LoginRequiredMixin, ListView):
 class JobOrderCreateView(LoginRequiredMixin, View):
     template_name = "job_order/form.html"
 
+    
+
     def get(self, request):
         form = JobOrderForm()
         return render(request, self.template_name, {
             "form": form,
             "job": None,
             "cost_formset": None,
+            "tax_map": _build_tax_map(),
         })
 
     def post(self, request):
@@ -470,7 +474,19 @@ class JobOrderCostsUpdateView(LoginRequiredMixin, View):
         # ✅ SAVE (karena touched + valid)
         # ==================================================
         with transaction.atomic():
-            formset.save()
+            instances = formset.save(commit=False)
+
+            # SAVE/UPDATE yang ada di formset
+            for obj in instances:
+            #    ct = obj.cost_type  # JobCostType instance
+            #    obj.uom_id = ct.uom_id   # ✅ copy FK id (anti string)
+                obj.save()
+
+            # DELETE rows yang ditandai
+            for obj in formset.deleted_objects:
+                obj.delete()
+
+            formset.save_m2m()
 
         if is_ajax:
             fresh_formset = JobCostFormSet(instance=job)
@@ -509,3 +525,13 @@ class JobOrderGenerateInvoiceView(LoginRequiredMixin, View):
     
 
 
+
+def _build_tax_map():
+    qs = Tax.objects.filter(is_active=True).only("id", "rate", "is_withholding")
+    return {
+        str(t.id): {
+            "rate": float(t.rate or Decimal("0")),          # percent
+            "is_withholding": bool(t.is_withholding),
+        }
+        for t in qs
+    }

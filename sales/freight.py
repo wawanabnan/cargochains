@@ -4,7 +4,7 @@ from django.db import models
 from django.conf import settings
 
 
-from core.models.services import SalesService
+from core.models.services import Service
 from core.models.currencies import Currency
 from core.models.payment_terms import PaymentTerm
 from core.models.uoms import UOM
@@ -94,8 +94,8 @@ class FreightQuotation (TimeStampedModel):
         on_delete=models.PROTECT,
         related_name="freight_quotations_destination",
     )
-    sales_service = models.ForeignKey(
-        SalesService,
+    service = models.ForeignKey(
+        Service,
         on_delete=models.PROTECT,
         related_name="freight_quotations_service",
         null=True,
@@ -299,6 +299,22 @@ class FreightQuotation (TimeStampedModel):
         on_delete=models.PROTECT,
         related_name="freight_quotations",
     )
+
+
+    pickup = models.TextField(
+        "Pick Up",
+        max_length=255,
+        blank=True,
+        help_text="Pickup Location.",
+    )
+
+    delivery = models.TextField(
+        "Delivery",
+        max_length=255,
+        blank=True,
+        help_text="Delivery Location.",
+    )
+
 
     notes_internal = models.TextField(blank=True)
     notes_customer = models.TextField(blank=True)
@@ -565,7 +581,7 @@ class FreightQuotation (TimeStampedModel):
                 # --- SALES / CUSTOMER ---
                 customer=self.customer,
                 sales_user=user or self.sales_user,
-                sales_service=self.sales_service,
+                service=self.service,
                 payment_term=self.payment_term,
                 currency=self.currency,
 
@@ -705,8 +721,8 @@ class FreightOrder(TimeStampedModel):
 
     
 
-    sales_service = models.ForeignKey(
-        SalesService,
+    service = models.ForeignKey(
+        Service,
         on_delete=models.PROTECT,
         related_name="freight_orders",
         null=True,

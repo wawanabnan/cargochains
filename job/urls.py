@@ -1,5 +1,5 @@
 from django.urls import path
-from job.views.cost_types import CostTypeListView, CostTypeCreateView, CostTypeUpdateView
+from job.views.job_cost_types import CostTypeListView, CostTypeCreateView, CostTypeUpdateView
 #from job.views.action import complete_job
 
 
@@ -22,7 +22,7 @@ from job.views.job_order import (
     
 )
 
-from job.views.cost_types import (
+from job.views.job_cost_types import (
      cost_type_export,
    cost_type_import
 )
@@ -82,3 +82,16 @@ urlpatterns = [
 
 ]
 
+
+# job/urls.py
+from django.urls import path
+from job.views.job_order_cost_print import joborder_cost_print_preview
+from job.views.job_order_cost_pdf import joborder_cost_pdf
+from job.views.job_order_cost_plypdf import joborder_cost_pdf
+
+urlpatterns += [
+    path("job-orders/<int:pk>/costs/print/", joborder_cost_print_preview, name="joborder_cost_print_preview"),
+    #path("job-orders/<int:pk>/costs/print.pdf", joborder_cost_pdf, name="joborder_cost_pdf"),
+    path("job-orders/<int:pk>/costs/print.pdf", joborder_cost_pdf, name="joborder_cost_pdf"),
+
+]

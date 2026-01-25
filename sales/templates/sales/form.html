@@ -1,0 +1,806 @@
+{# quotation_form.html #}
+{% extends "adminbase.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="mx-auto" style="max-width: 1200px;">
+      <div class="d-flex justify-content-between align-items-center py-2">
+        <div>
+          <h5 class="mb-0">Freight Quotation</h5>
+          <div class="small text-muted">
+            {# contoh tampilkan status/number kalau ada #}
+            {% if form.instance.pk %}
+              Edit quotation
+            {% else %}
+              New quotation
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary">Back</a>
+          <button type="submit" form="fqForm" class="btn btn-sm btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app-content-body">
+  <div class="container-fluid py-3">
+    <div class="mx-auto" style="max-width: 1200px;">
+
+      <form id="fqForm" method="post" novalidate>
+        {% csrf_token %}
+
+        {# hidden fields #}
+        {{ form.number }}
+        {{ form.quotation_date }}
+        {{ form.status }}
+        {{ form.origin }}
+        {{ form.destination }}
+
+        {# non-field errors #}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        {% include "sub-forms/fq_section_header.html" with title="Quotation Info" %}
+        <div class="card shadow-sm mb-3">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12 col-lg-6">
+                {% include "sub-forms/field.html" with field=form.customer %}
+              </div>
+              <div class="col-12 col-md-6 col-lg-3">
+                {% include "sub-forms/field.html" with field=form.sales_service %}
+              </div>
+              <div class="col-12 col-md-6 col-lg-3">
+                {% include "sub-forms/field.html" with field=form.currency %}
+              </div>
+
+              <div class="col-12 col-md-4">
+                {% include "sub-forms/field.html" with field=form.payment_term %}
+              </div>
+              <div class="col-12 col-md-4">
+                {% include "sub-forms/field.html" with field=form.valid_until %}
+              </div>
+              <div class="col-12 col-md-4">
+                {% include "sub-forms/field.html" with field=form.shipment_plan_date %}
+              </div>
+
+              <div class="col-12 col-md-6">
+                {% include "sub-forms/field.html" with field=form.sales_agency %}
+              </div>
+              <div class="col-12 col-md-6">
+                {% include "sub-forms/field.html" with field=form.commodity %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {% include "sub-forms/fq_section_header.html" with title="Shipment Detail" %}
+        <div class="card shadow-sm mb-3">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12 col-lg-6">
+                {% include "sub-forms/field.html" with field=form.cargo_name %}
+              </div>
+              <div class="col-12 col-md-6 col-lg-3">
+                {% include "sub-forms/field.html" with field=form.hs_code %}
+              </div>
+              <div class="col-12 col-md-6 col-lg-3">
+                {% include "sub-forms/field.html" with field=form.package_count %}
+              </div>
+
+              <div class="col-12 col-md-4">
+                {% include "sub-forms/field.html" with field=form.package_uom %}
+              </div>
+              <div class="col-12 col-md-4">
+                {% include "sub-forms/field.html" with field=form.gross_weight %}
+              </div>
+              <div class="col-12 col-md-4">
+                {% include "sub-forms/field.html" with field=form.weight_uom %}
+              </div>
+
+              <div class="col-12 col-md-4">
+                {% include "sub-forms/field.html" with field=form.volume_cbm %}
+              </div>
+              <div class="col-12 col-md-4">
+                {% include "sub-forms/field.html" with field=form.volume_uom %}
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="form-check mt-4 pt-2">
+                  {{ form.is_dangerous_goods }}
+                  <label class="form-check-label" for="{{ form.is_dangerous_goods.id_for_label }}">
+                    Dangerous Goods
+                  </label>
+                  {% if form.is_dangerous_goods.errors %}
+                    <div class="invalid-feedback d-block">
+                      {{ form.is_dangerous_goods.errors|striptags }}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="col-12 col-md-6">
+                {% include "sub-forms/field.html" with field=form.dangerous_goods_class %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {% include "sub-forms/fq_section_header.html" with title="Pricing" %}
+        <div class="card shadow-sm mb-3">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12 col-md-4">
+                {% include "sub-forms/field.html" with field=form.quantity %}
+              </div>
+              <div class="col-12 col-md-4">
+                {% include "sub-forms/field.html" with field=form.unit_price %}
+              </div>
+              <div class="col-12 col-md-4">
+                {% include "sub-forms/field.html" with field=form.amount %}
+              </div>
+
+              <div class="col-12 col-md-4">
+                {% include "sub-forms/field.html" with field=form.discount_percent %}
+              </div>
+              <div class="col-12 col-md-4">
+                {% include "sub-forms/field.html" with field=form.discount_amount %}
+              </div>
+              <div class="col-12 col-md-4">
+                {% include "sub-forms/field.html" with field=form.tax_percent %}
+              </div>
+
+              <div class="col-12 col-md-4">
+                {% include "sub-forms/field.html" with field=form.tax_amount %}
+              </div>
+              <div class="col-12 col-md-8">
+                {% include "sub-forms/field.html" with field=form.total_amount %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-12 col-lg-6">
+            {% include "sub-forms/fq_party_card.html" with title="Shipper" prefix="shipper" %}
+          </div>
+          <div class="col-12 col-lg-6">
+            
+          </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                {% include "sub-forms/field.html" with field=form.notes_customer %}
+              </div>
+              <div class="col-12">
+                {% include "sub-forms/field.html" with field=form.notes_internal %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="javascript:history.back()" class="btn btn-outline-secondary">Cancel</a>
+          <button class="btn btn-primary" type="submit">Save</button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}
+
+
+{% block extra_css %}
+  <style>
+  .nav-tabs .nav-link.active, .nav-tabs .nav-item.show .nav-link {
+    margin-left: 30px !important;
+  }
+  
+  .tab-content {padding:20px}
+  .card-header .h-center {text-align: center;}
+  </style>
+
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+  
+{% endblock %}
+
+<!----------------------------------JS Helper-------------------------------------------------------------------------->
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+  <script src="{% static 'js/location_autocomplete.js' %}"></script>
+  <script src="{% static 'js/partner_autocomplete.js' %}"></script>
+<script>
+  $(function () {
+    // =======================
+    //  ORIGIN / DESTINATION
+    // =======================
+    initLocationAutocomplete("#id_origin_text", "#id_origin");
+    initLocationAutocomplete("#id_destination_text", "#id_destination");
+
+    // =======================
+    //  CUSTOMER AUTOCOMPLETE
+    // =======================
+    $("#id_customer_text").data(
+      "url",
+      "{% url 'partners:partner_autocomplete' %}?role=customer"
+    );
+    initPartnerAutocomplete("#id_customer_text", "#id_customer", null);
+
+    // =======================
+    //  SHIPPER AUTOCOMPLETE
+    // =======================
+    
+    initPartnerAutocomplete("#id_shipper_text", "#id_shipper", "#id_shipper_address");
+
+    $("#id_shipper_text").on("partner:selected", function (e, item) {
+      // nama / kontak shipper
+      var displayName = item.company_name || item.name || "";
+      $("#id_shipper_contact_name").val(displayName);
+
+      // telp shipper
+      var phone = item.phone || item.mobile || "";
+      $("#id_shipper_phone").val(phone);
+
+      // alamat shipper
+      if (item.address) {
+        $("#id_shipper_address").val(item.address);
+      }
+
+      // isi geo shipper
+      autoFillGeoFromPartner(item, "shipper");
+    });
+
+    // =======================
+    //  SHIPPER: COPY DARI CUSTOMER
+    // =======================
+    function copyShipperFromCustomer() {
+      var name = $("#id_customer_text").val() || "";
+      $("#id_shipper_contact_name").val(name);
+
+      var item = $("#id_customer_text").data("selectedPartner") || null;
+      if (item) {
+        var phone = item.phone || item.mobile || "";
+        $("#id_shipper_phone").val(phone);
+
+        if (item.address) {
+          $("#id_shipper_address").val(item.address);
+        }
+
+        // isi geo shipper
+        autoFillGeoFromPartner(item, "shipper");
+      }
+    }
+
+    $("#id_shipper_same_as_customer").on("change", function () {
+      if (this.checked) {
+        // copy nama/phone/address dari customer
+        copyShipperFromCustomer();
+
+        // isi shipper_id dari customer_id
+        var custId = $("#id_customer").val() || "";
+        $("#id_shipper").val(custId);
+      } else {
+        // opsional kalau mau dikosongkan saat uncheck
+        // $("#id_shipper").val("");
+      }
+    });
+
+    $("#id_customer_text").on("partner:selected", function (e, item) {
+      if ($("#id_shipper_same_as_customer").is(":checked")) {
+        copyShipperFromCustomer();
+        var custId = $("#id_customer").val() || "";
+        $("#id_shipper").val(custId);
+      }
+    });
+
+    // =======================
+    //  CONSIGNEE AUTOCOMPLETE
+    // =======================
+    initPartnerAutocomplete(
+      "#id_consignee_text",
+      "#id_consignee",
+      "#id_consignee_address"
+    );
+
+    $("#id_consignee_text").on("partner:selected", function (e, item) {
+      var displayName = item.company_name || item.name || "";
+      $("#id_consignee_name").val(displayName);
+
+      var phone = item.phone || item.mobile || "";
+      $("#id_consignee_phone").val(phone);
+
+      autoFillGeoFromPartner(item, "consignee");
+    });
+
+    // =======================
+    //  GEO HELPERS (SHIPPER & CONSIGNEE)
+    // =======================
+    function resetSelect(selector, placeholder) {
+      const el = document.querySelector(selector);
+      if (!el) return;
+      el.innerHTML = "";
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = placeholder;
+      el.appendChild(opt);
+    }
+
+    function loadChildren(parentId, targetSelector, placeholder) {
+      return new Promise(function (resolve) {
+        const target = document.querySelector(targetSelector);
+        if (!target) {
+          resolve();
+          return;
+        }
+
+        resetSelect(targetSelector, "Loading...");
+
+        if (!parentId) {
+          resetSelect(targetSelector, placeholder);
+          resolve();
+          return;
+        }
+
+        fetch(`/geo/children/?parent=${parentId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            resetSelect(targetSelector, placeholder);
+            data.forEach((item) => {
+              const opt = document.createElement("option");
+              opt.value = item.id;
+              opt.textContent = item.name;
+              target.appendChild(opt);
+            });
+            resolve();
+          })
+          .catch((err) => {
+            console.error("loadChildren error:", err);
+            resetSelect(targetSelector, placeholder);
+            resolve();
+          });
+      });
+    }
+
+    // cascading manual untuk SHIPPER
+    const spProvince = document.getElementById("id_shipper_province");
+    const spRegency = document.getElementById("id_shipper_regency");
+    const spDistrict = document.getElementById("id_shipper_district");
+    const spVillage = document.getElementById("id_shipper_village");
+
+    if (spProvince) {
+      spProvince.addEventListener("change", function () {
+        const val = this.value || "";
+        loadChildren(val, "#id_shipper_regency", "-- Pilih Kab/Kota --");
+        resetSelect("#id_shipper_district", "-- Pilih Kecamatan --");
+        resetSelect("#id_shipper_village", "-- Pilih Kelurahan/Desa --");
+      });
+    }
+
+    if (spRegency) {
+      spRegency.addEventListener("change", function () {
+        const val = this.value || "";
+        loadChildren(val, "#id_shipper_district", "-- Pilih Kecamatan --");
+        resetSelect("#id_shipper_village", "-- Pilih Kelurahan/Desa --");
+      });
+    }
+
+    if (spDistrict) {
+      spDistrict.addEventListener("change", function () {
+        const val = this.value || "";
+        loadChildren(val, "#id_shipper_village", "-- Pilih Kelurahan/Desa --");
+      });
+    }
+
+    //-----------------end of js shipper function---------------------------------
+    // cascading manual untuk CONSIGNEE
+    const cgProvince = document.getElementById("id_consignee_province");
+    const cgRegency = document.getElementById("id_consignee_regency");
+    const cgDistrict = document.getElementById("id_consignee_district");
+    const cgVillage = document.getElementById("id_consignee_village");
+
+    if (cgProvince) {
+      cgProvince.addEventListener("change", function () {
+        const val = this.value || "";
+        loadChildren(val, "#id_consignee_regency", "-- Pilih Kab/Kota --");
+        resetSelect("#id_consignee_district", "-- Pilih Kecamatan --");
+        resetSelect("#id_consignee_village", "-- Pilih Kelurahan/Desa --");
+      });
+    }
+
+    if (cgRegency) {
+      cgRegency.addEventListener("change", function () {
+        const val = this.value || "";
+        loadChildren(val, "#id_consignee_district", "-- Pilih Kecamatan --");
+        resetSelect("#id_consignee_village", "-- Pilih Kelurahan/Desa --");
+      });
+    }
+
+    if (cgDistrict) {
+      cgDistrict.addEventListener("change", function () {
+        const val = this.value || "";
+        loadChildren(val, "#id_consignee_village", "-- Pilih Kelurahan/Desa --");
+      });
+    }
+
+    // =======================
+    //  AUTO FILL GEO FROM PARTNER
+    // =======================
+    async function autoFillGeoFromPartner(item, prefix) {
+      if (!item) return;
+
+      const provId = item.province_id || null;
+      const regId = item.regency_id || null;
+      const distId = item.district_id || null;
+      const villId = item.village_id || null;
+
+      const selProv = "#id_" + prefix + "_province";
+      const selReg = "#id_" + prefix + "_regency";
+      const selDist = "#id_" + prefix + "_district";
+      const selVill = "#id_" + prefix + "_village";
+
+      // 1) Provinsi
+      if (provId) {
+        $(selProv).val(provId);
+      }
+
+      // 2) Kabupaten
+      if (provId && regId) {
+        await loadChildren(provId, selReg, "-- Pilih Kab/Kota --");
+        $(selReg).val(regId);
+      } else if (provId) {
+        await loadChildren(provId, selReg, "-- Pilih Kab/Kota --");
+      }
+
+      // 3) Kecamatan
+      if (regId && distId) {
+        await loadChildren(regId, selDist, "-- Pilih Kecamatan --");
+        $(selDist).val(distId);
+      } else if (regId) {
+        await loadChildren(regId, selDist, "-- Pilih Kecamatan --");
+      }
+
+      // 4) Kelurahan
+      if (distId && villId) {
+        await loadChildren(distId, selVill, "-- Pilih Kelurahan/Desa --");
+        $(selVill).val(villId);
+      } else if (distId) {
+        await loadChildren(distId, selVill, "-- Pilih Kelurahan/Desa --");
+      }
+    }
+  });
+</script>
+
+
+  
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelectorAll('input[type="date"]').forEach(function (el) {
+        el.addEventListener("focus", function () {
+          if (typeof el.showPicker === "function") {
+            // Chrome / Edge: langsung buka date picker
+            el.showPicker();
+          }
+        });
+      });
+    });
+    </script>
+
+<script>
+(function($){
+
+  // helper toCanonical & toID tetap seperti kemarin...
+  window.toCanonical = window.toCanonical || function(raw){
+    if (raw == null) return "0";
+    let s = String(raw).trim();
+    if (!s) return "0";
+    s = s.replace(/\s|\u00A0/g, "").replace(/[Rp$€£¥₫%]/g, "");
+
+    const hasC = s.includes(","), hasD = s.includes(".");
+    if (hasC && hasD) {
+      const lastC = s.lastIndexOf(","), lastD = s.lastIndexOf(".");
+      if (lastC > lastD) s = s.replace(/\./g,"").replace(",",".");
+      else               s = s.replace(/,/g,"");
+    } else if (hasC) {
+      s = s.replace(/\./g,"").replace(",",".");
+    } else if (hasD) {
+      const parts = s.split(".");
+      if (parts.length > 2) {
+        const last = parts.pop();
+        s = parts.join("") + "." + last;
+      }
+    }
+
+    s = s.replace(/[^\d\.\-]/g, "");
+    return (/^-?\d+(\.\d+)?$/.test(s)) ? s : "0";
+  };
+
+  const nfID = new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  function toID(n){
+    const x = Number(n);
+    return Number.isFinite(x) ? nfID.format(x) : "0,00";
+  }
+
+  // ======= HITUNG FREIGHT: gross → diskon → tax → total =======
+  function recalcFreight(){
+    const qty    = Number(toCanonical($("#id_quantity").val())) || 0;
+    const price  = Number(toCanonical($("#id_unit_price").val())) || 0;
+    const discP  = Number(toCanonical($("#id_discount_percent").val())) || 0;
+    const taxPct = Number(toCanonical($("#id_tax_percent").val())) || 0;
+
+    // 1) gross (sebelum diskon & pajak)
+    const gross = qty * price;
+
+    // 2) diskon rupiah
+    const discAmt = gross * (discP / 100.0);
+
+    // 3) dasar pajak = setelah diskon
+    const base = gross - discAmt;
+
+    // 4) pajak dari base
+    const tax = base * (taxPct / 100.0);
+
+    // 5) total = gross - discount + tax
+    const total = gross - discAmt + tax;
+
+    $("#id_amount").val(          toID(gross) );
+    $("#id_discount_amount").val( toID(discAmt) );
+    $("#id_tax_amount").val(      toID(tax) );
+    $("#id_total_amount").val(    toID(total) );
+  }
+
+  window.recalcFreight = recalcFreight;
+
+  $(function(){
+
+    const $qty   = $("#id_quantity");
+    const $price = $("#id_unit_price");
+    const $discP = $("#id_discount_percent");
+    const $taxP  = $("#id_tax_percent");
+
+    // format awal
+    [$qty, $price, $discP, $taxP].forEach(function($el){
+      if (!$el.length) return;
+      const canon = toCanonical($el.val());
+      $el.val( toID(canon) );
+    });
+
+    // focus: tampilkan angka mentah
+    $(document).on(
+      "focus.fq",
+      "#id_quantity, #id_unit_price, #id_discount_percent, #id_tax_percent",
+      function(){
+        const canon = toCanonical($(this).val());
+        const n = Number(canon);
+        $(this).val(Number.isFinite(n) ? String(n) : "");
+        setTimeout(() => this.select(), 10);
+      }
+    );
+
+    // input: hitung live
+    $(document).on(
+      "input.fq",
+      "#id_quantity, #id_unit_price, #id_discount_percent, #id_tax_percent",
+      function(){
+        recalcFreight();
+      }
+    );
+
+    // blur: format balik ID
+    $(document).on(
+      "blur.fq",
+      "#id_quantity, #id_unit_price, #id_discount_percent, #id_tax_percent",
+      function(){
+        const canon = toCanonical($(this).val());
+        $(this).val( toID(canon) );
+        recalcFreight();
+      }
+    );
+
+    // hitung pertama kali
+    recalcFreight();
+
+    // submit: kirim canonical ke server
+    const $form = $qty.closest("form");
+    if ($form.length){
+      $form.on("submit.fqCanonical", function(){
+        [
+          "#id_quantity",
+          "#id_unit_price",
+          "#id_discount_percent",
+          "#id_discount_amount",
+          "#id_amount",
+          "#id_tax_percent",
+          "#id_tax_amount",
+          "#id_total_amount",
+        ].forEach(function(sel){
+          const $el = $(sel);
+          if ($el.length){
+            $el.val( toCanonical($el.val()) );
+          }
+        });
+      });
+    }
+  });
+
+})(jQuery);
+</script>
+
+
+<script>
+(function($){
+
+  /* pilihkan otomatis origin/destination yang VALID */
+  function pickFirstOption(fieldId){
+      let $el = $("#" + fieldId);
+      if (!$el.length) return;
+
+      // kalau select biasa
+      if ($el.is("select")) {
+          let first = $el.find("option:eq(1)").val(); 
+          if (first) {
+             $el.val(first).trigger("change");
+          }
+      }
+
+      // kalau autocomplete (hidden fk)
+      let hiddenId = fieldId + "_id";
+      let $h = $("#" + hiddenId);
+
+      if ($h.length) {
+          // pilih partner 1 (untuk test saja)
+          $h.val(1); 
+      }
+  }
+
+  function fillSampleDataComplete(){
+      /* === HEADER === */
+      $("#id_customer").val($("#id_customer option:eq(1)").val());
+      $("#id_sales_service").val($("#id_sales_service option:eq(1)").val());
+      $("#id_payment_term").val($("#id_payment_term option:eq(1)").val());
+      $("#id_currency").val("IDR");
+      $("#id_sales_agency").val($("#id_sales_agency option:eq(1)").val());
+
+ /*    # $("#id_valid_until").val("2025-12-31");*/
+
+      /* === ORIGIN & DESTINATION === */
+      pickFirstOption("id_origin");
+      pickFirstOption("id_destination");
+
+      /* === CARGO === */
+      $("#id_cargo_name").val("Coal");
+      $("#id_hs_code").val("2701");
+      $("#id_commodity").val("Raw Material");
+      $("#id_package_count").val("1");
+      $("#id_package_type").val("Bulk");
+      $("#id_gross_weight").val("1000.00");
+      $("#id_volume").val("20.00");
+
+      /* === PRICING === */
+      $("#id_quantity").val("1.00");
+      $("#id_unit_price").val("100000.00");
+      $("#id_tax_percent").val("11.00");
+
+      if (typeof window.recalcFreight === "function") {
+          window.recalcFreight();
+      }
+  }
+
+  $(function(){
+      $("#btn-fill-sample").on("click", function(e){
+          e.preventDefault();
+          fillSampleDataComplete();
+          console.log("Sample filled: COMPLETE");
+      });
+
+      $("#btn-fill-sample-save").on("click", function(e){
+          e.preventDefault();
+          fillSampleDataComplete();
+
+          const form = $(this).closest("form").get(0) || document.querySelector("form");
+          if (form){
+              if (typeof form.requestSubmit === "function") form.requestSubmit();
+              else form.submit();
+          }
+      });
+  });
+
+})(jQuery);
+</script>
+<!-- Place the first <script> tag in your HTML's <head> -->
+<script src="https://cdn.tiny.cloud/1/klpop8ud5zsip7zloht3kglaf0it7sau7hlm7yfscb3cjxsq/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
+
+<!-- Place the following <script> and <textarea> tags your HTML's <body> -->
+<script>
+  tinymce.init({
+    selector: '#id_notes_customer',
+    plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
+    toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
+  });
+</script>
+<script>
+  function isD2DService() {
+    const select = document.getElementById("id_sales_service");
+    if (!select) return false;
+
+    const opt = select.selectedOptions[0];
+    if (!opt) return false;
+
+    // Pakai teks tampilan option: "Sea - Door to Door", "Air - Door to Door", dst
+    const text = (opt.textContent || opt.innerText || "").toUpperCase();
+    return text.includes("DOOR TO DOOR");   // true kalau ada kalimat ini
+  }
+
+  function updateRouteVisibility() {
+    const routeBlock = document.getElementById("quotation-route-id");
+    if (!routeBlock) return;
+
+    const isD2D = isD2DService();
+
+    if (isD2D) {
+      routeBlock.style.display = "none";  // hide origin–destination
+    } else {
+      routeBlock.style.display = "";      // show normal
+    }
+  }
+
+  function syncOriginDestinationForD2D() {
+    const isD2D = isD2DService();
+    if (!isD2D) return;
+
+    const shipperVillage = document.getElementById("id_shipper_village");
+    const consigneeVillage = document.getElementById("id_consignee_village");
+    const originInput = document.getElementById("id_origin");
+    const destinationInput = document.getElementById("id_destination");
+
+    if (originInput && shipperVillage) {
+      originInput.value = shipperVillage.value || "";
+    }
+    if (destinationInput && consigneeVillage) {
+      destinationInput.value = consigneeVillage.value || "";
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const salesSelect = document.getElementById("id_sales_service");
+    if (salesSelect) {
+      // initial
+      updateRouteVisibility();
+
+      salesSelect.addEventListener("change", function () {
+        updateRouteVisibility();
+      });
+    }
+
+    const form = document.getElementById("fqForm"); // ganti ID ini sesuai form om
+    if (form) {
+      form.addEventListener("submit", function () {
+        syncOriginDestinationForD2D();
+      });
+    }
+  });
+</script>
+
+
+{% endblock%}

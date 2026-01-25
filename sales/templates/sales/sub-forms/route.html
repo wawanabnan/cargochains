@@ -1,51 +1,85 @@
+<div class="card fq-card mt-3 shaddow-none" id="quotation-route-id">
+    <div class="card-header cc-card-header py-2">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="fw-semibold">Route & Locations</div>
+          <div class="text-muted small">Origin & Destination Locations</div>
+        </div>
+      </div>
 
-<div class="card card mt-3" id="quotation-route-id">
-            <div class="card-header">
-              <h3 class="card-title mb-0">Route</h3>
-            </div>
-            <div class="card-body">
+  <div class="card-body">
+    <div class="row g-3">
 
-              <div class="row">
-                <!-- ORIGIN -->
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="id_origin_text" class="form-label">Origin</label>
+      <div class="col-lg-6">
+        <label for="id_origin_text" class="form-label">Origin *</label>
 
-                    <input type="text"
-                           id="id_origin_text"
-                           class="form-control js-location"
-                           data-url="/geo/locations/autocomplete/"
-                           value="{% if form.instance.origin %}{{ form.instance.origin.name }}{% endif %}">
+        <input type="text"
+               id="id_origin_text"
+               class="form-control js-location"
+               data-url="/geo/locations/autocomplete/"
+               placeholder="Ketik origin..."
+               autocomplete="off"
+               value="{% if form.instance.origin %}{{ form.instance.origin.name }}{% endif %}">
 
-                    <input type="hidden" id="id_origin" name="origin"
-                           value="{% if form.instance.origin_id %}{{ form.instance.origin_id }}{% endif %}">
+        <input type="hidden" id="id_origin" name="origin"
+               value="{% if form.instance.origin_id %}{{ form.instance.origin_id }}{% endif %}">
 
-                    {% for err in form.origin.errors %}
-                      <div class="text-danger small">{{ err }}</div>
-                    {% endfor %}
-                  </div>
-                </div>
+        {% if form.origin.errors %}
+          <div class="invalid-feedback d-block">{{ form.origin.errors|striptags }}</div>
+        {% endif %}
+      </div>
 
-                <!-- DESTINATION -->
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="id_destination_text" class="form-label">Destination</label>
+      <div class="col-lg-6">
+        <label for="id_destination_text" class="form-label">Destination *</label>
 
-                    <input type="text"
-                           id="id_destination_text"
-                           class="form-control js-location"
-                           data-url="/geo/locations/autocomplete/"
-                           value="{% if form.instance.destination %}{{ form.instance.destination.name }}{% endif %}">
+        <input type="text"
+               id="id_destination_text"
+               class="form-control js-location"
+               data-url="/geo/locations/autocomplete/"
+               placeholder="Ketik destination..."
+               autocomplete="off"
+               value="{% if form.instance.destination %}{{ form.instance.destination.name }}{% endif %}">
 
-                    <input type="hidden" id="id_destination" name="destination"
-                           value="{% if form.instance.destination_id %}{{ form.instance.destination_id }}{% endif %}">
+        <input type="hidden" id="id_destination" name="destination"
+               value="{% if form.instance.destination_id %}{{ form.instance.destination_id }}{% endif %}">
 
-                    {% for err in form.destination.errors %}
-                      <div class="text-danger small">{{ err }}</div>
-                    {% endfor %}
-                  </div>
-                </div>
-              </div>
+        {% if form.destination.errors %}
+          <div class="invalid-feedback d-block">{{ form.destination.errors|striptags }}</div>
+        {% endif %}
+      </div>
 
-            </div>
- </div>
+    </div>
+      <div class="row g-3">
+
+      <div class="col-lg-6">
+        <label for="id_pickup_text" class="form-label">Pickup Address *</label>
+        <input type="textarea"
+               id="id_pickup_text"
+               class="form-control pickup"
+               placeholder="Pickup Address"
+               rows="3">
+
+        {% if form.pickup.errors %}
+          <div class="invalid-feedback d-block">{{ form.pickup.errors|striptags }}</div>
+        {% endif %}
+      </div>
+
+       <div class="col-lg-6">
+        <label for="id_delivery_text" class="form-label">Delivery Address *</label>
+
+        <input type="textarea"
+              id="id_delivery_text"
+              class="form-control delivery"
+              placeholder="Delivery Address"
+              rows="3"
+              style="line-height:100px !important"
+              >
+
+        {% if form.delivery.errors %}
+          <div class="invalid-feedback d-block">{{ form.delivery.errors|striptags }}</div>
+        {% endif %}
+      </div>
+
+
+    </div>
+  </div>
+</div>

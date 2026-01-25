@@ -26,6 +26,7 @@ class JobCostType(models.Model):
         blank=True,
         choices=SYSTEM_GROUP_CHOICES,
     )
+    
     uom = models.ForeignKey(
         UOM,
         related_name="cost_line_uoms",
@@ -136,13 +137,7 @@ class JobCost(models.Model):
         default=1,
         help_text="Currency rate to Job currency (IDR)"
     )
-    uom = models.CharField(
-        max_length=20,
-        blank=True,
-        default="",
-        help_text="Default UOM untuk cost line (mis: CNTR, CBM, KG, SHIPMENT, TRIP, DOC)",
-    )
-
+   
     tax = models.DecimalField(
         max_digits=18,
         decimal_places=2,
@@ -241,11 +236,4 @@ class JobCost(models.Model):
         """
         return self.vb_status != self.VB_FULL
     
-    def save(self, *args, **kwargs):
-        if self.cost_type_id and not self.uom:
-            ct = getattr(self, "cost_type", None)
-            if ct and getattr(ct, "uom", None):
-                # ct.uom adalah FK -> ambil code
-                self.uom = ct.uom.code
-        super().save(*args, **kwargs)
-
+   

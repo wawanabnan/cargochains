@@ -1,0 +1,244 @@
+<div class="container-fluid py-3">
+  <!-- wrapper biar tetap enak dibaca walau container-fluid -->
+  <div class="mx-auto" style="max-width: 1200px;">
+
+    <form class="needs-validation" novalidate>
+      <!-- QUOTATION INFO -->
+      <div class="card shadow-sm mb-3">
+        <div class="card-header bg-white">
+          <strong>Quotation Info</strong>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <!-- Row 1 -->
+            <div class="col-12 col-lg-6">
+              <label class="form-label">Customer</label>
+              <select class="form-select" id="customerSelect">
+                <option value="">Select customer...</option>
+              </select>
+              <!-- optional helper -->
+              <div class="form-text">Autocomplete / Select2</div>
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-3">
+              <label class="form-label">Services</label>
+              <select class="form-select">
+                <option value="">Select service...</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-3">
+              <label class="form-label">Currency</label>
+              <select class="form-select">
+                <option value="IDR">IDR</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+
+            <!-- Row 2 -->
+            <div class="col-12 col-md-4">
+              <label class="form-label">Payment Term</label>
+              <input type="text" class="form-control" placeholder="e.g. 30 days" />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Valid Until</label>
+              <input type="date" class="form-control" />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Shipment Plan Date</label>
+              <input type="date" class="form-control" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SHIPMENT DETAIL -->
+      <div class="card shadow-sm mb-3">
+        <div class="card-header bg-white">
+          <strong>Shipment Detail</strong>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <!-- Row 1 -->
+            <div class="col-12 col-lg-6">
+              <label class="form-label">Cargo Name</label>
+              <input type="text" class="form-control" placeholder="e.g. Electronics" />
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-3">
+              <label class="form-label">HS Code</label>
+              <input type="text" class="form-control" placeholder="e.g. 8517.12" />
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-3">
+              <label class="form-label">Package Count</label>
+              <input type="number" class="form-control text-end" min="0" />
+            </div>
+
+            <!-- Row 2 -->
+            <div class="col-12 col-md-4">
+              <label class="form-label">Package Type</label>
+              <select class="form-select">
+                <option value="">Select type...</option>
+                <option>CTN</option>
+                <option>PLT</option>
+                <option>BOX</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Gross Weight</label>
+              <input type="number" class="form-control text-end" step="0.01" min="0" />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Weight UOM</label>
+              <select class="form-select">
+                <option>KG</option>
+                <option>LB</option>
+              </select>
+            </div>
+
+            <!-- Row 3 -->
+            <div class="col-12 col-md-4">
+              <label class="form-label">Volume</label>
+              <input type="number" class="form-control text-end" step="0.001" min="0" />
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label">Volume UOM</label>
+              <select class="form-select">
+                <option>CBM</option>
+                <option>CFT</option>
+              </select>
+            </div>
+
+            <!-- spacer / future field -->
+            <div class="col-12 col-md-4 d-none d-md-block"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PARTIES -->
+      <div class="row g-3 mb-3">
+        <!-- SHIPPER -->
+        <div class="col-12 col-lg-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+              <strong>Shipper</strong>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label">Name</label>
+                  <input type="text" class="form-control" />
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Phone</label>
+                  <input type="tel" class="form-control" />
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Address</label>
+                  <textarea class="form-control" rows="2"></textarea>
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Province</label>
+                  <input type="text" class="form-control" placeholder="Autocomplete..." />
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Regency</label>
+                  <input type="text" class="form-control" />
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <label class="form-label">District</label>
+                  <input type="text" class="form-control" />
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Village</label>
+                  <input type="text" class="form-control" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONSIGNEE -->
+        <div class="col-12 col-lg-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+              <strong>Consignee</strong>
+              <!-- optional: checkbox copy from shipper -->
+              <div class="form-check m-0">
+                <input class="form-check-input" type="checkbox" id="sameAsShipper" />
+                <label class="form-check-label small" for="sameAsShipper">Same as shipper</label>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label">Name</label>
+                  <input type="text" class="form-control" />
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Phone</label>
+                  <input type="tel" class="form-control" />
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Address</label>
+                  <textarea class="form-control" rows="2"></textarea>
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Province</label>
+                  <input type="text" class="form-control" placeholder="Autocomplete..." />
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Regency</label>
+                  <input type="text" class="form-control" />
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <label class="form-label">District</label>
+                  <input type="text" class="form-control" />
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Village</label>
+                  <input type="text" class="form-control" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTE -->
+      <div class="card shadow-sm mb-3">
+        <div class="card-header bg-white">
+          <strong>Note</strong>
+        </div>
+        <div class="card-body">
+          <textarea class="form-control" rows="4" placeholder="Additional notes..."></textarea>
+        </div>
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="d-flex gap-2 justify-content-end">
+        <button type="button" class="btn btn-outline-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Quotation</button>
+      </div>
+    </form>
+
+  </div>
+</div>

@@ -2,7 +2,7 @@ from decimal import Decimal
 from django import forms
 from django.forms import inlineformset_factory
 
-from job.models.costs import JobCost, JobCostType
+from job.models.job_costs import JobCost, JobCostType
 from job.models.job_orders import JobOrder
 from core.models.currencies import Currency
 from decimal import Decimal, ROUND_HALF_UP

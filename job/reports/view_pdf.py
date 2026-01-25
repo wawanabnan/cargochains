@@ -16,7 +16,7 @@ from django.views import View
 
 
 from job.models.job_orders import JobOrder
-from job.models.costs import JobCost
+from job.models.job_costs import JobCost
 
 
 D0 = Decimal("0.00")

@@ -1,6 +1,6 @@
 from django import forms
 
-from job.models.costs import JobCostType
+from job.models.job_costs import JobCostType
 from accounting.models.chart import Account
 from accounting.models.settings import AccountingSettings
 
@@ -19,16 +19,7 @@ class JobCostTypeForm(forms.ModelForm):
         self.fields["requires_vendor"].label = "Vendor required"
         self.fields["is_active"].label = "Active"
 
-        # ✅ cost_group jadi dropdown kategori sistem (bukan text bebas)
-        self.fields["cost_group"].label = "Category (system)"
-        self.fields["cost_group"].help_text = (
-            "Hanya untuk aturan sistem (tidak ditampilkan di Job Order). "
-            "Pilih kategori yang paling cocok."
-        )
-        self.fields["cost_group"].widget = forms.Select(
-            attrs={"class": "form-select form-select-sm"}
-        )
-
+      
 
         # merge: pilihan default + value lama yang sudah ada di DB (biar tidak putus)
         existing = (
@@ -75,6 +66,7 @@ class JobCostTypeForm(forms.ModelForm):
             "cost_group",
             "cogs_account",
             "sort_order",
+            "uom",
             "accrued_liability_account"
         ]
         widgets = {
@@ -84,5 +76,7 @@ class JobCostTypeForm(forms.ModelForm):
             "requires_vendor": forms.CheckboxInput(attrs={"class": "form-check-input", "role": "switch"}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input", "role": "switch"}),
             "cogs_account": forms.Select(attrs={"class": "form-select form-select-sm"}),
+            "cost_group": forms.Select(attrs={"class": "form-select form-select-sm"}),
+            "uom": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "sort_order": forms.NumberInput(attrs={"class": "form-control form-control-sm"}),
         }

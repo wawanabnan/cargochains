@@ -1,10 +1,14 @@
  <div class="card shadow-none">
-            <div class="card-header">
-              <h3 class="card-title mb-0">Customer</h3>
-            </div>
+               
+      <div class="card-header cc-card-header py-2">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="fw-semibold">Quotation Info</div>
+          <div class="text-muted small">Fields bertanda * wajib</div>
+        </div>
+      </div>
             <div class="card-body">
               <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-6">
 
                   <label for="id_customer_text" >Customer</label>
                   <input type="text"
@@ -25,29 +29,21 @@
 
                 </div>
 
-                <div class="col-md-4">
-                  {{ form.sales_service.label_tag }}
-                  {{ form.sales_service }}
-                  {% if form.sales_service.errors %}
+                <div class="col-md-6">
+                  {{ form.service.label_tag }}
+                  {{ form.service }}
+                  {% if form.service.errors %}
                     <div class="text-danger small">
-                      {{ form.sales_service.errors|striptags }}
+                      {{ form.service.errors|striptags }}
                     </div>
                   {% endif %}
                 </div>
 
-                <div class="col-md-4">
-                  {{ form.sales_agency.label_tag }}
-                  {{ form.sales_agency }}
-                  {% if form.sales_agency.errors %}
-                    <div class="text-danger small">
-                      {{ form.sales_agency.errors|striptags }}
-                    </div>
-                  {% endif %}
-                </div>
 
-              </div>
-
-              <div class="row">
+             </div>
+             <div class="row">   
+              
+             
                 <div class="col-md-4">
                   {{ form.payment_term.label_tag }}
                   {{ form.payment_term }}

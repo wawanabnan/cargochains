@@ -27,47 +27,6 @@
 
 <hr class="my-3">
 
-<div class="mb-3">
-  <label class="form-label small">Total Amount</label>
-  {{ form.total_amount }}
-  {{ form.total_amount.errors }}
-</div>
-
-<div class="row g-2 mb-3">
-  <div class="col-6">
-    <label class="form-label small">Apply Tax (1.1%)</label>
-    <div class="form-check form-switch">
-      {{ form.is_tax }}
-    </div>
-    {{ form.is_tax.errors }}
-  </div>
-
-  <div class="col-6">
-    <label class="form-label small">Apply PPH (2%)</label>
-    <div class="form-check form-switch">
-      {{ form.is_pph }}
-    </div>
-    {{ form.is_pph.errors }}
-  </div>
-</div>
-
-<div class="mb-3">
-  <label class="form-label small">Tax 1.1%</label>
-  {{ form.tax_amount }}
-  {{ form.tax_amount.errors }}
-</div>
-
-<div class="mb-3">
-  <label class="form-label small">PPH 2%</label>
-  {{ form.pph_amount }}
-  {{ form.pph_amount.errors }}
-</div>
-
-<div class="mb-3">
-  <label class="form-label small fw-semibold">Grand Total</label>
-  {{ form.grand_total }}
-  {{ form.grand_total.errors }}
-</div>
 
 <div class="mb-3">
   <label class="form-label small">Internal Remarks</label>

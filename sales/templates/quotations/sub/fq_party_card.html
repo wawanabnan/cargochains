@@ -1,0 +1,35 @@
+{# partials/fq_party_card.html #}
+<div class="card shadow-sm h-100">
+  <div class="card-header bg-white">
+    <strong>{{ title }}</strong>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-12">
+        {% include "partials/field.html" with field=form[prefix|add:"_contact_name"] %}
+      </div>
+
+      <div class="col-12">
+        {% include "partials/field.html" with field=form[prefix|add:"_phone"] %}
+      </div>
+
+      <div class="col-12">
+        {% include "partials/field.html" with field=form[prefix|add:"_address"] %}
+      </div>
+
+      <div class="col-12 col-md-6">
+        {% include "partials/field.html" with field=form[prefix|add:"_province"] %}
+      </div>
+      <div class="col-12 col-md-6">
+        {% include "partials/field.html" with field=form[prefix|add:"_regency"] %}
+      </div>
+
+      <div class="col-12 col-md-6">
+        {% include "partials/field.html" with field=form[prefix|add:"_district"] %}
+      </div>
+      <div class="col-12 col-md-6">
+        {% include "partials/field.html" with field=form[prefix|add:"_village"] %}
+      </div>
+    </div>
+  </div>
+</div>

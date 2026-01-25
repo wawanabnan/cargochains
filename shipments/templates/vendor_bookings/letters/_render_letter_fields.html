@@ -1,0 +1,29 @@
+{% load vb_form_extras %}
+
+
+<div class="row g-2">
+  {% for g in layout %}
+    {% if g.title %}
+      <div class="col-12 mt-2">
+        <div class="text-muted small fw-semibold">{{ g.title }}</div>
+        <hr class="my-1">
+      </div>
+    {% endif %}
+
+    {% for f in g.fields %}
+      {% if f.name in form.fields %}
+        {% with bf=form|get_item:f.name %}
+          {% if bf %}
+            <div class="{{ f.col|default:'col-md-6' }}">
+              <label class="form-label small mb-1">{{ f.label|default:bf.label }}</label>
+              {{ bf }}
+              {% if bf.errors %}
+                <div class="text-danger small">{{ bf.errors|striptags }}</div>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endwith %}
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+</div>

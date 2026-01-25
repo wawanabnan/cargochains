@@ -2,8 +2,7 @@ from collections import defaultdict
 from django.db import transaction
 from django.db.models import Max
 
-from job.models.vendor_bookings import VendorBooking
-from job.models.vendor_booking_lines import VendorBookingLine
+from shipments.models.vendor_bookings import VendorBooking, VendorBookingLine
 
 def _pick_service_type_from_cost_type(cost_type):
     """
@@ -83,7 +82,7 @@ def generate_vendor_bookings_from_job(job_order, user=None):
                 service_type=service_type,
                 description=jc.description or (jc.cost_type.name if jc.cost_type_id else ""),
                 qty=getattr(jc, "qty", None),
-                uom=getattr(jc, "uom", "") or "",
+                uom=getattr(jc, "uom_id", "") or "",
                 details={
                     "generated_from": "job_cost",
                     "job_cost_id": jc.id,

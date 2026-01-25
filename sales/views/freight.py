@@ -54,7 +54,7 @@ class FqListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         qs = (
             FreightQuotation.objects
-            .select_related("customer", "sales_service", "origin", "destination")
+            .select_related("customer", "service", "origin", "destination")
             .order_by("-created_at")
         )
 
@@ -84,7 +84,7 @@ class FqListView(LoginRequiredMixin, ListView):
             qs = qs.filter(currency_id__in=currencies)
 
         if services:
-            qs = qs.filter(sales_service_id__in=services)
+            qs = qs.filter(service_id__in=services)
 
         if agents:
               qs = qs.filter(sales_agency_id__in=agents)
@@ -645,7 +645,7 @@ class FqBulkDeleteView(LoginRequiredMixin, View):
             base_data = {
                 # header
                 "customer": fq.customer,
-                "sales_service": getattr(fq, "sales_service", None),
+                "service": getattr(fq, "service", None),
                 "sales_agency": getattr(fq, "sales_agency", None),
                 "payment_term": fq.payment_term,
                 "sales_user": fq.sales_user or user,
@@ -1027,7 +1027,7 @@ class FoListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         qs = (
             FreightOrder.objects
-            .select_related("customer", "origin", "destination", "sales_service", "payment_term")
+            .select_related("customer", "origin", "destination", "service", "payment_term")
             .order_by("-created_at")
         )
 
@@ -1052,7 +1052,7 @@ class FoListView(LoginRequiredMixin, ListView):
             qs = qs.filter(status__in=statuses)
 
         if services:
-            qs = qs.filter(sales_service_id__in=services)
+            qs = qs.filter(service_id__in=services)
 
         if paymentterms:
             qs = qs.filter(payment_term_id__in=paymentterms)

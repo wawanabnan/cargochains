@@ -51,34 +51,34 @@ class VendorBookingForm(forms.ModelForm):
     class Meta:
         model = VendorBooking
         fields = [
-            "job_order",
-            "issued_date",
+            "job_order",        
             "vendor",
-            "booking_group",
+            "booking_date",
             "payment_term",
             "currency",
             "idr_rate",
             "discount_amount",
-            "letter_type",
             # numbers (readonly in __init__)
             "vb_number",
-            "letter_number",
             'wht_rate'
         ]
         widgets = {
-            "issued_date": forms.DateInput(attrs={"type": "date", "class": "form-control form-control-sm"}),
             "job_order": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "vendor": forms.Select(attrs={"class": "form-select form-select-sm"}),
-            "booking_group": forms.Select(attrs={"class": "form-select form-select-sm"}),
+           # "booking_group": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "payment_term": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "currency": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "idr_rate": forms.NumberInput(attrs={"class": "form-control form-control-sm"}),
             "discount_amount": forms.NumberInput(attrs={"class": "form-control form-control-sm"}),
-            "letter_type": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "vb_number": forms.TextInput(attrs={"class": "form-control form-control-sm", "readonly": "readonly"}),
-            "letter_number": forms.TextInput(attrs={"class": "form-control form-control-sm", "readonly": "readonly"}),
             "idr_rate": forms.NumberInput(attrs={"class": "form-control form-control-sm", "step": "0.000001"}),
             "wht_rate": forms.NumberInput(attrs={"class": "form-control form-control-sm", "step": "0.000001"}),
+            "booking_date": forms.TextInput(
+                attrs={
+                    "class": "form-control js-flatpickr",
+                    "placeholder": "YYYY-MM-DD",
+                }
+            )
             
        
         }
@@ -99,8 +99,7 @@ class VendorBookingForm(forms.ModelForm):
 
         # readonly numbers (safety)
         self.fields["vb_number"].disabled = True
-        self.fields["letter_number"].disabled = True
-
+      
         inst = getattr(self, "instance", None)
         data = (inst.header_json or {}) if (inst and inst.pk) else {}
 
@@ -132,11 +131,7 @@ class VendorBookingForm(forms.ModelForm):
                 self.initial.setdefault("job_order", self.instance.job_order_id)
 
         # ✅ booking_group wajib di model, tapi pada update harusnya sudah ada
-        if "booking_group" in self.fields:
-            self.fields["booking_group"].required = False
-            if self.instance and self.instance.booking_group:
-                self.initial.setdefault("booking_group", self.instance.booking_group)
-
+       
         # ✅ discount_amount default 0
         if "discount_amount" in self.fields:
             self.fields["discount_amount"].required = False
@@ -145,14 +140,7 @@ class VendorBookingForm(forms.ModelForm):
             else:
                 self.initial.setdefault("discount_amount", Decimal("0"))
 
-        # ✅ letter_type default aman
-        if "letter_type" in self.fields:
-            self.fields["letter_type"].required = False
-            if self.instance and self.instance.letter_type:
-                self.initial.setdefault("letter_type", self.instance.letter_type)
-            else:
-                self.initial.setdefault("letter_type", "TRUCK_TO")
-
+      
         # ✅ wht_rate default 0
         if "wht_rate" in self.fields:
             self.fields["wht_rate"].required = False
@@ -164,14 +152,7 @@ class VendorBookingForm(forms.ModelForm):
         if "cost_type" in self.fields:
             self.fields["cost_type"].required = False
 
-            # issued_date default
-            if "issued_date" in self.fields:
-                self.fields["issued_date"].required = False
-                if self.instance and self.instance.issued_date:
-                    self.initial.setdefault("issued_date", self.instance.issued_date)
-                else:
-                    self.initial.setdefault("issued_date", timezone.localdate())
-
+        
         print(">>> VendorBookingForm LOADED, JobOrder count =", JobOrder.objects.count())
 
         # optional: auto-fill shipper from job_order when create
@@ -199,30 +180,8 @@ class VendorBookingForm(forms.ModelForm):
         hdr["notify_party_name"] = self.cleaned_data.get("notify_party_name", "") or ""
         hdr["cargo_information"] = self.cleaned_data.get("cargo_information", "") or ""
 
-        # by letter_type
-        lt = self.cleaned_data.get("letter_type") or obj.letter_type
-
-        # SEA
-        if lt == VendorBooking.LETTER_SEA_SI:
-            hdr["pol"] = self.cleaned_data.get("pol", "") or ""
-            hdr["pod"] = self.cleaned_data.get("pod", "") or ""
-            hdr["etd"] = self.cleaned_data.get("etd").isoformat() if self.cleaned_data.get("etd") else ""
-            hdr["eta"] = self.cleaned_data.get("eta").isoformat() if self.cleaned_data.get("eta") else ""
-
-        # AIR
-        elif lt == VendorBooking.LETTER_AIR_SLI:
-            hdr["origin_airport"] = self.cleaned_data.get("origin_airport", "") or ""
-            hdr["dest_airport"] = self.cleaned_data.get("dest_airport", "") or ""
-            hdr["etd"] = self.cleaned_data.get("etd").isoformat() if self.cleaned_data.get("etd") else ""
-            hdr["eta"] = self.cleaned_data.get("eta").isoformat() if self.cleaned_data.get("eta") else ""
-
-        # TRUCK
-        else:
-            hdr["pickup_location"] = self.cleaned_data.get("pickup_location", "") or ""
-            hdr["delivery_location"] = self.cleaned_data.get("delivery_location", "") or ""
-            hdr["pickup_date"] = self.cleaned_data.get("pickup_date").isoformat() if self.cleaned_data.get("pickup_date") else ""
-            hdr["delivery_date"] = self.cleaned_data.get("delivery_date").isoformat() if self.cleaned_data.get("delivery_date") else ""
-
+        
+    
         obj.header_json = hdr
         
         if commit:
@@ -254,6 +213,11 @@ class VendorBookingForm(forms.ModelForm):
                 "Discount amount tidak boleh negatif."
             )
 
+
+        self.instance.status = cleaned.get("status", self.instance.status)
+        self.instance.full_clean(exclude=None)  # trigger model.clean()
+    
+
         return cleaned
     
 
@@ -282,7 +246,7 @@ class VendorBookingLineForm(forms.ModelForm):
             "job_cost": forms.HiddenInput(),
             "cost_type": forms.HiddenInput(),  # auto-sync dari job_cost
             "description": forms.TextInput(attrs={"class": "form-control form-control-sm"}),
-            "uom": forms.TextInput(attrs={"class": "form-control form-control-sm"}),
+            "uom": forms.HiddenInput(),
             "unit_price": forms.TextInput(attrs={"class": "ws-input text-end js-idmoney", "inputmode": "decimal"}),
             "qty": forms.TextInput(attrs={"class": "ws-input text-end js-idqty", "inputmode": "decimal"}),
             "amount": forms.NumberInput(attrs={"class": "form-control form-control-sm", "step": "0.01", "readonly": "readonly"}),
@@ -315,32 +279,33 @@ class VendorBookingLineForm(forms.ModelForm):
         if discount_amount is not None and discount_amount < 0:
             self.add_error("discount_amount", "Discount amount tidak boleh negatif.")
 
+        if not cleaned.get("uom") and cleaned.get("cost_type"):
+            ct = cleaned["cost_type"]
+            if ct.uom_id:
+                cleaned["uom"] = ct.uom
+                self.instance.uom_id = ct.uom_id
+
+        
+
         return cleaned
 
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
 
         # field ini akan kita isi dari server / default
         if "job_order" in self.fields:
             self.fields["job_order"].required = False
 
-        if "issued_date" in self.fields:
-            self.fields["issued_date"].required = False
-            if not self.initial.get("issued_date"):
-                self.initial["issued_date"] = timezone.now().date()
-
+    
         if "discount_amount" in self.fields:
             self.fields["discount_amount"].required = False
             if self.initial.get("discount_amount") in (None, ""):
                 self.initial["discount_amount"] = Decimal("0")
 
-        if "letter_type" in self.fields:
-            self.fields["letter_type"].required = False
-            if not self.initial.get("letter_type"):
-                self.initial["letter_type"] = "TRUCK_TO"
- 
-
+       
+       
 VendorBookingLineFormSet = inlineformset_factory(
     VendorBooking, VendorBookingLine,
     form=VendorBookingLineForm,

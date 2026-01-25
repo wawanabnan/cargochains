@@ -1,0 +1,89 @@
+{% load static %}
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>{% block title %}PDF{% endblock %}</title>
+
+  <style>
+    @page {
+      size: A4;
+      margin: 28mm 12mm 14mm 12mm;
+    }
+
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      color: #111;
+      background: #fff;
+    }
+
+    .sheet { box-sizing: border-box; width: 100%; }
+
+    /* ===== WATERMARK (Pasti tampil di semua halaman) ===== */
+    .pdf-watermark {
+      position: fixed;
+      inset: 0;                 /* full page box */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-size: 78px;
+      font-weight: 800;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+
+      color: rgba(0, 0, 0, 0.12);
+      transform: rotate(-30deg);
+
+      z-index: 999999;
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+    }
+    /* optional variants */
+    .pdf-watermark.cancelled { color: rgba(200, 0, 0, 0.15); }
+    .pdf-watermark.draft { color: rgba(0, 0, 0, 0.12); }
+    .pdf-watermark.revised { color: rgba(0, 0, 0, 0.12); }
+
+    /* ===== HELPERS ===== */
+    .right { text-align: right; }
+    .center { text-align: center; }
+    .muted { color: #555; }
+    .nowrap { white-space: nowrap; }
+
+    /* ===== TABLE ===== */
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #222; padding: 6px; vertical-align: top; }
+    thead th { background: #f2f2f2; }
+    .no-border td { border: none; padding: 2px 0; }
+
+    /* ===== TABLE (LOCKED WIDTH) ===== */
+    .tbl-fixed { table-layout: fixed; }
+    .wrap { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
+    .num { text-align: right; white-space: nowrap; }
+
+    /* ===== page-break behavior ===== */
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
+    tr, td, th { page-break-inside: avoid; }
+  </style>
+
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+  {% if watermark_status %}
+    <div class="pdf-watermark {{ watermark_class|default:'' }}">
+      {{ watermark_status }}
+    </div>
+  {% endif %}
+
+  <div class="sheet">
+    {% block content %}{% endblock %}
+  </div>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

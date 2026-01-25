@@ -241,3 +241,78 @@
 .tax-badge-container .select2-selection--single .select2-selection__arrow {
   display: none !important;
 }
+
+
+
+
+/*---------------------------- Input & Form Styling --------------------------------------------*/
+/* ===== Global compact controls (no fq prefix) ===== */
+
+/* 1) bikin default input/select jadi setara -sm (EXCLUDE textarea) */
+body input.form-control:not(.form-control-lg),
+body select.form-control:not(.form-control-lg),
+body .form-select:not(.form-select-lg),
+body .input-group:not(.input-group-lg) > input.form-control,
+body .input-group:not(.input-group-lg) > select.form-control,
+body .input-group:not(.input-group-lg) > .form-select,
+body .input-group:not(.input-group-lg) > .input-group-text{
+  height: 1.9rem !important;
+  min-height: 1.9rem !important;
+  padding: .20rem .50rem !important;
+  font-size: .8rem !important;
+  line-height: 1.25 !important;
+  border-radius: 0 !important; /* flat */
+}
+
+/* 2) kalau ada -sm, pastikan konsisten juga (EXCLUDE textarea) */
+body input.form-control-sm,
+body select.form-control-sm,
+body .form-select-sm,
+body .input-group-sm > input.form-control,
+body .input-group-sm > select.form-control,
+body .input-group-sm > .form-select,
+body .input-group-sm > .input-group-text{
+  height: 1.9rem !important;
+  min-height: 1.9rem !important;
+  padding: .20rem .50rem !important;
+  font-size: .80rem !important;
+  line-height: 1.25 !important;
+  border-radius: 0 !important;
+}
+
+/* 3) -lg dibiarkan “lebih besar” (bootstrap default), tapi tetap flat */
+body .form-control-lg,
+body .form-select-lg,
+body .input-group-lg > .form-control,
+body .input-group-lg > .form-select,
+body .input-group-lg > .input-group-text{
+  border-radius: 0 !important;
+}
+
+/* 4) textarea jangan dipaksa tinggi (biarkan rows/min-height dari widget) */
+body textarea.form-control,
+body textarea.form-control-sm,
+body textarea.form-control-lg{
+  height: auto !important;
+  min-height: 120px;              /* default nyaman; bisa dihapus kalau mau pure rows */
+  padding: .50rem .75rem !important;
+  font-size: .85rem !important;
+  line-height: 1.4 !important;
+  border-radius: 0 !important;
+  resize: vertical;
+}
+
+/* 5) focus clean */
+body .form-control:focus,
+body .form-select:focus{
+  box-shadow: none !important;
+}
+
+/* ===== Global Card Header Compact ===== */
+body .card-header{
+  padding-top: .45rem;
+  padding-bottom: .45rem;
+  padding-left: .75rem;
+  padding-right: .75rem;
+  min-height: auto;
+}

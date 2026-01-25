@@ -17,6 +17,7 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+from geo.models import Location
 
 
 class TimeStampedModel(models.Model):
@@ -55,10 +56,44 @@ class JobOrder(TimeStampedModel):
         
     )
 
-    cargo_description = models.CharField(
+    origin = models.ForeignKey(
+        Location,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="job_orders_origin",
+    )
+    destination = models.ForeignKey(
+        Location,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="job_orders_destination",
+    )
+
+    shipper_name = models.CharField(max_length=255, blank=True)
+    consignee_name = models.CharField(max_length=255, blank=True)
+    
+
+    cargo_description = models.TextField( 
+        blank=True,
+        help_text="Goods or matrials description.",
+    )
+    cargo_dimension = models.TextField( 
+        blank=True,
+        help_text="Goods or matrial package and dimensions",
+    )
+    customer_note = models.CharField(
         max_length=255,
         blank=True,
-        help_text="Deskripsi singkat cargo.",
+        verbose_name="Customer Notes",
+        help_text="Type your attension for your customer"
+    )
+    sla_note = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Description",
+        help_text="Types your service level agreements."
     )
 
     quantity = models.DecimalField(
@@ -69,16 +104,14 @@ class JobOrder(TimeStampedModel):
         help_text="Jumlah / volume cargo (opsional).",
     )
 
-    pickup = models.CharField(
+    pickup = models.TextField(
         "Pick Up",
-        max_length=255,
         blank=True,
         help_text="Alamat / lokasi penjemputan.",
     )
 
-    delivery = models.CharField(
+    delivery = models.TextField(
         "Delivery",
-        max_length=255,
         blank=True,
         help_text="Alamat / lokasi pengantaran.",
     )
@@ -103,6 +136,25 @@ class JobOrder(TimeStampedModel):
         default=1,  # sesuaikan default ID om
          related_name="job_order_currency",
     )
+
+    qty = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+    )
+
+    price = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+    )
+
+    taxes = models.ManyToManyField(
+        Tax,
+        blank=True,
+        related_name="job_taxes",
+    )
+
 
 
     total_amount = models.DecimalField(
@@ -363,6 +415,7 @@ class JobOrderAttachment(TimeStampedModel):
         verbose_name="Description",
         help_text="Keterangan singkat file, misal: PO Customer, Kontrak, dll."
     )
+   
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

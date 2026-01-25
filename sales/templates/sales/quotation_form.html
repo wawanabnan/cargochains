@@ -19,14 +19,8 @@
     </ul>
 </div>
 {% endif %}
-<div>
 
-
-</div>
-
-
-
-<div class="app-content-header">
+<div class="app-content-header py-2 mb-0">
   <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
 
@@ -60,9 +54,9 @@
 
 
 <!--------------------------------------------------Form-------------------------------------------------->       
+<div class="app-content">
 
   <div class="container-fluid">
-
     <form method="post" novalidate>
       {% csrf_token %}
 
@@ -86,94 +80,49 @@
           {# ====================== #}
           {% include 'sales/sub-forms/customer.html' %}
          
-
-          {# ====================== #}
-          {#  CARD: CARGO           #}
-          {# ====================== #}
-          <div class="card shaddow-none my-3">
-            <div class="card-header  h-center">
-              <h3 class="card-title mb-0">CARGO & PRICE</h3>
-            </div>
-            <div class="card-body px-0 ">
-               <ul class="nav nav-tabs border-bottom border-primary mt-2" 
-                id="myTab" role="tablist">
-              <li class="nav-item" role="presentation">
-                <button class="nav-link active" 
-                        id="home-tab" 
-                        data-bs-toggle="tab" data-bs-target="#cargoTab" 
-                        type="button" role="tab" 
-                        aria-controls="home" aria-selected="true">Cargo
-                </button>
-              </li>
-              <li class="nav-item" role="presentation">
-                <button class="nav-link" 
-                        id="profile-tab" 
-                        data-bs-toggle="tab" data-bs-target="#priceTab" 
-                        type="button" role="tab" 
-                        aria-controls="profile" aria-selected="false">Price
-                </button>
-              </li>
-              
-            
-              </ul>
-              <div class="tab-content" id="myCargoPriceTab">
-                <div class="tab-pane fade show active" 
-                    id="cargoTab" 
-                    role="tabpanel" aria-labelledby="cargotab">
-                    {% include 'sales/sub-forms/cargo-nocard.html' %}
-        
-                </div>
-                  <div class="tab-pane fade" 
-                      id="priceTab" 
-                      role="tabpanel" aria-labelledby="price-tab">
-                    {% include 'sales/sub-forms/pricing-nocard.html' %}
-
-                  </div>
-                 
-              </div>
-
-
-            </div>
-          </div>
-
           {#  Route Origin - Destination       #}
           {% include 'sales/sub-forms/route.html' %}
 
-        
-          <div class="card shaddow-none my-3">
-            <div class="card-header  h-center">
-              <h3 class="card-title mb-0">Shipper & Consignee</h3>
-            </div>
-            <div class="card-body px-0 ">
-               <ul class="nav nav-tabs border-bottom border-primary mt-2" 
-                id="myTab" role="tablist">
-              <li class="nav-item" role="presentation">
-                <button class="nav-link active" 
-                        id="home-tab" 
-                        data-bs-toggle="tab" data-bs-target="#shipperTab" 
-                        type="button" role="tab" 
-                        aria-controls="home" aria-selected="true">Shipper
-                </button>
-              </li>
-              <li class="nav-item" role="presentation">
-                <button class="nav-link" 
-                        id="profile-tab" 
-                        data-bs-toggle="tab" data-bs-target="#consigneeTab" 
-                        type="button" role="tab" 
-                        aria-controls="profile" aria-selected="false">Consignee
-                </button>
-              </li>
-               <li class="nav-item" role="presentation">
-                <button class="nav-link" 
-                        id="profile-tab" 
-                        data-bs-toggle="tab" data-bs-target="#customerNoteTab" 
-                        type="button" role="tab" 
-                        aria-controls="profile" aria-selected="false">Customer Notes
-                </button>
-              </li>
-            
+            <div class="card mt-3">  
+              <div class="card-header cc-card-header py-2">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div class="fw-semibold">Parties & Note Information</div>
+                  <div class="text-muted small">Shipper, Consignee, note and SLA</div>
+                </div>
+              </div>
+              <div class="card-body p-2">
+              <ul class="nav nav-tabs  fq-tabs mt-3" id="partyTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active"
+                          id="shipper-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#shipperTab"
+                          type="button" role="tab"
+                          aria-controls="shipperTab" aria-selected="true">Shipper</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link"
+                          id="consignee-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#consigneeTab"
+                          type="button" role="tab"
+                          aria-controls="consigneeTab" aria-selected="false">Consignee</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link"
+                          id="custnote-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#customerNoteTab"
+                          type="button" role="tab"
+                          aria-controls="customerNoteTab" aria-selected="false">Customer Notes</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link"
+                          id="sla_note-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#slaNoteTab"
+                          type="button" role="tab"
+                          aria-controls="customerNoteTab" aria-selected="false">Service Level Agreement</button>
+                </li>
               </ul>
-              <div class="tab-content" id="myTabContent">
+
+              <div class="tab-content p-4 border fq-tab-content" id="myTabContent">
                 <div class="tab-pane fade show active" 
                     id="shipperTab" 
                     role="tabpanel" aria-labelledby="home-tab">
@@ -199,20 +148,90 @@
                         {% endif %}
     
                   </div>
+                   <div class="tab-pane fade" 
+                      id="slaNoteTab" 
+                      role="tabpanel" aria-labelledby="sla-note-tab">
+                      
+                        {{ form.notes_customer.label_tag }}
+                        {{ form.notes_customer }}
+                        {% if form.notes_customer.errors %}
+                          <div class="text-danger small">
+                            {{ form.notes_customer.errors }}
+                          </div>
+                        {% endif %}
+    
+                  </div>
+              </div>
+             </div> 
+             </div>  
+          {# ====================== #}
+          {#  CARD: CARGO           #}
+          {# ====================== #}
+           <div class="card mt-3">  
+              <div class="card-header cc-card-header py-2">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div class="fw-semibold">Cargo & Prices</div>
+                  <div class="text-muted small">cargo & price information</div>
+                </div>
+              </div>
+              <div class="card-body p-2">
+            
+                <ul class="nav nav-tabs fq-tabs mt-3 " id="cargoPriceTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                      <button class="nav-link active"
+                              id="cargo-tab-btn"
+                              data-bs-toggle="tab" data-bs-target="#cargoTab"
+                              type="button" role="tab"
+                              aria-controls="cargoTab" aria-selected="true">Cargo</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                      <button class="nav-link"
+                              id="price-tab-btn"
+                              data-bs-toggle="tab" data-bs-target="#priceTab"
+                              type="button" role="tab"
+                              aria-controls="priceTab" aria-selected="false">Price</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content p-3 border fq-tab-content" id="myCargoPriceTab">
+                  <div class="tab-pane fade show active" 
+                      id="cargoTab" 
+                      role="tabpanel" aria-labelledby="cargotab">
+                      {% include 'sales/sub-forms/cargo-nocard.html' %}
+          
+                  </div>
+                    <div class="tab-pane fade" 
+                        id="priceTab" 
+                        role="tabpanel" aria-labelledby="price-tab">
+                      {% include 'sales/sub-forms/pricing-nocard.html' %}
+
+                    </div>
+                  
+                </div>
+              
               </div>
 
 
             </div>
-          </div>
-      </div>
-    </div>
-    
-      <button type="submit" class="btn btn-primary" id="btn-save">Simpan</button>
-      <a href="{% url 'sales:fq_list' %}" class="btn btn-secondary ms-2">Batal</a>
-    </form>
 
+
+        </div>
+    </div>
+       
+    <div class="fq-actionbar ">
+    <div class="d-flex justify-content-end gap-2">
+      <button type="submit" class="btn btn-primary" id="btn-save">
+        <i class="fa fa-save me-1"></i> Simpan
+      </button>
+      <a href="{% url 'sales:fq_list' %}" class="btn btn-outline-secondary">
+        Batal
+      </a>
+    </div>
   </div>
 
+  </form>
+  </div>
+</div>
 <!-- Simple tab navigation for a page using Bootstrap 5 -->
 <!-- Note: The HTML container in this pen includes BS5 through <head> tags -->
 
@@ -224,19 +243,93 @@
 {% endblock %}
 
 
+
+
 {% block extra_css %}
-  <style>
-  .nav-tabs .nav-link.active, .nav-tabs .nav-item.show .nav-link {
-    margin-left: 30px !important;
+<style>
+  /* ==============================
+     LAYOUT / CONTAINER
+     ============================== */
+  .app-content-header .container-fluid,
+  .app-content .container-fluid{
+    max-width: 1320px;
   }
+  .btn{
+    border-radius: 0 !important;
+  }
+
+  /* ==============================
+     ACTIONBAR (STICKY)
+     ============================== */
+  .fq-actionbar{
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    padding: .75rem;
+    background: rgba(255,255,255,.9);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(0,0,0,.06);
+    box-shadow: 0 10px 30px rgba(0,0,0,.05);
+    border-radius: 0 !important; /* flat */
+  }
+</style>
+<style>
+ 
+  /* ==============================
+   TAB-CONTENT WITH BORDER ONLY
+   ============================== */
+
+/* nav-tabs: matikan border bawah bootstrap */
+.nav-tabs{
+  border-bottom: 0;
+}
+
+/* tab-content yang punya border */
+.fq-tab-content{
+  border: 1px solid rgba(0,0,0,.12);
+  padding: 1rem;
+  background: #fff;
+}
+
+/* tab-pane polos */
+.fq-tab-content .tab-pane{
+  border: 0 !important;
+  padding: 0;
+}
+
+/* active tab nyatu ke content */
+.nav-tabs .nav-link.active{
+  background: #fff;
+  border-bottom-color: #fff; /* nutup border content */
+}
+
+</style>
+<style>
+  /* Container feel */
   
-  .tab-content {padding:20px}
-  .card-header .h-center {text-align: center;}
+  /* Card polish */
+  .cc-card { border-radius: 14px; border: 1px solid rgba(0,0,0,.06); }
+  .cc-card-header { background: transparent; border-bottom: 1px solid rgba(0,0,0,.06); }
+
+  /* Grid modern (2 columns inside, tapi keseluruhan tetap single-column) */
+  .cc-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 14px;
+  }
+  .cc-span-2 { grid-column: span 2; }
+
+  /* Field style */
+  .form-label { font-size: .78rem; font-weight: 600; color: rgba(0,0,0,.72); margin-bottom: 6px; }
+  .form-control,
+  .form-select { border-radius: 10px; }
+  .input-group .form-control { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
+  .input-group-text { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
+
   </style>
 
-  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
 
-  
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
 {% endblock %}
 
 <!----------------------------------JS Helper-------------------------------------------------------------------------->
@@ -695,7 +788,7 @@
   function fillSampleDataComplete(){
       /* === HEADER === */
       $("#id_customer").val($("#id_customer option:eq(1)").val());
-      $("#id_sales_service").val($("#id_sales_service option:eq(1)").val());
+      $("#id_service").val($("#id_service option:eq(1)").val());
       $("#id_payment_term").val($("#id_payment_term option:eq(1)").val());
       $("#id_currency").val("IDR");
       $("#id_sales_agency").val($("#id_sales_agency option:eq(1)").val());
@@ -759,7 +852,7 @@
 </script>
 <script>
   function isD2DService() {
-    const select = document.getElementById("id_sales_service");
+    const select = document.getElementById("id_service");
     if (!select) return false;
 
     const opt = select.selectedOptions[0];
@@ -801,7 +894,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    const salesSelect = document.getElementById("id_sales_service");
+    const salesSelect = document.getElementById("id_service");
     if (salesSelect) {
       // initial
       updateRouteVisibility();

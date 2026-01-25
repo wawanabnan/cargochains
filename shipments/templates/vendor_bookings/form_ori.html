@@ -1,0 +1,614 @@
+{% extends "adminbase.html" %}
+{% load static %}
+{% load indo_format %}
+
+{% block content %}
+
+<div class="app-content-header">
+  <div class="container-fluid d-flex flex-wrap gap-2 justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-0">Vendor Booking</h4>
+      <div class="small text-muted">
+        Job Order: <span class="fw-semibold">{{ vb.job_order }}</span>
+        · Vendor: <span class="fw-semibold">{{ vb.vendor }}</span>
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      {% if vb.status == "CONFIRMED" %}
+        <span class="badge text-bg-success">CONFIRMED</span>
+      {% else %}
+        <span class="badge text-bg-secondary">DRAFT</span>
+      {% endif %}
+
+      <a class="btn btn-outline-secondary btn-sm"
+         href="{% url 'shipments:vendor_booking_from_jobcost' %}?job_order={{ vb.job_order_id }}">
+        Back
+      </a>
+
+      <a class="btn btn-outline-primary btn-sm"
+         href="{% url 'shipments:vendor_booking_print' vb.id %}"
+         target="_blank">
+        Print {% if vb.status == "DRAFT" %}<span class="ms-1 badge text-bg-warning">DRAFT</span>{% endif %}
+      </a>
+
+      {% if vb.status == "DRAFT" %}
+        <form method="post" action="{% url 'shipments:vendor_booking_confirm' vb.id %}" class="d-inline">
+          {% csrf_token %}
+          <button class="btn btn-primary btn-sm" type="submit">
+            Confirm
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+    <form method="post" class="card">
+  {% csrf_token %}
+{# ===== ERRORS: HEADER ===== #}
+{% if form.non_field_errors %}
+  <div class="alert alert-danger alert-dismissible fade show">
+    <div class="fw-semibold mb-1">Header error</div>
+    <ul class="mb-0">
+      {% for err in form.non_field_errors %}
+        <li>{{ err }}</li>
+      {% endfor %}
+    </ul>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+{% endif %}
+
+{% if form.errors %}
+  <div class="alert alert-danger alert-dismissible fade show">
+    <div class="fw-semibold mb-1">Header field error</div>
+    <ul class="mb-0">
+      {% for field in form %}
+        {% for err in field.errors %}
+          <li><strong>{{ field.label }}</strong>: {{ err }}</li>
+        {% endfor %}
+      {% endfor %}
+    </ul>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+{% endif %}
+
+{# ===== ERRORS: FORMSET ===== #}
+{% if formset.non_form_errors %}
+  <div class="alert alert-danger alert-dismissible fade show">
+    <div class="fw-semibold mb-1">Line error</div>
+    <ul class="mb-0">
+      {% for err in formset.non_form_errors %}
+        <li>{{ err }}</li>
+      {% endfor %}
+    </ul>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+{% endif %}
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="card-body p-2">
+      {% include "vendor_bookings/_letter_section.html" %}
+    <div class="row g-2 mb-2">
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Currency</label>
+        {{ form.currency }}
+      </div>
+
+
+
+      <div class="col-md-3">
+        <label class="form-label small mb-1">IDR Rate</label>
+        {{ form.idr_rate }}
+      </div>
+    </div>
+
+
+    <hr class="my-2">
+
+    {{ formset.management_form }}
+
+    <div class="table-responsive">
+      <table class="table table-sm table-worksheet table-bordered mb-0" id="vbWorksheet">
+        <thead class="table-light">
+          <tr>
+            <th style="width:150px">Cost Lines</th>
+            <th>Description</th>
+            <th style="width:70px" class="text-end">Qty</th>
+            <th style="width:70px" class="text-center">Unit</th>
+            <th style="width:100px" class="text-end">Unit Price</th>
+            <th style="width:240px">Taxes</th>
+            <th style="width:140px" class="text-end">Amount</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for f in formset.forms %}
+            {% with line=f.instance %}
+            <tr class="ws-row">
+              {{ f.id }}
+              {{ f.job_cost }}
+              {{ f.cost_type }}
+              <td class="fw-semibold ws-cell">
+                {% if line.cost_type_id %}{{ line.cost_type.name }}{% else %}-{% endif %}
+              </td>
+               <td class="text-end ws-cell ws-num">{{ f.description }}</td>
+              <td class="text-end ws-cell ws-num">{{ f.qty }}</td>
+              <td class="text-center ws-cell ws-uom">{{ f.uom }}</td>
+              <td class="text-end ws-cell ws-num">  {{ f.unit_price }}</td>
+              <td class="ws-cell">
+                {{ f.taxes }}
+              </td>
+
+              <td class="text-end ws-cell ws-num">
+                <span class="js-line-amount js-id-display" data-digits="2" data-raw="{{ line.amount|default_if_none:'0' }}">
+                  {{ line.amount|default_if_none:"0" }}
+                </span>
+              </td>
+            </tr>
+            {% if f.non_field_errors or f.errors %}
+              <tr>
+                <td colspan="6">
+                  <div class="alert alert-warning mb-2">
+                    <div class="fw-semibold">Line {{ forloop.counter }} error</div>
+
+                    {% if f.non_field_errors %}
+                      <ul class="mb-1">
+                        {% for err in f.non_field_errors %}
+                          <li>{{ err }}</li>
+                        {% endfor %}
+                      </ul>
+                    {% endif %}
+
+                    {% if f.errors %}
+                      <ul class="mb-0">
+                        {% for field in f %}
+                          {% for err in field.errors %}
+                            <li><strong>{{ field.label }}</strong>: {{ err }}</li>
+                          {% endfor %}
+                        {% endfor %}
+                      </ul>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endif %}
+
+            {% endwith %}
+          {% empty %}
+            <tr><td colspan="6" class="text-muted">No lines.</td></tr>
+          {% endfor %}
+        </tbody>
+
+        <tfoot>
+          <tr>
+            <td colspan="6" class="text-end">Sub Total</td>
+            <td class="text-end">
+              <span id="subtotal-preview" class="js-id-display" data-digits="2" data-raw="{{ totals.subtotal|default_if_none:'0' }}">
+                {{ totals.subtotal|default_if_none:"0" }}
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="6" class="text-end">Tax Amount</td>
+            <td class="text-end">
+              <span id="tax-preview" class="js-id-display" data-digits="2" data-raw="{{ totals.tax_total|default_if_none:'0' }}">
+                {{ totals.tax_total|default_if_none:"0" }}
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="6" class="text-end">PPh (WHT)</td>
+            <td class="text-end">
+              <span id="wht-preview" class="js-id-display" data-digits="2" data-raw="{{ totals.wht_amount|default_if_none:'0' }}">
+                {{ totals.wht_amount|default_if_none:"0" }}
+              </span>
+
+            </td>
+          </tr>
+          <tr>
+            <td colspan="6" class="text-end fw-bold">Grand Total</td>
+            <td class="text-end fw-bold">
+              <span id="total-preview" class="js-id-display" data-digits="2" data-raw="{{ totals.total_amount|default_if_none:'0' }}">
+                {{ totals.total_amount|default_if_none:"0" }}
+              </span>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+  </div>
+  <!-- DEBUG tax_map type: {{ tax_map|default:"<NONE>" }} -->
+         {% if vb.status == "DRAFT" %}
+      <div class="card-footer d-flex justify-content-end gap-2">
+        <button class="btn btn-primary btn-sm" type="submit">Save</button>
+      </div>
+      {% endif %}
+
+
+      
+  {{ tax_map|json_script:"tax-map" }}
+
+</form>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css%}
+<style>
+  
+
+
+
+/* =========================================================
+   VENDOR BOOKING WORKSHEET (VB)
+   - Compact rows
+   - Bigger header/footer
+   - Inputs borderless but with side padding
+   ========================================================= */
+
+#vbWorksheet.table-worksheet {
+  font-size: 13px;           /* body size */
+  line-height: 1.15;
+}
+
+/* Cell padding + vertical align */
+#vbWorksheet.table-worksheet th,
+#vbWorksheet.table-worksheet td {
+  vertical-align: middle !important;
+  padding: 0.18rem 0.40rem !important; /* compact but not too tight */
+}
+
+/* HEADER: bigger */
+#vbWorksheet.table-worksheet thead th {
+  font-size: 13.5px;
+  font-weight: 700;
+  padding-top: 0.35rem !important;
+  padding-bottom: 0.35rem !important;
+}
+
+/* FOOTER: bigger + clear */
+#vbWorksheet.table-worksheet tfoot td,
+#vbWorksheet.table-worksheet tfoot th {
+  font-size: 13.5px;
+  font-weight: 600;
+  padding-top: 0.32rem !important;
+  padding-bottom: 0.32rem !important;
+}
+
+/* Body rows: compact */
+#vbWorksheet.table-worksheet tbody td {
+  padding-top: 0.14rem !important;
+  padding-bottom: 0.14rem !important;
+}
+
+/* =========================================================
+   Worksheet inputs: borderless + comfortable side padding
+   ========================================================= */
+#vbWorksheet.table-worksheet input,
+#vbWorksheet.table-worksheet select,
+#vbWorksheet.table-worksheet textarea {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+
+  /* make inputs not “mepet” */
+  padding: 0.12rem 0.35rem !important;  /* left-right padding */
+  margin: 0 !important;
+
+  height: 1.35rem !important;           /* keeps row compact */
+  min-height: 1.35rem !important;
+  line-height: 1.15 !important;
+  outline: none !important;
+}
+
+/* number inputs right aligned */
+#vbWorksheet .ws-num input {
+  text-align: right !important;
+  width: 100%;
+}
+
+/* UOM column: center + ensure no border (explicit) */
+#vbWorksheet .ws-uom input,
+#vbWorksheet .ws-uom select {
+  text-align: center !important;
+  border: 0 !important;
+  padding-left: 0.25rem !important;
+  padding-right: 0.25rem !important;
+}
+
+/* Make select arrow not eat spacing too much */
+#vbWorksheet.table-worksheet select {
+  padding-right: 1.0rem !important;
+}
+
+#id_idr_rate { text-align: right !important; }
+
+
+
+#vbWorksheet .select2-container .select2-selection--multiple .select2-selection__choice__remove {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 18px !important;
+    height: 18px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+    border-radius: 50% !important;
+    /* background: rgb(13 110 253) !important; */
+    background: none !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+#vbWorksheet .select2-container .select2-selection--multiple .select2-selection__choice__display {
+    color: #fff !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    padding: 0px 3px 0px 10px !important;
+    line-height: 1.2 !important;
+}
+</style>
+
+
+<link rel="stylesheet" href="{% static 'vendor/css/select2.min.css' %}">
+
+{% endblock %}
+
+
+{% block extra_js%}
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script src="{% static 'js/idr_rate.js' %}">  </script>
+<script src="{% static 'vendor/js/select2.full.min.js' %}"> </script>
+<script src="{% static 'js/tax_select2.js' %}"> </script>
+
+
+
+<script>
+(function () {
+  const TAX_SELECT_SELECTOR = 'select[name^="lines-"][name$="-taxes"], select[name$="-taxes"]';
+  const UNIT_PRICE_SELECTOR = 'input[name^="lines-"][name$="-unit_price"], input[name$="-unit_price"]';
+
+  function num(v) {
+    const n = Number(String(v ?? "").trim());
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function formatIDR(n) {
+    return new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(n ?? 0));
+  }
+
+  function readTaxMap() {
+    const el = document.getElementById("tax-map");
+    if (!el) return {};
+    try { return JSON.parse(el.textContent); } catch { return {}; }
+  }
+
+  const TAX_MAP = readTaxMap();
+  console.log("TAX_MAP keys:", Object.keys(TAX_MAP).length);
+
+  // -------- Money: only unit_price --------
+  function initMoneyUnitPrice() {
+    document.querySelectorAll(UNIT_PRICE_SELECTOR).forEach((el) => {
+      if (el.dataset.moneyInit === "1") return;
+      el.dataset.moneyInit = "1";
+
+      // initial raw from server
+      if (el.dataset.raw === undefined) el.dataset.raw = (el.value || "").trim();
+
+      // initial pretty
+      el.value = el.dataset.raw ? formatIDR(el.dataset.raw) : "";
+
+      el.addEventListener("focus", () => {
+        el.value = el.dataset.raw || "";
+      });
+
+      el.addEventListener("input", () => {
+        const cleaned = el.value.replace(/[^\d.]/g, "");
+        const parts = cleaned.split(".");
+        el.dataset.raw = parts.length <= 2 ? cleaned : parts[0] + "." + parts.slice(1).join("");
+      });
+
+      el.addEventListener("blur", () => {
+        el.value = el.dataset.raw ? formatIDR(el.dataset.raw) : "";
+      });
+    });
+
+    // before submit => restore raw so backend gets decimals
+    document.addEventListener("submit", (e) => {
+      const form = e.target;
+      if (!(form instanceof HTMLFormElement)) return;
+      form.querySelectorAll(UNIT_PRICE_SELECTOR).forEach((el) => {
+        el.value = el.dataset.raw || "";
+      });
+    }, true);
+  }
+
+  // -------- Taxes helpers --------
+  function getSelectedTaxIds(row) {
+    const sel = row.querySelector(TAX_SELECT_SELECTOR);
+    if (!sel) return [];
+    return Array.from(sel.selectedOptions || []).map((o) => o.value).filter(Boolean);
+  }
+
+  function computeTaxes(lineBase, taxIds) {
+    let vat = 0;
+    let wht = 0;
+
+    taxIds.forEach((id) => {
+      const t = TAX_MAP[String(id)];
+      if (!t) return;
+      const r = num(t.rate) / 100.0; // percent
+      if (t.is_withholding) wht += lineBase * r;
+      else vat += lineBase * r;
+    });
+
+    return { vat, wht };
+  }
+
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = formatIDR(value);
+    el.dataset.raw = String(value ?? 0);
+  }
+
+  function setLineAmount(row, value) {
+    const el = row.querySelector(".js-line-amount");
+    if (!el) return;
+    el.textContent = formatIDR(value);
+    el.dataset.raw = String(value ?? 0);
+  }
+
+  function recomputeWorksheet() {
+    let subtotal = 0;
+    let taxTotal = 0;
+    let whtTotal = 0;
+
+    document.querySelectorAll("#vbWorksheet tbody tr.ws-row").forEach((row) => {
+      const qtyEl = row.querySelector('input[name$="-qty"]');
+      const unitPriceEl = row.querySelector(UNIT_PRICE_SELECTOR);
+
+      const qty = num(qtyEl?.value);
+      const unitPrice = num(unitPriceEl?.dataset?.raw ?? unitPriceEl?.value);
+      const base = qty * unitPrice;
+
+      subtotal += base;
+
+      const taxIds = getSelectedTaxIds(row);
+      const t = computeTaxes(base, taxIds);
+      taxTotal += t.vat;
+      whtTotal += t.wht;
+
+      setLineAmount(row, base);
+    });
+
+    const grand = subtotal + taxTotal - whtTotal;
+
+    setText("subtotal-preview", subtotal);
+    setText("tax-preview", taxTotal);
+    setText("wht-preview", whtTotal);
+    setText("total-preview", grand);
+  }
+
+  function bindEvents() {
+    // qty + unit_price
+    document.addEventListener("input", (e) => {
+      const t = e.target;
+      if (t && (t.matches('input[name$="-qty"]') || t.matches(UNIT_PRICE_SELECTOR))) {
+        recomputeWorksheet();
+      }
+    });
+
+    // taxes (select2 triggers change on the original select)
+    document.addEventListener("change", (e) => {
+      const t = e.target;
+      alert('test');
+      if (t && t.matches(TAX_SELECT_SELECTOR)) {
+        recomputeWorksheet();
+      }
+    });
+
+    // extra safety: some setups emit these
+    document.addEventListener("select2:select", (e) => {
+      const t = e.target;
+      if (t && t.matches(TAX_SELECT_SELECTOR)) recomputeWorksheet();
+    });
+    document.addEventListener("select2:unselect", (e) => {
+      const t = e.target;
+      if (t && t.matches(TAX_SELECT_SELECTOR)) recomputeWorksheet();
+    });
+
+    // ultimate fallback if you use jQuery + select2
+    if (window.jQuery) {
+      window.jQuery(document).on("change", TAX_SELECT_SELECTOR, function () {
+        recomputeWorksheet();
+      });
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    // ✅ 0) INIT SELECT2 PALING DULU
+    if (window.initTaxSelect2 && !window.__vbTaxSelect2Inited) {
+      window.__vbTaxSelect2Inited = true;
+      window.initTaxSelect2(document);
+    }
+
+    // ✅ 1) lalu money formatter
+    initMoneyUnitPrice();
+
+    // ✅ 2) lalu hitung
+    recomputeWorksheet();
+
+    // ✅ 3) lalu bind event
+    bindEvents();
+  });
+})();
+</script>
+<script>
+(function () {
+  function moveRemoveToRight(scope) {
+    const root = scope || document;
+
+    root.querySelectorAll(".select2-selection__choice").forEach((li) => {
+      const btn = li.querySelector(".select2-selection__choice__remove");
+      const display = li.querySelector(".select2-selection__choice__display");
+      if (!btn || !display) return;
+
+      // kalau button masih di kiri, pindahkan ke akhir
+      // (appendChild akan memindahkan node, bukan clone)
+      if (btn.previousElementSibling === null) {
+        li.appendChild(btn);
+      }
+    });
+  }
+
+  function hookSelect2Events() {
+    // Setelah DOM ready: tunggu sedikit supaya Select2 selesai render
+    setTimeout(() => moveRemoveToRight(document), 0);
+
+    // Event Select2
+    document.addEventListener("select2:select", () => moveRemoveToRight(document));
+    document.addEventListener("select2:unselect", () => moveRemoveToRight(document));
+
+    // Fallback: kalau Select2 hanya trigger change
+    document.addEventListener("change", (e) => {
+      const t = e.target;
+      if (t && t.matches('select[name$="-taxes"]')) {
+        // Select2 re-render badge sesudah change → delay tipis
+        setTimeout(() => moveRemoveToRight(document), 0);
+      }
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // penting: init select2 duluan oleh script kamu yang existing
+    // setelah itu baru kita hook & move
+    setTimeout(hookSelect2Events, 0);
+  });
+})();
+</script>
+
+{% endblock %}

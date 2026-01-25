@@ -1,0 +1,182 @@
+{% extends "print/base_a4.html" %}
+{% load indo_format %}
+
+{% block title %}Job Order - Cost Sheet{% endblock %}
+
+{% block content %}
+
+<br>
+<br>
+<br>
+
+<!-- ===== JOB HEADER ===== -->
+<h2 style="margin:0 0 8px 0;">JOB ORDER COST SHEET</h2>
+<br>
+<br>
+
+<table class="no-border" style="margin-bottom:10px; width:100%;">
+  <tr>
+    <td style="width:18%;"><b>Job No</b></td>
+    <td style="width:32%;">: {{ job.number }}</td>
+
+    <td style="width:18%;"><b>Date</b></td>
+    <td style="width:32%;">: {{ job.job_date|date:"d M Y" }}</td>
+  </tr>
+  <tr>
+    <td><b>Customer</b></td>
+    <td>: {{ job.customer }}</td>
+
+    <td><b>Order No</b></td>
+    <td>: {{ job.order_number|default:"-" }}</td>
+  </tr>
+  <tr>
+    <td><b>Job Amount (No Tax)</b></td>
+    <td>: {{ job_value | indo_number:2  }}</td>
+
+    <td><b>Currency / Rate</b></td>
+    <td>: {{ job_ccy }} / {{ job_rate| indo_number:3 }}</td>
+  </tr>
+  <tr>
+    <td><b>Currency</b></td>
+    <td>: {{ job_ccy }}</td>
+
+    <td><b>PIC</b></td>
+    <td>: {{ job.pic|default:"-" }}</td>
+  </tr>
+</table>
+
+<br>
+
+<!-- ===== REVENUE SUMMARY (JOB ORDER) ===== -->
+<!-- 
+<h3 style="margin:10px 0 6px 0;">Job Order Summary</h3>-->
+<!--
+<table style="width:60%; margin-bottom:12px;">
+  <thead>
+    <tr>
+      <th>Item</th>
+      <th class="right">Amount ({{ base_code }})</th>
+      {% if not is_idr %}<th class="right">Amount (IDR)</th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Total Amount (No Tax)</td>
+      <td class="right">{{ revenue_excl_tax }}</td>
+      {% if not is_idr %}<td class="right">{{ revenue_excl_tax_idr |indo_number:2  }}</td>{% endif %}
+    </tr>
+    <tr>
+      <td>Tax Amount</td>
+      <td class="right">{{ revenue_tax }}</td>
+      {% if not is_idr %}<td class="right">{{ revenue_tax_idr|indo_number:2 }}</td>{% endif %}
+    </tr>
+    <tr>
+      <td>PPH Amount</td>
+      <td class="right">{{ revenue_pph }}</td>
+      {% if not is_idr %}<td class="right">{{ revenue_pph_idr|indo_number:3 }}</td>{% endif %}
+    </tr>
+    <tr>
+      <td><b>Grand Total</b></td>
+      <td class="right"><b>{{ revenue_grand }}</b></td>
+      {% if not is_idr %}<td class="right"><b>{{ revenue_grand_idr|indo_number:2 }}</b></td>{% endif %}
+    </tr>
+  </tbody>
+</table>
+-->
+<br>
+
+<!-- ===== COST LINES ===== -->
+<h3 style="margin:10px 0 6px 0;">Job Costs (Amount in IDR)</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:14%;">Cost Type</th>
+      <th>Vendor</th>
+      <th style="width:7%;">Qty</th>
+      <th style="width:7%;">CUR</th>
+       <th style="width:5%;">PRICE</th>
+      <th style="width:14%;" class="right">Rate</th>
+      <th style="width:7%;" class="right">Amount (IDR)</th>
+      
+    </tr>
+  </thead>
+
+  <tbody>
+    {% for ln in lines %}
+      <tr>
+        <td>{{ ln.cost_type }}</td>
+        <td>{{ ln.vendor }}</td>
+        <td class="right">{{ ln.qty }}</td>
+        <td>{{ ln.currency }}</td>
+        <td class="right" >{{ ln.price|indo_number:2 }}</td>
+        <td class="right">{{ ln.rate | indo_number:3 }}</td>
+        <td class="right">{{ ln.amount_idr|indo_number:2 }}</td>
+      
+      </tr>
+    {% empty %}
+      <tr><td colspan="10">No cost lines.</td></tr>
+    {% endfor %}
+  </tbody>
+
+  <tfoot>
+    <tr>
+      <th colspan="6" class="right">TOTAL JOB COST</th>
+      
+      <th class="right"><b>{{ total_cost_idr|indo_number:2 }}</b></th>
+    </tr>
+  </tfoot>
+</table>
+
+
+
+<!-- ===== PROFITABILITY ===== -->
+<h3 style="margin:14px 0 6px 0;">Profitability</h3>
+<table style="width:100%;">
+  <thead>
+    <tr>
+      <th>Item</th>
+      <th>Currency</th>
+      <th>Rate</th>
+      <th class="right">Amount</th>
+      <th>Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Total  Job Order (DPP)</td>
+      <td>{{ job_ccy | indo_number:2}}</td>
+      <td>{{job_rate|indo_number:3}}</td>
+      <td class="right">{{ job_value|indo_number:2}}</td>
+      <td class="right">{{job_value_idr|indo_number:2}}</td>
+    </tr>
+    <tr>
+      <td>Total Job Cost</td>
+      <td>IDR</td>
+      <td>{{ 1 | indo_number:3}}</td>
+      <td class="right">{{ total_cost_idr|indo_number:2 }}</td>
+      <td class="right">{{ total_cost_idr|indo_number:2 }}</td>
+    </tr>
+    <tr>
+      <td colspan="4" class="right"><b>PROFIT</b></td>
+      <td class="right"><b>{{ profit_idr|indo_number:2 }}</b></td>
+    </tr>
+  </tbody>
+</table>
+{% endblock %}
+
+
+{% block extra_css %}
+ <style>
+    body { font-family: Arial, sans-serif; font-size: 11px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #000; padding: 6px; vertical-align: top; }
+    th { background: #f2f2f2; }
+    .right { text-align: right; }
+    .no-border td { border: none; padding: 2px 0; }
+    .muted { color: #555; }
+    .no-print { margin-bottom: 10px; }
+    @media print { .no-print { display:none; } }
+  </style>
+
+{% endblock %}

@@ -17,8 +17,8 @@ from core.utils.numbering import get_next_number
 
 from job.constants import SYSTEM_GROUP_CHOICES
 from job.models.job_orders import JobOrder
-from job.models.costs import JobCost, JobCostType
-
+from job.models.job_costs import JobCost, JobCostType
+from core.models.uoms import UOM
 
 # ============================================================
 # Helpers
@@ -83,32 +83,56 @@ def recompute_vendor_booking_totals(vb):
 # ============================================================
 # VendorBooking (HEADER)
 # ============================================================
-
 class VendorBooking(models.Model):
+
     ST_DRAFT = "DRAFT"
+    ST_SUBMITTED = "SUBMITTED"
+    ST_APPROVED = "APPROVED"
     ST_CONFIRMED = "CONFIRMED"
+    ST_SENT = "SENT"
+    ST_CLOSED = "CLOSED"
     ST_CANCELLED = "CANCELLED"
 
     STATUS_CHOICES = [
         (ST_DRAFT, "Draft"),
+        (ST_SUBMITTED, "Submitted"),
+        (ST_APPROVED, "Approved"),
         (ST_CONFIRMED, "Confirmed"),
+        (ST_SENT, "Sent to Vendor"),
+        (ST_CLOSED, "Closed"),
         (ST_CANCELLED, "Cancelled"),
     ]
 
-    vb_number = models.CharField(max_length=50, blank=True, default="")
-    letter_number = models.CharField(max_length=50, blank=True, default="")
-    issued_date = models.DateField(default=timezone.localdate)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=ST_DRAFT)
 
+    booking_date = models.DateField(default=timezone.localdate, db_index=True)
+
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    submitted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=PROTECT, related_name="+")
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=PROTECT, related_name="+")
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancelled_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=PROTECT, related_name="+")
+    cancel_reason = models.TextField(blank=True, default="")
+
+    sent_at = models.DateTimeField(null=True, blank=True)
+    sent_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=PROTECT, related_name="+")
+    sent_via = models.CharField(max_length=20, blank=True, default="")  # EMAIL/WA/MANUAL
+    sent_to = models.CharField(max_length=255, blank=True, default="")
+
+    closed_at = models.DateTimeField(null=True, blank=True)
+    closed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=PROTECT, related_name="+")
+    
+
+
+    
+    vb_number = models.CharField(max_length=50, blank=True, default="")
+    
     job_order = models.ForeignKey(
         JobOrder, on_delete=CASCADE, related_name="vendor_bookings"
     )
 
-    booking_group = models.CharField(
-        max_length=50,
-        choices=SYSTEM_GROUP_CHOICES,
-        db_index=True,
-    )
-
+    
     vendor = models.ForeignKey(
         Vendor,
         on_delete=PROTECT,
@@ -181,30 +205,13 @@ class VendorBooking(models.Model):
         default=Decimal("0"),
     )
 
+    booking_date = models.DateField(
+        default=timezone.localdate,
+        db_index=True,
+    )
+
     header_json = models.JSONField(default=dict, blank=True)
-
-    LETTER_SEA_SI = "SEA_SI"
-    LETTER_AIR_SLI = "AIR_SLI"
-    LETTER_TRUCK_TO = "TRUCK_TO"
-
-    LETTER_TYPE_CHOICES = [
-        (LETTER_SEA_SI, "Shipping Instruction (Sea)"),
-        (LETTER_AIR_SLI, "Shipping Letter of Instruction (Air)"),
-        (LETTER_TRUCK_TO, "Trucking Order"),
-    ]
-
-    letter_type = models.CharField(
-        max_length=20,
-        choices=LETTER_TYPE_CHOICES,
-        default=LETTER_TRUCK_TO,
-    )
-
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default=ST_DRAFT,
-    )
-
+    
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=PROTECT,
@@ -226,16 +233,12 @@ class VendorBooking(models.Model):
     def save(self, *args, **kwargs):
         creating = self.pk is None
 
-        if not self.issued_date:
-            self.issued_date = timezone.localdate()
 
         if creating:
             if not self.vb_number:
                 self.vb_number = get_next_number("shipments", "VENDOR_BOOKING")
 
-            if not self.letter_number:
-                self.letter_number = get_next_number("shipments", self.letter_type)
-
+    
         super().save(*args, **kwargs)
 
 
@@ -278,7 +281,16 @@ class VendorBookingLine(models.Model):
         default=Decimal("0"),
     )
 
-    uom = models.CharField(max_length=20, blank=True, default="")
+    uom_code = models.CharField(max_length=20, blank=True, default="")
+    uom = models.ForeignKey(
+        UOM,
+        related_name="vb_line_uoms",
+        on_delete=PROTECT,
+        null=True,
+        blank=True,
+        help_text="Default UOM untuk cost line (mis: LS, TRIP, CNTR, CBM, KG)"
+    )
+  
     amount = models.DecimalField(
         max_digits=18,
         decimal_places=2,

@@ -18,6 +18,13 @@
         </div>
       </div>
       <div class="d-flex gap-2">
+         <!-- Print Preview -->
+  
+
+  <!-- PDF -->
+ 
+
+
         <a href="{% url 'job:job_order_list' %}"
            class="btn btn-outline-secondary btn-sm">
           <i class="fa fa-arrow-left me-1"></i> Back to List
@@ -70,14 +77,19 @@
     <!-- RIGHT: ACTION BUTTONS -->
     <div class="d-flex align-items-center gap-1">
 
-      <a class="btn btn-outline-primary btn-sm"
-      href="/job/reports/profitability/{{ job.pk }}/pdf/"
-      target="_blank" rel="noopener">
-      <i class="bi bi-file-earmark-pdf me-1"></i> Profitability
-    </a>
+    <a
+    href="{% url 'job:joborder_cost_print_preview' job.id %}"
+    target="_blank"
+    class="btn btn-sm btn-outline-primary"
+  >
+    🖨️ Print Preview
+  </a>
+   <a class="btn btn-sm btn-outline-danger"
+   target="_blank"
+   href="{% url 'job:joborder_cost_pdf' job.pk %}">
+  📄 PDF
+</a>
 
-
-   
     
       {% if object.complete_journal_id %}
       <a class="btn btn-outline-secondary btn-sm"
@@ -183,7 +195,7 @@
   </div>
 </div>
 
-    <div class="card mb-2">
+    <div class="card mb-2 border-0">
   <div class="card-body py-2">
     <div class="row g-2 align-items-start">
 
@@ -295,7 +307,7 @@
 
    
  
-    <div class="tab-content border border-0 mt-3" id="myCargoPriceTab">
+    <div class="tab-content border border-0 mt-0" id="myCargoPriceTab">
         <div class="tab-pane fade show active" id="costTab" role="tabpanel" aria-labelledby="cargotab">
           
             <form method="post" action="{% url 'job:job_order_costs_update' job.pk %}" novalidate id="jobcost-form">
@@ -307,7 +319,7 @@
                 {% endif %}
 
                
-                <div class="card">
+                <div class="card border-0">
                   <div class="card-body p-0">
                       <input type="hidden"  name="jobcost_touched"  id="jobcost-touched" value="0">
 
@@ -316,7 +328,7 @@
                     </div>
                   </div>
 
-                  <div class="d-flex justify-content-between align-items-center p-2">
+                  <div class="d-flex justify-content-between align-items-center p-2 border " style="border-top: 0px !important">
                     <button type="button" class="btn btn-outline-primary btn-sm" id="btn-jobcost-add">
                       <i class="bi bi-plus-lg"></i> Add Row
                     </button>

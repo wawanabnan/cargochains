@@ -1,17 +1,67 @@
-{% extends "main.html" %}
+{% extends "adminbase.html" %}
 {% load static %}
 
 {% block content %}
-<section class="content">
-  <div class="container-fluid">
 
-    <h3 class="mb-3">
-      {% if quotation %}
-        Edit Freight Quotation {{ quotation.number }}
-      {% else %}
-        Tambah Freight Quotation
-      {% endif %}
-    </h3>
+{% if form.errors %}
+<div class="alert alert-danger">
+    <strong>DEBUG — form.errors:</strong>
+    <pre>{{ form.errors.as_json }}</pre>
+</div>
+{% endif %}
+{% if form.non_field_errors %}
+<div class="alert alert-warning">
+    <strong>Non-field errors:</strong>
+    <ul>
+        {% for err in form.non_field_errors %}
+        <li>{{ err }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+<div>
+
+
+</div>
+
+
+
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+      <!-- LEFT: Title -->
+      <h4 class="mb-0">Quotation</h4>
+
+      <!-- RIGHT: Buttons wrapper -->
+      <div class="d-flex align-items-center gap-2">
+        <a href="#"
+           class="btn btn-primary btn-sm">
+          <i class="fa fa-plus me-1"></i> New
+        </a>
+
+        <a href="#"
+           class="btn btn-outline-secondary btn-sm">
+          <i class="fa fa-chart-bar me-1"></i> Report
+        </a>
+        <button type="button"
+ 
+  class="btn btn-sm btn-outline-secondary"
+        id="btn-fill-sample">
+    Isi sample saja
+</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
+
+<!--------------------------------------------------Form-------------------------------------------------->       
+
+  <div class="container-fluid">
 
     <form method="post" novalidate>
       {% csrf_token %}
@@ -28,508 +78,747 @@
         </div>
       {% endif %}
 
-      <div class="row">
-        <div class="col-md-12">
+    <div class="row">
+      <div class="col-md-12">
 
           {# ====================== #}
           {#  CARD: CUSTOMER        #}
           {# ====================== #}
-          <div class="card card-primary">
-            <div class="card-header">
-              <h3 class="card-title mb-0">Customer</h3>
-            </div>
-            <div class="card-body">
-              <div class="mb-3">
-                <label for="id_customer_text" class="form-label">Customer</label>
-                <input type="text"
-                       id="id_customer_text"
-                       class="form-control js-partner"
-                       data-url="{% url 'partners:partner_autocomplete' %}?role=customer"
-                       value="{% if form.instance.customer %}{{ form.instance.customer.company_name|default:form.instance.customer.name }}{% endif %}">
-                <input type="hidden"
-                       id="id_customer"
-                       name="customer"
-                       value="{% if form.instance.customer_id %}{{ form.instance.customer_id }}{% endif %}">
-
-               
-
-              </div>
-            </div>
-          </div>
+          {% include 'sales/sub-forms/customer.html' %}
+         
 
           {# ====================== #}
-          {#  CARD: ROUTE           #}
+          {#  CARD: CARGO           #}
           {# ====================== #}
-          <div class="card card-primary">
-            <div class="card-header">
-              <h3 class="card-title mb-0">Route</h3>
+          <div class="card shaddow-none my-3">
+            <div class="card-header  h-center">
+              <h3 class="card-title mb-0">CARGO & PRICE</h3>
             </div>
-            <div class="card-body">
-
-              <div class="row">
-                <!-- ORIGIN -->
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="id_origin_text" class="form-label">Origin</label>
-
-                    <input type="text"
-                           id="id_origin_text"
-                           class="form-control js-location"
-                           data-url="/geo/locations/autocomplete/"
-                           value="{% if form.instance.origin %}{{ form.instance.origin.name }}{% endif %}">
-
-                    <input type="hidden" id="id_origin" name="origin"
-                           value="{% if form.instance.origin_id %}{{ form.instance.origin_id }}{% endif %}">
-
-                    {% for err in form.origin.errors %}
-                      <div class="text-danger small">{{ err }}</div>
-                    {% endfor %}
-                  </div>
+            <div class="card-body px-0 ">
+               <ul class="nav nav-tabs border-bottom border-primary mt-2" 
+                id="myTab" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" 
+                        id="home-tab" 
+                        data-bs-toggle="tab" data-bs-target="#cargoTab" 
+                        type="button" role="tab" 
+                        aria-controls="home" aria-selected="true">Cargo
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" 
+                        id="profile-tab" 
+                        data-bs-toggle="tab" data-bs-target="#priceTab" 
+                        type="button" role="tab" 
+                        aria-controls="profile" aria-selected="false">Price
+                </button>
+              </li>
+              
+            
+              </ul>
+              <div class="tab-content" id="myCargoPriceTab">
+                <div class="tab-pane fade show active" 
+                    id="cargoTab" 
+                    role="tabpanel" aria-labelledby="cargotab">
+                    {% include 'sales/sub-forms/cargo-nocard.html' %}
+        
                 </div>
+                  <div class="tab-pane fade" 
+                      id="priceTab" 
+                      role="tabpanel" aria-labelledby="price-tab">
+                    {% include 'sales/sub-forms/pricing-nocard.html' %}
 
-                <!-- DESTINATION -->
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="id_destination_text" class="form-label">Destination</label>
-
-                    <input type="text"
-                           id="id_destination_text"
-                           class="form-control js-location"
-                           data-url="/geo/locations/autocomplete/"
-                           value="{% if form.instance.destination %}{{ form.instance.destination.name }}{% endif %}">
-
-                    <input type="hidden" id="id_destination" name="destination"
-                           value="{% if form.instance.destination_id %}{{ form.instance.destination_id }}{% endif %}">
-
-                    {% for err in form.destination.errors %}
-                      <div class="text-danger small">{{ err }}</div>
-                    {% endfor %}
                   </div>
-                </div>
+                 
               </div>
+
 
             </div>
           </div>
 
-          {# ====================== #}
-          {#  CARD: SHIPPER         #}
-          {# ====================== #}
-          <div class="card card-secondary">
-            <div class="card-header">
-              <h3 class="card-title mb-0">Shipper</h3>
+          {#  Route Origin - Destination       #}
+          {% include 'sales/sub-forms/route.html' %}
+
+        
+          <div class="card shaddow-none my-3">
+            <div class="card-header  h-center">
+              <h3 class="card-title mb-0">Shipper & Consignee</h3>
             </div>
-            <div class="card-body">
+            <div class="card-body px-0 ">
+               <ul class="nav nav-tabs border-bottom border-primary mt-2" 
+                id="myTab" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" 
+                        id="home-tab" 
+                        data-bs-toggle="tab" data-bs-target="#shipperTab" 
+                        type="button" role="tab" 
+                        aria-controls="home" aria-selected="true">Shipper
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" 
+                        id="profile-tab" 
+                        data-bs-toggle="tab" data-bs-target="#consigneeTab" 
+                        type="button" role="tab" 
+                        aria-controls="profile" aria-selected="false">Consignee
+                </button>
+              </li>
+               <li class="nav-item" role="presentation">
+                <button class="nav-link" 
+                        id="profile-tab" 
+                        data-bs-toggle="tab" data-bs-target="#customerNoteTab" 
+                        type="button" role="tab" 
+                        aria-controls="profile" aria-selected="false">Customer Notes
+                </button>
+              </li>
+            
+              </ul>
+              <div class="tab-content" id="myTabContent">
+                <div class="tab-pane fade show active" 
+                    id="shipperTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                    {% include 'sales/sub-forms/shipper-nocard.html' %}
+        
+                </div>
+                  <div class="tab-pane fade" 
+                      id="consigneeTab" 
+                      role="tabpanel" aria-labelledby="profile-tab">
+                      {% include 'sales/sub-forms/consignee-nocard.html' %}
 
-              <div class="form-check mb-3">
-                <input type="checkbox"
-                       class="form-check-input"
-                       id="id_shipper_same_as_customer">
-                <label class="form-check-label" for="id_shipper_same_as_customer">
-                  Shipper sama dengan Customer
-                </label>
+                  </div>
+                    <div class="tab-pane fade" 
+                      id="customerNoteTab" 
+                      role="tabpanel" aria-labelledby="customer-note-tab">
+                      
+                        {{ form.notes_customer.label_tag }}
+                        {{ form.notes_customer }}
+                        {% if form.notes_customer.errors %}
+                          <div class="text-danger small">
+                            {{ form.notes_customer.errors }}
+                          </div>
+                        {% endif %}
+    
+                  </div>
               </div>
 
-              <div class="row">
-                <!-- Kolom kiri: contact & alamat text -->
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="id_shipper_contact_name" class="form-label">Nama / Kontak</label>
-                    <input type="text" id="id_shipper_contact_name" name="shipper_contact_name" class="form-control">
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="id_shipper_phone" class="form-label">No. Telp</label>
-                    <input type="text" id="id_shipper_phone" name="shipper_phone"
-                           class="form-control">
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="id_shipper_address" class="form-label">Alamat</label>
-                    <textarea id="id_shipper_address" name="shipper_address"
-                              rows="3" class="form-control"></textarea>
-                  </div>
-                </div>
-
-                <!-- Kolom kanan: dropdown geo -->
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="id_shipper_province" class="form-label">Provinsi</label>
-                    <select id="id_shipper_province" name="shipper_province" class="form-select">
-                      <option value="">---------</option>
-                      {% for prov in provinces %}
-                        <option value="{{ prov.id }}">{{ prov.name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="id_shipper_regency" class="form-label">Kabupaten / Kota</label>
-                    <select id="id_shipper_regency" name="shipper_regency" class="form-select">
-                      <option value="">---------</option>
-                    </select>
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="id_shipper_district" class="form-label">Kecamatan</label>
-                    <select id="id_shipper_district" name="shipper_district" class="form-select">
-                      <option value="">---------</option>
-                    </select>
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="id_shipper_village" class="form-label">Kelurahan / Desa</label>
-                    <select id="id_shipper_village" name="shipper_village" class="form-select">
-                      <option value="">---------</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
 
             </div>
           </div>
-
-          {# ====================== #}
-          {#  CARD: CONSIGNEE       #}
-          {# ====================== #}
-          <div class="card card-secondary">
-            <div class="card-header">
-              <h3 class="card-title mb-0">Consignee</h3>
-            </div>
-            <div class="card-body">
-
-              <div class="mb-3">
-                <label for="id_consignee_text" class="form-label">Cari consignee (partner)</label>
-                <input type="text"
-                       id="id_consignee_text"
-                       class="form-control js-partner"
-                       data-url="{% url 'partners:partner_autocomplete' %}"
-                       value="">
-                <input type="hidden"
-                       id="id_consignee"
-                       name="consignee"
-                       value="">
-              </div>
-
-              {# nanti bisa ditambah checkbox "simpan sebagai contact baru" di sini #}
-
-              <div class="row">
-                <!-- Kolom kiri: contact & alamat text -->
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="id_consignee_name" class="form-label">Nama / Kontak</label>
-                    <input type="text" id="id_consignee_name" name="consignee_name"
-                           class="form-control">
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="id_consignee_phone" class="form-label">No. Telp</label>
-                    <input type="text" id="id_consignee_phone" name="consignee_phone"
-                           class="form-control">
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="id_consignee_address" class="form-label">Alamat</label>
-                    <textarea id="id_consignee_address" name="consignee_address"
-                              rows="3" class="form-control"></textarea>
-                  </div>
-                  <div class="mb-3">
-
-                      <div class="form-check mt-2">
-      <input class="form-check-input"
-             type="checkbox"
-             id="id_consignee_save_partner"
-             name="consignee_save_partner">
-      <label class="form-check-label" for="id_consignee_save_partner">
-        Simpan consignee ini sebagai partner baru
-      </label>
-    </div>
-
-                  </div>
-                  
-                </div>
-
-                <!-- Kolom kanan: dropdown geo -->
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="id_consignee_province" class="form-label">Provinsi</label>
-                    <select id="id_consignee_province" name="consignee_province" class="form-select">
-                      <option value="">---------</option>
-                      {% for prov in provinces %}
-                        <option value="{{ prov.id }}">{{ prov.name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="id_consignee_regency" class="form-label">Kabupaten / Kota</label>
-                    <select id="id_consignee_regency" name="consignee_regency" class="form-select">
-                      <option value="">---------</option>
-                    </select>
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="id_consignee_district" class="form-label">Kecamatan</label>
-                    <select id="id_consignee_district" name="consignee_district" class="form-select">
-                      <option value="">---------</option>
-                    </select>
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="id_consignee_village" class="form-label">Kelurahan / Desa</label>
-                    <select id="id_consignee_village" name="consignee_village" class="form-select">
-                      <option value="">---------</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-        </div>
       </div>
-
-      <button type="submit" class="btn btn-primary">Simpan</button>
+    </div>
+    
+      <button type="submit" class="btn btn-primary" id="btn-save">Simpan</button>
       <a href="{% url 'sales:fq_list' %}" class="btn btn-secondary ms-2">Batal</a>
     </form>
 
   </div>
-</section>
+
+<!-- Simple tab navigation for a page using Bootstrap 5 -->
+<!-- Note: The HTML container in this pen includes BS5 through <head> tags -->
+
+
+
+
+
+<!------------------------------------------------End Form------------------------------------------------->
 {% endblock %}
+
 
 {% block extra_css %}
-  <link rel="stylesheet"
-        href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+  <style>
+  .nav-tabs .nav-link.active, .nav-tabs .nav-item.show .nav-link {
+    margin-left: 30px !important;
+  }
+  
+  .tab-content {padding:20px}
+  .card-header .h-center {text-align: center;}
+  </style>
+
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+  
 {% endblock %}
 
+<!----------------------------------JS Helper-------------------------------------------------------------------------->
+
 {% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
   <script src="{% static 'js/location_autocomplete.js' %}"></script>
   <script src="{% static 'js/partner_autocomplete.js' %}"></script>
+<script>
+  $(function () {
+    // =======================
+    //  ORIGIN / DESTINATION
+    // =======================
+    initLocationAutocomplete("#id_origin_text", "#id_origin");
+    initLocationAutocomplete("#id_destination_text", "#id_destination");
 
-  <script>
-    $(function () {
-      // =======================
-      //  ORIGIN / DESTINATION
-      // =======================
-      initLocationAutocomplete("#id_origin_text", "#id_origin");
-      initLocationAutocomplete("#id_destination_text", "#id_destination");
+    // =======================
+    //  CUSTOMER AUTOCOMPLETE
+    // =======================
+    $("#id_customer_text").data(
+      "url",
+      "{% url 'partners:partner_autocomplete' %}?role=customer"
+    );
+    initPartnerAutocomplete("#id_customer_text", "#id_customer", null);
 
-      // =======================
-      //  CUSTOMER AUTOCOMPLETE
-      // =======================
-      $("#id_customer_text").data("url", "{% url 'partners:partner_autocomplete' %}?role=customer");
-      initPartnerAutocomplete("#id_customer_text", "#id_customer", null);
+    // =======================
+    //  SHIPPER AUTOCOMPLETE
+    // =======================
+    
+    initPartnerAutocomplete("#id_shipper_text", "#id_shipper", "#id_shipper_address");
 
-      // =======================
-      //  SHIPPER: COPY DARI CUSTOMER
-      // =======================
-      function copyShipperFromCustomer() {
-        var name = $("#id_customer_text").val() || "";
-        $("#id_shipper_contact_name").val(name);
+    $("#id_shipper_text").on("partner:selected", function (e, item) {
+      // nama / kontak shipper
+      var displayName = item.company_name || item.name || "";
+      $("#id_shipper_contact_name").val(displayName);
 
-        var item = $("#id_customer_text").data("selectedPartner") || null;
-        if (item) {
-          var phone = item.phone || item.mobile || "";
-          $("#id_shipper_phone").val(phone);
+      // telp shipper
+      var phone = item.phone || item.mobile || "";
+      $("#id_shipper_phone").val(phone);
 
-          if (item.address) {
-            $("#id_shipper_address").val(item.address);
-          }
-        }
+      // alamat shipper
+      if (item.address) {
+        $("#id_shipper_address").val(item.address);
       }
 
-      $("#id_shipper_same_as_customer").on("change", function() {
-        if (this.checked) {
-          copyShipperFromCustomer();
-          var item = $("#id_customer_text").data("selectedPartner") || null;
-          if (item) {
-            autoFillGeoFromPartner(item, "shipper");
-          }
-        }
-      });
+      // isi geo shipper
+      autoFillGeoFromPartner(item, "shipper");
+    });
 
-      $("#id_customer_text").on("partner:selected", function(e, item) {
-        if ($("#id_shipper_same_as_customer").is(":checked")) {
-          copyShipperFromCustomer();
-          autoFillGeoFromPartner(item, "shipper");
-        }
-      });
+    // =======================
+    //  SHIPPER: COPY DARI CUSTOMER
+    // =======================
+    function copyShipperFromCustomer() {
+      var name = $("#id_customer_text").val() || "";
+      $("#id_shipper_contact_name").val(name);
 
-      // =======================
-      //  CONSIGNEE AUTOCOMPLETE
-      // =======================
-      initPartnerAutocomplete("#id_consignee_text", "#id_consignee", "#id_consignee_address");
-
-      $("#id_consignee_text").on("partner:selected", function(e, item) {
-        // nama / kontak
-        var displayName = item.company_name || item.name || "";
-        $("#id_consignee_name").val(displayName);
-
-        // telp
+      var item = $("#id_customer_text").data("selectedPartner") || null;
+      if (item) {
         var phone = item.phone || item.mobile || "";
-        $("#id_consignee_phone").val(phone);
+        $("#id_shipper_phone").val(phone);
 
-        // alamat text sudah diisi oleh helper via consignee_address textarea
-        // sekarang isi geo dropdown
-        autoFillGeoFromPartner(item, "consignee");
-      });
-
-      // =======================
-      //  GEO HELPERS (SHIPPER & CONSIGNEE)
-      // =======================
-      function resetSelect(selector, placeholder) {
-        const el = document.querySelector(selector);
-        if (!el) return;
-        el.innerHTML = "";
-        const opt = document.createElement("option");
-        opt.value = "";
-        opt.textContent = placeholder;
-        el.appendChild(opt);
-      }
-
-      function loadChildren(parentId, targetSelector, placeholder) {
-        return new Promise(function(resolve) {
-          const target = document.querySelector(targetSelector);
-          if (!target) {
-            resolve();
-            return;
-          }
-
-          resetSelect(targetSelector, "Loading...");
-
-          if (!parentId) {
-            resetSelect(targetSelector, placeholder);
-            resolve();
-            return;
-          }
-
-          fetch(`/geo/children/?parent=${parentId}`)
-            .then((res) => res.json())
-            .then((data) => {
-              resetSelect(targetSelector, placeholder);
-              data.forEach(item => {
-                const opt = document.createElement("option");
-                opt.value = item.id;
-                opt.textContent = item.name;
-                target.appendChild(opt);
-              });
-              resolve();
-            })
-            .catch((err) => {
-              console.error("loadChildren error:", err);
-              resetSelect(targetSelector, placeholder);
-              resolve();
-            });
-        });
-      }
-
-      // cascading manual untuk SHIPPER
-      const spProvince  = document.getElementById("id_shipper_province");
-      const spRegency   = document.getElementById("id_shipper_regency");
-      const spDistrict  = document.getElementById("id_shipper_district");
-      const spVillage   = document.getElementById("id_shipper_village");
-
-      if (spProvince) {
-        spProvince.addEventListener("change", function() {
-          const val = this.value || "";
-          loadChildren(val, "#id_shipper_regency", "-- Pilih Kab/Kota --");
-          resetSelect("#id_shipper_district", "-- Pilih Kecamatan --");
-          resetSelect("#id_shipper_village", "-- Pilih Kelurahan/Desa --");
-        });
-      }
-
-      if (spRegency) {
-        spRegency.addEventListener("change", function() {
-          const val = this.value || "";
-          loadChildren(val, "#id_shipper_district", "-- Pilih Kecamatan --");
-          resetSelect("#id_shipper_village", "-- Pilih Kelurahan/Desa --");
-        });
-      }
-
-      if (spDistrict) {
-        spDistrict.addEventListener("change", function() {
-          const val = this.value || "";
-          loadChildren(val, "#id_shipper_village", "-- Pilih Kelurahan/Desa --");
-        });
-      }
-
-      // cascading manual untuk CONSIGNEE
-      const cgProvince  = document.getElementById("id_consignee_province");
-      const cgRegency   = document.getElementById("id_consignee_regency");
-      const cgDistrict  = document.getElementById("id_consignee_district");
-      const cgVillage   = document.getElementById("id_consignee_village");
-
-      if (cgProvince) {
-        cgProvince.addEventListener("change", function() {
-          const val = this.value || "";
-          loadChildren(val, "#id_consignee_regency", "-- Pilih Kab/Kota --");
-          resetSelect("#id_consignee_district", "-- Pilih Kecamatan --");
-          resetSelect("#id_consignee_village", "-- Pilih Kelurahan/Desa --");
-        });
-      }
-
-      if (cgRegency) {
-        cgRegency.addEventListener("change", function() {
-          const val = this.value || "";
-          loadChildren(val, "#id_consignee_district", "-- Pilih Kecamatan --");
-          resetSelect("#id_consignee_village", "-- Pilih Kelurahan/Desa --");
-        });
-      }
-
-      if (cgDistrict) {
-        cgDistrict.addEventListener("change", function() {
-          const val = this.value || "";
-          loadChildren(val, "#id_consignee_village", "-- Pilih Kelurahan/Desa --");
-        });
-      }
-
-      // =======================
-      //  AUTO FILL GEO FROM PARTNER
-      //  prefix: "shipper" atau "consignee"
-      // =======================
-      async function autoFillGeoFromPartner(item, prefix) {
-        if (!item) return;
-
-        const provId = item.province_id || null;
-        const regId  = item.regency_id || null;
-        const distId = item.district_id || null;
-        const villId = item.village_id || null;
-
-        const selProv = "#id_" + prefix + "_province";
-        const selReg  = "#id_" + prefix + "_regency";
-        const selDist = "#id_" + prefix + "_district";
-        const selVill = "#id_" + prefix + "_village";
-
-        // 1) Provinsi
-        if (provId) {
-          $(selProv).val(provId);
+        if (item.address) {
+          $("#id_shipper_address").val(item.address);
         }
 
-        // 2) Kabupaten
-        if (provId && regId) {
-          await loadChildren(provId, selReg, "-- Pilih Kab/Kota --");
-          $(selReg).val(regId);
-        } else if (provId) {
-          await loadChildren(provId, selReg, "-- Pilih Kab/Kota --");
-        }
+        // isi geo shipper
+        autoFillGeoFromPartner(item, "shipper");
+      }
+    }
 
-        // 3) Kecamatan
-        if (regId && distId) {
-          await loadChildren(regId, selDist, "-- Pilih Kecamatan --");
-          $(selDist).val(distId);
-        } else if (regId) {
-          await loadChildren(regId, selDist, "-- Pilih Kecamatan --");
-        }
+    $("#id_shipper_same_as_customer").on("change", function () {
+      if (this.checked) {
+        // copy nama/phone/address dari customer
+        copyShipperFromCustomer();
 
-        // 4) Kelurahan
-        if (distId && villId) {
-          await loadChildren(distId, selVill, "-- Pilih Kelurahan/Desa --");
-          $(selVill).val(villId);
-        } else if (distId) {
-          await loadChildren(distId, selVill, "-- Pilih Kelurahan/Desa --");
-        }
+        // isi shipper_id dari customer_id
+        var custId = $("#id_customer").val() || "";
+        $("#id_shipper").val(custId);
+      } else {
+        // opsional kalau mau dikosongkan saat uncheck
+        // $("#id_shipper").val("");
       }
     });
-  </script>
-{% endblock %}
+
+    $("#id_customer_text").on("partner:selected", function (e, item) {
+      if ($("#id_shipper_same_as_customer").is(":checked")) {
+        copyShipperFromCustomer();
+        var custId = $("#id_customer").val() || "";
+        $("#id_shipper").val(custId);
+      }
+    });
+
+    // =======================
+    //  CONSIGNEE AUTOCOMPLETE
+    // =======================
+    initPartnerAutocomplete(
+      "#id_consignee_text",
+      "#id_consignee",
+      "#id_consignee_address"
+    );
+
+    $("#id_consignee_text").on("partner:selected", function (e, item) {
+      var displayName = item.company_name || item.name || "";
+      $("#id_consignee_name").val(displayName);
+
+      var phone = item.phone || item.mobile || "";
+      $("#id_consignee_phone").val(phone);
+
+      autoFillGeoFromPartner(item, "consignee");
+    });
+
+    // =======================
+    //  GEO HELPERS (SHIPPER & CONSIGNEE)
+    // =======================
+    function resetSelect(selector, placeholder) {
+      const el = document.querySelector(selector);
+      if (!el) return;
+      el.innerHTML = "";
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = placeholder;
+      el.appendChild(opt);
+    }
+
+    function loadChildren(parentId, targetSelector, placeholder) {
+      return new Promise(function (resolve) {
+        const target = document.querySelector(targetSelector);
+        if (!target) {
+          resolve();
+          return;
+        }
+
+        resetSelect(targetSelector, "Loading...");
+
+        if (!parentId) {
+          resetSelect(targetSelector, placeholder);
+          resolve();
+          return;
+        }
+
+        fetch(`/geo/children/?parent=${parentId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            resetSelect(targetSelector, placeholder);
+            data.forEach((item) => {
+              const opt = document.createElement("option");
+              opt.value = item.id;
+              opt.textContent = item.name;
+              target.appendChild(opt);
+            });
+            resolve();
+          })
+          .catch((err) => {
+            console.error("loadChildren error:", err);
+            resetSelect(targetSelector, placeholder);
+            resolve();
+          });
+      });
+    }
+
+    // cascading manual untuk SHIPPER
+    const spProvince = document.getElementById("id_shipper_province");
+    const spRegency = document.getElementById("id_shipper_regency");
+    const spDistrict = document.getElementById("id_shipper_district");
+    const spVillage = document.getElementById("id_shipper_village");
+
+    if (spProvince) {
+      spProvince.addEventListener("change", function () {
+        const val = this.value || "";
+        loadChildren(val, "#id_shipper_regency", "-- Pilih Kab/Kota --");
+        resetSelect("#id_shipper_district", "-- Pilih Kecamatan --");
+        resetSelect("#id_shipper_village", "-- Pilih Kelurahan/Desa --");
+      });
+    }
+
+    if (spRegency) {
+      spRegency.addEventListener("change", function () {
+        const val = this.value || "";
+        loadChildren(val, "#id_shipper_district", "-- Pilih Kecamatan --");
+        resetSelect("#id_shipper_village", "-- Pilih Kelurahan/Desa --");
+      });
+    }
+
+    if (spDistrict) {
+      spDistrict.addEventListener("change", function () {
+        const val = this.value || "";
+        loadChildren(val, "#id_shipper_village", "-- Pilih Kelurahan/Desa --");
+      });
+    }
+
+    //-----------------end of js shipper function---------------------------------
+    // cascading manual untuk CONSIGNEE
+    const cgProvince = document.getElementById("id_consignee_province");
+    const cgRegency = document.getElementById("id_consignee_regency");
+    const cgDistrict = document.getElementById("id_consignee_district");
+    const cgVillage = document.getElementById("id_consignee_village");
+
+    if (cgProvince) {
+      cgProvince.addEventListener("change", function () {
+        const val = this.value || "";
+        loadChildren(val, "#id_consignee_regency", "-- Pilih Kab/Kota --");
+        resetSelect("#id_consignee_district", "-- Pilih Kecamatan --");
+        resetSelect("#id_consignee_village", "-- Pilih Kelurahan/Desa --");
+      });
+    }
+
+    if (cgRegency) {
+      cgRegency.addEventListener("change", function () {
+        const val = this.value || "";
+        loadChildren(val, "#id_consignee_district", "-- Pilih Kecamatan --");
+        resetSelect("#id_consignee_village", "-- Pilih Kelurahan/Desa --");
+      });
+    }
+
+    if (cgDistrict) {
+      cgDistrict.addEventListener("change", function () {
+        const val = this.value || "";
+        loadChildren(val, "#id_consignee_village", "-- Pilih Kelurahan/Desa --");
+      });
+    }
+
+    // =======================
+    //  AUTO FILL GEO FROM PARTNER
+    // =======================
+    async function autoFillGeoFromPartner(item, prefix) {
+      if (!item) return;
+
+      const provId = item.province_id || null;
+      const regId = item.regency_id || null;
+      const distId = item.district_id || null;
+      const villId = item.village_id || null;
+
+      const selProv = "#id_" + prefix + "_province";
+      const selReg = "#id_" + prefix + "_regency";
+      const selDist = "#id_" + prefix + "_district";
+      const selVill = "#id_" + prefix + "_village";
+
+      // 1) Provinsi
+      if (provId) {
+        $(selProv).val(provId);
+      }
+
+      // 2) Kabupaten
+      if (provId && regId) {
+        await loadChildren(provId, selReg, "-- Pilih Kab/Kota --");
+        $(selReg).val(regId);
+      } else if (provId) {
+        await loadChildren(provId, selReg, "-- Pilih Kab/Kota --");
+      }
+
+      // 3) Kecamatan
+      if (regId && distId) {
+        await loadChildren(regId, selDist, "-- Pilih Kecamatan --");
+        $(selDist).val(distId);
+      } else if (regId) {
+        await loadChildren(regId, selDist, "-- Pilih Kecamatan --");
+      }
+
+      // 4) Kelurahan
+      if (distId && villId) {
+        await loadChildren(distId, selVill, "-- Pilih Kelurahan/Desa --");
+        $(selVill).val(villId);
+      } else if (distId) {
+        await loadChildren(distId, selVill, "-- Pilih Kelurahan/Desa --");
+      }
+    }
+  });
+</script>
+
+
+  
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelectorAll('input[type="date"]').forEach(function (el) {
+        el.addEventListener("focus", function () {
+          if (typeof el.showPicker === "function") {
+            // Chrome / Edge: langsung buka date picker
+            el.showPicker();
+          }
+        });
+      });
+    });
+    </script>
+
+<script>
+(function($){
+
+  // helper toCanonical & toID tetap seperti kemarin...
+  window.toCanonical = window.toCanonical || function(raw){
+    if (raw == null) return "0";
+    let s = String(raw).trim();
+    if (!s) return "0";
+    s = s.replace(/\s|\u00A0/g, "").replace(/[Rp$€£¥₫%]/g, "");
+
+    const hasC = s.includes(","), hasD = s.includes(".");
+    if (hasC && hasD) {
+      const lastC = s.lastIndexOf(","), lastD = s.lastIndexOf(".");
+      if (lastC > lastD) s = s.replace(/\./g,"").replace(",",".");
+      else               s = s.replace(/,/g,"");
+    } else if (hasC) {
+      s = s.replace(/\./g,"").replace(",",".");
+    } else if (hasD) {
+      const parts = s.split(".");
+      if (parts.length > 2) {
+        const last = parts.pop();
+        s = parts.join("") + "." + last;
+      }
+    }
+
+    s = s.replace(/[^\d\.\-]/g, "");
+    return (/^-?\d+(\.\d+)?$/.test(s)) ? s : "0";
+  };
+
+  const nfID = new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  function toID(n){
+    const x = Number(n);
+    return Number.isFinite(x) ? nfID.format(x) : "0,00";
+  }
+
+  // ======= HITUNG FREIGHT: gross → diskon → tax → total =======
+  function recalcFreight(){
+    const qty    = Number(toCanonical($("#id_quantity").val())) || 0;
+    const price  = Number(toCanonical($("#id_unit_price").val())) || 0;
+    const discP  = Number(toCanonical($("#id_discount_percent").val())) || 0;
+    const taxPct = Number(toCanonical($("#id_tax_percent").val())) || 0;
+
+    // 1) gross (sebelum diskon & pajak)
+    const gross = qty * price;
+
+    // 2) diskon rupiah
+    const discAmt = gross * (discP / 100.0);
+
+    // 3) dasar pajak = setelah diskon
+    const base = gross - discAmt;
+
+    // 4) pajak dari base
+    const tax = base * (taxPct / 100.0);
+
+    // 5) total = gross - discount + tax
+    const total = gross - discAmt + tax;
+
+    $("#id_amount").val(          toID(gross) );
+    $("#id_discount_amount").val( toID(discAmt) );
+    $("#id_tax_amount").val(      toID(tax) );
+    $("#id_total_amount").val(    toID(total) );
+  }
+
+  window.recalcFreight = recalcFreight;
+
+  $(function(){
+
+    const $qty   = $("#id_quantity");
+    const $price = $("#id_unit_price");
+    const $discP = $("#id_discount_percent");
+    const $taxP  = $("#id_tax_percent");
+
+    // format awal
+    [$qty, $price, $discP, $taxP].forEach(function($el){
+      if (!$el.length) return;
+      const canon = toCanonical($el.val());
+      $el.val( toID(canon) );
+    });
+
+    // focus: tampilkan angka mentah
+    $(document).on(
+      "focus.fq",
+      "#id_quantity, #id_unit_price, #id_discount_percent, #id_tax_percent",
+      function(){
+        const canon = toCanonical($(this).val());
+        const n = Number(canon);
+        $(this).val(Number.isFinite(n) ? String(n) : "");
+        setTimeout(() => this.select(), 10);
+      }
+    );
+
+    // input: hitung live
+    $(document).on(
+      "input.fq",
+      "#id_quantity, #id_unit_price, #id_discount_percent, #id_tax_percent",
+      function(){
+        recalcFreight();
+      }
+    );
+
+    // blur: format balik ID
+    $(document).on(
+      "blur.fq",
+      "#id_quantity, #id_unit_price, #id_discount_percent, #id_tax_percent",
+      function(){
+        const canon = toCanonical($(this).val());
+        $(this).val( toID(canon) );
+        recalcFreight();
+      }
+    );
+
+    // hitung pertama kali
+    recalcFreight();
+
+    // submit: kirim canonical ke server
+    const $form = $qty.closest("form");
+    if ($form.length){
+      $form.on("submit.fqCanonical", function(){
+        [
+          "#id_quantity",
+          "#id_unit_price",
+          "#id_discount_percent",
+          "#id_discount_amount",
+          "#id_amount",
+          "#id_tax_percent",
+          "#id_tax_amount",
+          "#id_total_amount",
+        ].forEach(function(sel){
+          const $el = $(sel);
+          if ($el.length){
+            $el.val( toCanonical($el.val()) );
+          }
+        });
+      });
+    }
+  });
+
+})(jQuery);
+</script>
+
+
+<script>
+(function($){
+
+  /* pilihkan otomatis origin/destination yang VALID */
+  function pickFirstOption(fieldId){
+      let $el = $("#" + fieldId);
+      if (!$el.length) return;
+
+      // kalau select biasa
+      if ($el.is("select")) {
+          let first = $el.find("option:eq(1)").val(); 
+          if (first) {
+             $el.val(first).trigger("change");
+          }
+      }
+
+      // kalau autocomplete (hidden fk)
+      let hiddenId = fieldId + "_id";
+      let $h = $("#" + hiddenId);
+
+      if ($h.length) {
+          // pilih partner 1 (untuk test saja)
+          $h.val(1); 
+      }
+  }
+
+  function fillSampleDataComplete(){
+      /* === HEADER === */
+      $("#id_customer").val($("#id_customer option:eq(1)").val());
+      $("#id_sales_service").val($("#id_sales_service option:eq(1)").val());
+      $("#id_payment_term").val($("#id_payment_term option:eq(1)").val());
+      $("#id_currency").val("IDR");
+      $("#id_sales_agency").val($("#id_sales_agency option:eq(1)").val());
+
+ /*    # $("#id_valid_until").val("2025-12-31");*/
+
+      /* === ORIGIN & DESTINATION === */
+      pickFirstOption("id_origin");
+      pickFirstOption("id_destination");
+
+      /* === CARGO === */
+      $("#id_cargo_name").val("Coal");
+      $("#id_hs_code").val("2701");
+      $("#id_commodity").val("Raw Material");
+      $("#id_package_count").val("1");
+      $("#id_package_type").val("Bulk");
+      $("#id_gross_weight").val("1000.00");
+      $("#id_volume").val("20.00");
+
+      /* === PRICING === */
+      $("#id_quantity").val("1.00");
+      $("#id_unit_price").val("100000.00");
+      $("#id_tax_percent").val("11.00");
+
+      if (typeof window.recalcFreight === "function") {
+          window.recalcFreight();
+      }
+  }
+
+  $(function(){
+      $("#btn-fill-sample").on("click", function(e){
+          e.preventDefault();
+          fillSampleDataComplete();
+          console.log("Sample filled: COMPLETE");
+      });
+
+      $("#btn-fill-sample-save").on("click", function(e){
+          e.preventDefault();
+          fillSampleDataComplete();
+
+          const form = $(this).closest("form").get(0) || document.querySelector("form");
+          if (form){
+              if (typeof form.requestSubmit === "function") form.requestSubmit();
+              else form.submit();
+          }
+      });
+  });
+
+})(jQuery);
+</script>
+<!-- Place the first <script> tag in your HTML's <head> -->
+<script src="https://cdn.tiny.cloud/1/klpop8ud5zsip7zloht3kglaf0it7sau7hlm7yfscb3cjxsq/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
+
+<!-- Place the following <script> and <textarea> tags your HTML's <body> -->
+<script>
+  tinymce.init({
+    selector: '#id_notes_customer',
+    plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
+    toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
+  });
+</script>
+<script>
+  function isD2DService() {
+    const select = document.getElementById("id_sales_service");
+    if (!select) return false;
+
+    const opt = select.selectedOptions[0];
+    if (!opt) return false;
+
+    // Pakai teks tampilan option: "Sea - Door to Door", "Air - Door to Door", dst
+    const text = (opt.textContent || opt.innerText || "").toUpperCase();
+    return text.includes("DOOR TO DOOR");   // true kalau ada kalimat ini
+  }
+
+  function updateRouteVisibility() {
+    const routeBlock = document.getElementById("quotation-route-id");
+    if (!routeBlock) return;
+
+    const isD2D = isD2DService();
+
+    if (isD2D) {
+      routeBlock.style.display = "none";  // hide origin–destination
+    } else {
+      routeBlock.style.display = "";      // show normal
+    }
+  }
+
+  function syncOriginDestinationForD2D() {
+    const isD2D = isD2DService();
+    if (!isD2D) return;
+
+    const shipperVillage = document.getElementById("id_shipper_village");
+    const consigneeVillage = document.getElementById("id_consignee_village");
+    const originInput = document.getElementById("id_origin");
+    const destinationInput = document.getElementById("id_destination");
+
+    if (originInput && shipperVillage) {
+      originInput.value = shipperVillage.value || "";
+    }
+    if (destinationInput && consigneeVillage) {
+      destinationInput.value = consigneeVillage.value || "";
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const salesSelect = document.getElementById("id_sales_service");
+    if (salesSelect) {
+      // initial
+      updateRouteVisibility();
+
+      salesSelect.addEventListener("change", function () {
+        updateRouteVisibility();
+      });
+    }
+
+    const form = document.getElementById("fqForm"); // ganti ID ini sesuai form om
+    if (form) {
+      form.addEventListener("submit", function () {
+        syncOriginDestinationForD2D();
+      });
+    }
+  });
+</script>
+
+
+{% endblock%}

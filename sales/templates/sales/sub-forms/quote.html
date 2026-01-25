@@ -1,0 +1,283 @@
+{# ========================= CONTENT START ========================= #}
+
+{# hidden header fields kalau ada #}
+{{ form.number }}{{ form.quotation_date }}{{ form.status }}
+
+{# ROUTE (autocomplete text + hidden FK) #}
+<div class="card mb-3" id="quotation-route-id">
+  <div class="card-header">
+    <div class="fw-bold">Route</div>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+
+      <div class="col-lg-6">
+        <label class="form-label">Origin *</label>
+        <input type="text" id="id_origin_text" class="form-control" placeholder="Ketik lokasi origin..." autocomplete="off">
+        {{ form.origin }}
+        {% if form.origin.errors %}<div class="invalid-feedback d-block">{{ form.origin.errors|striptags }}</div>{% endif %}
+        <div class="form-text">Gunakan pencarian lokasi.</div>
+      </div>
+
+      <div class="col-lg-6">
+        <label class="form-label">Destination *</label>
+        <input type="text" id="id_destination_text" class="form-control" placeholder="Ketik lokasi destination..." autocomplete="off">
+        {{ form.destination }}
+        {% if form.destination.errors %}<div class="invalid-feedback d-block">{{ form.destination.errors|striptags }}</div>{% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+
+  <!-- LEFT COLUMN -->
+  <div class="col-lg-8">
+
+    <!-- QUOTATION INFO -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <div class="fw-bold">Quotation Info</div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+
+          <div class="col-lg-6">
+            <label class="form-label">Customer *</label>
+
+            <input type="text" id="id_customer_text" class="form-control" placeholder="Cari customer..." autocomplete="off">
+            {{ form.customer }}
+            {% if form.customer.errors %}<div class="invalid-feedback d-block">{{ form.customer.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">Service *</label>
+            {{ form.sales_service }}
+            {% if form.sales_service.errors %}<div class="invalid-feedback d-block">{{ form.sales_service.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">Payment Term *</label>
+            {{ form.payment_term }}
+            {% if form.payment_term.errors %}<div class="invalid-feedback d-block">{{ form.payment_term.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">Currency *</label>
+            {{ form.currency }}
+            {% if form.currency.errors %}<div class="invalid-feedback d-block">{{ form.currency.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">Valid Until</label>
+            {{ form.valid_until }}
+            {% if form.valid_until.errors %}<div class="invalid-feedback d-block">{{ form.valid_until.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">Shipment Plan Date *</label>
+            {{ form.shipment_plan_date }}
+            {% if form.shipment_plan_date.errors %}<div class="invalid-feedback d-block">{{ form.shipment_plan_date.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">Agency</label>
+            {{ form.sales_agency }}
+            {% if form.sales_agency.errors %}<div class="invalid-feedback d-block">{{ form.sales_agency.errors|striptags }}</div>{% endif %}
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- CARGO -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <div class="fw-bold">Cargo</div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+
+          <div class="col-lg-6">
+            <label class="form-label">Cargo Name *</label>
+            {{ form.cargo_name }}
+            {% if form.cargo_name.errors %}<div class="invalid-feedback d-block">{{ form.cargo_name.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">HS Code</label>
+            {{ form.hs_code }}
+            {% if form.hs_code.errors %}<div class="invalid-feedback d-block">{{ form.hs_code.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">Package Count</label>
+            {{ form.package_count }}
+            {% if form.package_count.errors %}<div class="invalid-feedback d-block">{{ form.package_count.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">Package Type</label>
+            {{ form.package_uom }}
+            {% if form.package_uom.errors %}<div class="invalid-feedback d-block">{{ form.package_uom.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">Gross Weight</label>
+            {{ form.gross_weight }}
+            {% if form.gross_weight.errors %}<div class="invalid-feedback d-block">{{ form.gross_weight.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">Weight UOM</label>
+            {{ form.weight_uom }}
+            {% if form.weight_uom.errors %}<div class="invalid-feedback d-block">{{ form.weight_uom.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">Volume</label>
+            {{ form.volume_cbm }}
+            {% if form.volume_cbm.errors %}<div class="invalid-feedback d-block">{{ form.volume_cbm.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label">Volume UOM</label>
+            {{ form.volume_uom }}
+            {% if form.volume_uom.errors %}<div class="invalid-feedback d-block">{{ form.volume_uom.errors|striptags }}</div>{% endif %}
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTES -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <div class="fw-bold">Notes</div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Note</label>
+            {{ form.notes_customer }}
+            {% if form.notes_customer.errors %}<div class="invalid-feedback d-block">{{ form.notes_customer.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="col-lg-4">
+
+    <!-- SHIPPER -->
+    <div class="card mb-3">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <div class="fw-bold">Shipper</div>
+        <div class="form-check form-switch m-0">
+          <input class="form-check-input" type="checkbox" id="id_shipper_same_as_customer">
+          <label class="form-check-label small" for="id_shipper_same_as_customer">Same as customer</label>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+
+          <div class="col-12">
+            <label class="form-label">Partner (optional)</label>
+            <input type="text" id="id_shipper_text" class="form-control" placeholder="Cari shipper..." autocomplete="off">
+            {{ form.shipper }}
+            {% if form.shipper.errors %}<div class="invalid-feedback d-block">{{ form.shipper.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Name</label>
+            {{ form.shipper_contact_name }}
+            {% if form.shipper_contact_name.errors %}<div class="invalid-feedback d-block">{{ form.shipper_contact_name.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Phone</label>
+            {{ form.shipper_phone }}
+            {% if form.shipper_phone.errors %}<div class="invalid-feedback d-block">{{ form.shipper_phone.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Address</label>
+            {{ form.shipper_address }}
+            {% if form.shipper_address.errors %}<div class="invalid-feedback d-block">{{ form.shipper_address.errors|striptags }}</div>{% endif %}
+          </div>
+
+          {# GEO NOT RENDERED: we keep it hidden so JS can set values #}
+          <div class="d-none">
+            {% if form.shipper_province %}{{ form.shipper_province }}{% endif %}
+            {% if form.shipper_regency %}{{ form.shipper_regency }}{% endif %}
+            {% if form.shipper_district %}{{ form.shipper_district }}{% endif %}
+            {% if form.shipper_village %}{{ form.shipper_village }}{% endif %}
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- CONSIGNEE -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <div class="fw-bold">Consignee</div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+
+          <div class="col-12">
+            <label class="form-label">Partner (optional)</label>
+            <input type="text" id="id_consignee_text" class="form-control" placeholder="Cari consignee..." autocomplete="off">
+            {{ form.consignee }}
+            {% if form.consignee.errors %}<div class="invalid-feedback d-block">{{ form.consignee.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Name</label>
+            {{ form.consignee_name }}
+            {% if form.consignee_name.errors %}<div class="invalid-feedback d-block">{{ form.consignee_name.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Phone</label>
+            {{ form.consignee_phone }}
+            {% if form.consignee_phone.errors %}<div class="invalid-feedback d-block">{{ form.consignee_phone.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Address</label>
+            {{ form.consignee_address }}
+            {% if form.consignee_address.errors %}<div class="invalid-feedback d-block">{{ form.consignee_address.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="d-none">
+            {% if form.consignee_province %}{{ form.consignee_province }}{% endif %}
+            {% if form.consignee_regency %}{{ form.consignee_regency }}{% endif %}
+            {% if form.consignee_district %}{{ form.consignee_district }}{% endif %}
+            {% if form.consignee_village %}{{ form.consignee_village }}{% endif %}
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- INTERNAL NOTE -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <div class="fw-bold">Internal</div>
+      </div>
+      <div class="card-body">
+        <label class="form-label">Internal Note</label>
+        {{ form.notes_internal }}
+        {% if form.notes_internal.errors %}<div class="invalid-feedback d-block">{{ form.notes_internal.errors|striptags }}</div>{% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{# ========================= CONTENT END ========================= #}

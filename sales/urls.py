@@ -116,36 +116,36 @@ urlpatterns = [
     #path("freight/orders/<int:pk>/status/", action_views.order_set_status, name="order_set_status"),
 
     # sales/urls.py
-    path("freight-quotations/", FqListView.as_view(), name="fq_list"),
-    path("freight-quotations/add/", FqCreateView.as_view(), name="fq_add"),
-    path("freight-quotations/<int:pk>/edit/", FqUpdateView.as_view(), name="fq_edit"),
+    path("quotations/", FqListView.as_view(), name="fq_list"),
+    path("quotations/add/", FqCreateView.as_view(), name="fq_add"),
+    path("quotations/<int:pk>/edit/", FqUpdateView.as_view(), name="fq_edit"),
     
     path(
-        "freight-quotations/<int:pk>/",
+        "quotations/<int:pk>/",
         FqDetailView.as_view(),
         name="fq_detail",
     ),
      path(
-        "freight-quotations/<int:pk>/delete/",
+        "quotations/<int:pk>/delete/",
         FqDeleteView.as_view(),
         name="fq_delete",
     ),
 
     # Bulk delete
     path(
-        "freight-quotations/bulk-delete/",
+        "quotations/bulk-delete/",
         FqBulkDeleteView.as_view(),
         name="fq_bulk_delete",
     ),
    
     path(
-        "freight-quotations/<int:pk>/pdf/",
+        "quotations/<int:pk>/pdf/",
         FreightQuotationPdfHtmlView.as_view(),
         name="fq_pdf",
     ),
 
     path(
-        "freight-quotations/<int:pk>/status/",
+        "quotations/<int:pk>/status/",
         FqStatusUpdateView.as_view(),
         name="fq_change_status",
     ),

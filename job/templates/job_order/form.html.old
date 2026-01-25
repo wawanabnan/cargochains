@@ -1,0 +1,258 @@
+{% extends "adminbase.html" %}
+
+{% block extra_css %}
+<style>
+
+</style>
+{% endblock %}
+
+{% block content %}
+
+
+<!-- CONTENT -->
+<!-- ================= HEADER ================= -->
+<div app class="app-header-content">
+  <div class="container-fluid d-flex justify-content-between align-items-center" >
+    <div>
+      <h1 class="h5 mb-0">Job Order</h1>
+      <div class="text-muted small">Create / edit job order</div>
+    </div>
+
+    <div class="d-flex gap-2">
+      {# ganti url name sesuai project kamu #}
+      <a href="#" class="btn btn-primary btn-sm">
+        + Add New
+      </a>
+
+      {# optional: tombol save di header (kalau lagi add/edit) #}
+      <button form="joborder-form" type="submit" class="btn btn-success btn-sm">
+        Save
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= CONTENT ================= -->
+<div class="app-content compact">
+  <div class="container-fluid" >
+    <div class="card p-2">
+    <div class="row">
+      <div class="col-md-9">
+
+        <form id="joborder-form" method="post" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="card">
+            <div class="card-header p-0 border-bottom-0">
+              <ul class="nav nav-tabs" id="joborder-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active" id="tab-main-tab" data-bs-toggle="tab" data-bs-target="#tab-main"
+                          type="button" role="tab" aria-controls="tab-main" aria-selected="true">
+                    Main
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="tab-cargo-tab" data-bs-toggle="tab" data-bs-target="#tab-cargo"
+                          type="button" role="tab" aria-controls="tab-cargo" aria-selected="false">
+                    Cargo & Route
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="tab-finance-tab" data-bs-toggle="tab" data-bs-target="#tab-finance"
+                          type="button" role="tab" aria-controls="tab-finance" aria-selected="false">
+                    Finance
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="tab-notes-tab" data-bs-toggle="tab" data-bs-target="#tab-notes"
+                          type="button" role="tab" aria-controls="tab-notes" aria-selected="false">
+                    Notes
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <div class="card-body">
+              <div class="tab-content" id="joborder-tabs-content">
+
+                <!-- ===== TAB: MAIN ===== -->
+                <div class="tab-pane fade show active" id="tab-main" role="tabpanel" aria-labelledby="tab-main-tab">
+                  <div class="row g-2">
+
+                    <div class="col-md-6">
+                      <label class="form-label">Service</label>
+                      {{ form.service }}{{ form.service.errors }}
+                    </div>
+
+                    <div class="col-md-6">
+                      <label class="form-label">Job Date</label>
+                      {{ form.job_date }}{{ form.job_date.errors }}
+                      <div class="form-text">dd-mm-yyyy</div>
+                    </div>
+
+                    <div class="col-md-8">
+                      <label class="form-label">Customer</label>
+                      {{ form.customer }}{{ form.customer.errors }}
+                    </div>
+
+                    <div class="col-md-4">
+                      <label class="form-label">PIC</label>
+                      {{ form.pic }}{{ form.pic.errors }}
+                    </div>
+
+                    <div class="col-md-6">
+                      <label class="form-label">Quantity</label>
+                      {{ form.quantity }}{{ form.quantity.errors }}
+                    </div>
+
+                    <div class="col-md-6">
+                      <label class="form-label">Payment Term</label>
+                      {{ form.payment_term }}{{ form.payment_term.errors }}
+                    </div>
+
+                  </div>
+                </div>
+
+                <!-- ===== TAB: CARGO & ROUTE ===== -->
+                <div class="tab-pane fade" id="tab-cargo" role="tabpanel" aria-labelledby="tab-cargo-tab">
+                  <div class="row g-2">
+                    <div class="col-12">
+                      <label class="form-label">Cargo Description</label>
+                      {{ form.cargo_description }}{{ form.cargo_description.errors }}
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Pickup</label>
+                      {{ form.pickup }}{{ form.pickup.errors }}
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Delivery</label>
+                      {{ form.delivery }}{{ form.delivery.errors }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ===== TAB: FINANCE ===== -->
+                <div class="tab-pane fade" id="tab-finance" role="tabpanel" aria-labelledby="tab-finance-tab">
+                  <div class="row g-2">
+
+                    <div class="col-md-6">
+                      <label class="form-label">Currency</label>
+                      {{ form.currency }}{{ form.currency.errors }}
+                    </div>
+
+                    <div class="col-md-6">
+                      <label class="form-label">Kurs IDR</label>
+                      {{ form.kurs_idr }}{{ form.kurs_idr.errors }}
+                      <div class="form-text">Wajib jika currency ≠ IDR</div>
+                    </div>
+
+                    <div class="col-md-6">
+                      <label class="form-label">Total Amount</label>
+                      {{ form.total_amount }}{{ form.total_amount.errors }}
+                    </div>
+
+                    <div class="col-md-6">
+                      <label class="form-label">Grand Total</label>
+                      {{ form.grand_total }}{{ form.grand_total.errors }}
+                    </div>
+
+                    <div class="col-12">
+                      <div class="d-flex gap-4 align-items-center mt-1">
+                        <div class="form-check">
+                          {{ form.is_tax }}
+                          <label class="form-check-label" for="{{ form.is_tax.id_for_label }}">Apply Tax</label>
+                        </div>
+                        <div class="form-check">
+                          {{ form.is_pph }}
+                          <label class="form-check-label" for="{{ form.is_pph.id_for_label }}">Apply PPH</label>
+                        </div>
+                      </div>
+                      {{ form.is_tax.errors }}{{ form.is_pph.errors }}
+                    </div>
+
+                    <div class="col-md-6">
+                      <label class="form-label">Tax Amount</label>
+                      {{ form.tax_amount }}{{ form.tax_amount.errors }}
+                    </div>
+
+                    <div class="col-md-6">
+                      <label class="form-label">PPH Amount</label>
+                      {{ form.pph_amount }}{{ form.pph_amount.errors }}
+                    </div>
+
+                  </div>
+                </div>
+
+                <!-- ===== TAB: NOTES ===== -->
+                <div class="tab-pane fade" id="tab-notes" role="tabpanel" aria-labelledby="tab-notes-tab">
+                  <div class="row g-2">
+                    <div class="col-12">
+                      <label class="form-label">Remarks Internal</label>
+                      {{ form.remarks_internal }}{{ form.remarks_internal.errors }}
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="card-footer d-flex justify-content-end gap-2">
+              <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">Cancel</a>
+              <button type="submit" class="btn btn-success btn-sm">Save</button>
+            </div>
+
+          </div>
+        </form>
+
+      </div>
+
+      <div class="col-md-3">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Help</h3>
+          </div>
+          <div class="card-body">
+            Help Text
+          </div>
+        </div>
+      </div>
+
+    </div>
+    </div>
+  </div>
+
+
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+  (function () {
+    // cari error list django
+    const hasError = (el) => el && el.querySelector && el.querySelector(".errorlist");
+    const tabs = [
+      { pane: "#tab-main", btn: "#tab-main-tab" },
+      { pane: "#tab-cargo", btn: "#tab-cargo-tab" },
+      { pane: "#tab-finance", btn: "#tab-finance-tab" },
+      { pane: "#tab-notes", btn: "#tab-notes-tab" },
+    ];
+
+    for (const t of tabs) {
+      const pane = document.querySelector(t.pane);
+      if (hasError(pane)) {
+        const btn = document.querySelector(t.btn);
+        if (btn && window.bootstrap) {
+          new bootstrap.Tab(btn).show();
+        } else if (btn) {
+          btn.click();
+        }
+        break;
+      }
+    }
+  })();
+</script>
+{% endblock %}

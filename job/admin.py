@@ -1,6 +1,7 @@
 from django.contrib import admin
 from job.models.job_orders import JobOrder
-from job.models.costs import JobCost,JobCostType
+from job.models.job_costs import JobCost,JobCostType
+from job.models.job_fee import JobFeeLine,JobFeePeriod,JobFeePeriodStatus
 
 @admin.register(JobOrder)
 class JobOrderAdmin(admin.ModelAdmin):

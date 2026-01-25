@@ -1,110 +1,95 @@
-              {% if form.consignee.errors %}
-                <div class="text-danger small mb-2">
-                  {{ form.consignee.errors|striptags }}
-                </div>
-              {% endif %}
+{% if form.consignee.errors %}
+  <div class="invalid-feedback d-block mb-2">
+    {{ form.consignee.errors|striptags }}
+  </div>
+{% endif %}
 
-              <div class="row">
-                <!-- Kolom kiri: contact & alamat text -->
-                <div class="col-md-6">
-                   <div class="mb-3">
-                    {{ form.consignee_name.label_tag }}
-                    {{ form.consignee_name }}
-                    {% for err in form.consignee_name.errors %}
-                      <div class="text-danger small">{{ err }}</div>
-                    {% endfor %}
-                  </div>
+<div class="row g-3">
+  <!-- LEFT -->
+  <div class="col-lg-6">
+    <div>
+      <label for="id_consignee_text" class="form-label">Cari consignee (partner)</label>
+      <input type="text"
+             id="id_consignee_text"
+             class="form-control js-partner"
+             data-url="{% url 'partners:partner_autocomplete' %}"
+             placeholder="Cari partner consignee..."
+             autocomplete="off"
+             value="{% if form.instance.consignee %}{{ form.instance.consignee.company_name|default:form.instance.consignee.name }}{% endif %}">
+      <input type="hidden" id="id_consignee" name="consignee"
+             value="{% if form.instance.consignee_id %}{{ form.instance.consignee_id }}{% endif %}">
+    </div>
 
-                  <div class="mb-3">
-                    {{ form.consignee_phone.label_tag }}
-                    {{ form.consignee_phone }}
-                    {% for err in form.consignee_phone.errors %}
-                      <div class="text-danger small">{{ err }}</div>
-                    {% endfor %}
-                  </div>
+    <div class="mt-3">
+      <label for="id_consignee_name" class="form-label">Nama</label>
+      {{ form.consignee_name }}
+      {% if form.consignee_name.errors %}
+        <div class="invalid-feedback d-block">{{ form.consignee_name.errors|striptags }}</div>
+      {% endif %}
+    </div>
 
-                  <div class="mb-3">
-                    {{ form.consignee_address.label_tag }}
-                    {{ form.consignee_address }}
-                    {% for err in form.consignee_address.errors %}
-                      <div class="text-danger small">{{ err }}</div>
-                    {% endfor %}
-                  </div>
- 
+    <div class="mt-3">
+      <label for="id_consignee_phone" class="form-label">Telepon</label>
+      {{ form.consignee_phone }}
+      {% if form.consignee_phone.errors %}
+        <div class="invalid-feedback d-block">{{ form.consignee_phone.errors|striptags }}</div>
+      {% endif %}
+    </div>
 
-                  <div class="mb-3">
-                    <div class="form-check mt-2">
-                      <input class="form-check-input"
-                             type="checkbox"
-                             id="id_consignee_save_partner"
-                             name="consignee_save_partner">
-                      <label class="form-check-label" for="id_consignee_save_partner">
-                        Simpan consignee ini sebagai partner baru
-                      </label>
-                    </div>
-                  </div>
+    <div class="mt-3">
+      <label for="id_consignee_address" class="form-label">Alamat</label>
+      {{ form.consignee_address }}
+      {% if form.consignee_address.errors %}
+        <div class="invalid-feedback d-block">{{ form.consignee_address.errors|striptags }}</div>
+      {% endif %}
+    </div>
+  </div>
 
-                </div>
+  <!-- RIGHT (GEO) -->
+  <div class="col-lg-6">
+    <div>
+      <label for="id_consignee_province" class="form-label">Provinsi</label>
+      <select id="id_consignee_province" name="consignee_province" class="form-select">
+        <option value="">-- Pilih Provinsi --</option>
+        {% for prov in provinces %}
+          <option value="{{ prov.id }}" {% if form.instance.consignee_province_id == prov.id %}selected{% endif %}>
+            {{ prov.name }}
+          </option>
+        {% endfor %}
+      </select>
+      {% if form.consignee_province.errors %}
+        <div class="invalid-feedback d-block">{{ form.consignee_province.errors|striptags }}</div>
+      {% endif %}
+    </div>
 
-                <!-- Kolom kanan: dropdown geo -->
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="id_consignee_province" class="form-label">Provinsi</label>
-                    <select id="id_consignee_province" name="consignee_province" class="form-select">
-                      <option value="">---------</option>
-                      {% for prov in provinces %}
-                        <option value="{{ prov.id }}"
-                          {% if form.instance.consignee_province_id == prov.id %}selected{% endif %}>
-                          {{ prov.name }}
-                        </option>
-                      {% endfor %}
-                    </select>
-                  </div>
+    <div class="mt-3">
+      <label for="id_consignee_regency" class="form-label">Kab/Kota</label>
+      <select id="id_consignee_regency" name="consignee_regency" class="form-select">
+        <option value="">-- Pilih Kab/Kota --</option>
+      </select>
+      {% if form.consignee_regency.errors %}
+        <div class="invalid-feedback d-block">{{ form.consignee_regency.errors|striptags }}</div>
+      {% endif %}
+    </div>
 
-                  <div class="mb-3">
-                    <label for="id_consignee_regency" class="form-label">Kabupaten / Kota</label>
-                    <select id="id_consignee_regency" name="consignee_regency" class="form-select">
-                      <option value="">---------</option>
-                      {% if consignee_regencies %}
-                        {% for reg in consignee_regencies %}
-                          <option value="{{ reg.id }}"
-                            {% if form.instance.consignee_regency_id == reg.id %}selected{% endif %}>
-                            {{ reg.name }}
-                          </option>
-                        {% endfor %}
-                      {% endif %}
-                    </select>
-                  </div>
+    <div class="mt-3">
+      <label for="id_consignee_district" class="form-label">Kecamatan</label>
+      <select id="id_consignee_district" name="consignee_district" class="form-select">
+        <option value="">-- Pilih Kecamatan --</option>
+      </select>
+      {% if form.consignee_district.errors %}
+        <div class="invalid-feedback d-block">{{ form.consignee_district.errors|striptags }}</div>
+      {% endif %}
+    </div>
 
-                  <div class="mb-3">
-                    <label for="id_consignee_district" class="form-label">Kecamatan</label>
-                    <select id="id_consignee_district" name="consignee_district" class="form-select">
-                      <option value="">---------</option>
-                      {% if consignee_districts %}
-                        {% for dist in consignee_districts %}
-                          <option value="{{ dist.id }}"
-                            {% if form.instance.consignee_district_id == dist.id %}selected{% endif %}>
-                            {{ dist.name }}
-                          </option>
-                        {% endfor %}
-                      {% endif %}
-                    </select>
-
-                  </div>
-
-                  <div class="mb-3">
-                    <label for="id_consignee_village" class="form-label">Kelurahan / Desa</label>
-                    <select id="id_consignee_village" name="consignee_village" class="form-select">
-                      <option value="">---------</option>
-                      {% if consignee_villages %}
-                        {% for vill in consignee_villages %}
-                          <option value="{{ vill.id }}"
-                            {% if form.instance.consignee_village_id == vill.id %}selected{% endif %}>
-                            {{ vill.name }}
-                          </option>
-                        {% endfor %}
-                      {% endif %}
-                    </select>
-                  </div>
-                </div>
-              </div>
+    <div class="mt-3">
+      <label for="id_consignee_village" class="form-label">Kelurahan/Desa</label>
+      <select id="id_consignee_village" name="consignee_village" class="form-select">
+        <option value="">-- Pilih Kelurahan/Desa --</option>
+      </select>
+      {% if form.consignee_village.errors %}
+        <div class="invalid-feedback d-block">{{ form.consignee_village.errors|striptags }}</div>
+      {% endif %}
+    </div>
+  </div>
+</div>

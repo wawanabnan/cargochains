@@ -68,6 +68,9 @@ from shipments.views.vendor_bookings import (
     
 )
 
+
+
+
 urlpatterns = [
     # STEP 2 Wizard
     path("vendor-bookings/from-jobcost/",VendorBookingFromJobCostWizardView.as_view(),name="vendor_booking_from_jobcost",),
@@ -84,6 +87,26 @@ urlpatterns = [
 
 
 
+from shipments.views.vendor_booking_actions import (
+    VendorBookingSubmitView,
+    VendorBookingApproveView,
+    VendorBookingRejectView,
+    VendorBookingConfirmView,
+    VendorBookingSendView,
+    VendorBookingCloseView,
+    VendorBookingCancelView,
+)
+
+urlpatterns += [
+    path("vendor-bookings/<int:pk>/submit/", VendorBookingSubmitView.as_view(), name="vendor_booking_submit"),
+    path("vendor-bookings/<int:pk>/approve/", VendorBookingApproveView.as_view(), name="vendor_booking_approve"),
+    path("vendor-bookings/<int:pk>/reject/", VendorBookingRejectView.as_view(), name="vendor_booking_reject"),
+    path("vendor-bookings/<int:pk>/confirm/", VendorBookingConfirmView.as_view(), name="vendor_booking_confirm"),
+    path("vendor-bookings/<int:pk>/send/", VendorBookingSendView.as_view(), name="vendor_booking_send"),
+    path("vendor-bookings/<int:pk>/close/", VendorBookingCloseView.as_view(), name="vendor_booking_close"),
+    path("vendor-bookings/<int:pk>/cancel/", VendorBookingCancelView.as_view(), name="vendor_booking_cancel"),
+
+]
 
 
 

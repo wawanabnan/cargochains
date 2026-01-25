@@ -21,7 +21,7 @@ class FreightQuotationForm(BootstrapSmallMixin,forms.ModelForm):
     class Meta:
         model = FreightQuotation
         # sales_user diisi otomatis dari request.user di view
-        exclude = ["sales_user"]
+        exclude = ["sales_user","sales_agency"]
         widgets = {
             # HEADER
             "number": forms.HiddenInput(),
@@ -31,8 +31,7 @@ class FreightQuotationForm(BootstrapSmallMixin,forms.ModelForm):
             "customer": forms.Select(
                 attrs={"id": "id_customer",}
             ),
-            "sales_service": forms.Select(),
-            "sales_agency": forms.Select(attrs={"class": "form-select"}),
+            "service": forms.Select(),
             "payment_term": forms.Select(attrs={"class": "form-select"}),
             "currency": forms.Select(attrs={"class": "form-select"}),
 
@@ -59,6 +58,10 @@ class FreightQuotationForm(BootstrapSmallMixin,forms.ModelForm):
             "destination": forms.Select(
                 attrs={"class": "form-select d-none", "id": "id_destination"}
             ),
+
+            # Pickup - Delivery
+            "pickup": forms.TextInput(attrs={"class": "form-control"}),
+            "delivery": forms.TextInput(attrs={"class": "form-control"}),
 
             # CARGO
             "cargo_name": forms.TextInput(attrs={"class": "form-control"}),
@@ -139,8 +142,9 @@ class FreightQuotationForm(BootstrapSmallMixin,forms.ModelForm):
         self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
 
+        
         # Tinggi textarea address
-        for name in ["shipper_address", "consignee_address"]:
+        for name in ["shipper_address", "consignee_address","pickup","delivery"]:
             if name in self.fields:
                 self.fields[name].widget.attrs["rows"] = 3
 
@@ -180,7 +184,7 @@ class FreightQuotationForm(BootstrapSmallMixin,forms.ModelForm):
         # 2) Field yang wajib (header utama)
         REQUIRED_FIELDS = [
             "customer",
-            "sales_service",
+            "service",
             "payment_term",
             "currency",
             "shipment_plan_date",
@@ -363,8 +367,8 @@ class FreightQuotationForm(BootstrapSmallMixin,forms.ModelForm):
         cleaned["tax_amount"] = tax_amount
         cleaned["total_amount"] = total
 
-        # === 5) BUSINESS RULE: Shipper / Consignee berdasarkan sales_service ===
-        service = cleaned.get("sales_service")
+        # === 5) BUSINESS RULE: Shipper / Consignee berdasarkan service ===
+        service = cleaned.get("service")
         code = (getattr(service, "code", "") or "").upper()
 
         is_d2d = code.startswith("D2D") or "DOOR TO DOOR" in code
@@ -397,6 +401,9 @@ class FreightQuotationForm(BootstrapSmallMixin,forms.ModelForm):
             add_required("shipper_regency", "Kabupaten/Kota shipper wajib diisi untuk layanan Door to Door.")
             add_required("shipper_district", "Kecamatan shipper wajib diisi untuk layanan Door to Door.")
             add_required("shipper_village", "Kelurahan/Desa shipper wajib diisi untuk layanan Door to Door.")
+            
+            add_required("pickup", "Pickup Addresswajib diisi untuk layanan Door to Door.")
+            add_required("delivery", "Delivery Address  wajib diisi untuk layanan Door to Door.")
 
             # CONSIGNEE
             add_required("consignee_name", "Nama consignee wajib diisi untuk layanan Door to Door.")
