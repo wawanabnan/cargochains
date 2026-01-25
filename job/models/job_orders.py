@@ -83,14 +83,14 @@ class JobOrder(TimeStampedModel):
         blank=True,
         help_text="Goods or matrial package and dimensions",
     )
-    customer_note = models.CharField(
-        max_length=255,
+    customer_note = models.TextField(
+       
         blank=True,
         verbose_name="Customer Notes",
         help_text="Type your attension for your customer"
     )
-    sla_note = models.CharField(
-        max_length=255,
+    sla_note = models.TextField(
+       
         blank=True,
         verbose_name="Description",
         help_text="Types your service level agreements."

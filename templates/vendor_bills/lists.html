@@ -1,0 +1,62 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-6"><h3 class="mb-0">Vendor Bills</h3></div>
+      <div class="col-sm-6 text-end">
+        <a href="{% url 'payments:vendor_bill_add' %}" class="btn btn-primary">
+          <i class="fas fa-plus"></i> Add Vendor Bill
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+    <div class="card">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-striped mb-0">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Date</th>
+                <th>Vendor</th>
+                <th>Currency</th>
+                <th class="text-end">Total</th>
+                <th class="text-end">Paid</th>
+                <th class="text-end">Balance</th>
+                <th>Status</th>
+                <th style="width:100px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for b in items %}
+              <tr>
+                <td>{{ b.bill_number }}</td>
+                <td>{{ b.bill_date }}</td>
+                <td>{{ b.vendor }}</td>
+                <td>{{ b.currency }}</td>
+                <td class="text-end">{{ b.total_amount }}</td>
+                <td class="text-end">{{ b.paid_amount }}</td>
+                <td class="text-end">{{ b.balance_amount }}</td>
+                <td>{{ b.status }}</td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'payments:vendor_bill_edit' b.id %}">Edit</a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="9" class="text-center text-muted py-4">Belum ada Vendor Bill</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

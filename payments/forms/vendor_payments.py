@@ -3,7 +3,7 @@ from django import forms
 from django.forms import inlineformset_factory
 
 from payments.models.vendor_payments import VendorPayment, VendorPaymentLine
-from partners.models import Partner
+from partners.models import Vendor
 from core.models.currencies import Currency
 from accounting.models.chart import Account
 
@@ -32,7 +32,6 @@ class VendorPaymentForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.fields["vendor"].queryset = Partner.objects.filter(is_vendor=True).order_by("name")
         self.fields["currency"].queryset = Currency.objects.all().order_by("code")
 
         # filter bank/cash account (sesuaikan filter Account om)
@@ -42,9 +41,9 @@ class VendorPaymentForm(forms.ModelForm):
 class VendorPaymentLineForm(forms.ModelForm):
     class Meta:
         model = VendorPaymentLine
-        fields = ["vendor_booking", "description", "amount"]
+        fields = ["vendor_bill", "description", "amount"]
         widgets = {
-            "vendor_booking": forms.Select(attrs={"class": "form-select form-select-sm"}),
+            "vendor_bill": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "description": forms.TextInput(attrs={"class": "form-control form-control-sm"}),
             "amount": forms.NumberInput(attrs={"class": "form-control form-control-sm"}),
         }
@@ -54,6 +53,6 @@ VendorPaymentLineFormSet = inlineformset_factory(
     VendorPayment,
     VendorPaymentLine,
     form=VendorPaymentLineForm,
-    extra=0,
+    extra=1,
     can_delete=True,
 )

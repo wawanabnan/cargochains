@@ -1,127 +1,90 @@
-   <div class="row">
-              <div class="col-md-4">
-                <div class="row mb-2">
-                  <label class="col-sm-5 col-form-label col-form-label-sm">Job Date</label>
-                  <div class="col-sm-7">
-                    <div class="input-group input-group-sm">
-                      {{ form.job_date }}
-                      <span class="input-group-text">
-                        <i class="fa fa-calendar"></i>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div class="row mb-2">
-                  <label class="col-sm-5 col-form-label">Order#</label>
-                  <div class="col-sm-7">
-                    {{ form.order_number }} {{ form.order_number.errors }}
-                  </div>
-                </div>
+{# ===== JOB HEADER (COLLAPSIBLE) ===== #}
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center"
+       role="button"
+       data-bs-toggle="collapse"
+       data-bs-target="#jobHeaderCollapse"
+       aria-expanded="true"
+       aria-controls="jobHeaderCollapse">
 
-                <div class="row mb-2">
+    <div class="d-flex flex-wrap gap-4 align-items-center">
+      <div>
+        <div class="text-muted small">Nomor Job</div>
+        <div class="fw-semibold">{{ job.number|default:"-" }}</div>
+      </div>
 
-                  <label class="col-sm-5 col-form-label">Customer</label>
-                  <div class="col-sm-7">
-                    {{ form.customer }} {{ form.customer.errors }}
-                  </div>
-                </div>
+      <div>
+        <div class="text-muted small">Customer</div>
+        <div class="fw-semibold">{{ job.customer.name|default:"-" }}</div>
+      </div>
 
-                <div class="row mb-2">
-                  <label class="col-sm-5 col-form-label">Service</label>
-                  <div class="col-sm-7">
-                    {{ form.service }} {{ form.service.errors }}
-                  </div>
-                </div>
-                  <div class="row mb-2">
-                    <label class="col-sm-5 col-form-label">Payment Term</label>
-                    <div class="col-sm-7">
-                      {{ form.payment_term }} {{ form.payment_term.errors }}
-                    </div>
-                  </div>
-                          <div class="row mb-2">
-                    <label class="col-sm-5 col-form-label">Currency</label>
-                    <div class="col-sm-7">
-                      {{ form.currency }} {{ form.currency.errors }}
-                    </div>
-                  </div>
-          
-              
+      <div>
+        <div class="text-muted small">Payment Term</div>
+        <div class="fw-semibold">{{ job.payment_term|default:"-" }}</div>
+      </div>
 
+      <div>
+        <div class="text-muted small">Currency</div>
+        <div class="fw-semibold">
+          {{ job.currency.code|default:job.currency|default:"-" }}
+        </div>
+      </div>
 
-              </div> 
+      <div>
+        <div class="text-muted small">Total Amount</div>
+        <div class="fw-semibold">
+          {{ job.currency.code|default:"-" }}
+          {{ job.total_amount|default_if_none:0|floatformat:2 }}
+        </div>
+      </div>
 
-              <div class="col-md-4">
-                  <div class="row mb-2">
-                    <label"> Cargo Description</label>
-                    {{ form.cargo_description }} {{ form.description.errors }}
-                  
-                  </div>
-                  <div class="row mb-2">
-                    <label">Pickup Location</label>
-                    {{ form.pickup }} {{ form.pickup.errors }}
-                  
-                  </div>
-                  <div class="row mb-2">
-                    <label"> Delivery Location</label>
-                    {{ form.delivery }} {{ form.delivery.errors }}
-                  
-                  </div>
-              </div>
+      <div>
+        <div class="text-muted small">Rate Currency</div>
+        <div class="fw-semibold">
+          {% if job.currency and job.currency.code == "IDR" %}
+            IDR → IDR @ 1.00
+          {% else %}
+            {{ job.currency.code|default:"-" }} → IDR
+            @ {{ job.kurs_idr|default_if_none:1|floatformat:2 }}
+          {% endif %}
+        </div>
+      </div>
+    </div>
 
-              <div class="col-md-4">
-                 
-            <div class="row mb-2" id="row-kurs">
-              <label class="col-sm-4 col-form-label col-form-label-sm">Kurs IDR</label>
-              <div class="col-sm-8">
-                <input type="text" name="kurs_idr"
-                    id="id_kurs_idr"
-                    value="{{ form.kurs_idr.value|default:'0,00' }}"
-                    class="form-control form-control-sm text-end">
-              </div>
-            </div>
-          
+    <div class="text-muted">
+      <span class="small">Klik untuk detail</span>
+      {# kalau nggak pakai bootstrap-icons, hapus <i> ini #}
+      <i class="ms-2 bi bi-chevron-down"></i>
+    </div>
+  </div>
 
-            <div class="row mb-2">
-              <label class="col-sm-4 col-form-label">Total Amount</label>
-              <div class="col-sm-8">
-                {{ form.total_amount }} {{ form.total_amount.errors }}
-              </div>
-            </div>
+  <div id="jobHeaderCollapse" class="collapse show">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <div class="text-muted small">Job Date</div>
+          <div>{{ job.job_date|date:"d-m-Y"|default:"-" }}</div>
+        </div>
 
-            <div class="row mb-2">
-              <label class="col-sm-4 col-form-label">Apply Tax (1,1%)</label>
-              <div class="col-sm-2 d-flex align-items-center">
-                <div class="form-check form-switch">
-                  {{ form.is_tax }} {{ form.is_tax.errors }}
-                </div>
-              </div>
-              <label class="col-sm-4 col-form-label">Apply PPH (2 %)</label>
-              <div class="col-sm-2 d-flex align-items-center">
-                <div class="form-check form-switch">
-                  {{ form.is_pph }} {{ form.is_tax.errors }}
-                </div>
-              </div>
-            </div>
-            
-            <div class="row mb-2">
-              <label class="col-sm-4 col-form-label">Tax 1.1 %</label>
-              <div class="col-sm-8">
-                {{ form.tax_amount }} {{ form.tax_amount.errors }}
-              </div>
-            </div>
-      
-            <div class="row mb-2">
-            <label class="col-sm-4 col-form-label">PPH 2 % </label>
-            <div class="col-sm-8">
-              {{ form.pph_amount }} {{ form.pph_amount.errors }}
-            </div>
-            </div>
-            <div class="row mb-2">
-                <label class="col-sm-4 col-form-label">Grand Total</label>
-                <div class="col-sm-8">
-                    {{ form.grand_total }} {{ form.grand_total.errors }}
-                </div>
-            </div>    
-              
-              </div>
-          </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Service</div>
+          <div>{{ job.service.name|default:job.service|default:"-" }}</div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="text-muted small">Origin</div>
+          <div>{{ job.origin.name|default:job.origin|default:"-" }}</div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="text-muted small">Destination</div>
+          <div>{{ job.destination.name|default:job.destination|default:"-" }}</div>
+        </div>
+
+       
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ===== JOB COST SECTION DI BAWAHNYA ===== #}

@@ -1,0 +1,162 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<!-- Header -->
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="row align-items-center">
+      <div class="col-sm-6">
+        <h3 class="mb-0">
+          {% if mode == "edit" %}Edit{% else %}Add{% endif %} Vendor Bill
+        </h3>
+      </div>
+      <div class="col-sm-6 text-end">
+        <a href="{% url 'shipments:vendor_bill_list' %}" class="btn btn-outline-secondary">
+          Back
+        </a>
+        <button type="submit" form="main-form" class="btn btn-primary">
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="app-content">
+  <div class="container-fluid">
+
+    <form id="main-form" method="post">
+      {% csrf_token %}
+
+      <!-- Header fields -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="row g-3">
+
+            <div class="col-md-3">
+              {{ form.bill_number.label_tag }}
+              {{ form.bill_number }}
+              {% if form.bill_number.errors %}<div class="text-danger small">{{ form.bill_number.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-3">
+              {{ form.bill_date.label_tag }}
+              {{ form.bill_date }}
+              {% if form.bill_date.errors %}<div class="text-danger small">{{ form.bill_date.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-3">
+              {{ form.due_date.label_tag }}
+              {{ form.due_date }}
+              {% if form.due_date.errors %}<div class="text-danger small">{{ form.due_date.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-3">
+              {{ form.currency.label_tag }}
+              {{ form.currency }}
+              {% if form.currency.errors %}<div class="text-danger small">{{ form.currency.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.vendor.label_tag }}
+              {{ form.vendor }}
+              {% if form.vendor.errors %}<div class="text-danger small">{{ form.vendor.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.idr_rate.label_tag }}
+              {{ form.idr_rate }}
+              {% if form.idr_rate.errors %}<div class="text-danger small">{{ form.idr_rate.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-12">
+              {{ form.notes.label_tag }}
+              {{ form.notes }}
+              {% if form.notes.errors %}<div class="text-danger small">{{ form.notes.errors }}</div>{% endif %}
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Lines -->
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <strong>Lines</strong>
+          {# nanti kalau mau tombol add-line dinamis, kita tambahin di sini #}
+        </div>
+
+        <div class="card-body p-0">
+          {{ formset.management_form }}
+
+          <div class="table-responsive">
+            <table class="table table-striped mb-0 align-middle">
+              <thead>
+                <tr>
+                  <th style="width: 260px;">Vendor Booking (optional)</th>
+                  <th>Description</th>
+                  <th style="width: 200px;" class="text-end">Amount</th>
+                  <th style="width: 260px;">Taxes</th>
+                  <th style="width: 90px;" class="text-center">Del</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for f in formset %}
+                  <tr>
+                    <td>
+                      {{ f.vendor_booking }}
+                      {% if f.vendor_booking.errors %}<div class="text-danger small">{{ f.vendor_booking.errors }}</div>{% endif %}
+                    </td>
+
+                    <td>
+                      {{ f.description }}
+                      {% if f.description.errors %}<div class="text-danger small">{{ f.description.errors }}</div>{% endif %}
+                    </td>
+
+                    <td class="text-end">
+                      {{ f.amount }}
+                      {% if f.amount.errors %}<div class="text-danger small">{{ f.amount.errors }}</div>{% endif %}
+                    </td>
+
+                    <td>
+                      {{ f.taxes }}
+                      {% if f.taxes.errors %}<div class="text-danger small">{{ f.taxes.errors }}</div>{% endif %}
+                    </td>
+
+                    <td class="text-center">
+                      {{ f.DELETE }}
+                    </td>
+                  </tr>
+
+                  {# non-field errors per line #}
+                  {% if f.non_field_errors %}
+                    <tr>
+                      <td colspan="5" class="text-danger small">
+                        {{ f.non_field_errors }}
+                      </td>
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+
+                {% if formset.non_form_errors %}
+                  <tr>
+                    <td colspan="5" class="text-danger small">
+                      {{ formset.non_form_errors }}
+                    </td>
+                  </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}

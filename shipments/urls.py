@@ -110,6 +110,13 @@ urlpatterns += [
 
 
 
+from shipments.views.vendor_bills import VendorBillListView, VendorBillCreateView, VendorBillUpdateView
+
+urlpatterns += [
+    path("vendor-bills/", VendorBillListView.as_view(), name="vendor_bill_list"),
+    path("vendor-bills/add/", VendorBillCreateView.as_view(), name="vendor_bill_add"),
+    path("vendor-bills/<int:pk>/", VendorBillUpdateView.as_view(), name="vendor_bill_edit"),
+]
 
 
 

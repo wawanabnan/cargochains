@@ -44,7 +44,7 @@
           </ul>
         </div>
         {% endif %}
-        
+       
         <form method="post" novalidate>
           {% csrf_token %}
 
@@ -56,23 +56,39 @@
 
           <div class="card" style="border-bottom: 0px;" id="card-ku">
             <div class="card-body">
-              
+             
               <div class="row">
-                <div class="col-md-5">
+                <div class="col-md-4">
                      <div class="form-group row">
-                        <label for="staticEmail" class="col-sm-4 col-form-label">Job #</label>
-                        <div class="col-sm-8">
-                          <input type="text" class="form-control">
-                        </div>
+                         <label class="col-sm-4 col-form-label">Job #</label>
+                          <div class="col-sm-8">
+                            {% if "number_display" in form.fields %}
+                              {{ form.number_display }}
+                              {{ form.number }}  {# hidden #}
+                            {% else %}
+                              {{ form.number }}
+                            {% endif %}
+                          </div>
+                       
                       </div>
 
                 </div>
-                 <div class="col-md-2"></div>
-                <div class="col-md-5">
+                <div class="col-md-4">
+                     <div class="form-group row">
+                         <label class="col-sm-4 col-form-label">Reference #</label>
+                          <div class="col-sm-8">
+                              {{ form.order_number }}
+                          </div>
+                       
+                      </div>
+
+                </div>
+                 
+                <div class="col-md-4">
                     <div class="form-group row">
-                        <label for="staticEmail" class="col-sm-4 col-form-label">Currency</label>
+                        <label for="staticEmail" class="col-sm-4 col-form-label">Customer</label>
                         <div class="col-sm-8">
-                          {{ form.currency }}
+                          {{ form.customer }}
                         </div>
                       </div>
 
@@ -84,42 +100,50 @@
 
               </div>
                <div class="row">
-                <div class="col-md-5">
+                <div class="col-md-4">
                      <div class="form-group row">
-                        <label for="staticEmail" class="col-sm-4 col-form-label">Reference #</label>
+                        <label for="staticEmail" class="col-sm-4 col-form-label">T.O.P</label>
                         <div class="col-sm-8">
-                          <input type="text" class="form-control">
+                          {{ form.payment_term }}
                         </div>
                       </div>
 
                 </div>
-                <div class="col-md-2"></div>
-                <div class="col-md-5">
-                    <div class="form-group row">
-                        <label for="staticEmail" class="col-sm-4 col-form-label">IDR Rate</label>
+                <div class="col-md-4">
+                     <div class="form-group row">
+                        <label for="staticEmail" class="col-sm-4 col-form-label">Contact</label>
                         <div class="col-sm-8">
-                           {{ form.kurs_idr }}
+                          {{ form.pic }}
+                        </div>
+                      </div>
+
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group row">
+                        <label for="staticEmail" class="col-sm-4 col-form-label">Currency</label>
+                        <div class="col-sm-8">
+                           {{ form.currency }}
                         </div>
                       </div>
 
                 </div>  
               </div>
               <div class="row">
-                <div class="col-md-5">
+                <div class="col-md-4">
                      <div class="form-group row">
                         <label for="staticEmail" class="col-sm-4 col-form-label">Job Date</label>
                         <div class="col-sm-8">
-                          <input type="text" class="form-control">
+                          {{ form.job_date }}
                         </div>
                       </div>
 
                 </div>
-                <div class="col-md-2"></div>
-                <div class="col-md-5">
+                <div class="col-md-4"></div>
+                <div class="col-md-4">
                     <div class="form-group row">
-                        <label for="staticEmail" class="col-sm-4 col-form-label">PIC</label>
+                        <label for="staticEmail" class="col-sm-4 col-form-label">IDR Rate</label>
                         <div class="col-sm-8">
-                          <input type="text" class="form-control" >
+                            {{ form.kurs_idr }}
                         </div>
                       </div>
 
@@ -184,6 +208,12 @@
                       
                     
                     {{ form.customer_note }}
+        
+                </div>
+                <div class="tab-pane fade show " 
+                    id="slaNoteTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                    {{ form.sla_note }}
         
                 </div>
                 <div class="tab-pane fade show " 
@@ -429,41 +459,51 @@ textarea.form-control-sm{
     });
   }
 
- 
-  
+  function fmtID3(n) {
+    const x = Number(n || 0);
+    return x.toLocaleString("id-ID", {
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3
+    });
+  }
+
   function setReadonly(el) {
     if (!el) return;
     el.readOnly = true;
     el.setAttribute("tabindex", "-1");
   }
 
+  // =========================
+  // KURS helpers (raw + limit 3 desimal)
+  // =========================
+  function normalizeKursRaw(v) {
+    let s = String(v ?? "").trim().replace(/\s+/g, "");
+    if (!s) return "";
 
-  function fmtID3(n){
-    return Number(n || 0).toLocaleString("id-ID", {
-      minimumFractionDigits: 3,
-      maximumFractionDigits: 3
-    });
+    // kalau indo: 1.234,567 -> 1234.567
+    if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+    // keep digit + dot
+    s = s.replace(/[^\d.]/g, "");
+    // rapihin dot ganda
+    const parts = s.split(".");
+    const intPart = parts[0] || "";
+    const decPart = (parts[1] || "").slice(0, 3); // ✅ max 3 digit
+    return decPart ? `${intPart}.${decPart}` : intPart;
   }
 
-  // ======== KURS 3 DESIMAL ========
-  document.addEventListener("DOMContentLoaded", function () {
-    const kursEl = document.getElementById("id_kurs_idr");
-    if (!kursEl) return;
+  function setKursPretty(kursInput) {
+    if (!kursInput) return;
+    const raw = normalizeKursRaw(kursInput.value);
+    kursInput.dataset.raw = raw;
+    kursInput.value = raw ? fmtID3(Number(raw)) : "";
+  }
 
-    // format awal
-    kursEl.value = fmtID3(parseID(kursEl.value));
-
-    kursEl.addEventListener("focus", () => {
-      kursEl.value = parseID(kursEl.value);
-    });
-
-    kursEl.addEventListener("blur", () => {
-      kursEl.value = fmtID3(parseID(kursEl.value));
-    });
-
-  
-  });
-
+  function setKursRaw(kursInput) {
+    if (!kursInput) return;
+    const raw = normalizeKursRaw(kursInput.value);
+    kursInput.dataset.raw = raw;
+    kursInput.value = raw; // plain decimal buat edit
+  }
 
   // =========================
   // Hitung total (tanpa format)
@@ -482,12 +522,15 @@ textarea.form-control-sm{
     totalEl.value = fmtID(total);
   }
 
-  function formatInput(el) {
+  function formatInput2(el) {
     if (!el) return;
     const n = parseID(el.value);
     el.value = fmtID(n);
   }
 
+  // =========================
+  // MAIN DOM READY
+  // =========================
   document.addEventListener("DOMContentLoaded", function () {
 
     const form = document.querySelector("form");
@@ -513,7 +556,6 @@ textarea.form-control-sm{
     setReadonly(pphEl);
     setReadonly(grandEl);
 
-    
     // =========================
     // Auto select on focus
     // =========================
@@ -530,7 +572,7 @@ textarea.form-control-sm{
     if (qtyEl) {
       qtyEl.addEventListener("input", recalcTotalRaw);
       qtyEl.addEventListener("blur", function () {
-        formatInput(qtyEl);
+        formatInput2(qtyEl);
         recalcTotalRaw();
       });
     }
@@ -538,7 +580,7 @@ textarea.form-control-sm{
     if (priceEl) {
       priceEl.addEventListener("input", recalcTotalRaw);
       priceEl.addEventListener("blur", function () {
-        formatInput(priceEl);
+        formatInput2(priceEl);
         recalcTotalRaw();
       });
     }
@@ -547,10 +589,6 @@ textarea.form-control-sm{
     // Initial calc & format
     // =========================
     recalcTotalRaw();
-
-    if (kursInput && kursRow && kursRow.style.display !== "none") {
-      kursInput.value = fmtID3(parseID(kursInput.value));
-    }
 
     // =========================
     // Before submit → kirim angka plain
@@ -563,7 +601,11 @@ textarea.form-control-sm{
       if (taxEl) taxEl.value = parseID(taxEl.value);
       if (pphEl) pphEl.value = parseID(pphEl.value);
       if (grandEl) grandEl.value = parseID(grandEl.value);
-      if (kursInput) kursInput.value = parseID(kursInput.value);
+
+      // kurs kirim raw (plain decimal), bukan formatted
+      if (kursInput) {
+        kursInput.value = kursInput.dataset.raw || normalizeKursRaw(kursInput.value) || "";
+      }
     });
 
     // =========================
@@ -596,6 +638,7 @@ textarea.form-control-sm{
 
 })();
 </script>
+
 
 
 <script>
@@ -800,4 +843,37 @@ document.addEventListener("DOMContentLoaded", function () {
 
 })();
 </script>
+
+<script src="https://cdn.tiny.cloud/1/klpop8ud5zsip7zloht3kglaf0it7sau7hlm7yfscb3cjxsq/tinymce/6/tinymce.min.js"
+          referrerpolicy="origin">
+  </script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const sla = document.getElementById("id_sla_note");
+  const notes = document.getElementById("id_customer_note");
+
+ // console.log("sla el:", sla, "notes el:", notes);
+ // console.log("sla tag:", sla?.tagName, "notes tag:", notes?.tagName);
+
+  if (!sla && !notes) return;
+
+  // Kalau sudah pernah init, jangan init ulang
+  if (window.tinymce?.get("id_sla_note") || window.tinymce?.get("id_customer_note")) return;
+
+  tinymce.init({
+    selector: "#id_sla_note, #id_customer_note",
+    height: 280,
+    menubar: false,
+    plugins: "lists link table code autoresize",
+    toolbar: "undo redo | bold italic underline | bullist numlist | link table | removeformat | code",
+    branding: false,
+    setup: function (editor) {
+      editor.on("change keyup", function () {
+        editor.save(); // sync balik ke textarea untuk submit Django
+      });
+    }
+  });
+});
+</script>
+
 {% endblock %}

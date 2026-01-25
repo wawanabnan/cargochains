@@ -1,0 +1,78 @@
+{% extends "adminbase.html" %}
+
+{% block content %}
+
+<!-- Content Header -->
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-6">
+        <h3 class="mb-0">Vendor Payments</h3>
+      </div>
+      <div class="col-sm-6 text-end">
+        <a href="{% url 'payments:vendor_payment_add' %}" class="btn btn-primary">
+          <i class="fas fa-plus"></i> Add Payment
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="card">
+      <div class="card-body p-0">
+
+        <div class="table-responsive">
+          <table class="table table-striped mb-0">
+            <thead>
+              <tr>
+                <th style="width:80px;">ID</th>
+                <th>Date</th>
+                <th>Vendor</th>
+                <th>Currency</th>
+                <th class="text-end">Total</th>
+                <th>Status</th>
+                <th style="width:100px;"></th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for p in items %}
+                <tr>
+                  <td>{{ p.id }}</td>
+                  <td>{{ p.payment_date|default:p.date|default:"-" }}</td>
+                  <td>{{ p.vendor }}</td>
+                  <td>{{ p.currency }}</td>
+                  <td class="text-end">
+                    {{ p.total_amount }}
+                  </td>
+                  <td>{{ p.status }}</td>
+                  <td class="text-end">
+                    <a href="{% url 'payments:vendor_payment_edit' p.id %}"
+                       class="btn btn-sm btn-outline-secondary">
+                      Edit
+                    </a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center text-muted py-4">
+                    Belum ada Vendor Payment
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

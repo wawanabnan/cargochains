@@ -2,17 +2,17 @@ from django.db import models
 from django.db.models import PROTECT
 from django.utils import timezone
 
-from partners.models import Partner
+from partners.models import Vendor
 from core.models.currencies import Currency
 from accounting.models.chart import Account
-from shipments.models.vendor_bookings import VendorBooking  # ganti kalau beda
+from shipments.models.vendor_bills import VendorBill  # ganti kalau beda
 
 class VendorPayment(models.Model):
     vb_number = models.CharField(max_length=30, unique=True, blank=True, default="")   # untuk finance
     letter_number = models.CharField(max_length=30, unique=True, blank=True, default="")  # untuk PO vendor (opsional)
     payment_date = models.DateField(default=timezone.localdate)
 
-    vendor = models.ForeignKey(Partner, on_delete=PROTECT, related_name="vendor_payments")
+    vendor = models.ForeignKey(Vendor, on_delete=PROTECT, related_name="vendor_payments")
     currency = models.ForeignKey(Currency, on_delete=PROTECT, related_name="+")
     idr_rate = models.DecimalField(max_digits=18, decimal_places=6, default=1)
 
@@ -42,6 +42,6 @@ class VendorPayment(models.Model):
 class VendorPaymentLine(models.Model):
     payment = models.ForeignKey(VendorPayment, on_delete=models.CASCADE, related_name="lines")
 
-    vendor_booking = models.ForeignKey(VendorBooking, on_delete=PROTECT, null=True, blank=True, related_name="+")
+    vendor_bill = models.ForeignKey(VendorBill, on_delete=PROTECT, null=True, blank=True, related_name="+")  # ✅ baru
     description = models.CharField(max_length=180, blank=True, default="")
     amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)

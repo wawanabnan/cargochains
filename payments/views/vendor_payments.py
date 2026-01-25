@@ -41,7 +41,7 @@ class VendorPaymentCreateView(LoginRequiredMixin, View):
             return redirect("payments:vendor_payment_edit", pk=obj.pk)
 
         messages.error(request, "Ada error. Cek field merah.")
-        return render(request, "payments/vendor_payment/form.html", {"form": form, "formset": formset, "mode": "add"})
+        return render(request, "vendor_payment/form.html", {"form": form, "formset": formset, "mode": "add"})
 
 
 class VendorPaymentUpdateView(LoginRequiredMixin, View):
@@ -51,7 +51,7 @@ class VendorPaymentUpdateView(LoginRequiredMixin, View):
         formset = VendorPaymentLineFormSet(instance=obj)
         return render(
             request,
-            "payments/vendor_payment/form.html",
+            "vendor_payment/form.html",
             {"obj": obj, "form": form, "formset": formset, "mode": "edit"},
         )
 
@@ -79,6 +79,6 @@ class VendorPaymentUpdateView(LoginRequiredMixin, View):
         messages.error(request, "Ada error. Cek field merah.")
         return render(
             request,
-            "payments/vendor_payment/form.html",
+            "vendor_payment/form.html",
             {"obj": obj, "form": form, "formset": formset, "mode": "edit"},
         )

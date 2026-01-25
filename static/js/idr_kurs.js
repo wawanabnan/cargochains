@@ -2,7 +2,7 @@ console.log("✅✅ idr_kurs.js LOADED / BUILD=20260125-2");
 
 document.addEventListener("DOMContentLoaded", function () {
   const currencyEl = document.getElementById("id_currency");
-  const rateEl = document.getElementById("id_kurs_idr");
+  const rateEl = document.getElementById("id_idr_rate");
 
   if (!currencyEl || !rateEl) {
     console.warn("FX: currency or rate input not found");

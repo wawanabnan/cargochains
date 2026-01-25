@@ -142,8 +142,6 @@ class JobOrderListView(LoginRequiredMixin, ListView):
 class JobOrderCreateView(LoginRequiredMixin, View):
     template_name = "job_order/form.html"
 
-    
-
     def get(self, request):
         form = JobOrderForm()
         return render(request, self.template_name, {
@@ -154,9 +152,6 @@ class JobOrderCreateView(LoginRequiredMixin, View):
         })
 
     def post(self, request):
-        # =====================================================
-        # 🔧 NORMALISASI POST DATA (FIX "Enter a number.")
-        # =====================================================
         data = request.POST.copy()
 
         currency_id = data.get("currency")
@@ -165,19 +160,15 @@ class JobOrderCreateView(LoginRequiredMixin, View):
             code = (cur.code or "").upper() if cur else ""
 
             if code == "IDR":
-                # ✅ IDR → kurs FIX = 1 (angka valid)
                 data["kurs_idr"] = "1"
             else:
-                # 🌍 Non-IDR → normalisasi format indo ke decimal
                 raw = (data.get("kurs_idr") or "").strip()
                 if raw:
                     raw = raw.replace(" ", "").replace(".", "").replace(",", ".")
                     data["kurs_idr"] = raw
 
-        # =====================================================
-        # FORM VALIDATION
-        # =====================================================
-        form = JobOrderForm(data)
+        # ✅ penting: include FILES
+        form = JobOrderForm(data, request.FILES)
 
         if not form.is_valid():
             messages.error(request, "Form tidak valid, silakan diperiksa kembali.")
@@ -185,29 +176,32 @@ class JobOrderCreateView(LoginRequiredMixin, View):
                 "form": form,
                 "job": None,
                 "cost_formset": None,
+                "tax_map": _build_tax_map(),  # biar JS pajak tetap jalan
             })
 
-        # =====================================================
-        # SAVE JOB ORDER
-        # =====================================================
         job = form.save(commit=False)
         job.sales_user = request.user
         job.status = JobOrder.ST_DRAFT
 
-
-        # safety net (double lock)
         if job.currency and (job.currency.code or "").upper() == "IDR":
             job.kurs_idr = Decimal("1.00")
 
         job.save()
 
-        messages.success(request, "Job Order berhasil dibuat.")
+        # ✅ WAJIB untuk M2M (taxes)
+        form.save_m2m()
+
+        messages.success(request, "Job Order has been created.")
+        # ✅ redirect bener: ke detail (atau list tanpa pk)
         return redirect("job:job_order_detail", pk=job.pk)
+        # atau kalau memang mau list:
+        # return redirect("job:job_order_list")
 
 
 # ==========================
 # UPDATE
 # ==========================
+
 
 
 class JobOrderUpdateView(LoginRequiredMixin, View):
@@ -221,17 +215,22 @@ class JobOrderUpdateView(LoginRequiredMixin, View):
         form = JobOrderForm(instance=job)
         cost_formset = JobCostFormSet(instance=job)
 
+        form = JobOrderForm(instance=job)
+     
+
         return render(request, self.template_name, {
             "form": form,
             "job": job,
             "cost_formset": cost_formset,
+            "tax_map": _build_tax_map(), 
         })
 
     def post(self, request, pk):
         job = self.get_object(pk)
 
-        form = JobOrderForm(request.POST, instance=job)
-        cost_formset = JobCostFormSet(request.POST, instance=job)
+        # ✅ penting: include FILES (buat field file / attachment / dll)
+        form = JobOrderForm(request.POST, request.FILES, instance=job)
+        cost_formset = JobCostFormSet(request.POST, request.FILES, instance=job)
 
         if not (form.is_valid() and cost_formset.is_valid()):
             messages.error(request, "Form Job Order atau Job Cost belum benar, silakan dicek lagi.")
@@ -248,13 +247,14 @@ class JobOrderUpdateView(LoginRequiredMixin, View):
                     job_obj.sales_user = request.user
                 job_obj.save()
 
+                # ✅ WAJIB untuk M2M (mis: taxes)
+                form.save_m2m()
+
                 # pastikan formset nempel ke object yang tersimpan
                 cost_formset.instance = job_obj
                 cost_formset.save()
 
             messages.success(request, "Job Order & Job Cost berhasil diupdate.")
-
-            # ✅ PENTING: redirect ke namespace job (bukan sales)
             return redirect("job:job_order_detail", pk=job_obj.pk)
 
         except Exception as e:
@@ -264,7 +264,9 @@ class JobOrderUpdateView(LoginRequiredMixin, View):
                 "job": job,
                 "cost_formset": cost_formset,
             })
-        
+
+
+
 # ==========================
 # DETAIL
 # ==========================
