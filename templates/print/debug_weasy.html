@@ -1,0 +1,48 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}{% endblock %}</title>
+
+  <style>
+    @page {
+      size: A4;
+
+      /* AREA KONTEN (TIDAK ADA HUBUNGAN DENGAN HEADER POSISI) */
+      margin-top: 4mm;
+      margin-bottom: 3mm;
+      margin-left: 15mm;
+      margin-right: 15mm;
+
+      /* HEADER & FOOTER ORNAMEN */
+      background:
+        url("{% static 'print/header_full.png' %}") no-repeat,
+        url("{% static 'print/footer_full.png' %}") no-repeat;
+
+      /* INI POSISI ABSOLUT DI KERTAS */
+      background-position:
+        0mm 0mm,                 /* HEADER: pojok kiri atas KERTAS */
+        0mm calc(297mm - 1px);   /* FOOTER: pojok kiri bawah */
+
+      background-size:
+        210mm auto,
+        210mm auto;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    table { width:100%; border-collapse:collapse; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+  </style>
+</head>
+
+<body>
+  {% block content %}{% endblock %}
+</body>
+</html>

@@ -8,7 +8,7 @@ from django.template.loader import render_to_string
 from job.models.job_orders import JobOrder
 
 
-def joborder_cost_pdf(request, pk):
+def joborder_cost_pdf_wkhtml(request, pk):
     job = get_object_or_404(
         JobOrder.objects.select_related("currency", "customer"),
         pk=pk
@@ -20,7 +20,7 @@ def joborder_cost_pdf(request, pk):
     # Jadi: copy konteks dari view preview kamu dan pakai di sini.
     ctx = build_context_for_print(job)  # <- lihat fungsi di bawah
 
-    html = render_to_string("job_order/print_cost_preview.html", ctx, request=request)
+    html = render_to_string("job_order/print_cost_pdf.html", ctx, request=request)
 
     # ===== wkhtmltopdf config =====
     wkhtml_path = getattr(settings, "WKHTMLTOPDF_CMD", None)

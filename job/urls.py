@@ -69,7 +69,7 @@ urlpatterns = [
     ),
 
 
-     path("job-order/<int:pk>/confirm/", job_confirm, name="job_confirm"),
+    path("job-order/<int:pk>/confirm/", job_confirm, name="job_confirm"),
     path("job-order/<int:pk>/hold/", job_hold, name="job_hold"),
     path("job-order/<int:pk>/resume/", job_resume, name="job_resume"),
     path("job-order/<int:pk>/complete/", job_complete, name="job_complete"),
@@ -86,12 +86,15 @@ urlpatterns = [
 # job/urls.py
 from django.urls import path
 from job.views.job_order_cost_print import joborder_cost_print_preview
-from job.views.job_order_cost_pdf import joborder_cost_pdf
+from job.views.job_order_cost_pdf import joborder_cost_pdf_wkhtml
 from job.views.job_order_cost_plypdf import joborder_cost_pdf
+from job.views.job_order_pdf import test_weasyprint
 
 urlpatterns += [
     path("job-orders/<int:pk>/costs/print/", joborder_cost_print_preview, name="joborder_cost_print_preview"),
     #path("job-orders/<int:pk>/costs/print.pdf", joborder_cost_pdf, name="joborder_cost_pdf"),
     path("job-orders/<int:pk>/costs/print.pdf", joborder_cost_pdf, name="joborder_cost_pdf"),
-
+    path("job-orders/<int:pk>/costs/print.pdf", joborder_cost_pdf_wkhtml, name="joborder_cost_pdf_2"),
+    path("test-weasyprint/", test_weasyprint, name="test_weasyprint"),
+   
 ]

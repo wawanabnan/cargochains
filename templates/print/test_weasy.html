@@ -1,0 +1,32 @@
+{% extends "print/base_a4_letterhead.html" %}
+
+{% block title %}WeasyPrint Stress Test{% endblock %}
+
+{% block content %}
+<h3>WEASYPRINT STRESS TEST</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:8%">No</th>
+      <th style="width:42%">Description</th>
+      <th style="width:10%">Qty</th>
+      <th style="width:20%">Price</th>
+      <th style="width:20%">Amount</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for i in rows %}
+    <tr>
+      <td>{{ i }}</td>
+      <td class="wrap">
+        Long description item number {{ i }} with random text to force wrapping and test page break behavior
+      </td>
+      <td class="text-end nowrap">1</td>
+      <td class="text-end nowrap">1.000.000</td>
+      <td class="text-end nowrap">1.000.000</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

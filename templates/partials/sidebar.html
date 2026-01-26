@@ -1,119 +1,104 @@
-<nav class="mt-2">
-  <ul class="nav nav-pills nav-sidebar flex-column"
-      data-lte-toggle="treeview"
-      role="menu"
-      data-accordion="false">
 
-    <!-- Dashboard -->
+<style>
+/* ===============================
+   SIDEBAR ICON & TREEVIEW ARROW
+   =============================== */
+
+/* Perbesar icon sidebar */
+.app-sidebar .nav-icon {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+/* Icon submenu sedikit lebih kecil */
+.app-sidebar .nav-treeview .nav-icon {
+  font-size: 1.05rem;
+}
+
+/* Arrow treeview: center + naik */
+.app-sidebar .nav-link .nav-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 0.85rem;
+  opacity: 0.7;
+
+  /* NAIKKAN di sini (coba -3px dulu) */
+  transform: translateY(-3px);
+
+  transition: transform 0.2s ease;
+}
+
+/* Saat menu open → rotate + tetap naik */
+.app-sidebar .menu-open > .nav-link .nav-arrow {
+  transform: translateY(-3px) rotate(90deg);
+}
+
+/* Sidebar mini: naikkan sedikit lagi */
+.sidebar-mini .app-sidebar .nav-link .nav-arrow {
+  transform: translateY(-4px);
+}
+.sidebar-mini .app-sidebar .menu-open > .nav-link .nav-arrow {
+  transform: translateY(-4px) rotate(90deg);
+}
+</style>
+    
+    
+    <!--begin::Sidebar Brand-->
+        <div class="sidebar-brand">
+          <!--begin::Brand Link-->
+          <a href="" class="brand-link">
+            <!--begin::Brand Image-->
+            <img
+              src=""
+              alt=""
+              class="brand-image opacity-75 shadow"
+            />
+            <!--end::Brand Image-->
+            <!--begin::Brand Text-->
+            <span class="brand-text fw-light">CARGO CHAINS</span>
+            <!--end::Brand Text-->
+          </a>
+          <!--end::Brand Link-->
+        </div>
+        <!--end::Sidebar Brand-->
+
+
+        <!--begin::Sidebar Wrapper-->
+         <div class="sidebar-wrapper">
+            <nav class="mt-2">
+  <!--begin::Sidebar Menu-->
+  <ul
+    class="nav sidebar-menu flex-column"
+    data-lte-toggle="treeview"
+    role="navigation"
+    aria-label="Main navigation"
+    data-accordion="false"
+    id="navigation"
+  >
+
+    <!-- DASHBOARD -->
     <li class="nav-item">
-      <a href="#"
-         class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-        <i class="nav-icon fas fa-home"></i>
+      <a href="{% url 'account:dashboard' %}"
+         class="nav-link {% if request.resolver_match.app_name == 'account' %}active{% endif %}">
+        <i class="nav-icon bi bi-speedometer"></i>
         <p>Dashboard</p>
       </a>
     </li>
 
-    <!-- Projects (contoh om pakai /projects/) -->
-    <li class="nav-item">
-      <a href="#"
-         class="nav-link {% if request.resolver_match.app_name == 'projects' %}active{% endif %}">
-        <i class="nav-icon fas fa-folder-open"></i>
-        <p>Projects</p>
-      </a>
-    </li>
+    <!-- HEADER -->
+  
 
-    <!-- SALES -->
-    {% with current_app=request.resolver_match.app_name current_view=request.resolver_match.url_name %}
-    <li class="nav-item {% if current_app == 'sales' %}menu-open{% endif %}">
-      <a href="#"
-         class="nav-link {% if current_app == 'sales' %}active{% endif %}">
-        <i class="nav-icon fas fa-briefcase"></i>
-        <p>
-          Sales
-          <i class="end fas fa-angle-left"></i>
-        </p>
-      </a>
-
-      <ul class="nav nav-treeview">
-
-        <li class="nav-item">
-          <a href="#:
-             class="nav-link {% if current_view == 'jobfile_list' %}active{% endif %}">
-            <i class="far fa-circle nav-icon"></i>
-            <p>Jobfile</p>
-          </a>
-        </li>
-
-        <li class="nav-item">
-          <a href="#"
-             class="nav-link {% if current_view == 'fq_list' %}active{% endif %}">
-            <i class="far fa-circle nav-icon"></i>
-            <p>Freight Quotation</p>
-          </a>
-        </li>
-
-        <li class="nav-item">
-          <a href="{% url 'sales:fo_list' %}"
-             class="nav-link {% if current_view == 'fo_list' %}active{% endif %}">
-            <i class="far fa-circle nav-icon"></i>
-            <p>Freight Order</p>
-          </a>
-        </li>
-
-      </ul>
-    </li>
-    {% endwith %}
-
-    <!-- PARTNERS -->
-    <li class="nav-item">
-      <a href="#"
-         class="nav-link {% if request.resolver_match.app_name == 'partners' %}active{% endif %}">
-        <i class="nav-icon fas fa-users"></i>
-        <p>Partners</p>
-      </a>
-    </li>
-
-    <!-- CONFIG -->
-    {% with current_app=request.resolver_match.app_name %}
-    <li class="nav-item {% if current_app == 'config' %}menu-open{% endif %}">
-      <a href="#"
-         class="nav-link {% if current_app == 'config' %}active{% endif %}">
-        <i class="nav-icon fas fa-gears"></i>
-        <p>
-          Config
-          <i class="end fas fa-angle-left"></i>
-        </p>
-      </a>
-
-      <ul class="nav nav-treeview">
-
-        <li class="nav-item">
-          <a href="#"
-             class="nav-link">
-            <i class="far fa-circle nav-icon"></i>
-            <p>Sales Services</p>
-          </a>
-        </li>
-
-        <li class="nav-item">
-          <a href="#"
-             class="nav-link">
-            <i class="far fa-circle nav-icon"></i>
-            <p>Payment Terms</p>
-          </a>
-        </li>
-
-        <li class="nav-item">
-          <a href="#"
-             class="nav-link">
-            <i class="far fa-circle nav-icon"></i>
-            <p>Number Sequence</p>
-          </a>
-        </li>
-
-      </ul>
-    </li>
-    {% endwith %}
-
+    <!-- SALES TREE -->
+  
+      {% include "partials/sales_menu.html" %}
+      {% include "partials/invoicing_menu.html" %}
+      {% include "partials/shipment_menu.html" %}
+      {% include "partials/accounting_menu.html" %}
+      {% include "partials/system_setting.html" %}
   </ul>
 </nav>
+
+        </div>
+        <!--end::Sidebar Wrapper-->

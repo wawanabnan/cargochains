@@ -1,0 +1,73 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@media print {
+  @page{
+    size: A4;
+    margin: 0;           /* penting supaya mentok ke kertas */
+  }
+
+  html, body{
+    margin: 0;
+    padding: 0;
+  }
+
+  /* ===== HEADER ===== */
+  .header-print{
+    position: fixed;
+    top: 0mm;            /* ⬅️ turunin header di sini */
+    left: 0;
+    width: 210mm;
+    z-index: 9999;
+  }
+
+  .header-print img{
+    width: 210mm;
+    display: block;
+  }
+
+  /* ===== FOOTER ===== */
+  .footer-print{
+    position: fixed;
+    bottom: 3mm;         /* ⬅️ naikin footer di sini */
+    left: 0;
+    width: 210mm;
+    z-index: 9999;
+  }
+
+  .footer-print img{
+    width: 210mm;
+    display: block;
+  }
+
+  /* ===== CONTENT ===== */
+  .content{
+    margin-top: 45mm;    /* area aman konten dari header */
+    margin-bottom: 30mm; /* area aman konten dari footer */
+    padding: 15mm;
+  }
+}
+</style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header-print">
+    <img src="{% static 'print/header_full.png' %}" alt="Header">
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer-print">
+    <img src="{% static 'print/footer_full.png' %}" alt="Footer">
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    {% block content %}{% endblock %}
+  </div>
+
+</body>
+</html>

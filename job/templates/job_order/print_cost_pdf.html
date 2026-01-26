@@ -4,106 +4,115 @@
 {% block title %}Job Order - Cost Sheet{% endblock %}
 
 {% block content %}
-  <!-- paste isi template preview kamu di sini (block content), tanpa tombol preview -->
-  <h2 style="margin:0 0 8px 0;">JOB ORDER COST SHEET</h2>
+<h2 class="mb-2">JOB ORDER COST SHEET VERSI BOOTSTRAP</h2>
 
-  <table class="no-border" style="margin-bottom:10px; width:100%;">
+<table class="table table-sm table-borderless mb-3" style="width:100%;">
+  <tbody>
     <tr>
-      <td style="width:18%;"><b>Job No</b></td>
+      <td style="width:18%;"><strong>Job No</strong></td>
       <td style="width:32%;">: {{ job.number }}</td>
-      <td style="width:18%;"><b>Date</b></td>
+      <td style="width:18%;"><strong>Date</strong></td>
       <td style="width:32%;">: {{ job.job_date|date:"d M Y" }}</td>
     </tr>
     <tr>
-      <td><b>Customer</b></td>
+      <td><strong>Customer</strong></td>
       <td>: {{ job.customer }}</td>
-      <td><b>Order No</b></td>
+      <td><strong>Order No</strong></td>
       <td>: {{ job.order_number|default:"-" }}</td>
     </tr>
     <tr>
-      <td><b>Job Amount (No Tax)</b></td>
+      <td><strong>Job Amount (No Tax)</strong></td>
       <td>: {{ job_value|indo_number:2 }}</td>
-      <td><b>Currency / Rate</b></td>
+      <td><strong>Currency / Rate</strong></td>
       <td>: {{ job_ccy }} / {{ job_rate|indo_number:3 }}</td>
     </tr>
-  </table>
+  </tbody>
+</table>
 
-  <h3 style="margin:10px 0 6px 0;">Job Costs (Amount in IDR)</h3>
+<h5 class="mt-2 mb-2">Job Costs (Amount in IDR)</h5>
 
-  <table class="tbl-fixed">
-    <colgroup>
-      <col style="width:14%;">
-      <col style="width:30%;">
-      <col style="width:6%;">
-      <col style="width:6%;">
-      <col style="width:14%;">
-      <col style="width:15%;">
-      <col style="width:15%;">
-    </colgroup>
-    <thead>
-      <tr>
-        <th>Cost Type</th>
-        <th>Vendor</th>
-        <th class="right">Qty</th>
-        <th>CUR</th>
-        <th class="right">PRICE</th>
-        <th class="right">Rate</th>
-        <th class="right">Amount (IDR)</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for ln in lines %}
-      <tr>
-        <td class="wrap">{{ ln.cost_type }}</td>
-        <td class="wrap">{{ ln.vendor }}</td>
-        <td class="num">{{ ln.qty }}</td>
-        <td class="nowrap">{{ ln.currency }}</td>
-        <td class="num">{{ ln.price|indo_number:2 }}</td>
-        <td class="num">{{ ln.rate|indo_number:3 }}</td>
-        <td class="num">{{ ln.amount_idr|indo_number:2 }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="7">No cost lines.</td></tr>
-      {% endfor %}
-    </tbody>
-    <tfoot>
-      <tr>
-        <th colspan="6" class="right">TOTAL JOB COST</th>
-        <th class="num"><b>{{ total_cost_idr|indo_number:2 }}</b></th>
-      </tr>
-    </tfoot>
-  </table>
+<table class="table table-sm table-bordered align-middle tbl-fixed">
+  <colgroup>
+    <col style="width:14%;">
+    <col style="width:30%;">
+    <col style="width:6%;">
+    <col style="width:6%;">
+    <col style="width:14%;">
+    <col style="width:15%;">
+    <col style="width:15%;">
+  </colgroup>
+  <thead class="table-light">
+    <tr>
+      <th>Cost Type</th>
+      <th>Vendor</th>
+      <th class="text-end">Qty</th>
+      <th>CUR</th>
+      <th class="text-end">PRICE</th>
+      <th class="text-end">Rate</th>
+      <th class="text-end">Amount (IDR)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ln in lines %}
+    <tr>
+      <td class="wrap">{{ ln.cost_type }}</td>
+      <td class="wrap">{{ ln.vendor }}</td>
+      <td class="text-end num">{{ ln.qty }}</td>
+      <td class="nowrap">{{ ln.currency }}</td>
+      <td class="text-end num">{{ ln.price|indo_number:2 }}</td>
+      <td class="text-end num">{{ ln.rate|indo_number:3 }}</td>
+      <td class="text-end num">{{ ln.amount_idr|indo_number:2 }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7" class="text-center">No cost lines.</td></tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr>
+      <th colspan="6" class="text-end">TOTAL JOB COST</th>
+      <th class="text-end num">{{ total_cost_idr|indo_number:2 }}</th>
+    </tr>
+  </tfoot>
+</table>
 
-  <h3 style="margin:14px 0 6px 0;">Profitability</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>Item</th>
-        <th>Currency</th>
-        <th>Rate</th>
-        <th class="right">Amount</th>
-        <th class="right">Total</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Total Nilai Job Order (No Tax)</td>
-        <td>{{ job_ccy }}</td>
-        <td class="num">{{ job_rate|indo_number:3 }}</td>
-        <td class="num">{{ job_value|indo_number:2 }}</td>
-        <td class="num">{{ job_value_idr|indo_number:2 }}</td>
-      </tr>
-      <tr>
-        <td>Total Job Cost (No Tax)</td>
-        <td>IDR</td>
-        <td class="num">1.000</td>
-        <td class="num">{{ total_cost_idr|indo_number:2 }}</td>
-        <td class="num">{{ total_cost_idr|indo_number:2 }}</td>
-      </tr>
-      <tr>
-        <td colspan="4" class="right"><b>PROFIT</b></td>
-        <td class="num"><b>{{ profit_idr|indo_number:2 }}</b></td>
-      </tr>
-    </tbody>
-  </table>
+<h5 class="mt-3 mb-2">Profitability</h5>
+
+<table class="table table-sm table-bordered align-middle">
+  <colgroup>
+    <col style="width:46%;">
+    <col style="width:12%;">
+    <col style="width:12%;">
+    <col style="width:15%;">
+    <col style="width:15%;">
+  </colgroup>
+  <thead class="table-light">
+    <tr>
+      <th>Item</th>
+      <th>Currency</th>
+      <th>Rate</th>
+      <th class="text-end">Amount</th>
+      <th class="text-end">Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Total Nilai Job Order (No Tax)</td>
+      <td>{{ job_ccy }}</td>
+      <td class="text-end num">{{ job_rate|indo_number:3 }}</td>
+      <td class="text-end num">{{ job_value|indo_number:2 }}</td>
+      <td class="text-end num">{{ job_value_idr|indo_number:2 }}</td>
+    </tr>
+    <tr>
+      <td>Total Job Cost (No Tax)</td>
+      <td>IDR</td>
+      <td class="text-end num">1.000</td>
+      <td class="text-end num">{{ total_cost_idr|indo_number:2 }}</td>
+      <td class="text-end num">{{ total_cost_idr|indo_number:2 }}</td>
+    </tr>
+    <tr>
+      <td colspan="4" class="text-end"><strong>PROFIT</strong></td>
+      <td class="text-end num"><strong>{{ profit_idr|indo_number:2 }}</strong></td>
+    </tr>
+  </tbody>
+</table>
 {% endblock %}

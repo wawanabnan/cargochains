@@ -84,11 +84,20 @@
         >
           🖨️ Print Preview
         </a>
-        <a class="btn btn-sm btn-outline-danger"
+      <a class="btn btn-sm btn-outline-danger"
         target="_blank"
         href="{% url 'job:joborder_cost_pdf' job.pk %}">
         📄 PDF
       </a>
+
+
+      <a class="btn btn-sm btn-outline-danger"
+        target="_blank"
+        href="{% url 'job:joborder_cost_pdf_2' job.pk %}">
+        📄 PDF2
+      </a>
+
+
 
           
             {% if object.complete_journal_id %}

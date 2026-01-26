@@ -132,7 +132,7 @@ document.addEventListener("DOMContentLoaded", function () {
       form = document.createElement("form");
       form.id = "bulk-form";
       form.method = "POST";
-      form.action = "{% url 'sales:joborder_bulk_status' %}";
+      form.action = "{% url 'job:joborder_bulk_status' %}";
       form.className = "d-none";
       form.innerHTML = `{% csrf_token %}
         <input type="hidden" name="action" id="bulk-action">

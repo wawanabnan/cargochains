@@ -1,0 +1,66 @@
+<li class="nav-item {% if request.resolver_match.app_name == 'accounting' %}menu-open{% endif %}">
+  <a href="#" class="nav-link {% if request.resolver_match.app_name == 'accounting' %}active{% endif %}">
+    <i class="nav-icon bi bi-calculator"></i>
+    <p>
+     Payment & Invoicing
+      <i class="nav-arrow bi bi-chevron-right"></i>
+    </p>
+  </a>
+
+  <ul class="nav nav-treeview">
+   
+     <li class="nav-item">
+      <a href="#" class="nav-link">
+        <i class="nav-icon bi bi-receipt"></i>
+        <p>Customer Invoice</p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="#" class="nav-link">
+        <i class="nav-icon bi bi-receipt"></i>
+        <p>Customer Receipt</p>
+      </a>
+    </li>
+
+    
+    <li class="nav-item">
+      <a href="{% url 'shipments:vendor_bill_list' %}"
+      class="nav-link">
+        <i class="far fa-file-invoice nav-icon"></i>
+        <p>Vendor Bills</p>
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a href="{% url 'payments:vendor_payment_list' %}"
+      class="nav-link">
+        <i class="nav-icon bi bi-credit-card-2-front"></i>
+        <p>Vendor Payment</p>
+      </a>
+    </li>
+     <li class="nav-item">
+      <a href="#"
+      class="nav-link">
+        <i class="nav-icon bi bi-credit-card-fill"></i>
+        <p>Credit Notes</p>
+      </a>
+    </li>
+     <li class="nav-item">
+      <a href="#"
+      class="nav-link">
+        <i class="nav-icon bi bi-arrows-collapse"></i>
+        <p>Refund</p>
+      </a>
+    </li>
+
+         <li class="nav-item">
+      <a href="{% url 'core:exchange_rate_list' %}"
+        class="nav-link {% if request.resolver_match.url_name and 'settings_exchange_rate' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="nav-icon bi bi-graph-up-arrow"></i>
+        <p>Exchange Rates</p>
+      </a>
+    </li>
+
+
+  </ul>
+</li>
