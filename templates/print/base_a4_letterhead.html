@@ -4,70 +4,85 @@
 <head>
 <meta charset="utf-8">
 <style>
-@media print {
+  :root{
+    --header-h: 45mm;   /* tinggi area header di halaman 1 */
+    --footer-h: 30mm;   /* tinggi area footer di halaman 1 */
+  }
+
+  /* halaman 2 dst: tanpa header/footer */
   @page{
     size: A4;
-    margin: 0;           /* penting supaya mentok ke kertas */
+    margin: 15mm;
+    @top-center { content: none; }
+    @bottom-center { content: none; }
   }
 
-  html, body{
-    margin: 0;
-    padding: 0;
+  /* halaman 1: pakai running element */
+  @page:first{
+    margin-top: var(--header-h);
+    margin-bottom: var(--footer-h);
+    margin-left: 15mm;
+    margin-right: 15mm;
+
+    @top-center { content: element(hdr); }
+    @bottom-center { content: element(ftr); }
   }
 
-  /* ===== HEADER ===== */
-  .header-print{
-    position: fixed;
-    top: 0mm;            /* ⬅️ turunin header di sini */
-    left: 0;
-    width: 210mm;
-    z-index: 9999;
+  body{
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    line-height: 1.45;
   }
 
-  .header-print img{
-    width: 210mm;
+  /* Elemen “sumber” untuk header/footer */
+  .hdr { position: running(hdr); height: var(--header-h); }
+  .ftr { position: running(ftr); height: var(--footer-h); }
+
+  /* Ini yang ngunci ukuran biar nggak ngawur */
+  .hdr img, .ftr img{
     display: block;
+    width: 210mm;     /* full A4 */
+    height: auto;     /* jaga rasio */
   }
 
-  /* ===== FOOTER ===== */
-  .footer-print{
-    position: fixed;
-    bottom: 3mm;         /* ⬅️ naikin footer di sini */
-    left: 0;
-    width: 210mm;
-    z-index: 9999;
-  }
-
-  .footer-print img{
-    width: 210mm;
-    display: block;
-  }
-
-  /* ===== CONTENT ===== */
-  .content{
-    margin-top: 45mm;    /* area aman konten dari header */
-    margin-bottom: 30mm; /* area aman konten dari footer */
-    padding: 15mm;
-  }
+  .ftr img{
+  display:block;
+  width:210mm;
+  height:auto;
+  margin-top: -15mm;   /* ⬅️ naik 3mm (coba -1mm, -2mm, -5mm) */
 }
+
+ 
+ .hdr img{
+  display:block;
+  width:210mm;
+  height:auto;
+  margin-top: 5mm;   /* ⬅️ naik 3mm (coba -1mm, -2mm, -5mm) */
+}
+
+/* kalau mau “dipaksa pas di box” (tidak kepotong): */
+  /* .hdr img, .ftr img { height: 100%; width: 210mm; object-fit: contain; } */
+
+  table{ width:100%; border-collapse:collapse; }
+  thead{ display: table-header-group; }
+  tfoot{ display: table-footer-group; }
+  tr{ page-break-inside: avoid; }
+  .text-end{ text-align:right; }
+  .nowrap{ white-space:nowrap; }
+  .wrap{ word-break:break-word; }
 </style>
 </head>
+
 <body>
-
-  <!-- HEADER -->
-  <div class="header-print">
-    <img src="{% static 'print/header_full.png' %}" alt="Header">
+  <!-- “sumber” header/footer (tidak tampil sebagai konten biasa) -->
+  <div class="hdr">
+    <img src="{% static 'print/header_full.png' %}" alt="">
   </div>
 
-  <!-- FOOTER -->
-  <div class="footer-print">
-    <img src="{% static 'print/footer_full.png' %}" alt="Footer">
+  <div class="ftr">
+    <img src="{% static 'print/footer_full.png' %}" alt="">
   </div>
 
-  <!-- CONTENT -->
-  <div class="content">
-    {% block content %}{% endblock %}
-  </div>
-
+  {% block content %}{% endblock %}
 </body>
 </html>
