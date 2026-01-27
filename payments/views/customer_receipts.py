@@ -12,7 +12,7 @@ from payments.services.customer_receipts import CustomerReceipt
 
 class CustomerReceiptListView(LoginRequiredMixin, ListView):
     model = CustomerReceipt
-    template_name = "receipts/list.html"
+    template_name = "customer_receipts/list.html"
     context_object_name = "rows"
     paginate_by = 50
 
@@ -20,7 +20,7 @@ class CustomerReceiptListView(LoginRequiredMixin, ListView):
 class CustomerReceiptCreateView(LoginRequiredMixin, CreateView):
     model = CustomerReceipt
     form_class = CustomerReceiptForm
-    template_name = "receipts/form.html"
+    template_name = "customer_receipts/form.html"
 
     def form_valid(self, form):
         rcpt = form.save(commit=False)

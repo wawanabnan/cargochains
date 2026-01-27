@@ -4,7 +4,7 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-=o&n*svev4)483cuyo%y)60caqh$8p4d6s-b(21l3slzp%9(#2'
-DEBUG = True
+DEBUG = False
 ALLOWED_HOSTS = ['*']
 ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1", "http://localhost"]

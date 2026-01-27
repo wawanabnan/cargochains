@@ -3,15 +3,16 @@ from django.urls import path, include
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.conf.urls.static import static
+from django.views.generic import RedirectView
 
 
 
 def custom_page_not_found(request, exception):
-    return render(request, "404.html", status=404)
+    return render(request, "errors/404.html", status=404)
 
 
 def custom_permission_denied(request, exception=None):
-    return render(request, "403.html", status=403)
+    return render(request, "errors/403.html", status=403)
 
 
 handler403 = custom_permission_denied
@@ -33,6 +34,8 @@ urlpatterns = [
 
     # account (login/logout/dashboard)
     path("account/", include("account.urls", namespace="account")),
+    path("", RedirectView.as_view(pattern_name="account:dashboard", permanent=False)),
+
 
     # modules
     path("sales/", include("sales.urls", namespace="sales")),
