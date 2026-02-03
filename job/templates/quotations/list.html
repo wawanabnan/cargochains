@@ -1,0 +1,95 @@
+{% extends "adminbase.html" %}
+{% load humanize %}
+
+{% block content %}
+
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1 class="m-0">Quotation</h1>
+      </div>
+      <div class="col-sm-6 text-end">
+        <a href="{% url 'job:quotation_add' %}" class="btn btn-sm btn-primary">
+          <i class="fas fa-plus"></i> New Quotation
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="card">
+      <div class="card-body table-responsive p-0">
+
+        <table class="table table-hover table-sm text-nowrap">
+          <thead>
+            <tr>
+              <th>Quotation No</th>
+              <th>Date</th>
+              <th>Valid Until</th>
+              <th>Customer</th>
+              <th>Status</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for q in object_list %}
+              <tr>
+                <td>
+                  <a href="{% url 'job:quotation_detail' q.pk %}">
+                    {{ q.number }}
+                  </a>
+                </td>
+                <td>{{ q.quote_date|date:"d-m-Y" }}</td>
+                <td>
+                  {% if q.valid_until %}
+                    {{ q.valid_until|date:"d-m-Y" }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>{{ q.customer }}</td>
+                <td>
+                  {% if q.status == "DRAFT" %}
+                    <span class="badge bg-secondary">Draft</span>
+                  {% elif q.status == "SENT" %}
+                    <span class="badge bg-info">Sent</span>
+                  {% elif q.status == "ORDERED" %}
+                    <span class="badge bg-success">Ordered</span>
+                  {% else %}
+                    <span class="badge bg-light text-dark">{{ q.status }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <a href="{% url 'job:quotation_detail' q.pk %}"
+                     class="btn btn-xs btn-outline-primary">
+                    View
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-muted">
+                  No quotation found
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+      </div>
+    </div>
+
+    {% if is_paginated %}
+      <div class="mt-3">
+        {% include "partials/pagination.html" %}
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}

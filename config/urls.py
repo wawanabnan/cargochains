@@ -27,7 +27,7 @@ urlpatterns = [
 
     # core (welcome + setup wizard)
     path("", include(("core.urls", "core"), namespace="core")),
-    path("", include(("shipments.urls", "shipmenst"), namespace="shipments")),
+    path("", include(("shipments.urls", "shipments"), namespace="shipments")),
 
 
 
@@ -59,6 +59,8 @@ urlpatterns = [
         "sales/reports/",
         include(("sales.reports.urls", "sales_reports"), namespace="sales_reports"),
     ),
+
+   
 ]
 
 if settings.DEBUG:

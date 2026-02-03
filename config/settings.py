@@ -34,10 +34,12 @@ INSTALLED_APPS = [
     "sales_configuration",
     'job',
     "accounting",
-    'payments'
+    'payments',
+    "rest_framework",
+    "rest_framework.authtoken",
+    "corsheaders"
+    
 ]
-
-INSTALLED_APPS += ["rest_framework", "corsheaders"]
 
 
 MIDDLEWARE = [
@@ -61,6 +63,8 @@ CORS_ALLOWED_ORIGINS = [
 # CSRF tidak diperlukan untuk GET autocomplete, tapi aman kalau ditambah juga
 CSRF_TRUSTED_ORIGINS = [
     "http://cargochains.test",
+    "chrome-extension://ecglnipfmiacmkpibpnedjghnbfanlpi",
+
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -190,3 +194,25 @@ WKHTMLTOPDF_CMD = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 ALLOW_CREATE_SUPERUSER_ON_SETUP = True
+
+
+REST_FRAMEWORK = {
+    # AUTH
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+
+    # THROTTLING
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "30/min",
+        "public_track": "20/min",
+    },
+}
+
+
+
+SITE_BASE_URL = "http://192.168.1.2:8000"

@@ -1,0 +1,81 @@
+{% extends "shipments/public/base.html" %}
+{% block title %}Track Shipment • CargoChains{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-10 col-lg-7">
+    <div class="card hero-card p-3 p-md-4">
+      <div class="card-body">
+        <div class="d-flex align-items-start justify-content-between gap-3">
+          <div>
+            <h1 class="h4 fw-bold mb-1">Lacak Shipment Anda</h1>
+            <p class="soft mb-0">Masukkan <b>Tracking Number</b>. Jika Anda punya link bertoken, tempelkan juga (opsional).</p>
+          </div>
+          <div class="d-none d-md-block text-end">
+            <span class="badge text-bg-primary-subtle text-primary border">Customer</span>
+          </div>
+        </div>
+
+        {% if error %}
+          <div class="alert alert-danger mt-3 mb-0" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>{{ error }}
+          </div>
+        {% endif %}
+
+        <form method="post" class="mt-4">
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tracking Number</label>
+            <input type="text"
+                   class="form-control form-control-lg mono"
+                   name="tracking_no"
+                   value="{{ tracking_no|default:'' }}"
+                   placeholder="Contoh: A1B2C3D4E5F6"
+                   autocomplete="off"
+                   required>
+            <div class="form-text">Tracking number adalah nomor publik yang Anda terima dari CS/Ops.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Token / Link (opsional)</label>
+            <input type="text"
+                   class="form-control"
+                   name="token_or_link"
+                   value="{{ token_or_link|default:'' }}"
+                   placeholder="Tempel token atau full link jika ada">
+            <div class="form-text">Jika Anda menerima link seperti <span class="mono">...?t=xxxxx</span>, cukup tempelkan di sini.</div>
+          </div>
+
+          <div class="d-grid d-sm-flex gap-2 align-items-center">
+            <button class="btn btn-primary btn-lg" type="submit">
+              <i class="bi bi-search me-1"></i>Track
+            </button>
+            <a class="btn btn-outline-secondary btn-lg" href="{% url 'shipments:public_track_home' %}">
+              Reset
+            </a>
+          </div>
+        </form>
+
+        <hr class="my-4">
+
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <div class="p-3 bg-light border rounded-3 h-100">
+              <div class="fw-semibold mb-1"><i class="bi bi-link-45deg me-1"></i>Via Link</div>
+              <div class="soft small">Klik link tracking dari WhatsApp/Email untuk langsung melihat status.</div>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="p-3 bg-light border rounded-3 h-100">
+              <div class="fw-semibold mb-1"><i class="bi bi-123 me-1"></i>Via Nomor</div>
+              <div class="soft small">Jika link tidak bisa dibuka, buka halaman ini dan masukkan Tracking Number.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

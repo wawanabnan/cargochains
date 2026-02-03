@@ -1,0 +1,39 @@
+Yth. Bapak/Ibu,
+
+Terima kasih atas kepercayaan Anda kepada kami.
+
+Shipment Anda telah berhasil dibuat dan dapat dipantau melalui informasi berikut:
+
+Tracking Number:
+{{ tracking_no }}
+
+Link Tracking:
+{{ tracking_url }}
+
+Jika link tidak dapat dibuka, silakan kunjungi:
+{{ track_home_url }}
+lalu masukkan Tracking Number di atas.
+
+---
+
+Dear Sir / Madam,
+
+Thank you for choosing our service.
+
+Your shipment has been successfully created and can now be tracked using the information below:
+
+Tracking Number:
+{{ tracking_no }}
+
+Tracking Link:
+{{ tracking_url }}
+
+If the link cannot be opened, please visit:
+{{ track_home_url }}
+and enter the Tracking Number above.
+
+---
+
+Hormat kami / Kind regards,
+Customer Service
+CargoChains

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Delete Quotation</h1>
+
+<p>
+  Are you sure you want to delete quotation
+  <strong>{{ object.number }}</strong>?
+</p>
+
+{% if object.status == "EXPIRED" %}
+  <div class="alert alert-danger">
+    This quotation is EXPIRED.  
+    <strong>Related Job Order will also be deleted.</strong>
+  </div>
+{% endif %}
+
+<form method="post">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-danger">
+    Yes, delete
+  </button>
+  <a href="{% url 'job:quotation_detail' object.id %}" class="btn btn-secondary">
+    Cancel
+  </a>
+</form>
+
+{% endblock %}

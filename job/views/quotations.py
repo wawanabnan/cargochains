@@ -1,0 +1,299 @@
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import transaction
+from django.shortcuts import redirect
+from django.urls import reverse_lazy
+from django.views import View
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+
+from job.models.quotations import Quotation, QuotationStatus
+from job.forms.quotations import QuotationForm  # kalau belum ada, ganti pakai fields=[...]
+from job.forms.job_orders import JobOrderForm
+from django.shortcuts import render, redirect
+from job.models.job_orders import JobOrder
+from core.utils.numbering import get_next_number
+from django.views.generic import DetailView,CreateView, UpdateView, ListView
+from decimal import Decimal, InvalidOperation
+from core.models.taxes import Tax
+from uuid import uuid4
+from django.shortcuts import get_object_or_404, redirect
+from django.core.exceptions import ValidationError
+
+
+from django.utils import timezone
+from django.db.models import Q
+from django.template.loader import render_to_string
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponse
+from weasyprint import HTML  # pip install weasyprint
+
+
+def _quotation_print_context(q: Quotation):
+    """
+    Context untuk preview & PDF.
+    Sesuaikan field yang kamu mau tampil.
+    """
+    jo = q.job_order  # OneToOne -> boleh None, tapi idealnya selalu ada
+    return {
+        "q": q,
+        "jo": jo,
+        # contoh: taxes M2M (kalau ada)
+        "taxes": getattr(jo, "taxes", None).all() if jo and hasattr(jo, "taxes") else [],
+    }
+
+
+
+
+
+def get_queryset(self):
+    qs = super().get_queryset()
+    status = self.request.GET.get("status")
+    today = timezone.localdate()
+
+    if status == "EXPIRED":
+        qs = qs.filter(
+            Q(status=QuotationStatus.EXPIRED) |
+            (Q(status__in=[QuotationStatus.DRAFT, QuotationStatus.SENT]) & Q(valid_until__lt=today))
+        )
+    elif status:
+        qs = qs.filter(status=status)
+
+    return qs
+
+
+
+def _build_tax_map():
+    qs = Tax.objects.filter(is_active=True).only("id", "rate", "is_withholding")
+    return {
+        str(t.id): {
+            "rate": float(t.rate or Decimal("0")),          # percent
+            "is_withholding": bool(t.is_withholding),
+        }
+        for t in qs
+    }
+
+class QuotationListView(LoginRequiredMixin, ListView):
+    model = Quotation
+    template_name = "quotations/list.html"
+    context_object_name = "quotations"
+    paginate_by = 25
+    ordering = ["-id"]
+
+class QuotationCreateView(LoginRequiredMixin, CreateView):
+    model = Quotation
+    form_class = QuotationForm
+    template_name = "quotations/form.html"
+
+    
+
+    def get_context_data(self, *, qform=None, form=None):
+        """
+        Dipakai untuk GET pertama kali dan untuk re-render saat POST invalid.
+        """
+        if qform is None:
+            qform = QuotationForm()
+        if form is None:
+            form = JobOrderForm()
+
+        return {
+            "qform": qform,   # quote_date, valid_until
+            "form": form,     # JobOrderForm full fields (kecuali yang kamu nggak render di template)
+            "mode": "create",
+            "tax_map": _build_tax_map(),
+        }
+
+    def get_success_url(self):
+        return reverse_lazy("job:quotation_list")
+
+
+    def get(self, request, *args, **kwargs):
+        ctx = self.get_context_data()
+        return render(request, self.template_name, ctx)
+
+    def post(self, request, *args, **kwargs):
+
+        data = request.POST.copy()
+
+      
+        qd = (data.get("quote_date") or "").strip()
+        if qd and not (data.get("job_date") or "").strip():
+            data["job_date"] = qd
+
+        print("AFTER copy quote_date:", data.get("quote_date"))
+        print("AFTER copy job_date:", data.get("job_date"))
+
+
+            
+        qform = QuotationForm(data)
+        form = JobOrderForm(data)
+
+
+
+        if not (qform.is_valid() and form.is_valid()):
+            ctx = self.get_context_data()
+            ctx["qform"] = qform
+            ctx["form"] = form
+            return render(request, self.template_name, ctx)
+
+
+        with transaction.atomic():
+            # 1) create JobOrder hidden (status QUOTATION)
+            job: JobOrder = form.save(commit=False)
+            job.status = JobOrder.ST_QUOTATION  # hidden dari list visible :contentReference[oaicite:2]{index=2}
+            job.sales_user = request.user
+            # job_date: kamu bisa set sama dengan quote_date biar konsisten, tapi tidak ditampilkan
+            if not job.number:
+                job.number = f"TMP-{uuid4().hex[:12].upper()}"  # unik
+
+            job.job_date = qform.cleaned_data["quote_date"]
+            job.save()
+            form.save_m2m()  # taxes M2M, dll
+
+            # 2) create Quotation
+            quotation = qform.save(commit=False)
+            quotation.job_order = job
+            quotation.status = QuotationStatus.DRAFT  # default juga boleh :contentReference[oaicite:3]{index=3}
+
+            # kalau number quotation auto-generate:
+            if not quotation.number:
+                quotation.number = get_next_number("quote", "QUOTATION")
+
+            quotation.save()
+
+        messages.success(request, "Quotation berhasil dibuat.")
+        return redirect(self.get_success_url())
+
+class QuotationUpdateView(LoginRequiredMixin, UpdateView):
+    model = Quotation
+    form_class = QuotationForm
+    template_name = "quotations/form.html"
+
+    def get_success_url(self):
+        return reverse_lazy("job:quotation_detail", kwargs={"pk": self.object.pk})
+
+class QuotationStatusUpdateView(LoginRequiredMixin, View):
+    """
+    POST only: update status.
+    Side-effect ORDERED -> JobOrder updated dilakukan oleh Quotation.save().
+    """
+    @transaction.atomic
+    def post(self, request, pk):
+        q = Quotation.objects.select_for_update().get(pk=pk)
+        new_status = request.POST.get("status")
+
+        if new_status not in QuotationStatus.values:
+            messages.error(request, "Status tidak valid.")
+            return redirect("job:quotation_detail", pk=pk)
+
+        q.status = new_status
+        q._sales_user = request.user  # ✅ supaya JobOrder.sales_user ikut terisi saat ORDERED
+        q.save(update_fields=["status"])
+
+        messages.success(request, "Status quotation berhasil diupdate.")
+        return redirect("job:quotation_detail", pk=pk)
+
+class QuotationDeleteView(LoginRequiredMixin, DeleteView):
+    model = Quotation
+    template_name = "quotations/confirm_delete.html"
+    success_url = reverse_lazy("job:quotation_list")
+
+class QuotationDetailView(DetailView):
+    model = Quotation
+    template_name = "quotations/detail.html"
+    context_object_name = "quotation"
+
+    def get_queryset(self):
+        # load job_order biar nggak N+1
+        return super().get_queryset().select_related("job_order")
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        quotation = self.object
+        job = quotation.job_order  # OneToOneField, bisa null :contentReference[oaicite:0]{index=0}
+
+        qform = QuotationForm(instance=quotation)     # quote_date, valid_until :contentReference[oaicite:1]{index=1}
+        jform = JobOrderForm(instance=job) if job else JobOrderForm()  # full JO fields :contentReference[oaicite:2]{index=2}
+
+        # make read-only for detail
+        for f in qform.fields.values():
+            f.disabled = True
+        for f in jform.fields.values():
+            f.disabled = True
+
+        ctx.update({
+            "quotation": quotation,
+            "job": job,
+            "qform": qform,
+            "form": jform,   # biar template reuse yg sama seperti JobOrder (form.html)
+        })
+        return ctx
+    
+class QuotationSendView(View):
+    def post(self, request, pk):
+        q = get_object_or_404(Quotation, pk=pk)
+
+        if not request.user.has_perm("job.can_send_quotation"):
+            messages.error(request, "Tidak punya akses untuk send quotation.")
+            return redirect("job:quotation_detail", pk=q.id)
+
+        try:
+            q.mark_sent(request.user)
+            messages.success(request, f"Quotation {q.number} berhasil di-set menjadi SENT.")
+        except ValidationError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, str(e))
+
+        return redirect("job:quotation_detail", pk=q.id)
+
+
+class QuotationConvertToOrderView(View):
+    @transaction.atomic
+    def post(self, request, pk):
+        q = get_object_or_404(Quotation.objects.select_for_update(), pk=pk)
+
+        if not request.user.has_perm("job.can_convert_quotation"):
+            messages.error(request, "Tidak punya akses untuk convert quotation.")
+            return redirect("job:quotation_detail", pk=q.id)
+
+        try:
+            job = JobOrder.objects.select_for_update().get(pk=q.job_order_id)
+            job_date = job.job_date or q.quote_date
+
+            job.convert_from_quotation(user=request.user, job_date=job_date)
+            q.mark_ordered(request.user)
+
+            messages.success(request, f"Quotation {q.number} berhasil di-convert menjadi Order.")
+            return redirect("job:joborder_detail", pk=job.id)
+
+        except Exception as e:
+            messages.error(request, str(e))
+            return redirect("job:quotation_detail", pk=q.id)
+
+class QuotationPrintPreviewView(LoginRequiredMixin, DetailView):
+    model = Quotation
+    template_name = "quotations/quote_print_preview.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx.update(_quotation_print_context(self.object))
+        return ctx
+
+
+@login_required
+def quotation_pdf_view(request, pk: int):
+    q = get_object_or_404(Quotation, pk=pk)
+    ctx = _quotation_print_context(q)
+
+    html = render_to_string("quotations/quote_pdf.html", ctx, request=request)
+
+    # base_url penting supaya static file (header_full.png/footer_full.png) kebaca
+    base_url = request.build_absolute_uri("/")
+
+    pdf_bytes = HTML(string=html, base_url=base_url).write_pdf()
+
+    filename = f"quotation-{(q.number or str(pk)).replace('/', '-')}.pdf"
+    resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+    resp["Content-Disposition"] = f'inline; filename="{filename}"'
+    return resp

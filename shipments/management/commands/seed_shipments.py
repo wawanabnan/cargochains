@@ -17,7 +17,7 @@ class Command(BaseCommand):
                 name=name, transportation_mode=mode
             )
             if created:
-                self.stdout.write(self.style.SUCCESS(f"Created TransportationType {name}"))
+               self.stdout.write(f"Public URL  : /track/{shipment.tracking_no}/")
 
         # Dummy partners & locations (ambil pertama yg ada)
         shipper = Partner.objects.first()

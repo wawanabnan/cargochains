@@ -98,3 +98,26 @@ urlpatterns += [
     path("test-weasyprint/", test_weasyprint, name="test_weasyprint"),
    
 ]
+
+
+from django.urls import path
+from job.views.quotations import (
+    QuotationListView, QuotationCreateView, QuotationUpdateView,
+    QuotationStatusUpdateView,QuotationSendView,QuotationDetailView,
+     QuotationConvertToOrderView,QuotationPrintPreviewView,
+    quotation_pdf_view,
+)
+
+urlpatterns += [
+    path("quotations/", QuotationListView.as_view(), name="quotation_list"),
+    path("quotations/add/", QuotationCreateView.as_view(), name="quotation_add"),
+    path("quotations/<int:pk>/", QuotationDetailView.as_view(), name="quotation_detail"),
+    path("quotations/<int:pk>/edit/", QuotationUpdateView.as_view(), name="quotation_update"),
+    path("quotations/<int:pk>/status/", QuotationStatusUpdateView.as_view(), name="quotation_update_status"),
+    path("quotations/<int:pk>/send/", QuotationSendView.as_view(), name="quotation_send"),
+    path("quotations/<int:pk>/convert/", QuotationConvertToOrderView.as_view(), name="quotation_convert"),
+    path("quotations/<int:pk>/print/", QuotationPrintPreviewView.as_view(), name="quotation_print"),
+    path("quotations/<int:pk>/pdf/", quotation_pdf_view, name="quotation_pdf"),
+
+]
+    

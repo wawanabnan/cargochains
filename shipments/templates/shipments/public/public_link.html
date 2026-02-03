@@ -1,0 +1,237 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div>
+        <h4 class="mb-1">Generate Customer Tracking Link</h4>
+        <div class="text-muted small">
+          Cari shipment lalu generate link tracking untuk customer.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-3 p-md-4">
+
+        <!-- ================= SEARCH ================= -->
+        <form method="post" class="row g-3 align-items-end">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="search" />
+
+          <div class="col-12 col-md-8">
+            <label class="form-label fw-semibold mb-1">Tracking No / JO Number</label>
+            <input
+              class="form-control"
+              name="tracking_no"
+              placeholder="Contoh: ABC123XYZ atau JO-000123"
+              autocomplete="off"
+            />
+            <div class="form-text">
+              Sales/CS boleh input <b>JO Number</b> atau langsung <b>Tracking No</b>.
+            </div>
+
+            {% if error %}
+              <div class="alert alert-danger mt-3 mb-0 py-2">
+                {{ error }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="col-12 col-md-4 d-grid">
+            <button type="submit" class="btn btn-primary">
+              Search
+            </button>
+          </div>
+        </form>
+
+        {% if shipment %}
+          <hr class="my-4">
+
+          <!-- ================= FOUND ================= -->
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="p-3 rounded-3 bg-light border">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                  <div>
+                    <div class="small text-muted">Found Shipment</div>
+                    <div class="fw-bold mono">{{ shipment.tracking_no }}</div>
+                  </div>
+                  <div class="text-muted small">
+                    Shipment ID: <span class="mono">{{ shipment.id }}</span>
+                    • Status: <span class="fw-semibold">{{ shipment.status }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= GENERATE ================= -->
+            <div class="col-12">
+              <form method="post" class="row g-3 align-items-end">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="generate" />
+                <input type="hidden" name="shipment_id" value="{{ shipment.id }}" />
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label fw-semibold mb-1">TTL (days)</label>
+                  <select name="ttl_days" class="form-select">
+                    <option value="7"  {% if result.ttl_days == 7 %}selected{% endif %}>7</option>
+                    <option value="30" {% if not result or result.ttl_days == 30 %}selected{% endif %}>30</option>
+                    <option value="90" {% if result.ttl_days == 90 %}selected{% endif %}>90</option>
+                    <option value="180" {% if result.ttl_days == 180 %}selected{% endif %}>180</option>
+                    <option value="365" {% if result.ttl_days == 365 %}selected{% endif %}>365</option>
+                  </select>
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label fw-semibold mb-1">WhatsApp (opsional)</label>
+                  <input
+                    class="form-control"
+                    name="phone_e164"
+                    placeholder="62812xxxx (tanpa +)"
+                    autocomplete="off"
+                  />
+                  <div class="form-text">
+                    Jika diisi, tombol <b>Open WhatsApp</b> aktif.
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-4 d-grid d-md-flex gap-2">
+                  <button type="submit" class="btn btn-success flex-grow-1">
+                    Generate Link
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if result %}
+          <hr class="my-4">
+
+          <!-- ================= RESULT ================= -->
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold mb-1">Public Tracking URL</label>
+
+              <div class="input-group">
+                <input id="trackingUrl" class="form-control mono" value="{{ result.url }}" readonly>
+                <button class="btn btn-outline-primary" type="button" onclick="copyLink()">
+                  Copy
+                </button>
+              </div>
+
+              <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+                <a href="{{ result.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                  Open Tracking
+                </a>
+
+                {% if result.wa_link %}
+                  <a href="{{ result.wa_link }}" target="_blank" class="btn btn-sm btn-success">
+                    Open WhatsApp
+                  </a>
+                {% endif %}
+
+                <span class="text-muted small ms-auto">
+                  {% if result.expires_at %}
+                    Expires: <span class="mono">{{ result.expires_at }}</span>
+                  {% endif %}
+                </span>
+              </div>
+
+              {% if result.wa_msg %}
+                <div class="mt-3">
+                  <label class="form-label fw-semibold mb-1">
+                    WhatsApp Message (Dual)
+                  </label>
+                  <textarea id="waMsg" class="form-control" rows="7" readonly>{{ result.wa_msg }}</textarea>
+                  <button class="btn btn-sm btn-outline-primary mt-2" type="button" onclick="copyWaMsg()">
+                    Copy WhatsApp Text
+                  </button>
+                </div>
+              {% endif %}
+
+              <!-- ================= SEND EMAIL (SEMI-AUTO) ================= -->
+              <hr class="my-4">
+
+              <form method="post" class="row g-3 align-items-end">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="send_email" />
+                <input type="hidden" name="shipment_id" value="{{ shipment.id }}" />
+                <input type="hidden" name="tracking_url" value="{{ result.url }}" />
+
+                <div class="col-12 col-md-8">
+                  <label class="form-label fw-semibold mb-1">Email Customer</label>
+                  <input
+                    class="form-control"
+                    type="email"
+                    name="to_email"
+                    placeholder="customer@email.com"
+                    autocomplete="off"
+                    required
+                  />
+                  <div class="form-text">
+                    Klik <b>Send Email</b> untuk kirim template tracking (Dual Language).
+                  </div>
+
+                  {% if result.email_sent_to %}
+                    <div class="alert alert-success mt-3 mb-0 py-2">
+                      Email sent to: <span class="mono">{{ result.email_sent_to }}</span>
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="col-12 col-md-4 d-grid">
+                  <button type="submit" class="btn btn-primary">
+                    Send Email
+                  </button>
+                </div>
+              </form>
+              <!-- ================= END SEND EMAIL ================= -->
+
+            </div>
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                 "Liberation Mono", "Courier New", monospace;
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function copyLink() {
+    const el = document.getElementById("trackingUrl");
+    if (!el) return;
+    el.select();
+    document.execCommand("copy");
+    alert("Tracking link copied!");
+  }
+
+  function copyWaMsg() {
+    const el = document.getElementById("waMsg");
+    if (!el) return;
+    el.select();
+    document.execCommand("copy");
+    alert("WhatsApp text copied!");
+  }
+</script>
+{% endblock %}

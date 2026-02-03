@@ -1,0 +1,108 @@
+{% extends "print/base_a4.html" %}
+
+{% block title %}Quotation {{ q.number }}{% endblock %}
+
+{% block actions %}
+  <a class="btn" href="{% url 'job:quotation_pdf' q.pk %}" target="_blank">📄 Open PDF</a>
+{% endblock %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col">
+    <div class="title">QUOTATION</div>
+    <div class="subtitle">Quotation No: <b>{{ q.number }}</b></div>
+  </div>
+  <div class="col right">
+    <div><b>Date</b>: {{ q.quote_date|date:"d-m-Y" }}</div>
+    <div><b>Valid Until</b>: {% if q.valid_until %}{{ q.valid_until|date:"d-m-Y" }}{% else %}-{% endif %}</div>
+  </div>
+</div>
+
+<div class="mt-12">
+  <table class="no-border">
+    <tr>
+      <td class="nowrap"><b>Customer</b></td>
+      <td>:</td>
+      <td>{{ jo.customer }}</td>
+    </tr>
+    <tr>
+      <td class="nowrap"><b>Service</b></td>
+      <td>:</td>
+      <td>{{ jo.service }}</td>
+    </tr>
+    <tr>
+      <td class="nowrap"><b>Origin</b></td>
+      <td>:</td>
+      <td>{{ jo.origin }}</td>
+    </tr>
+    <tr>
+      <td class="nowrap"><b>Destination</b></td>
+      <td>:</td>
+      <td>{{ jo.destination }}</td>
+    </tr>
+  </table>
+</div>
+
+<div class="mt-12">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:45%">Description</th>
+        <th class="right" style="width:10%">Qty</th>
+        <th class="right" style="width:15%">Price</th>
+        <th class="right" style="width:15%">Tax</th>
+        <th class="right" style="width:15%">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          {% if jo.remarks_internal %}{{ jo.remarks_internal }}{% else %}Job Order{% endif %}
+        </td>
+        <td class="right">{{ jo.qty }}</td>
+        <td class="right">{{ jo.price }}</td>
+        <td class="right">{{ jo.tax_amount }}</td>
+        <td class="right">{{ jo.total_amount }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="mt-12 row">
+  <div class="col">
+    {% if jo.customer_note %}
+      <div><b>Customer Note</b></div>
+      <div class="muted">{{ jo.customer_note|safe }}</div>
+    {% endif %}
+    {% if jo.sla_note %}
+      <div class="mt-12"><b>SLA Note</b></div>
+      <div class="muted">{{ jo.sla_note|safe }}</div>
+    {% endif %}
+  </div>
+
+  <div class="col">
+    <table>
+      <tr>
+        <td><b>Subtotal</b></td>
+        <td class="right">{{ jo.total_amount }}</td>
+      </tr>
+      <tr>
+        <td><b>Tax</b></td>
+        <td class="right">{{ jo.tax_amount }}</td>
+      </tr>
+      {% if jo.pph_amount %}
+      <tr>
+        <td><b>WHT/PPH</b></td>
+        <td class="right">-{{ jo.pph_amount }}</td>
+      </tr>
+      {% endif %}
+      <tr>
+        <td><b>Grand Total</b></td>
+        <td class="right"><b>{{ jo.grand_total }}</b></td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

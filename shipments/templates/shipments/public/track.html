@@ -1,0 +1,124 @@
+{% extends "shipments/public/base.html" %}
+{% block title %}Tracking {{ tracking_no }} • CargoChains{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-lg-4">
+    <div class="card hero-card p-3">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="soft small">Tracking Number</div>
+            <div class="h5 mb-0 mono fw-bold">{{ tracking_no }}</div>
+          </div>
+          <span class="badge rounded-pill text-bg-primary">{{ status_label }}</span>
+        </div>
+        <div class="mt-3 p-3 bg-light border rounded-3">
+  <div class="fw-semibold mb-2">
+    <i class="bi bi-info-circle me-1"></i>Shipment Information
+  </div>
+
+  <div class="row g-2 small">
+    <div class="col-5 text-muted">Customer Ref</div>
+    <div class="col-7 fw-semibold mono">{{ customer_ref }}</div>
+
+    <div class="col-5 text-muted">Service</div>
+    <div class="col-7 fw-semibold">{{ service }}</div>
+
+    <div class="col-5 text-muted">Origin</div>
+    <div class="col-7 fw-semibold">{{ origin }}</div>
+
+    <div class="col-5 text-muted">Destination</div>
+    <div class="col-7 fw-semibold">{{ destination }}</div>
+  </div>
+</div>
+
+        <div class="mt-3">
+          <div class="soft small mb-1">Status</div>
+          <div class="fw-semibold">{{ status_label }}</div>
+        </div>
+
+        {% if pod %}
+          <div class="mt-3">
+            <a class="btn btn-success w-100" href="{{ pod.url }}" target="_blank" rel="noopener">
+              <i class="bi bi-file-earmark-check me-1"></i> Lihat POD
+            </a>
+          </div>
+        {% endif %}
+
+        <div class="mt-3">
+          <a class="btn btn-outline-secondary w-100" href="{% url 'shipments:public_track_home' %}">
+            <i class="bi bi-arrow-left me-1"></i> Track nomor lain
+          </a>
+        </div>
+
+        <hr class="my-3">
+        <div class="small soft">
+          {% if token_ok %}
+            <i class="bi bi-shield-check me-1"></i> Link terverifikasi.
+          {% else %}
+            <i class="bi bi-info-circle me-1"></i> Pastikan tracking number benar.
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="d-none d-lg-block mt-4">
+      <div class="p-3 border rounded-3 bg-white">
+        <div class="fw-semibold mb-1"><i class="bi bi-headset me-1"></i>Butuh bantuan?</div>
+        <div class="soft small">Hubungi Customer Service dan sertakan Tracking Number.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-8">
+    <div class="card hero-card p-3 p-md-4">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <h2 class="h5 fw-bold mb-0">Riwayat Perjalanan</h2>
+          <span class="soft small"><i class="bi bi-clock me-1"></i>Update terbaru di atas</span>
+        </div>
+
+        <div class="mt-3">
+          {% if timeline and timeline|length > 0 %}
+            <div class="vstack gap-3">
+              {% for e in timeline %}
+                <div class="d-flex">
+                  <div class="d-flex flex-column align-items-center me-3">
+                    <div class="timeline-dot"></div>
+                    {% if not forloop.last %}
+                      <div class="timeline-line flex-grow-1"></div>
+                    {% endif %}
+                  </div>
+
+                  <div class="flex-grow-1">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                      <div class="fw-semibold">
+                        {{ e.label|default:e.code|default:"Update" }}
+                      </div>
+                      {% if e.location %}
+                        <span class="badge text-bg-light border">{{ e.location }}</span>
+                      {% endif %}
+                    </div>
+                    <div class="soft small mt-1">
+                      {{ e.event_time|default:"" }}
+                    </div>
+                    {% if e.description %}
+                      <div class="mt-2">{{ e.description }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="alert alert-info mb-0" role="alert">
+              <i class="bi bi-info-circle me-1"></i>Belum ada update tracking. Silakan cek kembali nanti.
+            </div>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

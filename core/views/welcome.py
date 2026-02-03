@@ -7,7 +7,7 @@ def welcome(request):
     )
 
     if state.is_completed:
-        return redirect("core:setup_done")
+        return redirect("account:dashboard")
 
     if state.current_step == 1:
         return render(request, "setup/welcome.html")

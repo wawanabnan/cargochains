@@ -18,8 +18,13 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from geo.models import Location
+from django.db import transaction
 
 
+class JobOrderQuerySet(models.QuerySet):
+    def visible(self):
+        return self.exclude(status="QUOTATION")
+    
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -29,6 +34,9 @@ class TimeStampedModel(models.Model):
 
 
 class JobOrder(TimeStampedModel):
+
+    objects = JobOrderQuerySet.as_manager()          # default
+    all_objects = models.Manager()       
     
     number = models.CharField("Job No", max_length=30, unique=True)
     order_number = models.CharField(
@@ -222,6 +230,7 @@ class JobOrder(TimeStampedModel):
         help_text="Sudah dibuat invoice"
     )
 
+    ST_QUOTATION = "QUOTATION"  
     ST_DRAFT = "DRAFT"
     ST_IN_PROGRESS= "IN_PROGRESS"
     ST_ON_HOLD = "ON_HOLD"
@@ -229,6 +238,7 @@ class JobOrder(TimeStampedModel):
     ST_COMPLETED = "COMPLETED"
 
     STATUS_CHOICES = [
+        (ST_QUOTATION, "Quotation"),
         (ST_DRAFT, "Draft"),
         (ST_IN_PROGRESS, "In Progress"),
         (ST_ON_HOLD, "On Hold"),
@@ -392,10 +402,39 @@ class JobOrder(TimeStampedModel):
         return self.number
 
     def save(self, *args, **kwargs):
-        if not self.pk and not self.number:
-            # Pakai NumberSequence: app='sales', code='JOBFILE'
-            self.number = get_next_number("job", "JOB_ORDER")
+        if not self.pk and not (self.number or "").strip():
+            self.number = get_next_number("job", "QUOTATION")
         super().save(*args, **kwargs)
+
+
+    @classmethod
+    def visible(cls):
+        # sesuai desain om: job status QUOTATION tidak muncul di list normal
+        return cls.objects.exclude(status=cls.ST_QUOTATION)
+
+    def convert_from_quotation(self, *, user=None, job_date=None):
+        """
+        Dipanggil saat Quotation berubah jadi ORDERED:
+        QUOTATION -> DRAFT, set tanggal, set sales, generate number kalau perlu
+        """
+        self.status = self.ST_DRAFT
+
+        if job_date is not None:
+            self.job_date = job_date  # job_date di model om adalah DateField :contentReference[oaicite:3]{index=3}
+        else:
+            self.job_date = timezone.localdate()
+
+        if user is not None and hasattr(self, "sales_user_id"):
+            self.sales_user = user
+
+        if not self.number:
+            self.number = get_next_number("job", "JOB_ORDER")
+
+        update_fields = ["status", "job_date", "number"]
+        if user is not None and hasattr(self, "sales_user_id"):
+            update_fields.append("sales_user")
+
+        self.save(update_fields=update_fields)
 
     
 class JobOrderAttachment(TimeStampedModel):

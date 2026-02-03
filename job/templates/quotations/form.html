@@ -1,0 +1,888 @@
+{% extends "adminbase.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="app-content-header py-1">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-6">
+        <h4 class="mb-0">Quotations</h4>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-end">
+          <li class="breadcrumb-item active" aria-current="page">
+            <a href="{% url 'job:job_order_list' %}" class="btn btn-outline-secondary btn-sm">
+              <i class="fa fa-list me-1"></i> Back to List
+            </a>
+
+          </li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app-content mt-0">
+  <div class="container-fluid ">
+  
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        {% if form.errors or form.non_field_errors %}
+        <div class="alert alert-danger">
+          <ul class="mb-0">
+            {% for field, errors in form.errors.items %}
+              {% for error in errors %}
+                <li><strong>{{ field }}:</strong> {{ error }}</li>
+              {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+       
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if job %}
+            <input type="hidden" name="job_id" value="{{ job.pk }}">
+          {% endif %}
+
+
+
+          <div class="card" style="border-bottom: 0px;" id="card-ku">
+            <div class="card-body">
+             
+              <div class="row">
+                <div class="col-md-4">
+                     <div class="form-group row">
+                         <label class="col-sm-4 col-form-label">Quotation #</label>
+                          <div class="col-sm-8">
+                            {% if "number_display" in form.fields %}
+                              {{ form.number_display }}
+                              {{ form.number }}  {# hidden #}
+                            {% else %}
+                              {{ form.number }}
+                            {% endif %}
+                          </div>
+                       
+                      </div>
+
+                </div>
+                <div class="col-md-4">
+                     <div class="form-group row">
+                         <label class="col-sm-4 col-form-label">Reference #</label>
+                          <div class="col-sm-8">
+                              {{ form.order_number }}
+                          </div>
+                       
+                      </div>
+
+                </div>
+                 
+                <div class="col-md-4">
+                    <div class="form-group row">
+                        <label for="staticEmail" class="col-sm-4 col-form-label">Customer</label>
+                        <div class="col-sm-8">
+                          {{ form.customer }}
+                        </div>
+                      </div>
+
+              </div>
+
+
+ 
+  
+
+              </div>
+               <div class="row">
+                <div class="col-md-4">
+                     <div class="form-group row">
+                        <label for="staticEmail" class="col-sm-4 col-form-label">T.O.P</label>
+                        <div class="col-sm-8">
+                          {{ form.payment_term }}
+                        </div>
+                      </div>
+
+                </div>
+                <div class="col-md-4">
+                     <div class="form-group row">
+                        <label for="staticEmail" class="col-sm-4 col-form-label">Contact</label>
+                        <div class="col-sm-8">
+                          {{ form.pic }}
+                        </div>
+                      </div>
+
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group row">
+                        <label for="staticEmail" class="col-sm-4 col-form-label">Currency</label>
+                        <div class="col-sm-8">
+                           {{ form.currency }}
+                        </div>
+                      </div>
+
+                </div>  
+              </div>
+              <div class="row">
+                <div class="col-md-4">
+                     <div class="form-group row">
+                        <label for="staticEmail" class="col-sm-4 col-form-label">Quote Date</label>
+                        <div class="col-sm-8">
+                            <input type="hidden" name="job_date" id="id_job_date">
+
+                          {{ qform.quote_date }}
+                        </div>
+                      </div>
+
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group row">
+                     
+                         <label for="staticEmail" class="col-sm-4 col-form-label">Valid Until</label>
+                        <div class="col-sm-8">
+                          {{ qform.valid_until }}
+                        </div>
+                    </div>    
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group row">
+                        <label for="staticEmail" class="col-sm-4 col-form-label">IDR Rate</label>
+                        <div class="col-sm-8">
+                            {{ form.kurs_idr }}
+                        </div>
+                      </div>
+
+                </div>  
+              </div>
+            </div>   
+         </div>
+          
+            {% include 'job_order/extension/pricing.html' %}
+       
+   
+
+          
+              <ul class="nav nav-tabs  fq-tabs mt-3" id="partyTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active"
+                          id="route-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#routeTab"
+                          type="button" role="tab"
+                          aria-controls="routeTab" aria-selected="true">Route & Location</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link"
+                          id="cargo-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#cargoTab"
+                          type="button" role="tab"
+                          aria-controls="cargoTab" aria-selected="true">Cargo Information</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link "
+                          id="customer-note-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#customerNoteTab"
+                          type="button" role="tab"
+                          aria-controls="shipperTab" aria-selected="true">Customer Note</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link"
+                          id="sla-note-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#slaNoteTab"
+                          type="button" role="tab"
+                          aria-controls="consigneeTab" aria-selected="false">Service Level Agreement</button>
+                </li>
+               
+              </ul>
+              <div class="tab-content p-2 fq-tab-content " id="myTabContent" style="background-color: #fff;">
+                 <div class="tab-pane fade show active" 
+                    id="routeTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                      {% include 'job_order/extension/route.html' %}
+        
+        
+                </div>
+                 <div class="tab-pane fade show " 
+                    id="cargoTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                    {% include 'job_order/extension/cargo.html' %}
+        
+                </div>
+                <div class="tab-pane fade show " 
+                    id="customerNoteTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                      
+                    
+                    {{ form.customer_note }}
+        
+                </div>
+                <div class="tab-pane fade show " 
+                    id="slaNoteTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                    {{ form.sla_note }}
+        
+                </div>
+                <div class="tab-pane fade show " 
+                    id="slaNoteTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                    {{ form.sla_note }}
+        
+                </div>
+               
+              </div>
+
+
+
+        
+  
+          <div class="mt-1"></div>
+          
+          <!-- SUBMIT -->
+          <div class="mt-4 d-flex justify-content-end gap-2">
+
+            <a href="{% url 'job:job_order_list' %}"
+              class="btn btn-outline-secondary btn-sm">
+              <i class="fa fa-times me-1"></i> Cancel
+            </a>
+
+            <button type="submit" class="btn btn-sm btn-primary">
+              <i class="fa fa-save me-1"></i>
+              {% if job %}Update{% else %}Create{% endif %}
+            </button>
+
+          </div>
+
+           {{ tax_map|json_script:"tax-map" }}
+        </form>
+  
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+
+/* Paksa tinggi textarea pickup/delivery */
+textarea[name="pickup"],
+textarea[name="delivery"]{
+  height: 140px !important;
+  min-height: 140px !important;
+  resize: vertical;
+}
+
+/* Kalau AdminLTE ngunci semua form-control-sm */
+textarea.form-control-sm{
+  height: auto !important;
+  min-height: 140px !important;
+}
+
+
+#job-order-table  tr td  {
+  padding:0px 10px!important
+}
+#job-order-table  tr td .form-select,
+#job-order-table  tr td .form-control {
+  border:0px
+}
+
+.card .card-ku > input.form-control {
+  border:0px !important
+}
+
+.nav-tabs{
+  border-bottom: 0;
+}
+
+/* tab-content yang punya border */
+.fq-tab-content{
+  border: 1px solid rgba(0,0,0,.12);
+  padding: 1rem;
+  background: #fff;
+}
+
+/* tab-pane polos */
+.fq-tab-content .tab-pane{
+  border: 0 !important;
+  padding: 0;
+}
+
+/* active tab nyatu ke content */
+.nav-tabs .nav-link.active{
+  background: #fff;
+  border-bottom-color: #fff; /* nutup border content */
+}
+
+
+
+
+
+
+</style>
+<style>
+  /* =========================
+   Select2 AdminLTE BS5 FIX
+   ========================= */
+
+.select2-container { width: 100% !important; }
+
+/* === MAIN BOX === */
+.select2-container--default .select2-selection--single{
+  height: calc(2.375rem + 2px);     /* BS5 */
+  padding: 0 .75rem;               /* HAPUS padding vertikal */
+  border: 1px solid #ced4da;
+  border-radius: 0 !important;     /* 🔥 buang rounded */
+  background-color: #fff;
+
+  display: flex;
+  align-items: center;             /* 🔥 vertical center */
+}
+
+/* === SELECTED TEXT === */
+.select2-container--default .select2-selection--single
+.select2-selection__rendered{
+  padding: 0 !important;
+  line-height: normal !important;  /* 🔥 jangan pakai line-height lama */
+  color: #212529;
+
+  display: flex;
+  align-items: center;             /* 🔥 center text */
+  height: 100%;
+}
+
+/* === ARROW === */
+.select2-container--default .select2-selection--single
+.select2-selection__arrow{
+  height: 100%;
+  right: .5rem;
+}
+
+/* === CLEAR (X) BUTTON FIX === */
+.select2-container--default .select2-selection--single
+.select2-selection__clear{
+  position: relative;
+  top: 0;
+  margin-right: 1.75rem;           /* jarak dari arrow */
+  height: 100%;
+
+  display: flex;
+  align-items: center;             /* 🔥 biar ga jatuh */
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* === FOCUS === */
+.select2-container--default.select2-container--focus
+.select2-selection--single{
+  border-color: #86b7fe;
+  box-shadow: none;                /* AdminLTE style */
+}
+
+/* === DROPDOWN === */
+.select2-container--default .select2-dropdown{
+  border-radius: 0 !important;     /* 🔥 lurus juga */
+  border: 1px solid #ced4da;
+  margin-top: -1px;                /* nempel */
+}
+
+/* === OPTION === */
+.select2-container--default .select2-results__option{
+  padding: .5rem .75rem;
+}
+
+/* === OPEN STATE (biar satu komponen) === */
+.select2-container--open
+.select2-selection--single{
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+</style>
+<style>
+  .s2loc-row{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.s2loc-left{min-width:0;flex:1;}
+.s2loc-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.s2loc-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.s2loc-code{font-size:.75rem;font-weight:800;padding:.12rem .45rem;border-radius:999px;background:rgba(0,0,0,.06);}
+.s2loc-badge{font-size:.72rem;font-weight:800;padding:.12rem .45rem;border-radius:999px;background:rgba(0,0,0,.06);}
+.s2loc-badge.is-airport{background:rgba(13,110,253,.12);color:#0d6efd;}
+.s2loc-badge.is-port{background:rgba(25,135,84,.12);color:#198754;}
+.s2loc-badge.is-city{background:rgba(108,117,125,.12);color:#6c757d;}
+
+</style>
+
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
+
+      <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+{% endblock %}
+
+{% block extra_js %}
+
+
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+
+
+<script src="{% static 'js/job/idr_kurs.js' %}">  </script>
+<script src="{% static 'vendor/js/select2.full.min.js' %}"> </script>
+<script src="{% static 'js/tax_select2_autoinit.js' %}"> </script>
+
+
+
+<script>
+(function () {
+
+  // =========================
+  // Helpers angka Indonesia
+  // =========================
+  function parseID(v) {
+    if (v === null || v === undefined) return 0;
+    let s = String(v).trim();
+    if (!s) return 0;
+
+    s = s.replace(/\s+/g, "");
+
+    // Indonesia style: 1.234.567,89
+    if (s.includes(",")) {
+      s = s.replace(/\./g, "").replace(",", ".");
+      const n = Number(s);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    // plain number
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function fmtID(n) {
+    const x = Number(n || 0);
+    return x.toLocaleString("id-ID", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function fmtID3(n) {
+    const x = Number(n || 0);
+    return x.toLocaleString("id-ID", {
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3
+    });
+  }
+
+  function setReadonly(el) {
+    if (!el) return;
+    el.readOnly = true;
+    el.setAttribute("tabindex", "-1");
+  }
+
+  // =========================
+  // KURS helpers (raw + limit 3 desimal)
+  // =========================
+  function normalizeKursRaw(v) {
+    let s = String(v ?? "").trim().replace(/\s+/g, "");
+    if (!s) return "";
+
+    // kalau indo: 1.234,567 -> 1234.567
+    if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+    // keep digit + dot
+    s = s.replace(/[^\d.]/g, "");
+    // rapihin dot ganda
+    const parts = s.split(".");
+    const intPart = parts[0] || "";
+    const decPart = (parts[1] || "").slice(0, 3); // ✅ max 3 digit
+    return decPart ? `${intPart}.${decPart}` : intPart;
+  }
+
+  function setKursPretty(kursInput) {
+    if (!kursInput) return;
+    const raw = normalizeKursRaw(kursInput.value);
+    kursInput.dataset.raw = raw;
+    kursInput.value = raw ? fmtID3(Number(raw)) : "";
+  }
+
+  function setKursRaw(kursInput) {
+    if (!kursInput) return;
+    const raw = normalizeKursRaw(kursInput.value);
+    kursInput.dataset.raw = raw;
+    kursInput.value = raw; // plain decimal buat edit
+  }
+
+  // =========================
+  // Hitung total (tanpa format)
+  // =========================
+  function recalcTotalRaw() {
+    const qtyEl   = document.getElementById("id_qty");
+    const priceEl = document.getElementById("id_price");
+    const totalEl = document.getElementById("id_total_amount");
+
+    if (!qtyEl || !priceEl || !totalEl) return;
+
+    const qty = parseID(qtyEl.value);
+    const price = parseID(priceEl.value);
+    const total = qty * price;
+
+    totalEl.value = fmtID(total);
+  }
+
+  function formatInput2(el) {
+    if (!el) return;
+    const n = parseID(el.value);
+    el.value = fmtID(n);
+  }
+
+  // =========================
+  // MAIN DOM READY
+  // =========================
+  document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.querySelector("form");
+    if (!form) return;
+
+    const qtyEl   = document.getElementById("id_qty");
+    const priceEl = document.getElementById("id_price");
+    const totalEl = document.getElementById("id_total_amount");
+
+    const taxEl   = document.getElementById("id_tax_amount");
+    const pphEl   = document.getElementById("id_pph_amount");
+    const grandEl = document.getElementById("id_grand_total");
+
+    const currencyEl = document.getElementById("id_currency");
+    const kursRow    = document.getElementById("row-kurs");
+    const kursInput  = document.getElementById("id_kurs_idr");
+    
+
+    // =========================
+    // Readonly fields
+    // =========================
+    setReadonly(totalEl);
+    setReadonly(taxEl);
+    setReadonly(pphEl);
+    setReadonly(grandEl);
+
+    // =========================
+    // Auto select on focus
+    // =========================
+    [qtyEl, priceEl, kursInput].forEach(function (el) {
+      if (!el) return;
+      el.addEventListener("focus", function () {
+        setTimeout(() => el.select(), 0);
+      });
+    });
+
+    // =========================
+    // Event qty & price
+    // =========================
+    if (qtyEl) {
+      qtyEl.addEventListener("input", recalcTotalRaw);
+      qtyEl.addEventListener("blur", function () {
+        formatInput2(qtyEl);
+        recalcTotalRaw();
+      });
+    }
+
+    if (priceEl) {
+      priceEl.addEventListener("input", recalcTotalRaw);
+      priceEl.addEventListener("blur", function () {
+        formatInput2(priceEl);
+        recalcTotalRaw();
+      });
+    }
+
+    // =========================
+    // Initial calc & format
+    // =========================
+    recalcTotalRaw();
+
+    // =========================
+    // Before submit → kirim angka plain
+    // =========================
+    form.addEventListener("submit", function () {
+      if (qtyEl) qtyEl.value = parseID(qtyEl.value);
+      if (priceEl) priceEl.value = parseID(priceEl.value);
+
+      if (totalEl) totalEl.value = parseID(totalEl.value);
+      if (taxEl) taxEl.value = parseID(taxEl.value);
+      if (pphEl) pphEl.value = parseID(pphEl.value);
+      if (grandEl) grandEl.value = parseID(grandEl.value);
+
+      // kurs kirim raw (plain decimal), bukan formatted
+      if (kursInput) {
+        kursInput.value = kursInput.dataset.raw || normalizeKursRaw(kursInput.value) || "";
+      }
+    });
+
+  });
+
+})();
+</script>
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const $ = window.jQuery;
+  if (!$ || !$.fn.select2) return;
+
+  function kindClass(kind) {
+    kind = (kind || "").toLowerCase();
+    if (kind === "airport") return "is-airport";
+    if (kind === "seaport") return "is-port";
+    if (kind === "city") return "is-city";
+    return "is-other";
+  }
+
+  function renderItem(item) {
+    if (item.loading) return item.text;
+
+    const $row = $('<div class="s2loc-row"></div>');
+    const $left = $('<div class="s2loc-left"></div>');
+    const $right = $('<div class="s2loc-right"></div>');
+
+    $left.append($('<div class="s2loc-title"></div>').text(item.text || ""));
+
+    if (item.code) $right.append($('<div class="s2loc-code"></div>').text(item.code));
+    if (item.kind) $right.append($('<span class="s2loc-badge"></span>').addClass(kindClass(item.kind)).text(item.kind));
+
+    $row.append($left).append($right);
+    return $row;
+  }
+
+  $(".js-location-select").each(function () {
+    const $el = $(this);
+
+    // penting: kalau pernah ke-init, destroy dulu biar gak dobel
+    if ($el.data("select2")) $el.select2("destroy");
+
+    $el.select2({
+      width: "100%",
+      placeholder: $el.data("placeholder") || "Pilih",
+      allowClear: true,
+      minimumInputLength: 1,
+      ajax: {
+        url: $el.data("url"),
+        dataType: "json",
+        delay: 250,
+        data: params => ({ q: params.term || "", page: params.page || 1 }),
+        processResults: data => ({
+          results: (data.results || []).map(x => ({
+            id: x.id,
+            text: x.text,
+            kind: x.kind || "",
+            code: x.code || "",
+            subtext: x.subtext || ""
+          })),
+          pagination: data.pagination || { more: false }
+        })
+      },
+      templateResult: renderItem,
+      templateSelection: item => item.text || ""
+    });
+  });
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const $ = window.jQuery;
+  if (!$ || !$.fn.select2) return;
+
+  // 1) init select2 location kamu di sini...
+  // ...
+
+  // 2) init taxes select2
+  if (window.initTaxSelect2) {
+    window.initTaxSelect2(document);
+  }
+});
+</script>
+
+<script>
+(function () {
+  let TAX_MAP = {};
+
+  function readTaxMap() {
+    const el = document.getElementById("tax-map");
+    if (!el) return {};
+    try { return JSON.parse(el.textContent); } catch { return {}; }
+  }
+
+  function numID(v){
+    if(v==null) return 0;
+    let s = String(v).trim().replace(/\s+/g,"");
+    if(!s) return 0;
+    if(s.includes(",")) s = s.replace(/\./g,"").replace(",",".");
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function fmtID(n){
+    return new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(Number(n ?? 0));
+  }
+
+  // support kalau field kamu bukan <input> tapi <span>/<div>
+  function setMoney(el, value){
+    if (!el) return;
+    const s = fmtID(value);
+    if ("value" in el) el.value = s;
+    else el.textContent = s;
+    el.dataset && (el.dataset.raw = String(value ?? 0));
+  }
+
+  function getSelectedTaxIds(){
+    const sel = document.getElementById("id_taxes");
+    if(!sel) return [];
+    return Array.from(sel.selectedOptions || []).map(o=>o.value).filter(Boolean);
+  }
+
+  function computeTaxes(base, taxIds){
+    let vat = 0;
+    let wht = 0;
+
+    taxIds.forEach((id) => {
+      const t = TAX_MAP[String(id)];
+      if (!t) return;
+
+      const r = (Number(t.rate || 0) / 100.0); // percent
+      const amt = base * r;
+
+      if (t.is_withholding) wht += amt;
+      else vat += amt;
+    });
+
+    return { vat, wht };
+  }
+
+  function recalc(){
+    const qtyEl   = document.getElementById("id_qty");
+    const priceEl = document.getElementById("id_price");
+    const taxesEl = document.getElementById("id_taxes");
+
+    const totalEl = document.getElementById("id_total_amount");
+    const taxEl   = document.getElementById("id_tax_amount");
+    const pphEl   = document.getElementById("id_pph_amount");
+    const grandEl = document.getElementById("id_grand_total");
+
+    if(!qtyEl || !priceEl || !taxesEl || !totalEl || !taxEl || !grandEl) return;
+
+    const qty = numID(qtyEl.value);
+    const price = numID(priceEl.value);
+    const base = qty * price;
+
+    const taxIds = getSelectedTaxIds();
+    const t = computeTaxes(base, taxIds);
+
+    const grand = base + t.vat - t.wht;
+
+    setMoney(totalEl, base);
+    setMoney(taxEl, t.vat);
+    if (pphEl) setMoney(pphEl, t.wht);
+    setMoney(grandEl, grand);
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    // ✅ baca tax-map setelah DOM siap
+    TAX_MAP = readTaxMap();
+    console.log("TAX_MAP size:", Object.keys(TAX_MAP).length);
+
+    // init select2 taxes (kalau ada)
+    if (window.initTaxSelect2) window.initTaxSelect2(document);
+
+    // readonly output
+    ["id_total_amount","id_tax_amount","id_pph_amount","id_grand_total"].forEach(id=>{
+      const el = document.getElementById(id);
+      if (el && "readOnly" in el) el.readOnly = true;
+    });
+
+    const $ = window.jQuery;
+    const taxesEl = document.getElementById("id_taxes");
+    const qtyEl = document.getElementById("id_qty");
+    const priceEl = document.getElementById("id_price");
+
+    if(qtyEl){
+      qtyEl.addEventListener("input", recalc);
+      qtyEl.addEventListener("blur", ()=>{ qtyEl.value = fmtID(numID(qtyEl.value)); recalc(); });
+    }
+    if(priceEl){
+      priceEl.addEventListener("input", recalc);
+      priceEl.addEventListener("blur", ()=>{ priceEl.value = fmtID(numID(priceEl.value)); recalc(); });
+    }
+
+    if(taxesEl){
+      if($ && $.fn.select2) $(taxesEl).on("change", recalc);
+      else taxesEl.addEventListener("change", recalc);
+    }
+
+    recalc();
+  });
+
+})();
+</script>
+
+<script src="https://cdn.tiny.cloud/1/klpop8ud5zsip7zloht3kglaf0it7sau7hlm7yfscb3cjxsq/tinymce/6/tinymce.min.js"
+          referrerpolicy="origin">
+  </script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const sla = document.getElementById("id_sla_note");
+  const notes = document.getElementById("id_customer_note");
+
+ // console.log("sla el:", sla, "notes el:", notes);
+ // console.log("sla tag:", sla?.tagName, "notes tag:", notes?.tagName);
+
+  if (!sla && !notes) return;
+
+  // Kalau sudah pernah init, jangan init ulang
+  if (window.tinymce?.get("id_sla_note") || window.tinymce?.get("id_customer_note")) return;
+
+  tinymce.init({
+    selector: "#id_sla_note, #id_customer_note",
+    height: 280,
+    menubar: false,
+    plugins: "lists link table code autoresize",
+    toolbar: "undo redo | bold italic underline | bullist numlist | link table | removeformat | code",
+    branding: false,
+    setup: function (editor) {
+      editor.on("change keyup", function () {
+        editor.save(); // sync balik ke textarea untuk submit Django
+      });
+    }
+  });
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  if (typeof flatpickr === "undefined") return;
+
+  const qEl = document.getElementById("id_quote_date");
+  const vEl = document.getElementById("id_valid_until");
+  if (!qEl || !vEl) return;
+
+  // ✅ value input = ISO agar flatpickr parse dengan benar
+  // ✅ tampilan user = dd-mm-yyyy lewat altInput
+  [qEl, vEl].forEach((el) => {
+    if (el._flatpickr) return; // guard anti double init
+    flatpickr(el, {
+      dateFormat: "Y-m-d",   // value yang disimpan di input (untuk POST Django)
+      altInput: true,
+      altFormat: "d-m-Y",    // yang ditampilkan ke user
+      allowInput: true,
+      clickOpens: true,
+    });
+  });
+});
+</script>
+
+{% endblock %}

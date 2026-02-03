@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Tracking Shipment</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f6f7fb;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+    <div style="max-width:640px;margin:0 auto;padding:24px;">
+      <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,.06);">
+        <!-- Header -->
+        <div style="padding:18px 20px;border-bottom:1px solid #eef2f7;display:flex;align-items:center;gap:12px;">
+          <!-- Replace with hosted logo URL -->
+          <img src="{{ logo_url }}" alt="CargoChains" width="34" height="34" style="display:block;border-radius:8px;object-fit:contain;" />
+          <div>
+            <div style="font-weight:700;font-size:16px;line-height:1.2;">CargoChains</div>
+            <div style="font-size:12px;color:#6b7280;">Customer Tracking</div>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div style="padding:20px;">
+          <h1 style="margin:0 0 10px 0;font-size:18px;line-height:1.35;">Tracking Shipment Anda / Track Your Shipment</h1>
+
+          <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#374151;">
+            Yth. Bapak/Ibu, terima kasih atas kepercayaan Anda kepada kami. Shipment Anda telah berhasil dibuat dan dapat dipantau melalui detail berikut.
+          </p>
+          <p style="margin:0 0 18px 0;font-size:14px;line-height:1.6;color:#374151;">
+            Dear Sir/Madam, thank you for choosing our service. Your shipment has been created and can be tracked using the details below.
+          </p>
+
+          <!-- Info box -->
+          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:14px 14px;margin:0 0 16px 0;">
+            <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">Tracking Number</div>
+            <div style="font-weight:700;font-size:16px;letter-spacing:.6px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace;">
+              {{ tracking_no }}
+            </div>
+
+            <div style="height:10px;"></div>
+
+            <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">Tracking Link</div>
+            <div style="font-size:13px;word-break:break-all;color:#2563eb;">
+              <a href="{{ tracking_url }}" style="color:#2563eb;text-decoration:none;">{{ tracking_url }}</a>
+            </div>
+
+            {% if customer_ref or service or origin or destination %}
+            <div style="height:14px;"></div>
+            <div style="display:grid;grid-template-columns:160px 1fr;gap:6px 10px;font-size:13px;color:#374151;">
+              {% if customer_ref %}<div style="color:#6b7280;">Customer Ref</div><div style="font-weight:600;">{{ customer_ref }}</div>{% endif %}
+              {% if service %}<div style="color:#6b7280;">Service</div><div style="font-weight:600;">{{ service }}</div>{% endif %}
+              {% if origin %}<div style="color:#6b7280;">Origin</div><div style="font-weight:600;">{{ origin }}</div>{% endif %}
+              {% if destination %}<div style="color:#6b7280;">Destination</div><div style="font-weight:600;">{{ destination }}</div>{% endif %}
+            </div>
+            {% endif %}
+
+            {% if cargo_info %}
+            <div style="height:10px;"></div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">Cargo Info</div>
+            <div style="font-size:13px;color:#374151;font-weight:600;">{{ cargo_info }}</div>
+            {% endif %}
+          </div>
+
+          <!-- CTA Button -->
+          <div style="text-align:center;margin:18px 0 10px;">
+            <a href="{{ tracking_url }}"
+               style="display:inline-block;background:#0d6efd;color:#ffffff;text-decoration:none;font-weight:700;
+                      padding:12px 16px;border-radius:10px;font-size:14px;">
+              Track Shipment
+            </a>
+          </div>
+
+          <p style="margin:12px 0 0 0;font-size:13px;line-height:1.6;color:#6b7280;">
+            Jika link tidak dapat dibuka, silakan kunjungi <a href="{{ track_home_url }}" style="color:#2563eb;text-decoration:none;">{{ track_home_url }}</a>
+            dan masukkan Tracking Number di atas.
+            <br/>
+            If the link cannot be opened, please visit <a href="{{ track_home_url }}" style="color:#2563eb;text-decoration:none;">{{ track_home_url }}</a>
+            and enter the Tracking Number above.
+          </p>
+
+          <div style="margin-top:18px;padding-top:14px;border-top:1px solid #eef2f7;font-size:13px;color:#374151;">
+            Hormat kami / Kind regards,<br/>
+            <b>Customer Service</b><br/>
+            CargoChains
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:14px;font-size:12px;color:#9ca3af;">
+        © {{ year }} CargoChains • Customer Tracking
+      </div>
+    </div>
+  </body>
+</html>

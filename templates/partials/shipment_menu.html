@@ -31,11 +31,13 @@
     </li>
 
     <li class="nav-item">
-      <a href="#" class="nav-link">
-        <i class="nav-icon bi bi-geo-alt"></i>
-        <p>Tracking</p>
-      </a>
-    </li>
+    <a href="{% url 'shipments:cs_public_link_page' %}"
+      class="nav-link {% if request.resolver_match.url_name == 'public_link' %}active{% endif %}">
+      <i class="nav-icon bi bi-link-45deg"></i>
+      <p>Generate Link</p>
+    </a>
+  </li>
+
 
   </ul>
 </li>

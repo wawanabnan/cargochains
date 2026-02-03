@@ -63,7 +63,7 @@ class JobOrderListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         qs = (
-            JobOrder.objects
+            JobOrder.objects.visible()
             .select_related("customer", "service", "payment_term", "currency", "sales_user")
         )
 

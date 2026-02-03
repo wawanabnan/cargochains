@@ -12,9 +12,6 @@ from .views.details import FreightQuotationDetailView, FreightOrderDetailView
 from .views.adds import FreightQuotationAddView  # ⬅️ ganti ini
 from .views.edits import FreightQuotationEditView 
 from .views.prints import quotation_print, quotation_pdf, order_print, order_pdf
-from .views.actions import (
-    quotation_change_status, order_change_status, quotation_generate_so,order_generate_shipment
-)
 
 
 
@@ -86,19 +83,12 @@ urlpatterns = [
 
    # path("freight/quotations/lines/",                login_required(quotation_add_lines,  login_url="account:login"), name="quotation_add_lines"),
    
-    path("freight/quotations/<int:pk>/status/",      login_required(quotation_change_status, login_url="account:login"), name="quotation_change_status"),
-    path("freight/quotations/<int:pk>/generate-so/", login_required(quotation_generate_so,  login_url="account:login"), name="quotation_generate_so"),
     path("freight/quotations/<int:pk>/print/",       login_required(quotation_print,      login_url="account:login"), name="quotation_print"),
     path("freight/quotations/<int:pk>/pdf/",         login_required(quotation_pdf,        login_url="account:login"), name="quotation_pdf"),
 
     # ===== ORDERS =====
     path("freight/orders/",                          FreightOrderListView.as_view(),       name="order_list"),
     path("freight/orders/<int:pk>/",                 FreightOrderDetailView.as_view(),     name="order_details"),     # ← pakai nama plural 'details'
-    path("freight/orders/<int:pk>/status/",          login_required(order_change_status,   login_url="account:login"), name="order_change_status"),
-    path("freight/orders/<int:pk>/print/",           login_required(order_print,    login_url="account:login"),      name="order_print"),
-    path("freight/orders/<int:pk>/pdf/",             login_required(order_pdf,      login_url="account:login"),      name="order_pdf"),
-    path("freight/orders/<int:pk>/generate-shipment/", login_required(order_generate_shipment,  login_url="account:login"), name="order_generate_shipment"),
- 
 
     # ===== LEGACY ALIASES (biar reverse lama '..._detail' tetap hidup) =====
     path("freight/quotations/<int:pk>/",             FreightQuotationDetailView.as_view(), name="quotation_detail"),
