@@ -17,16 +17,9 @@
     </li>
 
     <li class="nav-item">
-      <a href="{% url 'shipments:vendor_booking_list' %}" class="nav-link">
+      <a href="#"  class="nav-link">
         <i class="nav-icon bi bi-calendar-check"></i>
-        <p>Booking</p>
-      </a>
-    </li>
-
-    <li class="nav-item">
-      <a href="#" class="nav-link">
-        <i class="nav-icon bi bi-box-seam"></i>
-        <p>Delivery</p>
+        <p>Shipmemnt</p>
       </a>
     </li>
 
@@ -34,7 +27,7 @@
     <a href="{% url 'shipments:cs_public_link_page' %}"
       class="nav-link {% if request.resolver_match.url_name == 'public_link' %}active{% endif %}">
       <i class="nav-icon bi bi-link-45deg"></i>
-      <p>Generate Link</p>
+      <p>Tracking</p>
     </a>
   </li>
 
