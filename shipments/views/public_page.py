@@ -95,6 +95,7 @@ def public_tracking_page(request, tracking_no: str):
         "cargo_qty": data.get("cargo_qty", "-"),
         "cargo_weight": data.get("cargo_weight", "-"),
         },
+        status=200
     )
 
 def _extract_token(token_or_link: str) -> str:
@@ -155,5 +156,6 @@ def public_track_home(request):
         request,
         "shipments/public/track_home.html",
         {"error": error, "tracking_no": tracking_no, "token_or_link": token_input},
+        status=200
     )
 
