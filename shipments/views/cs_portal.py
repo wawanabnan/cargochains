@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 from django.conf import settings
@@ -12,6 +13,8 @@ from shipments.services.notifications import (
     build_whatsapp_deeplink,
     send_tracking_created_email,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -48,88 +51,91 @@ def cs_public_link_page(request):
         # GENERATE LINK (+ WA)
         # ======================
         elif action == "generate":
-            shipment_id = request.POST.get("shipment_id")
-            if not shipment_id:
-                error = "shipment_id wajib ada untuk generate link."
-            else:
-                ttl_days = int(request.POST.get("ttl_days", "30"))
-                ttl_days = max(1, min(ttl_days, 365))
+            try:
+                shipment_id = request.POST.get("shipment_id")
+                if not shipment_id:
+                    error = "shipment_id wajib ada untuk generate link."
+                else:
+                    ttl_days = int(request.POST.get("ttl_days", "30"))
+                    ttl_days = max(1, min(ttl_days, 365))
 
-                shipment = get_object_or_404(Shipment, pk=shipment_id)
+                    shipment = get_object_or_404(Shipment, pk=shipment_id)
 
-                token = make_public_token(
-                    shipment.tracking_no,
-                    ttl_seconds=ttl_days * 24 * 3600
-                )
-                expires_at = timezone.now() + timedelta(days=ttl_days)
+                    token = make_public_token(
+                        shipment.tracking_no,
+                        ttl_seconds=ttl_days * 24 * 3600
+                    )
+                    expires_at = timezone.now() + timedelta(days=ttl_days)
 
-                base = request.build_absolute_uri("/").rstrip("/")
-                tracking_url = f"{base}/track/{shipment.tracking_no}/?t={token}"
-                track_home_url = f"{base}/track/"
+                    base = request.build_absolute_uri("/").rstrip("/")
+                    tracking_url = f"{base}/track/{shipment.tracking_no}/?t={token}"
+                    track_home_url = f"{base}/track/"
 
-                wa_msg = build_whatsapp_message_dual(
-                    tracking_no=shipment.tracking_no,
-                    tracking_url=tracking_url,
-                    track_home_url=track_home_url,
-                )
+                    wa_msg = build_whatsapp_message_dual(
+                        tracking_no=shipment.tracking_no,
+                        tracking_url=tracking_url,
+                        track_home_url=track_home_url,
+                    )
 
-                phone_e164 = (request.POST.get("phone_e164") or "").strip()  # contoh: 62812xxxx
-                wa_link = build_whatsapp_deeplink(phone_e164, wa_msg) if phone_e164 else ""
+                    phone_e164 = (request.POST.get("phone_e164") or "").strip()
+                    wa_link = build_whatsapp_deeplink(phone_e164, wa_msg) if phone_e164 else ""
 
-                result = {
-                    "url": tracking_url,
-                    "expires_at": expires_at,
-                    "ttl_days": ttl_days,
-                    "wa_msg": wa_msg,
-                    "wa_link": wa_link,
-                }
+                    result = {
+                        "url": tracking_url,
+                        "expires_at": expires_at,
+                        "ttl_days": ttl_days,
+                        "wa_msg": wa_msg,
+                        "wa_link": wa_link,
+                    }
+            except Exception as e:
+                logger.exception("CS generate link failed")
+                error = f"Generate link error: {e}"
 
         # ======================
         # SEND EMAIL (semi-auto)
         # ======================
         elif action == "send_email":
-            shipment_id = request.POST.get("shipment_id")
-            to_email = (request.POST.get("to_email") or "").strip()
-            tracking_url = (request.POST.get("tracking_url") or "").strip()
+            try:
+                shipment_id = request.POST.get("shipment_id")
+                to_email = (request.POST.get("to_email") or "").strip()
+                tracking_url = (request.POST.get("tracking_url") or "").strip()
 
-            if not shipment_id:
-                error = "shipment_id wajib ada untuk kirim email."
-            elif not to_email:
-                error = "Email customer wajib diisi."
-            else:
-                shipment = get_object_or_404(Shipment, pk=shipment_id)
+                if not shipment_id:
+                    error = "shipment_id wajib ada untuk kirim email."
+                elif not to_email:
+                    error = "Email customer wajib diisi."
+                else:
+                    shipment = get_object_or_404(Shipment, pk=shipment_id)
 
-                base = request.build_absolute_uri("/").rstrip("/")
-                track_home_url = f"{base}/track/"
+                    base = request.build_absolute_uri("/").rstrip("/")
+                    track_home_url = f"{base}/track/"
 
-                # kalau tracking_url tidak dikirim (belum generate), fallback tanpa token
-                if not tracking_url:
-                    tracking_url = f"{base}/track/{shipment.tracking_no}/"
+                    if not tracking_url:
+                        tracking_url = f"{base}/track/{shipment.tracking_no}/"
 
-                context = {
-                    "year": timezone.now().year,
-                    "logo_url": getattr(settings, "EMAIL_LOGO_URL", ""),
-                    "tracking_no": shipment.tracking_no,
-                    "tracking_url": tracking_url,
-                    "track_home_url": track_home_url,
+                    context = {
+                        "year": timezone.now().year,
+                        "logo_url": getattr(settings, "EMAIL_LOGO_URL", ""),
+                        "tracking_no": shipment.tracking_no,
+                        "tracking_url": tracking_url,
+                        "track_home_url": track_home_url,
+                        "customer_ref": "-",
+                        "service": "-",
+                        "origin": "-",
+                        "destination": "-",
+                        "cargo_info": "-",
+                    }
 
-                    # tambahan info (kalau nanti sudah ada, isi dari JO/serializer)
-                    "customer_ref": "-",
-                    "service": "-",
-                    "origin": "-",
-                    "destination": "-",
-                    "cargo_info": "-",
-                }
+                    send_tracking_created_email(to_email, context)
 
-                # kirim email
-                send_tracking_created_email(to_email, context)
-
-                # balikin result biar template bisa tampil status
-                result = result or {}
-                result.update({
-                    "url": tracking_url,
-                    "email_sent_to": to_email,
-                })
+                    result = result or {}
+                    result.update({
+                        "url": tracking_url,
+                        "email_sent_to": to_email,
+                    })
+            except Exception as e:
+                logger.exception("CS send email failed")
+                error = f"Send email error: {e}"
 
         else:
             error = "Action tidak valid."
