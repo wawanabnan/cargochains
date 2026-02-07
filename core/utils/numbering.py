@@ -47,7 +47,7 @@ def get_next_number(app_label: str, code: str, today: date | None = None) -> str
         # naikkan counter
         seq.last_number = (seq.last_number or 0) + 1
         seq.save(update_fields=["last_number", "period_year", "period_month"])
-
+        
         # render output dari format di DB
         fmt = getattr(seq, "format", None) or "{prefix}-{month:02d}{yy:02d}-{seq:04d}"
 

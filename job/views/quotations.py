@@ -220,11 +220,6 @@ class QuotationCreateView(LoginRequiredMixin, CreateView):
             quotation = qform.save(commit=False)
             quotation.job_order = job
             quotation.status = QuotationStatus.DRAFT  # default juga boleh :contentReference[oaicite:3]{index=3}
-
-            # kalau number quotation auto-generate:
-            if not quotation.number:
-                quotation.number = get_next_number("quote", "QUOTATION")
-
             quotation.save()
 
         messages.success(request, "Quotation berhasil dibuat.",extra_tags="ui-inline") 
@@ -362,7 +357,7 @@ class QuotationSendView(View):
 
         return redirect("job:quotation_detail", pk=q.id)
 
-class QuotationConvertToOrderView(View):
+class QuotationConvertToOrderView2(View):
     @transaction.atomic
     def post(self, request, pk):
         q = get_object_or_404(Quotation.objects.select_for_update(), pk=pk)
@@ -392,6 +387,11 @@ class QuotationPrintPreviewView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx.update(_quotation_print_context(self.object))
+        profile = getattr(self.request.user, "profile", None)
+        ctx.setdefault("signature_name", (self.request.user.get_full_name() or self.request.user.username))
+        ctx.setdefault("signature_title", getattr(profile, "title", "") if profile else "")
+        ctx.setdefault("signature_image", getattr(profile, "signature", None) if profile else None)
+
         return ctx
 
 class QuotationPDFView(LoginRequiredMixin, View):
@@ -420,3 +420,50 @@ class QuotationPDFView(LoginRequiredMixin, View):
         resp = HttpResponse(pdf_bytes, content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="{filename}"'
         return resp
+
+class QuotationConvertToOrderView(View):
+    @transaction.atomic
+    def post(self, request, pk):
+        q = get_object_or_404(
+            Quotation._base_manager.select_for_update(),
+            pk=pk
+        )
+
+        if not request.user.has_perm("job.can_convert_quotation"):
+            messages.error(
+                request,
+                "Tidak punya akses untuk convert quotation.",
+                extra_tags="ui-modal",
+            )
+            return redirect("job:quotation_detail", pk=q.id)
+
+        # idempotent: kalau sudah pernah ordered, jangan generate nomor lagi
+        if getattr(q, "status", None) == "ORDERED":  # kalau ada konstanta: Quotation.ST_ORDERED
+            messages.success(
+                request,
+                f"Quotation {q.number} sudah pernah di-convert.",
+                extra_tags="ui-modal",
+            )
+            return redirect("job:job_order_detail", pk=q.job_order_id)
+
+        try:
+            job = JobOrder.objects.select_for_update().get(pk=q.job_order_id)
+            job_date = job.job_date or q.quote_date
+
+            job.convert_from_quotation(user=request.user, job_date=job_date)
+            q.mark_ordered(request.user)
+
+            messages.success(
+                request,
+                f"Quotation {q.number} berhasil di-convert menjadi Order.",
+                extra_tags="ui-modal",
+            )
+            return redirect("job:job_order_detail", pk=job.id)
+
+        except Exception as e:
+            messages.error(
+                request,
+                f"{type(e).__name__}: {e}",
+                extra_tags="ui-modal",
+            )
+            return redirect("job:quotation_detail", pk=q.id)

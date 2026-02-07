@@ -121,3 +121,11 @@ urlpatterns += [
 
 ]
     
+
+# job/urls.py
+from job.views.job_order_print import JobOrderPrintPreviewView, JobOrderPDFView
+
+urlpatterns += [
+    path("job-orders/<int:pk>/print-preview/", JobOrderPrintPreviewView.as_view(), name="job_order_print_preview"),
+    path("job-orders/<int:pk>/print/", JobOrderPDFView.as_view(), name="job_order_pdf"),
+]

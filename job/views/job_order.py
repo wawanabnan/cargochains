@@ -204,8 +204,6 @@ class JobOrderCreateView(LoginRequiredMixin, View):
 # UPDATE
 # ==========================
 
-
-
 class JobOrderUpdateView(LoginRequiredMixin, View):
     template_name = "job_order/form.html"
 
@@ -215,34 +213,24 @@ class JobOrderUpdateView(LoginRequiredMixin, View):
     def get(self, request, pk):
         job = self.get_object(pk)
         form = JobOrderForm(instance=job)
-        cost_formset = JobCostFormSet(instance=job)
-
-        form = JobOrderForm(instance=job)
-        #print("ROWS cargo_description =", form.fields["cargo_description"].widget.attrs.get("rows"))
-        #print("WIDGET =", type(form.fields["cargo_description"].widget))
-        #print("ATTRS =", form.fields["cargo_description"].widget.attrs)
-
 
         return render(request, self.template_name, {
             "form": form,
             "job": job,
-            "cost_formset": cost_formset,
-            "tax_map": _build_tax_map(), 
+            "tax_map": _build_tax_map(),
         })
 
     def post(self, request, pk):
         job = self.get_object(pk)
 
-        # ✅ penting: include FILES (buat field file / attachment / dll)
         form = JobOrderForm(request.POST, request.FILES, instance=job)
-        cost_formset = JobCostFormSet(request.POST, request.FILES, instance=job)
 
-        if not (form.is_valid() and cost_formset.is_valid()):
-            messages.error(request, "Form Job Order atau Job Cost belum benar, silakan dicek lagi.")
+        if not form.is_valid():
+            messages.error(request, "Form Job Order belum benar, silakan dicek lagi.", extra_tags="ui-modal")
             return render(request, self.template_name, {
                 "form": form,
                 "job": job,
-                "cost_formset": cost_formset,
+                "tax_map": _build_tax_map(),
             })
 
         try:
@@ -251,23 +239,17 @@ class JobOrderUpdateView(LoginRequiredMixin, View):
                 if not job_obj.sales_user_id:
                     job_obj.sales_user = request.user
                 job_obj.save()
-
-                # ✅ WAJIB untuk M2M (mis: taxes)
                 form.save_m2m()
 
-                # pastikan formset nempel ke object yang tersimpan
-                cost_formset.instance = job_obj
-                cost_formset.save()
-
-            messages.success(request, "Job Order & Job Cost berhasil diupdate.")
+            messages.success(request, "Job Order berhasil diupdate.", extra_tags="ui-modal")
             return redirect("job:job_order_detail", pk=job_obj.pk)
 
         except Exception as e:
-            messages.error(request, f"Gagal menyimpan: {e}")
+            messages.error(request, f"Gagal menyimpan: {type(e).__name__}: {e}", extra_tags="ui-modal")
             return render(request, self.template_name, {
                 "form": form,
                 "job": job,
-                "cost_formset": cost_formset,
+                "tax_map": _build_tax_map(),
             })
 
 

@@ -412,7 +412,7 @@ class JobOrder(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.pk and not (self.number or "").strip():
-            self.number = get_next_number("job", "QUOTATION")
+            self.number = get_next_number("job", "JOB_ORDER")
         super().save(*args, **kwargs)
 
 
@@ -420,24 +420,18 @@ class JobOrder(TimeStampedModel):
     def visible(cls):
         # sesuai desain om: job status QUOTATION tidak muncul di list normal
         return cls.objects.exclude(status=cls.ST_QUOTATION)
-
+    
+    
     def convert_from_quotation(self, *, user=None, job_date=None):
-        """
-        Dipanggil saat Quotation berubah jadi ORDERED:
-        QUOTATION -> DRAFT, set tanggal, set sales, generate number kalau perlu
-        """
         self.status = self.ST_DRAFT
 
-        if job_date is not None:
-            self.job_date = job_date  # job_date di model om adalah DateField :contentReference[oaicite:3]{index=3}
-        else:
-            self.job_date = timezone.localdate()
+        self.job_date = job_date or timezone.localdate()
 
         if user is not None and hasattr(self, "sales_user_id"):
             self.sales_user = user
 
-        if not self.number:
-            self.number = get_next_number("job", "JOB_ORDER")
+        # selalu set nomor final saat convert
+        self.number = get_next_number("job", "JOB_ORDER")
 
         update_fields = ["status", "job_date", "number"]
         if user is not None and hasattr(self, "sales_user_id"):

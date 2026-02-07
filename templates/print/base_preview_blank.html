@@ -1,0 +1,90 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="{% static 'adminlte4/css/adminlte.css' %}" />
+
+<style>
+  :root{
+    --header-h: 45mm;   /* tinggi area header di halaman 1 */
+    --footer-h: 30mm;   /* tinggi area footer di halaman 1 */
+  }
+
+  /* halaman 2 dst: tanpa header/footer */
+  @page{
+    size: A4;
+    margin: 15mm;
+    @top-center { content: none; }
+    @bottom-center { content: none; }
+  }
+
+  /* halaman 1: pakai running element */
+  @page:first{
+    margin-top: var(--header-h);
+    margin-bottom: var(--footer-h);
+    margin-left: 15mm;
+    margin-right: 15mm;
+
+    @top-center { content: element(hdr); }
+    @bottom-center { content: element(ftr); }
+  }
+
+  body{
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  /* Elemen “sumber” untuk header/footer */
+  .hdr { position: running(hdr); height: var(--header-h); }
+  .ftr { position: running(ftr); height: var(--footer-h); }
+
+  /* Ini yang ngunci ukuran biar nggak ngawur */
+  .hdr img, .ftr img{
+    display: block;
+    width: 210mm;     /* full A4 */
+    height: auto;     /* jaga rasio */
+  }
+
+  .ftr img{
+  display:block;
+  width:210mm;
+  height:auto;
+  margin-top: -15mm;   /* ⬅️ naik 3mm (coba -1mm, -2mm, -5mm) */
+}
+
+ 
+ .hdr img{
+  display:block;
+  width:210mm;
+  height:auto;
+  margin-top: 5mm;   /* ⬅️ naik 3mm (coba -1mm, -2mm, -5mm) */
+}
+
+/* kalau mau “dipaksa pas di box” (tidak kepotong): */
+  /* .hdr img, .ftr img { height: 100%; width: 210mm; object-fit: contain; } */
+
+  table{ width:100%; border-collapse:collapse; }
+  thead{ display: table-header-group; }
+  tfoot{ display: table-footer-group; }
+  tr{ page-break-inside: avoid; }
+  .text-end{ text-align:right; }
+  .nowrap{ white-space:nowrap; }
+  .wrap{ word-break:break-word; }
+</style>
+</head>
+
+<body>
+  <!-- “sumber” header/footer (tidak tampil sebagai konten biasa) -->
+  <div class="hdr">
+    <img src="{% static 'print/header_full.png' %}" alt="">
+  </div>
+
+  <div class="ftr">
+    <img src="{% static 'print/footer_full.png' %}" alt="">
+  </div>
+
+  {% block content %}{% endblock %}
+</body>
+</html>

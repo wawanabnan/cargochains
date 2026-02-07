@@ -158,14 +158,18 @@
         "info";
 
       // ui selector
+      //const isError = level === "error";
+
       const ui =
-        tags.includes("ui-modal")
+        isError
+          ? "modal"
+          : tags.includes("ui-modal")
           ? "modal"
           : tags.includes("ui-toast")
           ? "toast"
           : tags.includes("ui-inline")
           ? "inline"
-          : "inline"; // default
+          : "inline";
 
       if (ui === "modal") {
         showModal(text, {
@@ -185,7 +189,9 @@
       }
 
       // inline alert
-      showAlert(text, level, { timeout: 5000 });
+      //showAlert(text, level, { timeout: 5000 });
+      const isError = level === "error";
+      showAlert(text, level, { timeout: isError ? 0 : 5000 });
     });
   });
   

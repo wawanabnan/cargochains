@@ -144,6 +144,9 @@ class Quotation(models.Model):
     def save(self, *args, **kwargs):
         if not self.pk and not (self.number or "").strip():
             self.number = get_next_number("job", "QUOTATION")
+            tmp = get_next_number("job", "QUOTATION")
+            print("DEBUG QUOTATION NUMBER:", tmp)
+            self.number = tmp
 
         if not self.valid_until and self.quote_date:
             self.valid_until = calc_valid_until(base_date=self.quote_date)  # sales + QUOTATION_VALID_DAY default

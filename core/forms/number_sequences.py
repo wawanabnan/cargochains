@@ -39,7 +39,7 @@ class NumberSequenceForm(forms.ModelForm):
             raise forms.ValidationError("Format wajib diisi.")
 
         # Cek variabel yang diizinkan (strict, biar user ga bikin format aneh)
-        allowed = {"prefix", "year", "month", "day", "seq"}
+        allowed = {"prefix", "year", "yy","month", "day", "seq"}
         # parsing sederhana: cari {var...}
         import re
         for m in re.findall(r"\{([a-zA-Z_][a-zA-Z0-9_]*)[^}]*\}", fmt):
@@ -53,6 +53,7 @@ class NumberSequenceForm(forms.ModelForm):
         sample = {
             "prefix": self.cleaned_data.get("prefix") or "",
             "year": now.year,
+            "yy": now.year % 100,
             "month": now.month,
             "day": now.day,
             "seq": 1,
@@ -76,6 +77,7 @@ class NumberSequenceForm(forms.ModelForm):
             sample = {
                 "prefix": prefix,
                 "year": now.year,
+                 "yy": now.year % 100,
                 "month": now.month,
                 "day": now.day,
                 "seq": seq_next,

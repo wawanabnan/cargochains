@@ -77,24 +77,15 @@
           <!-- RIGHT: ACTION BUTTONS -->
           <div class="d-flex align-items-center gap-1">
 
-          <a
-          href="{% url 'job:joborder_cost_print_preview' job.id %}"
-          target="_blank"
-          class="btn btn-sm btn-outline-primary"
-        >
-          🖨️ Print Preview
-        </a>
-      <a class="btn btn-sm btn-outline-danger"
-        target="_blank"
-        href="{% url 'job:joborder_cost_pdf' job.pk %}">
-        📄 PDF
+          
+      <a class="btn btn-sm btn-outline-primary" target="_blank"
+        href="{% url 'job:job_order_print_preview' job.pk %}">
+        Job Order Preview
       </a>
 
-
-      <a class="btn btn-sm btn-outline-danger"
-        target="_blank"
-        href="{% url 'job:joborder_cost_pdf_2' job.pk %}">
-        📄 PDF2
+      <a class="btn btn-sm btn-outline-success" target="_blank"
+        href="{% url 'job:job_order_pdf' job.pk %}">
+         Job Order PDF
       </a>
 
 
@@ -204,18 +195,36 @@
         </div>
       </div>
       <div class="card-body">
-      {%  include "job_order/extension/header.html" %}
+          
+          {%  include "job_order/extension/header.html" %}
 
       </div>
 
    
 
     </div>
+    <div class="card mt-2" style="border-bottom:0px">
+      <div class="card-header">
+        <a
+          href="{% url 'job:joborder_cost_print_preview' job.id %}"
+          target="_blank"
+          class="btn btn-sm btn-outline-primary"
+        >
+          🖨️ Job Cost Preview
+        </a>
+      <a class="btn btn-sm btn-outline-danger"
+        target="_blank"
+        href="{% url 'job:joborder_cost_pdf' job.pk %}">
+        📄 Job Cost PDF
+      </a>
+      
+      </div>
 
+    </div>
 
     {#===========================================#}
     <ul class="nav nav-pills nav-fill  mynav mt-0" 
-                id="myTab" role="tablist">
+                id="myTab" role="tablist" style="border-top:0px">
               <li class="nav-item" role="presentation">
                 <button class="nav-link active " 
                         id="home-tab" 
