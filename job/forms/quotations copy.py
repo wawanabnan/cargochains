@@ -1,14 +1,13 @@
-from datetime import timedelta
-
 from django import forms
 from django.utils import timezone
 
 from job.models.quotations import Quotation
-from sales.services.config import get_sales_defaults
+from core.models.settings import CoreSetting
+from datetime import timedelta
 
 
 class QuotationForm(forms.ModelForm):
-
+    
     quote_date = forms.DateField(
         label="Quotation Date",
         input_formats=["%d-%m-%Y", "%Y-%m-%d"],
@@ -44,12 +43,16 @@ class QuotationForm(forms.ModelForm):
 
     @staticmethod
     def get_valid_days() -> int:
-        """
-        Ambil quotation_valid_days dari SalesConfig baru.
-        0 = tidak pakai masa berlaku.
-        """
-        defaults = get_sales_defaults(target="quotation")
-        return int(defaults.get("quotation_valid_days") or 0)
+        row = (
+            CoreSetting.objects
+            .filter(code__iexact="QUOTATION_VALID_DAY")
+            .only("int_value")
+            .first()
+        )
+        if not row or row.int_value is None:
+            return 0
+        return int(row.int_value)
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -91,7 +94,13 @@ class QuotationForm(forms.ModelForm):
                 w.attrs.setdefault("class", "form-select form-select-sm")
                 continue
 
+            # input/textarea/etc
             css = w.attrs.get("class", "")
             if "form-control" not in css:
                 css = (css + " form-control form-control-sm").strip()
             w.attrs["class"] = css
+
+        print("is_bound:", self.is_bound)
+        print("initial quote_date:", self.initial.get("quote_date"))
+        days = self.get_valid_days()
+        print("VALID DAYS =", days)

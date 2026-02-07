@@ -6,9 +6,8 @@ from django.utils import timezone
 from job.models.job_orders import JobOrder
 from partners.models import Customer
 from geo.models import Location
-from core.services.customer_notes import get_customer_notes
 from core.models.taxes import Tax
-
+from sales.services.config import get_sales_defaults
 
 class JobOrderForm(forms.ModelForm):
     taxes = forms.ModelMultipleChoiceField(
@@ -86,7 +85,7 @@ class JobOrderForm(forms.ModelForm):
     class Meta:
         model = JobOrder
         fields = "__all__"
-        exclude = ["created", "modified", "sales_user", "total_in_idr", "status"]
+        exclude = ["created", "modified", "sales_user", "total_in_idr", "status","sla_note"]
         widgets = {
             "service": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "customer": forms.Select(attrs={"class": "form-select form-select-sm"}),
@@ -119,7 +118,7 @@ class JobOrderForm(forms.ModelForm):
             }),
 
             "customer_note": forms.Textarea(attrs={"class": "form-control form-control-sm", "rows": 4}),
-            "sla_note": forms.Textarea(attrs={"class": "form-control form-control-sm", "rows": 4}),
+            "term_conditions": forms.Textarea(attrs={"class": "form-control form-control-sm", "rows": 4}),
             "payment_term": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "currency": forms.Select(attrs={"class": "form-select form-select-sm"}),
            # "remarks_internal": forms.Textarea(attrs={"class": "form-control form-control-sm", "rows": 3}),
@@ -155,7 +154,7 @@ class JobOrderForm(forms.ModelForm):
         is_create = not (instance and instance.pk)
         is_edit = bool(instance and instance.pk)
 
-        defaults = get_customer_notes()
+        defaults =get_sales_defaults(target="job_order")
 
         # service dropdown tampil name aja
         if "service" in self.fields:
@@ -190,13 +189,13 @@ class JobOrderForm(forms.ModelForm):
             if is_create:
                 if "customer_note" in self.fields and _empty(self.initial.get("customer_note", "")):
                     self.initial["customer_note"] = defaults.get("customer_note", "") or ""
-                if "sla_note" in self.fields and _empty(self.initial.get("sla_note", "")):
-                    self.initial["sla_note"] = defaults.get("sla_note", "") or ""
+                if "term_conditions" in self.fields and _empty(self.initial.get("term_conditions", "")):
+                    self.initial["term_conditions"] = defaults.get("term_conditions", "") or ""
             else:
                 if "customer_note" in self.fields and _empty(getattr(instance, "customer_note", "")):
                     self.initial["customer_note"] = defaults.get("customer_note", "") or ""
-                if "sla_note" in self.fields and _empty(getattr(instance, "sla_note", "")):
-                    self.initial["sla_note"] = defaults.get("sla_note", "") or ""
+                if "term_conditions" in self.fields and _empty(getattr(instance, "term_conditions", "")):
+                    self.initial["term_conditions"] = defaults.get("term_conditions", "") or ""
 
         # ===== EDIT GET: format angka agar tampil indo =====
         if is_edit and not self.is_bound:

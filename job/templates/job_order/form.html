@@ -181,10 +181,10 @@
                 </li>
                 <li class="nav-item" role="presentation">
                   <button class="nav-link"
-                          id="sla-note-tab-btn"
-                          data-bs-toggle="tab" data-bs-target="#slaNoteTab"
+                          id="term-note-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#termNoteTab"
                           type="button" role="tab"
-                          aria-controls="consigneeTab" aria-selected="false">Service Level Agreement</button>
+                          aria-controls="consigneeTab" aria-selected="false">Term & Conditions</button>
                 </li>
                
               </ul>
@@ -211,17 +211,12 @@
         
                 </div>
                 <div class="tab-pane fade show " 
-                    id="slaNoteTab" 
+                    id="termNoteTab" 
                     role="tabpanel" aria-labelledby="home-tab">
-                    {{ form.sla_note }}
+                    {{ form.term_conditions }}
         
                 </div>
-                <div class="tab-pane fade show " 
-                    id="slaNoteTab" 
-                    role="tabpanel" aria-labelledby="home-tab">
-                    {{ form.sla_note }}
-        
-                </div>
+              
                
               </div>
 
@@ -849,19 +844,19 @@ document.addEventListener("DOMContentLoaded", function () {
   </script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const sla = document.getElementById("id_sla_note");
+  const term_conditions = document.getElementById("id_term_conditions");
   const notes = document.getElementById("id_customer_note");
 
- // console.log("sla el:", sla, "notes el:", notes);
- // console.log("sla tag:", sla?.tagName, "notes tag:", notes?.tagName);
+ // console.log("term_conditions el:", term_conditions, "notes el:", notes);
+ // console.log("term_conditions tag:", term_conditions?.tagName, "notes tag:", notes?.tagName);
 
-  if (!sla && !notes) return;
+  if (!term_conditions && !notes) return;
 
   // Kalau sudah pernah init, jangan init ulang
-  if (window.tinymce?.get("id_sla_note") || window.tinymce?.get("id_customer_note")) return;
+  if (window.tinymce?.get("id_term_conditions_note") || window.tinymce?.get("id_customer_note")) return;
 
   tinymce.init({
-    selector: "#id_sla_note, #id_customer_note",
+    selector: "#id_term_conditions, #id_customer_note",
     height: 280,
     menubar: false,
     plugins: "lists link table code autoresize",

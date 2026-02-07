@@ -106,6 +106,8 @@ class JobOrder(TimeStampedModel):
         help_text="Types your service level agreements."
     )
 
+    term_conditions = models.TextField(blank=True)
+    
     quantity = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -248,6 +250,7 @@ class JobOrder(TimeStampedModel):
         (ST_COMPLETED, "Completed"),
     ]
 
+
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -286,6 +289,8 @@ class JobOrder(TimeStampedModel):
         related_name="+",
     )
 
+    
+
     STATUS_COLORS = {
         ST_DRAFT: "secondary",
         ST_IN_PROGRESS: "info",
@@ -294,7 +299,9 @@ class JobOrder(TimeStampedModel):
         ST_CANCELLED: "danger",
     }
 
-    
+
+        
+
     @property
     def job_status_label(self):
         color = self.STATUS_COLORS.get(self.status, "secondary")

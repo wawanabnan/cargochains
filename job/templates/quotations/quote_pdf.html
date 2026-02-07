@@ -116,22 +116,25 @@
 {% block extra_css %}
 <style>
   
+/* Force normal hanging indent for lists (override inline styles from TinyMCE) */
 .wrap ul,
 .wrap ol {
-  margin: 4px 0 0 0 !important;
-  padding-left: 18px !important;       /* kunci: hanging indent normal */
   list-style-position: outside !important;
+  padding-left: 1.7em !important;   /* atur 1.0em - 1.6em sesuai selera */
+  margin: 4px 0 0 0 !important;
+  text-indent: 0 !important;
 }
 
 .wrap li {
   margin: 2px 0 !important;
   padding-left: 0 !important;
+  text-indent: 0 !important;
 }
 
+/* TinyMCE kadang bikin <li><p>...</p></li> */
 .wrap li p {
   margin: 0 !important;
 }
-
 
 
   

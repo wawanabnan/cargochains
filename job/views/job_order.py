@@ -218,9 +218,9 @@ class JobOrderUpdateView(LoginRequiredMixin, View):
         cost_formset = JobCostFormSet(instance=job)
 
         form = JobOrderForm(instance=job)
-        print("ROWS cargo_description =", form.fields["cargo_description"].widget.attrs.get("rows"))
-        print("WIDGET =", type(form.fields["cargo_description"].widget))
-        print("ATTRS =", form.fields["cargo_description"].widget.attrs)
+        #print("ROWS cargo_description =", form.fields["cargo_description"].widget.attrs.get("rows"))
+        #print("WIDGET =", type(form.fields["cargo_description"].widget))
+        #print("ATTRS =", form.fields["cargo_description"].widget.attrs)
 
 
         return render(request, self.template_name, {
