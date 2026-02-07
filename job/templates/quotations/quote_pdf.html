@@ -97,11 +97,44 @@
   </tr>
 </table>
 
-<table style="margin-top:30px">
-<tr>
-  <td>{{jo.sales_user.username}}</td>
-</tr>
+<div style="margin-top:24px;">
+  <div style="height:70px;">
+    {% if signature_image %}
+      <img src="{{ signature_image.url }}" style="height:60px; object-fit:contain;">
+    {% endif %}
+  </div>
 
-</table>
+  <div style="font-weight:600;">{{ signature_name }}</div>
+  {% if signature_title %}
+    <div style="font-size:12px; color:#666;">{{ signature_title }}</div>
+  {% endif %}
+</div>
+
 
 {% endblock %}
+
+{% block extra_css %}
+<style>
+  
+.wrap ul,
+.wrap ol {
+  margin: 4px 0 0 0 !important;
+  padding-left: 18px !important;       /* kunci: hanging indent normal */
+  list-style-position: outside !important;
+}
+
+.wrap li {
+  margin: 2px 0 !important;
+  padding-left: 0 !important;
+}
+
+.wrap li p {
+  margin: 0 !important;
+}
+
+
+
+  
+</style>
+
+{% endblock%}

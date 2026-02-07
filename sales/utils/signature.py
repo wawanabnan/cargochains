@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Optional, Any
 
-from sales.models.sales_config import SalesConfig, SignatureSource
+from sales.models import SalesConfig, SignatureSource
 
 
 @dataclass(frozen=True)

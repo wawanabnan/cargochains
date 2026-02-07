@@ -32,6 +32,7 @@ from partners.models import Customer
 from core.models.services import Service
 from core.models.payment_terms import PaymentTerm
 from core.models.currencies import Currency
+from sales.utils.signature import build_signature_context_for_quotation
 
 
 def _quotation_print_context(q: Quotation):
@@ -405,6 +406,10 @@ class QuotationPDFView(LoginRequiredMixin, View):
         ctx.setdefault("q", quotation)  # optional alias kalau template ada pakai q
         ctx.setdefault("job", quotation.job_order)
         ctx.setdefault("job_order", quotation.job_order)
+        profile = getattr(request.user, "profile", None)
+        ctx.setdefault("signature_name", (request.user.get_full_name() or request.user.username))
+        ctx.setdefault("signature_title", getattr(profile, "title", "") if profile else "")
+        ctx.setdefault("signature_image", getattr(profile, "signature", None) if profile else None)
 
         html = render_to_string("quotations/quote_pdf.html", ctx, request=request)
 

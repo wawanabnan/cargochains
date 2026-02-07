@@ -815,117 +815,47 @@ document.addEventListener("DOMContentLoaded", function () {
 
 <script src="https://cdn.tiny.cloud/1/klpop8ud5zsip7zloht3kglaf0it7sau7hlm7yfscb3cjxsq/tinymce/6/tinymce.min.js"
           referrerpolicy="origin">
-</script>
-
+  </script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const sla = document.getElementById("id_sla_note");
   const notes = document.getElementById("id_customer_note");
+
+ // console.log("sla el:", sla, "notes el:", notes);
+ // console.log("sla tag:", sla?.tagName, "notes tag:", notes?.tagName);
+
   if (!sla && !notes) return;
 
-  // jangan init ulang
+  // Kalau sudah pernah init, jangan init ulang
   if (window.tinymce?.get("id_sla_note") || window.tinymce?.get("id_customer_note")) return;
-
-  function normalizeListsHTML(html) {
-    if (!html) return html;
-
-    const doc = new DOMParser().parseFromString(html, "text/html");
-
-    // reset indent di ul/ol/li (hapus margin/padding/text-indent yang bikin "ngeser")
-    doc.querySelectorAll("ul,ol").forEach(el => {
-      el.style.margin = "0";
-      el.style.marginLeft = "0";
-      el.style.paddingLeft = "0";
-      el.style.textIndent = "0";
-      el.style.listStylePosition = "inside";
-    });
-
-    doc.querySelectorAll("li").forEach(li => {
-      li.style.margin = "2px 0";
-      li.style.marginLeft = "0";
-      li.style.paddingLeft = "0";
-      li.style.textIndent = "0";
-    });
-
-    // TinyMCE kadang bikin <li><p>...</p></li>
-    doc.querySelectorAll("li p").forEach(p => {
-      p.style.margin = "0";
-      p.style.display = "inline";
-    });
-
-    // kadang hasil paste bungkus list dengan <p style="margin-left:..."> atau <div ...>
-    doc.querySelectorAll("p,div").forEach(el => {
-      const s = (el.getAttribute("style") || "").toLowerCase();
-      if (s.includes("margin-left") || s.includes("padding-left") || s.includes("text-indent")) {
-        el.style.marginLeft = "0";
-        el.style.paddingLeft = "0";
-        el.style.textIndent = "0";
-      }
-    });
-
-    return doc.body.innerHTML;
-  }
 
   tinymce.init({
     selector: "#id_sla_note, #id_customer_note",
     height: 280,
     menubar: false,
-    plugins: "lists link table code autoresize paste",
+    plugins: "lists link table code autoresize",
     toolbar: "undo redo | bold italic underline | bullist numlist | link table | removeformat | code",
     branding: false,
-
-    // tampilan editor
     content_style: `
       ul,ol{margin:0; padding-left:0; list-style-position:inside;}
       li{margin:2px 0; padding:0;}
       li p{margin:0; display:inline;}
     `,
-
-    // pastikan list baru yang dibuat TinyMCE juga rapih
     formats: {
-      bullist: {
-        selector: "ul",
-        styles: { margin: "0", marginLeft: "0", paddingLeft: "0", listStylePosition: "inside" }
-      },
-      numlist: {
-        selector: "ol",
-        styles: { margin: "0", marginLeft: "0", paddingLeft: "0", listStylePosition: "inside" }
-      },
+      bullist: { selector: "ul", styles: { margin: "0", paddingLeft: "0", listStylePosition: "inside" } },
+      numlist: { selector: "ol", styles: { margin: "0", paddingLeft: "0", listStylePosition: "inside" } },
     },
-
-    // bersihin style dari paste
-    paste_as_text: true,
-    paste_remove_styles: true,
-    paste_remove_styles_if_webkit: true,
-
+     paste_as_text: true,
+      paste_remove_styles: true,
+      paste_remove_styles_if_webkit: true,
     setup: function (editor) {
       editor.on("change keyup", function () {
-        editor.save();
-      });
-
-      // normalize saat user keluar dari editor
-      editor.on("blur", function () {
-        editor.save();
-        const el = document.getElementById(editor.id);
-        if (el) el.value = normalizeListsHTML(el.value);
+        editor.save(); // sync balik ke textarea untuk submit Django
       });
     }
   });
-
-  // normalize paling penting: sebelum submit form
-  const form = notes?.closest("form") || sla?.closest("form");
-  if (form) {
-    form.addEventListener("submit", function () {
-      if (window.tinymce) tinymce.triggerSave();
-      ["id_customer_note", "id_sla_note"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = normalizeListsHTML(el.value);
-      });
-    });
-  }
 });
 </script>
-
 
 
 <script>

@@ -172,3 +172,14 @@ from core.views.user_profile import UserProfileUpdateView
 urlpatterns += [
     path("profile/", UserProfileUpdateView.as_view(), name="profile_edit"),
 ]
+
+
+from django.urls import path
+from core.views.profile_modal import ProfileModalView, ProfileModalSubmitView
+
+app_name = "core"
+
+urlpatterns += [
+    path("profile/modal/", ProfileModalView.as_view(), name="profile_modal"),
+    path("profile/modal/submit/", ProfileModalSubmitView.as_view(), name="profile_modal_submit"),
+]
