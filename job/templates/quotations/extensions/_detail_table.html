@@ -1,0 +1,38 @@
+{% load indo_format %}
+
+<table class="table table-bordered mb-0">
+                  <thead>
+                    <tr>
+                      <th>Service</th>
+                      <th>Qty</th>
+                      <th>Price</th>
+                      <th>Tax</th>
+                      <th>Amount</th>                
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td> {{ job.service.name }}</td>
+                      <td class="text-end">{{job.qty | indo_number}}</td>
+                      <td class="text-end">{{job.price | indo_number}}</td>
+                      <td> {{ job.ppn_label_rate_display }}</td>
+                      <td class="text-end">{{ job.total_amount | indo_number}}</td>
+                    </tr>
+
+                  </tbody>
+                  <tfoot>
+                      <tr>
+                          <td colspan="4">Sub Total</td>
+                          <td class="text-end">{{job.total_amount|indo_number}}</td>
+                      </tr>
+                      <tr>
+                        <td colspan="4">Tax Amount</td>
+                        <td class="text-end">{{job.tax_amount|indo_number}}</td>
+                      </tr>
+                      <tr>
+                        <td colspan="4">Total</td>
+                        <td class="text-end">{{job.grand_total|indo_number}}</td>
+                      </tr>
+                        
+                  </tfoot>
+               </table>

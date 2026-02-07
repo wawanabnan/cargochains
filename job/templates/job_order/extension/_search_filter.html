@@ -1,0 +1,149 @@
+<div id="joborders-toolbar" class="d-flex justify-content-between align-items-center gap-2 mb-2">
+  <!-- LEFT: NEW BUTTON -->
+  <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'job:job_order_add' %}" class="btn btn-primary btn-sm">
+        <i class="fa fa-plus me-1"></i> New
+      </a>
+              
+  </div>
+           
+            <!-- CENTER: SEARCH BOX / BULK ACTIONS -->
+  <div class="flex-grow-1 d-flex justify-content-center">
+      <!-- SEARCH (default) -->
+      <div id="search-box" class="flex-grow-1 d-flex justify-content-center">
+        <form method="get"
+              class="input-group input-group-md rounded-pill overflow-hidden  border"
+              style="max-width:700px;">
+          <input type="search"
+                  name="q"
+                  value="{{ filter_q }}"
+                  class="form-control ps-3 border-0 bg-body"
+                  placeholder="Search Job No / Cargo / Customer..."
+                  autocomplete="off">
+
+          <button class="btn btn-outline-secondary border-0 bg-body" type="submit">
+            <i class="fa fa-search"></i>
+          </button>
+
+          <!-- pertahankan filter lain -->
+          <input type="hidden" name="customer"  value="{{ filter_customer }}">
+          <input type="hidden" name="service"   value="{{ filter_service }}">
+          <input type="hidden" name="date_from" value="{{ filter_date_from }}">
+          <input type="hidden" name="date_to"   value="{{ filter_date_to }}">
+        </form>
+      </div>
+
+      <!-- BULK ACTIONS (hidden default) -->
+      <div id="bulk-actions" class="d-none align-items-center gap-2">
+        <span class="btn btn-secondary btn-sm me-2 disabled"
+            style="pointer-events:none;">
+        <span id="sel-count">0</span> selected
+        </span>
+          <button type="button"
+                class="btn btn-warning btn-sm"
+                id="btn-bulk-pending">
+            <i class="fa fa-pause me-1"></i> Pending
+        </button>
+
+        <button type="button"
+                class="btn btn-danger btn-sm"
+                id="btn-bulk-cancel">
+            <i class="fa fa-ban me-1"></i> Cancel
+        </button>
+
+      </div>
+
+  </div>
+
+            <!-- RIGHT: FILTER BUTTON -->
+            
+  <button class="btn btn-outline-secondary btn-sm"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#filterSheet">
+    <i class="fa fa-filter me-1"></i> Filter
+  </button>
+</div>
+<!-- OFFCANVAS FILTER SHEET -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="filterSheet" aria-labelledby="filterSheetLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="filterSheetLabel">Filter Job Orders</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+
+  <div class="offcanvas-body">
+
+    <form method="get" class="vstack gap-3">
+
+      {# keep search & sort #}
+      <input type="hidden" name="q" value="{{ filter_q }}">
+      <input type="hidden" name="sort" value="{{ sort }}">
+
+      <div>
+        <label class="form-label mb-1">Customer</label>
+        <select name="customer" class="form-select form-select-sm" multiple size="4">
+          {% for c in customers %}
+            <option value="{{ c.id }}"
+              {% if c.id|stringformat:"s" in filter_customers %}selected{% endif %}>
+              {{ c.name }}
+            </option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Bisa pilih lebih dari satu.</div>
+      </div>
+
+      <div>
+        <label class="form-label mb-1">Service</label>
+        <select name="service" class="form-select form-select-sm" multiple size="4">
+          {% for s in services %}
+            <option value="{{ s.id }}"
+              {% if s.id|stringformat:"s" in filter_services %}selected{% endif %}>
+              {{ s.name }}
+            </option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Bisa pilih lebih dari satu.</div>
+      </div>
+
+      <div>
+        <label class="form-label mb-1">Status</label>
+        <select name="status" class="form-select form-select-sm" multiple size="4">
+          {% for val,label in status_choices %}
+            <option value="{{ val }}"
+              {% if val in filter_statuses %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Bisa pilih lebih dari satu.</div>
+      </div>
+
+      <div class="row g-2">
+        <div class="col-6">
+          <label class="form-label mb-1">Date From</label>
+          <input type="date"
+                 class="form-control form-control-sm"
+                 name="date_from"
+                 value="{{ filter_date_from }}">
+        </div>
+        <div class="col-6">
+          <label class="form-label mb-1">Date Until</label>
+          <input type="date"
+                 class="form-control form-control-sm"
+                 name="date_to"
+                 value="{{ filter_date_to }}">
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 pt-2">
+        <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+          Apply
+        </button>
+        <a href="{% url 'job:job_order_list' %}" class="btn btn-outline-secondary btn-sm">
+          Reset
+        </a>
+      </div>
+
+    </form>
+
+  </div>
+</div>

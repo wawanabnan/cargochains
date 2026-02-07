@@ -234,6 +234,66 @@ class Partner(models.Model):
     def full_address_text(self) -> str:
         return "\n".join(self.full_address_lines)
 
+    @property
+    def address_lines(self):
+        def pick(*names):
+            """Ambil nilai pertama yang ada & tidak kosong dari beberapa nama field."""
+            for n in names:
+                if hasattr(self, n):
+                    v = getattr(self, n)
+                    if v is None:
+                        continue
+                    v = str(v).strip()
+                    if v:
+                        return v
+            return ""
+
+        def nm(x):
+            """Kalau FK object ambil .name, kalau string ya string."""
+            if not x:
+                return ""
+            return (getattr(x, "name", None) or str(x)).strip()
+        
+        def norm(s: str) -> str:
+            return " ".join((s or "").split()).lower()
+
+
+        lines = []
+        seen = set()
+        
+        # 1) address lines (support dua kemungkinan nama field)
+        a1 = pick("address_line1", "address_line_1")
+        a2 = pick("address_line2", "address_line_2")
+
+        if a1:
+            lines.append(a1)
+        if a2 and a2 != a1:          # ✅ anti dobel
+            lines.append(a2)
+
+        
+        def add(line: str):
+            line = (line or "").strip()
+            if not line:
+                return
+            key = norm(line)
+            if key in seen:
+                return
+            seen.add(key)
+            lines.append(line)
+
+        village = nm(getattr(self, "village", None))
+        district = nm(getattr(self, "district", None))
+        vd = " - ".join([x for x in [village, district] if x])
+        add(vd)
+
+        # 3) regency
+        add(nm(getattr(self, "regency", None)))
+
+        # 4) province
+        add(nm(getattr(self, "province", None)))
+
+        return lines
+    
 
 class CustomerManager(models.Manager):
     def get_queryset(self):

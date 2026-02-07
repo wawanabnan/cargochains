@@ -1,0 +1,26 @@
+     <div class="row mb-2">
+              <div class="col-3 text-muted">Quotation No</div>
+              <div class="col-3"><strong>{{ quotation.number }}</strong></div>
+              <div class="col-3 text-muted">Customer</div>
+              <div class="col-3"><strong>{{ job.customer.name }}</strong></div>
+            </div>
+
+            <div class="row mb-2">
+              <div class="col-3 text-muted">Quote Date</div>
+              <div class="col-3">{{ quotation.quote_date|date:"d-m-Y" }}</div>
+              <div class="col-3 text-muted">Payment Term</div>
+              <div class="col-3">{{ job.payment_term.name }}</div>
+            </div>
+
+            <div class="row mb-2">
+              <div class="col-3 text-muted">Valid Until</div>
+              <div class="col-3">
+                {{ quotation.valid_until|date:"d-m-Y" }}
+                {% if quotation.effective_status == "EXPIRED" %}
+                  <span class="badge bg-danger ms-2">Expired</span>
+                {% endif %}
+              </div>
+              <div class="col-3 text-muted">Currency</div>
+              <div class="col-3">{{ job.currency.code }}</div>
+            </div>
+            

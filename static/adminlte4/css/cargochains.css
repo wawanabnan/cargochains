@@ -206,6 +206,7 @@
   padding: 0 !important;
 }
 
+
 .tax-badge-container .select2-selection--multiple .select2-selection__choice {
   border: none !important;
   border-radius: 999px !important;
@@ -294,7 +295,6 @@ body textarea.form-control,
 body textarea.form-control-sm,
 body textarea.form-control-lg{
   height: auto !important;
-  min-height: 120px;              /* default nyaman; bisa dihapus kalau mau pure rows */
   padding: .50rem .75rem !important;
   font-size: .85rem !important;
   line-height: 1.4 !important;
@@ -315,4 +315,13 @@ body .card-header{
   padding-left: .75rem;
   padding-right: .75rem;
   min-height: auto;
+}
+
+
+body select[multiple],
+body .form-select[multiple],
+body .form-control[multiple] {
+  height: auto !important;
+  min-height: auto !important;
+  padding: .20rem .50rem !important; /* optional: keep compact */
 }

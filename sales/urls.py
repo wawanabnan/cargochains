@@ -228,3 +228,8 @@ urlpatterns += [
 
 
 
+from sales.views.sales_config import SalesConfigView
+
+urlpatterns += [
+    path("sales-config/", SalesConfigView.as_view(), name="sales_config"),
+]

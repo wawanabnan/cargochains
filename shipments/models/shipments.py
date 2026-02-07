@@ -20,7 +20,7 @@ class ShipmentStatus(models.TextChoices):
     CANCELED = "CANCELED"
 
 class Shipment(models.Model):
-    shipment_number = models.CharField(max_length=20, unique=True, db_index=True)  # internal
+    shipment_number = models.CharField(max_length=20, unique=True, db_index=True,null=True, blank=True)  # internal
     tracking_no = models.CharField(
         null=True,
         blank=True,

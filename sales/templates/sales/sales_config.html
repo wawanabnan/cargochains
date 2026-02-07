@@ -1,0 +1,185 @@
+{% extends "adminbase.html" %}
+
+{% block content %}
+<div class="app-content">
+  <div class="container-fluid">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <div>
+          <div class="fw-semibold">Sales Config</div>
+          <div class="text-secondary small">Default configuration untuk Quotation / Job Order</div>
+        </div>
+      </div>
+
+      <form method="post" novalidate id="sales-settings-form">
+        {% csrf_token %}
+
+        <div class="card-body">
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger py-2">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label small mb-1">Default Currency</label>
+              {{ form.default_currency }}
+              {% if form.default_currency.errors %}<div class="text-danger small mt-1">{{ form.default_currency.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small mb-1">Quotation Valid Days</label>
+              {{ form.quotation_valid_days }}
+              <div class="text-secondary small mt-1">0 = tidak pakai masa berlaku.</div>
+              {% if form.quotation_valid_days.errors %}<div class="text-danger small mt-1">{{ form.quotation_valid_days.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small mb-1">Sales Fee (%)</label>
+              {{ form.sales_fee_percent }}
+              {% if form.sales_fee_percent.errors %}<div class="text-danger small mt-1">{{ form.sales_fee_percent.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="border rounded p-3 mt-3">
+            <div class="fw-semibold small mb-1">Signature Settings</div>
+            <div class="text-secondary small mb-3">
+              Pilih sumber tanda tangan untuk dokumen Quotation dan Job Order.
+            </div>
+
+            <div class="row g-3">
+              <div class="col-lg-6">
+                <div class="fw-semibold small mb-2">Quotation Signature</div>
+
+                <label class="form-label small mb-1">Source</label>
+                {{ form.quotation_signature_source }}
+                {% if form.quotation_signature_source.errors %}<div class="text-danger small mt-1">{{ form.quotation_signature_source.errors }}</div>{% endif %}
+
+                <label class="form-label small mb-1 mt-2">Specific User</label>
+                {{ form.quotation_signature_user }}
+                <div class="text-secondary small mt-1">Dipakai hanya jika source = Specific User.</div>
+                {% if form.quotation_signature_user.errors %}<div class="text-danger small mt-1">{{ form.quotation_signature_user.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-lg-6">
+                <div class="fw-semibold small mb-2">Job Order Signature</div>
+
+                <label class="form-label small mb-1">Source</label>
+                {{ form.joborder_signature_source }}
+                {% if form.joborder_signature_source.errors %}<div class="text-danger small mt-1">{{ form.joborder_signature_source.errors }}</div>{% endif %}
+
+                <label class="form-label small mb-1 mt-2">Specific User</label>
+                {{ form.joborder_signature_user }}
+                <div class="text-secondary small mt-1">Dipakai hanya jika source = Specific User.</div>
+                {% if form.joborder_signature_user.errors %}<div class="text-danger small mt-1">{{ form.joborder_signature_user.errors }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mt-3">
+            <div class="col-lg-6">
+              <label class="form-label small mb-1">Customer Note (Default)</label>
+              {{ form.customer_note }}
+              {% if form.customer_note.errors %}<div class="text-danger small mt-1">{{ form.customer_note.errors }}</div>{% endif %}
+            </div>
+
+            <div class="col-lg-6">
+              <label class="form-label small mb-1">Term & Conditions (Default)</label>
+              {{ form.term_conditions }}
+              {% if form.term_conditions.errors %}<div class="text-danger small mt-1">{{ form.term_conditions.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-primary btn-sm" id="btn-save-ajax">
+            <i class="bi bi-save me-1"></i> Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+
+  <script src="https://cdn.tiny.cloud/1/klpop8ud5zsip7zloht3kglaf0it7sau7hlm7yfscb3cjxsq/tinymce/6/tinymce.min.js"
+          referrerpolicy="origin"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  tinymce.init({
+    selector: "#id_customer_note, #id_term_conditions",
+    height: 380,
+    menubar: false,
+    plugins: "lists link table code autoresize",
+    toolbar: "undo redo | bold italic underline | bullist numlist | link table | removeformat | code",
+    branding: false,
+    setup: function (editor) {
+      editor.on("change keyup", function () { editor.save(); });
+    }
+  });
+
+  function syncSignatureUI() {
+    const qSrc = document.getElementById("id_quotation_signature_source");
+    const qUser = document.getElementById("id_quotation_signature_user");
+    const jSrc = document.getElementById("id_joborder_signature_source");
+    const jUser = document.getElementById("id_joborder_signature_user");
+
+    function toggle(srcEl, userEl) {
+      if (!srcEl || !userEl) return;
+      const v = (srcEl.value || "").toUpperCase();
+      userEl.disabled = (v !== "SPECIFIC_USER");
+    }
+
+    toggle(qSrc, qUser);
+    toggle(jSrc, jUser);
+  }
+
+  syncSignatureUI();
+  document.getElementById("id_quotation_signature_source")?.addEventListener("change", syncSignatureUI);
+  document.getElementById("id_joborder_signature_source")?.addEventListener("change", syncSignatureUI);
+
+  const form = document.getElementById("sales-settings-form");
+  const btn = document.getElementById("btn-save-ajax");
+  if (!form || !btn) return;
+
+  async function ajaxSave() {
+    if (window.tinymce) tinymce.triggerSave();
+
+    btn.disabled = true;
+    try {
+      const resp = await fetch(window.location.href, {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        body: new FormData(form),
+      });
+
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || !data.ok) {
+        alert((data && data.message) ? data.message : "Save failed");
+        console.log("errors:", data.errors || data);
+        return;
+      }
+      alert("Setting has been saved");
+    } catch (err) {
+      alert("Save failed (server/network)");
+      console.log(err);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  btn.addEventListener("click", function (e) {
+    e.preventDefault();
+    ajaxSave();
+  });
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    ajaxSave();
+  });
+});
+</script>
+{% endblock %}

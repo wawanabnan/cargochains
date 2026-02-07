@@ -1,0 +1,42 @@
+            <div class="row mb-2">
+              <div class="col-5 text-muted">Sent At</div>
+              <div class="col-7">
+                {% if quotation.sent_at %}{{ quotation.sent_at|date:"d-m-Y H:i" }}{% else %}-{% endif %}
+              </div>
+            </div>
+
+            <div class="row mb-2">
+              <div class="col-5 text-muted">Ordered At</div>
+              <div class="col-7">
+                {% if quotation.ordered_at %}{{ quotation.ordered_at|date:"d-m-Y H:i" }}{% else %}-{% endif %}
+              </div>
+            </div>
+
+            <div class="row mb-2">
+              <div class="col-5 text-muted">Ordered By</div>
+              <div class="col-7">
+                {% if quotation.ordered_by %}{{ quotation.ordered_by }}{% else %}-{% endif %}
+              </div>
+            </div>
+
+            {% if quotation.status == "EXPIRED" %}
+              <div class="row mb-2">
+                <div class="col-5 text-muted">Expired At</div>
+                <div class="col-7">
+                  {% if quotation.expired_at %}{{ quotation.expired_at|date:"d-m-Y H:i" }}{% else %}-{% endif %}
+                </div>
+              </div>
+              <div class="row mb-2">
+                <div class="col-5 text-muted">Expired By System</div>
+                <div class="col-7">
+                  {% if quotation.expired_by_system %}Yes{% else %}No{% endif %}
+                </div>
+              </div>
+            {% endif %}
+
+          <div class="row mb-2">
+              <div class="col-5 text-muted">Status</div>
+              <div class="col-7">{{ quotation.effective_status }}</div>
+            </div>
+                  
+  

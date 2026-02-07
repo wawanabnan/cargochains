@@ -27,6 +27,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from weasyprint import HTML  # pip install weasyprint
+from django.utils.dateparse import parse_date
+from partners.models import Customer
+from core.models.services import Service
+from core.models.payment_terms import PaymentTerm
+from core.models.currencies import Currency
 
 
 def _quotation_print_context(q: Quotation):
@@ -41,10 +46,6 @@ def _quotation_print_context(q: Quotation):
         # contoh: taxes M2M (kalau ada)
         "taxes": getattr(jo, "taxes", None).all() if jo and hasattr(jo, "taxes") else [],
     }
-
-
-
-
 
 def get_queryset(self):
     qs = super().get_queryset()
@@ -61,8 +62,6 @@ def get_queryset(self):
 
     return qs
 
-
-
 def _build_tax_map():
     qs = Tax.objects.filter(is_active=True).only("id", "rate", "is_withholding")
     return {
@@ -77,8 +76,74 @@ class QuotationListView(LoginRequiredMixin, ListView):
     model = Quotation
     template_name = "quotations/list.html"
     context_object_name = "quotations"
-    paginate_by = 25
-    ordering = ["-id"]
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = (
+            Quotation.objects
+            .select_related("job_order__customer", "job_order__service")
+        )
+
+        q = (self.request.GET.get("q") or "").strip()
+
+        customer_ids = self.request.GET.getlist("customer")  # MULTI
+        service_ids  = self.request.GET.getlist("service")   # MULTI
+        q_statuses   = self.request.GET.getlist("q_status")  # MULTI (quotation status)
+
+        date_from_raw = (self.request.GET.get("date_from") or "").strip()
+        date_to_raw   = (self.request.GET.get("date_to") or "").strip()
+        date_from = parse_date(date_from_raw) if date_from_raw else None
+        date_to   = parse_date(date_to_raw) if date_to_raw else None
+
+        if q:
+            qs = qs.filter(
+                Q(number__icontains=q)
+                | Q(job_order__customer__name__icontains=q)
+                | Q(job_order__customer__company_name__icontains=q)
+                | Q(job_order__service__name__icontains=q)
+                | Q(job_order__order_number__icontains=q)
+                | Q(job_order__cargo_description__icontains=q)
+            )
+
+        if customer_ids:
+            qs = qs.filter(job_order__customer_id__in=customer_ids)
+
+        if service_ids:
+            qs = qs.filter(job_order__service_id__in=service_ids)
+
+        if q_statuses:
+            qs = qs.filter(status__in=q_statuses)
+
+        if date_from:
+            qs = qs.filter(quote_date__gte=date_from)
+
+        if date_to:
+            qs = qs.filter(quote_date__lte=date_to)
+
+        return qs.order_by("-quote_date", "-id")
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        # keep selected values
+        ctx["filter_q"] = self.request.GET.get("q", "")
+        ctx["filter_customers"] = self.request.GET.getlist("customer")
+        ctx["filter_services"] = self.request.GET.getlist("service")
+        ctx["filter_q_statuses"] = self.request.GET.getlist("q_status")
+        ctx["filter_date_from"] = self.request.GET.get("date_from", "")
+        ctx["filter_date_to"] = self.request.GET.get("date_to", "")
+
+        # dropdown data (yang punya quotation saja)
+        ctx["customers"] = Customer.objects.all().order_by("name")
+        ctx["services"] = Service.objects.all().order_by("name")
+        ctx["payment_terms"] = PaymentTerm.objects.all().order_by("name")
+        ctx["currencies"] = Currency.objects.all().order_by("name")
+        
+        # status quotation (sesuaikan: QuotationStatus.choices / Quotation.STATUS_CHOICES)
+        ctx["quotation_status_choices"] = QuotationStatus.choices
+
+        return ctx
+
 
 class QuotationCreateView(LoginRequiredMixin, CreateView):
     model = Quotation
@@ -161,16 +226,65 @@ class QuotationCreateView(LoginRequiredMixin, CreateView):
 
             quotation.save()
 
-        messages.success(request, "Quotation berhasil dibuat.")
+        messages.success(request, "Quotation berhasil dibuat.",extra_tags="ui-inline") 
         return redirect(self.get_success_url())
 
 class QuotationUpdateView(LoginRequiredMixin, UpdateView):
     model = Quotation
-    form_class = QuotationForm
     template_name = "quotations/form.html"
 
     def get_success_url(self):
         return reverse_lazy("job:quotation_detail", kwargs={"pk": self.object.pk})
+
+    def get_context_data(self, *, qform=None, form=None, **kwargs):
+        quotation = self.object  # sudah ada di UpdateView
+        if qform is None:
+            qform = QuotationForm(instance=quotation)
+        if form is None:
+            form = JobOrderForm(instance=quotation.job_order)
+
+        ctx = {
+            "qform": qform,
+            "form": form,
+            "mode": "edit",
+            "tax_map": _build_tax_map(),
+            "object": quotation,
+            "quotation": quotation,
+            "job": quotation.job_order,
+        }
+        return ctx
+
+    def get(self, request, *args, **kwargs):
+
+        self.object = self.get_object()
+        ctx = self.get_context_data()
+        return render(request, self.template_name, ctx)
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        quotation = self.object
+        job = quotation.job_order
+
+        data = request.POST.copy()
+
+        # kalau masih mau copy quote_date -> job_date (optional)
+        qd = (data.get("quote_date") or "").strip()
+        if qd and not (data.get("job_date") or "").strip():
+            data["job_date"] = qd
+
+        qform = QuotationForm(data, instance=quotation)
+        form = JobOrderForm(data, instance=job)
+
+        if not (qform.is_valid() and form.is_valid()):
+            ctx = self.get_context_data(qform=qform, form=form)
+            return render(request, self.template_name, ctx)
+
+        with transaction.atomic():
+            form.save()   # update job order fields + m2m kalau ada
+            qform.save()  # update quotation fields
+
+        messages.success(request, "Quotation berhasil diupdate.")
+        return redirect(self.get_success_url())
 
 class QuotationStatusUpdateView(LoginRequiredMixin, View):
     """
@@ -247,7 +361,6 @@ class QuotationSendView(View):
 
         return redirect("job:quotation_detail", pk=q.id)
 
-
 class QuotationConvertToOrderView(View):
     @transaction.atomic
     def post(self, request, pk):
@@ -280,20 +393,25 @@ class QuotationPrintPreviewView(LoginRequiredMixin, DetailView):
         ctx.update(_quotation_print_context(self.object))
         return ctx
 
+class QuotationPDFView(LoginRequiredMixin, View):
+    def get(self, request, pk: int, *args, **kwargs):
+        quotation = get_object_or_404(Quotation, pk=pk)
 
-@login_required
-def quotation_pdf_view(request, pk: int):
-    q = get_object_or_404(Quotation, pk=pk)
-    ctx = _quotation_print_context(q)
+        # ambil context existing
+        ctx = _quotation_print_context(quotation) or {}
 
-    html = render_to_string("quotations/quote_pdf.html", ctx, request=request)
+        # ✅ pastikan template selalu punya object penting (anti "debug kosong")
+        ctx.setdefault("quotation", quotation)
+        ctx.setdefault("q", quotation)  # optional alias kalau template ada pakai q
+        ctx.setdefault("job", quotation.job_order)
+        ctx.setdefault("job_order", quotation.job_order)
 
-    # base_url penting supaya static file (header_full.png/footer_full.png) kebaca
-    base_url = request.build_absolute_uri("/")
+        html = render_to_string("quotations/quote_pdf.html", ctx, request=request)
 
-    pdf_bytes = HTML(string=html, base_url=base_url).write_pdf()
+        base_url = request.build_absolute_uri("/")
+        pdf_bytes = HTML(string=html, base_url=base_url).write_pdf()
 
-    filename = f"quotation-{(q.number or str(pk)).replace('/', '-')}.pdf"
-    resp = HttpResponse(pdf_bytes, content_type="application/pdf")
-    resp["Content-Disposition"] = f'inline; filename="{filename}"'
-    return resp
+        filename = f"quotation-{(quotation.number or str(pk)).replace('/', '-')}.pdf"
+        resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+        resp["Content-Disposition"] = f'inline; filename="{filename}"'
+        return resp

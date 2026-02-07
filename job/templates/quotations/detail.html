@@ -1,6 +1,7 @@
 {# templates/job/quotation_detail.html #}
 {% extends "adminbase.html" %}
 {% load humanize %}
+{% load indo_format %}
 
 {% block content %}
 
@@ -8,9 +9,9 @@
   <div class="container-fluid">
     <div class="d-flex align-items-center justify-content-between">
       <div>
-        <h3 class="mb-1">Quotation Detail</h3>
+        <h4 class="mb-1">Quotation Detail</h4>
         <div class="text-muted">
-          <span class="me-2">No: <strong>{{ quotation.number }}</strong></span>
+          <span class="me-2"><strong>{{ quotation.number }}</strong></span>
 
           {% if quotation.effective_status == "EXPIRED" %}
             <span class="badge bg-danger">EXPIRED</span>
@@ -28,8 +29,8 @@
         </div>
       </div>
 
-      <div class="d-flex gap-2">
-        <a class="btn btn-outline-secondary" href="{% url 'job:quotation_list' %}">
+      <div class="d-flex gap-1">
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'job:quotation_list' %}">
           Back to List
         </a>
 
@@ -37,13 +38,21 @@
         {% if quotation.status == "DRAFT" and quotation.effective_status != "EXPIRED" %}
           <form method="post" action="{% url 'job:quotation_send' quotation.id %}" class="d-inline">
             {% csrf_token %}
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-sm btn-primary">
               Send
             </button>
           </form>
         {% endif %}
-        <a href="{% url 'job:quotation_print' object.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank">Print Preview</a>
-        <a href="{% url 'job:quotation_pdf' object.pk %}" class="btn btn-sm btn-outline-danger" target="_blank">PDF</a>
+         {% if job.status != 'COMPLETED' %}
+              <a href="{% url 'job:quotation_update' object.pk %}"
+                class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-pencil"></i> Edit
+              </a>
+          {% endif %}
+        <a href="{% url 'job:quotation_print' object.pk %}" 
+            class="btn btn-sm btn-outline-secondary" target="_blank"> <i class="bi bi-printer"></i> Preview</a>
+        <a href="{% url 'job:quotation_pdf' object.pk %}" 
+        class="btn btn-sm btn-outline-danger" target="_blank"> <i class="bi bi-file-pdf"></i> PDF</a>
  
         {# Tombol CONVERT: default contoh = hanya SENT & belum expired #}
         {% if quotation.status == "SENT" and quotation.effective_status != "EXPIRED" %}
@@ -54,191 +63,50 @@
             </button>
           </form>
         {% endif %}
-
+        
         {# Link ke JobOrder kalau sudah ada #}
-        {% if quotation.job_order_id %}
-          <a class="btn btn-outline-success"
-            href="{% url 'job:job_order_detail' quotation.job_order_id %}">
-            View Job Order
-          </a>
-        {% endif %}
+        {% if quotation.job_order and quotation.job_order.status == 'DRAFT' %}
+        <a class="btn btn-outline-success"
+          href="{% url 'job:job_order_detail' quotation.job_order.id %}">
+          View Job Order
+        </a>
+      {% endif %}
       </div>
     </div>
   </div>
 </div>
 
 
+
 <div class="app-content">
   <div class="container-fluid">
 
-    {# Messages (kalau adminbase belum render messages) #}
-    {% if messages %}
-      <div class="mb-3">
-        {% for message in messages %}
-          <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} mb-2" role="alert">
-            {{ message }}
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
-
-    <div class="row g-3">
-
-      <div class="col-lg-6">
-        <div class="card">
+    <div class="card mb-2">
           <div class="card-header">
             <strong>Quotation Info</strong>
           </div>
           <div class="card-body">
-            <div class="row mb-2">
-              <div class="col-5 text-muted">Quotation No</div>
-              <div class="col-7"><strong>{{ quotation.number }}</strong></div>
-            </div>
-
-            <div class="row mb-2">
-              <div class="col-5 text-muted">Quote Date</div>
-              <div class="col-7">{{ quotation.quote_date|date:"d-m-Y" }}</div>
-            </div>
-
-            <div class="row mb-2">
-              <div class="col-5 text-muted">Valid Until</div>
-              <div class="col-7">
-                {{ quotation.valid_until|date:"d-m-Y" }}
-                {% if quotation.effective_status == "EXPIRED" %}
-                  <span class="badge bg-danger ms-2">Expired</span>
-                {% endif %}
+            <div class="row">
+              <div class="col-md-8" style="border-right: 1px solid #ccc;">
+                {% include "quotations/extensions/_form_left.html" %}
               </div>
-            </div>
-
-            <div class="row mb-2">
-              <div class="col-5 text-muted">Status</div>
-              <div class="col-7">{{ quotation.effective_status }}</div>
-            </div>
-
-            <hr>
-
-            <div class="row mb-2">
-              <div class="col-5 text-muted">Sent At</div>
-              <div class="col-7">
-                {% if quotation.sent_at %}{{ quotation.sent_at|date:"d-m-Y H:i" }}{% else %}-{% endif %}
+              <div class="col-md-4">
+                 {% include "quotations/extensions/_form_right.html" %}
               </div>
+
             </div>
-
-            <div class="row mb-2">
-              <div class="col-5 text-muted">Ordered At</div>
-              <div class="col-7">
-                {% if quotation.ordered_at %}{{ quotation.ordered_at|date:"d-m-Y H:i" }}{% else %}-{% endif %}
-              </div>
-            </div>
-
-            <div class="row mb-2">
-              <div class="col-5 text-muted">Ordered By</div>
-              <div class="col-7">
-                {% if quotation.ordered_by %}{{ quotation.ordered_by }}{% else %}-{% endif %}
-              </div>
-            </div>
-
-            {% if quotation.status == "EXPIRED" %}
-              <div class="row mb-2">
-                <div class="col-5 text-muted">Expired At</div>
-                <div class="col-7">
-                  {% if quotation.expired_at %}{{ quotation.expired_at|date:"d-m-Y H:i" }}{% else %}-{% endif %}
-                </div>
-              </div>
-              <div class="row mb-2">
-                <div class="col-5 text-muted">Expired By System</div>
-                <div class="col-7">
-                  {% if quotation.expired_by_system %}Yes{% else %}No{% endif %}
-                </div>
-              </div>
-            {% endif %}
-
-          </div>
+            
         </div>
-      </div>
-
-      <div class="col-lg-6">
-        <div class="card">
-          <div class="card-header">
-            <strong>Job Order</strong>
-          </div>
-          <div class="card-body">
-            {% if quotation.job_order %}
-              <div class="row mb-2">
-                <div class="col-5 text-muted">Job No</div>
-                <div class="col-7"><strong>{{ quotation.job_order.number }}</strong></div>
-              </div>
-              <div class="row mb-2">
-                <div class="col-5 text-muted">Job Status</div>
-                <div class="col-7">{{ quotation.job_order.status }}</div>
-              </div>
-              <div class="row mb-2">
-                <div class="col-5 text-muted">Job Date</div>
-                <div class="col-7">
-                  {% if quotation.job_order.job_date %}
-                    {{ quotation.job_order.job_date|date:"d-m-Y" }}
-                  {% else %}
-                    -
-                  {% endif %}
-                </div>
-              </div>
-
-              <hr>
-
-              <a class="btn btn-outline-success" href="{% url 'job:job_order_detail' quotation.job_order.id %}">
-                Open Job Order
-              </a>
-            {% else %}
-              <div class="text-muted">
-                JobOrder belum ter-attach (seharusnya attach saat Create Quotation).
-              </div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-
-      {# Placeholder untuk item lines kalau ada #}
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header d-flex align-items-center justify-content-between">
-            <strong>Items</strong>
-            <span class="text-muted small">(*sesuaikan dengan struktur line item kamu)</span>
-          </div>
-          <div class="card-body">
-            {% if items %}
-              <div class="table-responsive">
-                <table class="table table-sm align-middle">
-                  <thead>
-                    <tr>
-                      <th>Description</th>
-                      <th class="text-end">Qty</th>
-                      <th class="text-end">Unit Price</th>
-                      <th class="text-end">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for it in items %}
-                      <tr>
-                        <td>{{ it.description }}</td>
-                        <td class="text-end">{{ it.qty|floatformat:0 }}</td>
-                        <td class="text-end">{{ it.unit_price|intcomma }}</td>
-                        <td class="text-end">{{ it.amount|intcomma }}</td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            {% else %}
-              <div class="text-muted">
-                Belum ada data item yang di-render. Kalau kamu punya model line items, kirim field-nya biar aku sesuaikan.
-              </div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-
     </div>
 
+    <div class="card border-0">
+      <div class="table-responsive">
+          {% include "quotations/extensions/_detail_table.html" %}
+      </div>
+    </div>
+     <div class="mt-3">
+          {% include "quotations/extensions/route_and_cargo.html" %}
+     </div>
   </div>
 </div>
 

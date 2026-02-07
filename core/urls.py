@@ -126,7 +126,7 @@ urlpatterns += [
     path("settings/system/numbering/add/", NumberSequenceCreateView.as_view(), name="numbering_add"),
     path("settings/system/numbering/<int:pk>/edit/", NumberSequenceUpdateView.as_view(), name="numbering_edit"),
     path("settings/system/numbering/<int:pk>/delete/", NumberSequenceDeleteView.as_view(), name="numbering_delete"),
-    path("sales/config/",SalesConfigView.as_view(), name="sales_config"),
+    path("sales/config2/",SalesConfigView.as_view(), name="sales_config2"),
    
 ]
 
@@ -164,4 +164,11 @@ urlpatterns += [
     path("api/exchange-rate/pull-bi/", PullBIExchangeRateView.as_view(), name="exchange_rate_pull_bi"),
     path("exchange-rates/<int:pk>/activate/", ExchangeRateActivateView.as_view(), name="exchange_rate_activate"),
 
+]
+
+
+from core.views.user_profile import UserProfileUpdateView
+
+urlpatterns += [
+    path("profile/", UserProfileUpdateView.as_view(), name="profile_edit"),
 ]

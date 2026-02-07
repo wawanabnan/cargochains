@@ -1,0 +1,137 @@
+{% load indo_format %}
+
+<div class="card">
+        <div class="card-body p-0">
+
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 4%">
+                    <input type="checkbox" id="chk-all">
+                  </th>
+                  <th style="width: 10%">Number</th>
+                  <th style="width: 10%">Valid Until</th>
+                  <th>Customer</th>
+                  <th style="width: 12%;">Services</th>
+                  <th style="width: 10%">Shipping Plan</th>
+                  
+                  {% if perms.sales.view_all_sales %}
+                  <th style="width: 5%">Sales</th>
+                  {% endif %}
+                  <th class="text-end" style="width: 12%">Total</th>
+                  <th class="text-center" style="width: 10%">Status</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% if quotations %}
+                  {% for q in quotations %}
+                    <tr class="row-clickable"
+                        data-url="{% url 'job:quotation_detail' q.pk %}"
+                        data-status="{{ q.status|default:'draft'|lower }}">
+
+                      <td onclick="event.stopPropagation();">
+                        <input type="checkbox" class="chk-row" value="{{ q.pk }}">
+                      </td>
+                      <td>{{ q.number }}</td>
+                      <td>{{ q.valid_until|date:"d-m-y" }}</td>
+                      <td> {{ q.job_order.customer.company_name|default:q.job_order.customer.name }}</td>
+                      <td>{{ q.job_order.service.code }}</td>
+                      <td>{{ q.job_order.shp_date|date:"d M y" }}</td>
+                      {% if perms.sales.view_all_sales %}
+                      <td>{{ q.job_order.sales_user.username }}</td>
+                      {% endif %}
+                      
+                      <td class="text-end">
+
+                        {{ q.job_order.total_amount|indo_currency:q.job_order.currency.code }} 
+                      </td>
+                         
+                      <td class="text-center">
+                        {% with s=q.status|default:"draft"|lower %}
+                          {% if s == "accepted" %}
+                            <span class="badge bg-success">Accepted</span>
+                          {% elif s == "cancelled" %}
+                            <span class="badge bg-danger">Cancelled</span>
+                          {% elif s == "expired" %}
+                            <span class="badge bg-warning text-dark">Expired</span>
+                          {% elif s == "draft" %}
+                            <span class="badge bg-secondary">Draft</span>
+                          {% elif s == "sent" %}
+                            <span class="badge bg-danger">Sent</span>
+                          {% elif s == "ordered" %}
+                            <span class="badge bg-info">Ordered</span>
+                          {% else %}
+                            <span class="badge bg-warning">{{ s|title }}</span>
+                          {% endif %}
+                        {% endwith %}
+                      </td>
+
+                    </tr>
+                  {% endfor %}
+                {% else %}
+/                  <tr>
+                    <td colspan="10" class="text-center py-4">
+                      No Freight Quotations found.
+                    </td>
+                  </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+        <!-- PAGINATION -->
+        {% if is_paginated %}
+        <div class="card-footer">
+          <nav aria-label="Quotation pages">
+            <ul class="pagination mb-0 justify-content-end">
+
+              <!-- Previous -->
+              {% if page_obj.has_previous %}
+                <li class="page-item">
+                  <a class="page-link"
+                     href="?page={{ page_obj.previous_page_number }}">
+                    Previous
+                  </a>
+                </li>
+              {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link">Previous</span>
+                </li>
+              {% endif %}
+
+              <!-- Page numbers -->
+              {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                  <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                  </li>
+                {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+                  <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                  </li>
+                {% endif %}
+              {% endfor %}
+
+              <!-- Next -->
+              {% if page_obj.has_next %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                    Next
+                  </a>
+                </li>
+              {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link">Next</span>
+                </li>
+              {% endif %}
+
+            </ul>
+          </nav>
+        </div>
+        {% endif %}
+
+      </div>

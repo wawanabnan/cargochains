@@ -1,0 +1,165 @@
+<form method="post"
+      action="{% url 'core:profile_modal_submit' %}"
+      enctype="multipart/form-data"
+      id="profileModalForm">
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger py-2">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="row g-2">
+    <div class="col-md-6">
+      <label class="form-label small mb-1">First Name</label>
+      {{ form.first_name }}
+      {% if form.first_name.errors %}<div class="text-danger small mt-1">{{ form.first_name.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label small mb-1">Last Name</label>
+      {{ form.last_name }}
+      {% if form.last_name.errors %}<div class="text-danger small mt-1">{{ form.last_name.errors }}</div>{% endif %}
+    </div>
+  </div>
+
+  <div class="mt-2">
+    <label class="form-label small mb-1">Username</label>
+    {{ form.username }}
+    {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors }}</div>{% endif %}
+    <div class="text-secondary small mt-1">Username harus unik.</div>
+  </div>
+
+  <hr class="my-3">
+
+  <div class="mb-2">
+    <label class="form-label small mb-1">Title</label>
+    {{ form.title }}
+    {% if form.title.errors %}<div class="text-danger small mt-1">{{ form.title.errors }}</div>{% endif %}
+  </div>
+
+  <div class="mb-2">
+    <label class="form-label small mb-1">Signature (PNG/JPG)</label>
+    {{ form.signature }}
+    {% if form.signature.errors %}<div class="text-danger small mt-1">{{ form.signature.errors }}</div>{% endif %}
+    <div class="text-secondary small mt-1">Max 1MB. Rekomendasi: PNG background transparan.</div>
+  </div>
+
+  {% if request.user.profile.signature %}
+    <div class="border rounded p-2 mt-2">
+      <div class="text-secondary small mb-1">Current Signature</div>
+      <img src="{{ request.user.profile.signature.url }}" alt="signature"
+           style="height:60px; object-fit:contain;">
+    </div>
+  {% endif %}
+
+  <div class="d-flex justify-content-end gap-2 mt-3">
+    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+    <button type="submit" class="btn btn-primary btn-sm">
+      <i class="bi bi-save me-1"></i> Save
+    </button>
+  </div>
+</form>
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const btnOpen = document.getElementById("btn-open-profile-modal");
+  const modalBody = document.getElementById("profileModalBody");
+  const modalEl = document.getElementById("profileModal");
+  if (!btnOpen || !modalBody || !modalEl) return;
+
+  async function loadProfileForm() {
+    const url = btnOpen.getAttribute("data-profile-url");
+    modalBody.innerHTML = '<div class="text-secondary small">Loading...</div>';
+
+    const resp = await fetch(url, {
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    });
+
+    modalBody.innerHTML = await resp.text();
+    hookSubmit();
+  }
+
+  function hookSubmit() {
+    const form = document.getElementById("profileModalForm");
+    if (!form) return;
+
+    const btnSave = document.getElementById("btn-profile-save");
+    const hint = document.getElementById("profile-saving-hint");
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      // UX: disable save + show hint
+      btnSave.disabled = true;
+      hint?.classList.remove("d-none");
+
+      const submitUrl = form.getAttribute("action");
+      const fd = new FormData(form);
+
+      const resp = await fetch(submitUrl, {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        body: fd,
+      });
+
+      const data = await resp.json().catch(() => ({}));
+
+      // restore button state
+      btnSave.disabled = false;
+      hint?.classList.add("d-none");
+
+      if (!resp.ok || !data.ok) {
+        // render ulang form error TANPA nutup modal
+        if (data.html) {
+          modalBody.innerHTML = data.html;
+          hookSubmit(); // re-bind setelah re-render
+        } else {
+          alert(data.message || "Save failed");
+        }
+        return;
+      }
+
+      // ✅ SUCCESS UX
+      // 1. Update header name langsung
+      updateHeaderName();
+
+      // 2. Tutup modal dengan halus
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      modal.hide();
+
+      // 3. Optional: toast / alert ringan
+      setTimeout(() => {
+        showProfileToast();
+      }, 300);
+    });
+  }
+
+  function updateHeaderName() {
+    const nameEl = document.querySelector(".dropdown-header");
+    if (!nameEl) return;
+
+    const first = document.querySelector("#id_first_name")?.value || "";
+    const last = document.querySelector("#id_last_name")?.value || "";
+    const username = document.querySelector("#id_username")?.value || "";
+
+    const full = (first + " " + last).trim();
+    nameEl.textContent = full || username;
+  }
+
+  function showProfileToast() {
+    // fallback simpel (tanpa library)
+    const toast = document.createElement("div");
+    toast.className = "position-fixed bottom-0 end-0 p-3";
+    toast.innerHTML = `
+      <div class="alert alert-success shadow-sm mb-0 py-2 px-3">
+        Profile updated
+      </div>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+  }
+
+  btnOpen.addEventListener("click", loadProfileForm);
+});
+</script>

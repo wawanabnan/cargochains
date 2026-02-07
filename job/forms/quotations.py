@@ -7,6 +7,7 @@ from datetime import timedelta
 
 
 class QuotationForm(forms.ModelForm):
+    
     quote_date = forms.DateField(
         label="Quotation Date",
         input_formats=["%d-%m-%Y", "%Y-%m-%d"],

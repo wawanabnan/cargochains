@@ -50,7 +50,13 @@
         <li class="dropdown-header small text-muted">
           {{ request.user.get_full_name|default:request.user.username }}
         </li>
-
+        <li>
+          <a class="dropdown-item" href="#" id="btn-open-profile-modal"
+            data-bs-toggle="modal" data-bs-target="#profileModal"
+            data-profile-url="{% url 'core:profile_modal' %}">
+            <i class="bi bi-person-circle me-2"></i> My Profile
+          </a>
+        </li>
         <li>
           <a class="dropdown-item" href="#">
             <i class="bi bi-key me-2"></i> Change Password

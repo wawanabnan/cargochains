@@ -105,7 +105,7 @@ from job.views.quotations import (
     QuotationListView, QuotationCreateView, QuotationUpdateView,
     QuotationStatusUpdateView,QuotationSendView,QuotationDetailView,
      QuotationConvertToOrderView,QuotationPrintPreviewView,
-    quotation_pdf_view,
+    QuotationPDFView,
 )
 
 urlpatterns += [
@@ -117,7 +117,7 @@ urlpatterns += [
     path("quotations/<int:pk>/send/", QuotationSendView.as_view(), name="quotation_send"),
     path("quotations/<int:pk>/convert/", QuotationConvertToOrderView.as_view(), name="quotation_convert"),
     path("quotations/<int:pk>/print/", QuotationPrintPreviewView.as_view(), name="quotation_print"),
-    path("quotations/<int:pk>/pdf/", quotation_pdf_view, name="quotation_pdf"),
+    path("quotations/<int:pk>/pdf/", QuotationPDFView.as_view(), name="quotation_pdf"),
 
 ]
     

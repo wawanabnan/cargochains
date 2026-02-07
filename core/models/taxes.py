@@ -15,6 +15,10 @@ class TaxCategory(models.Model):
     def __str__(self):
         return f"{self.code} - {self.name}"
 
+class TaxGroup(models.TextChoices):
+    PPN = "PPN", "PPN"
+    PPH = "PPH", "PPH"
+    OTHER = "OTHER", "Other"
 
 class Tax(models.Model):
     USAGE_SALES = "sales"
@@ -27,6 +31,13 @@ class Tax(models.Model):
     ]
 
     category = models.ForeignKey(TaxCategory, on_delete=models.PROTECT, related_name="taxes")
+    group = models.CharField(
+            max_length=16,
+            choices=TaxGroup.choices,
+            default=TaxGroup.OTHER,
+            db_index=True,
+        )    
+
     name = models.CharField(max_length=80)                 # PPN 11%, PPH 23, dll
     code = models.CharField(max_length=30, unique=True)
     rate = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal("0.00"))

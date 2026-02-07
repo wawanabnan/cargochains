@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ("core", "0027_coresetting_text_value"),
         ("geo", "0007_location_altitude_location_country_code_and_more"),
-        ("job", "0035_alter_quotation_options_quotation_expired_by_system_and_more"),
+        ("job", "0032_alter_joborder_customer_note_alter_joborder_sla_note"),
         ("partners", "0013_alter_partner_address_alter_partner_address_line1_and_more"),
         ("shipments", "0045_shipmentsequence_remove_shipmentroute_carrier_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

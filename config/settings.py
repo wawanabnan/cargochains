@@ -102,9 +102,9 @@ DATABASES = {
          'ENGINE': 'django.db.backends.mysql',
         "NAME": "cargochains",
         "USER": "root",
-        "PASSWORD": "",         # kosongkan kalau default Laragon
+        "PASSWORD": "r00t123",         # kosongkan kalau default Laragon
         "HOST": "127.0.0.1",
-        "PORT": "3306",
+        "PORT": "3307",
         "OPTIONS": {
             "charset": "utf8mb4",
         },
@@ -216,3 +216,14 @@ REST_FRAMEWORK = {
 
 
 SITE_BASE_URL = "http://192.168.1.2:8000"
+
+
+DEBUG = True
+if DEBUG:
+    SITE_BASE_URL = "http://localhost:8000"          # atau IP LAN untuk test HP
+    EMAIL_LOGO_URL = "http://localhost:8000/static/brand/logo_only.png"
+else:
+    SITE_BASE_URL = "https://tracking.domainclient.com"
+    EMAIL_LOGO_URL = "https://tracking.domainclient.com/static/brand/logo_only.png"
+
+DEFAULT_FROM_EMAIL = "CargoChains <no-reply@domainclient.com>"

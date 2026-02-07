@@ -10,7 +10,7 @@ from .models.settings import CoreSetting
 from .models.setup import SetupState
 from .models.exchange_rates import ExchangeRate
 from .models.taxes   import Tax
-
+from .models.user_profile import UserProfile
 
 
 

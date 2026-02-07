@@ -12,7 +12,7 @@
       <div class="col-sm-6">
         <ol class="breadcrumb float-sm-end">
           <li class="breadcrumb-item active" aria-current="page">
-            <a href="{% url 'job:job_order_list' %}" class="btn btn-outline-secondary btn-sm">
+            <a href="{% url 'job:quotation_list' %}" class="btn btn-outline-secondary btn-sm">
               <i class="fa fa-list me-1"></i> Back to List
             </a>
 
@@ -30,20 +30,6 @@
           <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
 
-        {% if form.errors or form.non_field_errors %}
-        <div class="alert alert-danger">
-          <ul class="mb-0">
-            {% for field, errors in form.errors.items %}
-              {% for error in errors %}
-                <li><strong>{{ field }}:</strong> {{ error }}</li>
-              {% endfor %}
-            {% endfor %}
-            {% for error in form.non_field_errors %}
-              <li>{{ error }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-        {% endif %}
        
         <form method="post" novalidate>
           {% csrf_token %}
@@ -66,7 +52,7 @@
                               {{ form.number_display }}
                               {{ form.number }}  {# hidden #}
                             {% else %}
-                              {{ form.number }}
+                              {{ qform.number }}
                             {% endif %}
                           </div>
                        
@@ -75,10 +61,11 @@
                 </div>
                 <div class="col-md-4">
                      <div class="form-group row">
-                         <label class="col-sm-4 col-form-label">Reference #</label>
-                          <div class="col-sm-8">
-                              {{ form.order_number }}
-                          </div>
+                            <label for="staticEmail" class="col-sm-4 col-form-label">T.O.P</label>
+                        <div class="col-sm-8">
+                          {{ form.payment_term }}
+                        </div>
+
                        
                       </div>
 
@@ -102,11 +89,14 @@
                <div class="row">
                 <div class="col-md-4">
                      <div class="form-group row">
-                        <label for="staticEmail" class="col-sm-4 col-form-label">T.O.P</label>
+                       <label for="staticEmail" class="col-sm-4 col-form-label">Quote Date</label>
                         <div class="col-sm-8">
-                          {{ form.payment_term }}
+                            <input type="hidden" name="job_date" id="id_job_date">
+
+                          {{ qform.quote_date }}
                         </div>
-                      </div>
+                        
+                     </div>
 
                 </div>
                 <div class="col-md-4">
@@ -131,11 +121,11 @@
               <div class="row">
                 <div class="col-md-4">
                      <div class="form-group row">
-                        <label for="staticEmail" class="col-sm-4 col-form-label">Quote Date</label>
+                        <label for="staticEmail" class="col-sm-4 col-form-label">Valid until</label>
                         <div class="col-sm-8">
                             <input type="hidden" name="job_date" id="id_job_date">
 
-                          {{ qform.quote_date }}
+                          {{ qform.valid_until }}
                         </div>
                       </div>
 
@@ -143,9 +133,9 @@
                 <div class="col-md-4">
                     <div class="form-group row">
                      
-                         <label for="staticEmail" class="col-sm-4 col-form-label">Valid Until</label>
+                         <label for="staticEmail" class="col-sm-4 col-form-label">Shp. Plan</label>
                         <div class="col-sm-8">
-                          {{ qform.valid_until }}
+                          {{ form.shp_date }}
                         </div>
                     </div>    
                 </div>
@@ -226,13 +216,7 @@
                     {{ form.sla_note }}
         
                 </div>
-                <div class="tab-pane fade show " 
-                    id="slaNoteTab" 
-                    role="tabpanel" aria-labelledby="home-tab">
-                    {{ form.sla_note }}
-        
-                </div>
-               
+                               
               </div>
 
 
@@ -866,22 +850,30 @@ document.addEventListener("DOMContentLoaded", function () {
 document.addEventListener("DOMContentLoaded", function () {
   if (typeof flatpickr === "undefined") return;
 
-  const qEl = document.getElementById("id_quote_date");
-  const vEl = document.getElementById("id_valid_until");
-  if (!qEl || !vEl) return;
+  //const qEl = document.getElementById("id_quote_date");
+  //const vEl = document.getElementById("id_valid_until");
+  const dateIds = [
+    "id_quote_date",
+    "id_valid_until",
+    "id_shp_date",   // ✅ tambah ini
+  ];
 
-  // ✅ value input = ISO agar flatpickr parse dengan benar
-  // ✅ tampilan user = dd-mm-yyyy lewat altInput
-  [qEl, vEl].forEach((el) => {
-    if (el._flatpickr) return; // guard anti double init
+  dateIds.forEach((id) => {
+    const el = document.getElementById(id);
+
+    if (!el || el._flatpickr) return;
+
     flatpickr(el, {
-      dateFormat: "Y-m-d",   // value yang disimpan di input (untuk POST Django)
+      dateFormat: "Y-m-d",   // value ke backend (Django)
       altInput: true,
-      altFormat: "d-m-Y",    // yang ditampilkan ke user
+      altFormat: "d-m-Y",    // tampilan user
       allowInput: true,
       clickOpens: true,
     });
   });
+
+
+
 });
 </script>
 

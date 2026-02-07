@@ -52,6 +52,13 @@ class Quotation(models.Model):
         "auth.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="ordered_quotations"
     )
 
+    canceled_at = models.DateTimeField(null=True, blank=True)
+    canceled_by = models.ForeignKey(
+         "auth.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="cancel_quotations"
+
+    )
+    cancel_reason = models.TextField(blank=True, default="")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

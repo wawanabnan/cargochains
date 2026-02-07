@@ -87,7 +87,7 @@
             </div>
 
             <div class="col-lg-6">
-              <label class="form-label small mb-1">SLA (Default)</label>
+              <label class="form-label small mb-1">Term and conditions (Default)</label>
               {{ form.sla }}
             </div>
           </div>
@@ -118,6 +118,22 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+  const sla = document.getElementById("id_sla");
+  const notes = document.getElementById("id_customer_note");
+   tinymce.init({
+    selector: "#id_sla, #id_customer_notes",
+    height: 280,
+    menubar: false,
+    plugins: "lists link table code autoresize",
+    toolbar: "undo redo | bold italic underline | bullist numlist | link table | removeformat | code",
+    branding: false,
+    setup: function (editor) {
+      editor.on("change keyup", function () {
+        editor.save(); // sync balik ke textarea untuk submit Django
+      });
+    }
+  });
+
   const form = document.getElementById("sales-settings-form");
   const btn = document.getElementById("btn-save-ajax");
   if (!form || !btn) return;

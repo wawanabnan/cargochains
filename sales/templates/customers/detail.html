@@ -311,7 +311,7 @@
   <div class="modal-dialog modal-lg  modal-dialog-centered">
     <div class="modal-content">
       <form method="post" <form method="post"
-         action="{% url 'sales:'|add:entity_urls|add:'_contact_add' customer.pk %}"> id="contactForm">
+         action="{% url 'sales:'|add:entity_urls|add:'_contact_add' customer.pk %}" id="contactForm">
         
          {% csrf_token %}
         

@@ -19,6 +19,7 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 from geo.models import Location
 from django.db import transaction
+from django.utils import formats
 
 
 class JobOrderQuerySet(models.QuerySet):
@@ -48,6 +49,7 @@ class JobOrder(TimeStampedModel):
     )
 
     job_date = models.DateField("Date")
+    shp_date = models.DateField("Date",blank=True,null=True)
 
     service = models.ForeignKey(
         Service,
@@ -436,6 +438,163 @@ class JobOrder(TimeStampedModel):
 
         self.save(update_fields=update_fields)
 
+
+    @property
+    def service_code(self) -> str:
+        return (getattr(self.service, "code", "") or "").upper()
+
+    @property
+    def service_kind(self) -> str:
+        if self.service_code.endswith("_SEA"):
+            return "SEA"
+        if self.service_code.endswith("_AIR"):
+            return "AIR"
+        return ""
+
+    @property
+    def service_display(self) -> str:
+         name = getattr(self.service, "name", "") or "-"
+         return f"{name} Services"
+
+
+    @property
+    def route_display(self) -> str:
+        o = getattr(self.origin, "name", "") if self.origin else ""
+        d = getattr(self.destination, "name", "") if self.destination else ""
+        if o and d:
+            return f"{o} - {d}"
+        return o or d or "-"
+    
+    @property
+    def d2d_display(self) -> str:
+        lines = []
+        if self.pickup:
+            lines.append(f"Pick Up: {self.pickup}")
+        if self.delivery:
+            lines.append(f"Delivery: {self.delivery}")
+        return "\n".join(lines)
+
+
+    @property
+    def is_d2d(self) -> bool:
+        # sesuaikan logic deteksi D2D di project om:
+        # opsi A: Service punya code
+        code = (getattr(self.service, "code", "") or "").upper()
+        if code:
+            return code == "D2D"
+
+        # opsi B fallback: cek nama service
+        name = (getattr(self.service, "name", "") or "").upper()
+        return "D2D" in name or "DOOR" in name
+
+    @property
+    def etd_display(self) -> str:
+        if not self.shp_date:
+            return "-"
+        return formats.date_format(self.shp_date, "d-m-Y")
+
+
+    @property
+    def etd_display(self) -> str:
+        if not self.shp_date:
+            return "-"
+        return formats.date_format(self.shp_date, "d-m-Y")
+
+    @property
+    def print_description(self) -> str:
+        lines = []
+
+        svc_name =   self.service_display
+
+        # ===== P2P SEA / AIR =====
+        if self.service_code in ("P2P_SEA", "P2P_AIR"):
+            kind = self.service_kind
+            header = f"{svc_name} ({kind})" if kind else svc_name
+            lines.append(header)
+            lines.append(self.route_display)
+
+        # ===== D2D =====
+        elif self.service_code == "D2D":
+            lines.append(f"{svc_name} (D2D)")
+            d2d = self.d2d_display
+            if d2d:
+                lines.append(d2d)
+
+        # ===== fallback =====
+        else:
+            lines.append(svc_name)
+            lines.append(self.route_display)
+
+        # ===== ETD =====
+        lines.append(f"ETD: {self.etd_display}")
+
+        return "\n".join([l for l in lines if l and l.strip()])
+
+    from decimal import Decimal
+
+
+    @property
+    def tax_rate_display(self) -> str:
+        """
+        Output contoh:
+        - 1.1%
+        - PPN 1.1%
+        - PPN 1.1%, PPh 23 2%
+        """
+        items = self.taxes.all()
+        if not items:
+            return "-"
+
+        parts = []
+        for t in items:
+            name = getattr(t, "name", "") or getattr(t, "code", "") or "Tax"
+
+            # coba beberapa kemungkinan nama field rate
+            rate = (
+                getattr(t, "rate", None)
+                or getattr(t, "percent", None)
+                or getattr(t, "percentage", None)
+                or getattr(t, "value", None)
+            )
+
+            if rate is None:
+                parts.append(name)
+                continue
+
+            if isinstance(rate, Decimal):
+                rate_str = str(rate.normalize())
+            else:
+                rate_str = str(rate).strip()
+
+            parts.append(f"{name} {rate_str}%")
+
+        return ", ".join(parts)
+
+    @property
+    def ppn_rate_display(self) -> str:
+        ppn = self.taxes.filter(group="PPN").order_by("id").first()
+        if not ppn:
+            return "-"
+
+        r = ppn.rate
+        if isinstance(r, Decimal):
+            r = r.normalize()
+        return f"{r}%" 
+
+    @property
+    def ppn_label_rate_display(self) -> str:
+        qs = self.taxes.filter(group="PPN").values_list("rate", flat=True)
+        rates = list(qs)
+        if not rates:
+            return "-"
+
+        out = []
+        for r in rates:
+            out.append(str(r.normalize() if hasattr(r, "normalize") else r))
+
+        return f"PPN {' + '.join([x + '%' for x in out])}"
+
+
     
 class JobOrderAttachment(TimeStampedModel):
     job_order = models.ForeignKey(
@@ -475,3 +634,5 @@ class JobOrderAttachment(TimeStampedModel):
     @property
     def filename(self):
         return self.file.name.split("/")[-1]
+
+    

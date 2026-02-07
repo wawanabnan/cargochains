@@ -1,0 +1,41 @@
+{# templates/core/profile_form.html #}
+{% extends "adminbase.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="card shadow-sm">
+    <div class="card-header">
+      <div class="fw-semibold">My Profile</div>
+      <div class="text-secondary small">Update title & signature</div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label small">Title</label>
+          {{ form.title }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small">Signature</label>
+          {{ form.signature }}
+          {% if request.user.profile.signature %}
+            <div class="mt-2">
+              <img src="{{ request.user.profile.signature.url }}"
+                   style="height:60px;border:1px solid #ddd;">
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card-footer d-flex justify-content-end">
+        <button type="submit" class="btn btn-primary btn-sm">
+          Save Profile
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

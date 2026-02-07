@@ -12,6 +12,7 @@ from core.models.payment_terms import PaymentTerm
 from core.models.currencies import Currency
 from sales.invoice_model import *
 from sales.job_order_model import *
+from sales.config_model import *
 
 
 class SalesQuotation(models.Model):

@@ -1,0 +1,16 @@
+{# templates/sales/partials/signature_block.html #}
+
+<div class="signature-block">
+  {% if signature_image %}
+    <div class="mb-1">
+      <img src="{{ signature_image.url }}" alt="signature" style="height:60px; object-fit:contain;">
+    </div>
+  {% else %}
+    <div style="height:60px;"></div>
+  {% endif %}
+
+  <div class="fw-semibold">{{ signature_name }}</div>
+  {% if signature_title %}
+    <div class="text-secondary small">{{ signature_title }}</div>
+  {% endif %}
+</div>

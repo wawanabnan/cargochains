@@ -71,6 +71,18 @@ class JobOrderForm(forms.ModelForm):
         }),
     )
 
+    shp_date = forms.DateField(
+        label="Job Date",
+        input_formats=["%d-%m-%Y", "%Y-%m-%d"],
+        widget=forms.TextInput(attrs={
+            "class": "form-control form-control-sm js-jobdate",
+            "autocomplete": "off",
+            "placeholder": "dd-mm-yyyy",
+        }),
+    )
+
+   
+    
     class Meta:
         model = JobOrder
         fields = "__all__"
@@ -88,11 +100,29 @@ class JobOrderForm(forms.ModelForm):
                 "data-placeholder": "Pilih destination",
                 "data-url": reverse_lazy("geo:locations_select2"),
             }),
-            "customer_note": forms.Textarea(attrs={"class": "form-control form-control-sm", "rows": 2}),
-            "sla_note": forms.Textarea(attrs={"class": "form-control form-control-sm", "rows": 2}),
+
+            "cargo_description": forms.Textarea(attrs={
+                "rows": 4,
+                "style": "min-height:auto;",
+            }),
+             "cargo_dimension": forms.Textarea(attrs={
+                "rows": 4,
+                "style": "min-height:auto;",
+            }),
+             "pickup": forms.Textarea(attrs={
+                "rows": 5,
+                "style": "min-height:auto;",
+            }),
+             "delivery": forms.Textarea(attrs={
+                "rows": 5,
+                "style": "min-height:auto;",
+            }),
+
+            "customer_note": forms.Textarea(attrs={"class": "form-control form-control-sm", "rows": 4}),
+            "sla_note": forms.Textarea(attrs={"class": "form-control form-control-sm", "rows": 4}),
             "payment_term": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "currency": forms.Select(attrs={"class": "form-select form-select-sm"}),
-            "remarks_internal": forms.Textarea(attrs={"class": "form-control form-control-sm", "rows": 3}),
+           # "remarks_internal": forms.Textarea(attrs={"class": "form-control form-control-sm", "rows": 3}),
             "is_tax": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "is_pph": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             
@@ -150,6 +180,8 @@ class JobOrderForm(forms.ModelForm):
         # default job_date on create GET
         if is_create and not self.is_bound:
             self.initial.setdefault("job_date", timezone.now().date())
+            self.initial.setdefault("shp_date", timezone.now().date())
+           
 
         # ===== NOTES DEFAULT (tanpa truncate 255 karena sudah TextField) =====
         def _empty(v): return not (v or "").strip()

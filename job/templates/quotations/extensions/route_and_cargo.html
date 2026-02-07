@@ -1,0 +1,35 @@
+ 
+              <ul class="nav nav-tabs  fq-tabs mt-3" id="partyTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active"
+                          id="route-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#routeTab"
+                          type="button" role="tab"
+                          aria-controls="routeTab" aria-selected="true">Route & Location</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link"
+                          id="cargo-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#cargoTab"
+                          type="button" role="tab"
+                          aria-controls="cargoTab" aria-selected="true">Cargo Information</button>
+                </li>
+                
+              </ul>
+              <div class="tab-content p-2 fq-tab-content " id="myTabContent" 
+                  style="background-color: #fff;border:1px solid #ddd;border-top: 0px;">
+                 <div class="tab-pane fade show active" 
+                    id="routeTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                      {% include 'job_order/extension/route.html' %}
+        
+        
+                </div>
+                 <div class="tab-pane fade show " 
+                    id="cargoTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                    {% include 'job_order/extension/cargo.html' %}
+        
+                </div>
+                                
+              </div>
