@@ -37,8 +37,9 @@ INSTALLED_APPS = [
     'payments',
     "rest_framework",
     "rest_framework.authtoken",
-    "corsheaders"
-    
+    "corsheaders",
+    "work_orders",
+    'django_summernote',
 ]
 
 
@@ -227,3 +228,12 @@ else:
     EMAIL_LOGO_URL = "https://tracking.domainclient.com/static/brand/logo_only.png"
 
 DEFAULT_FROM_EMAIL = "CargoChains <no-reply@domainclient.com>"
+
+
+SUMMERNOTE_CONFIG = {
+    "iframe": True,
+    "summernote": {
+        "width": "100%",
+        "height": "250",
+    },
+}

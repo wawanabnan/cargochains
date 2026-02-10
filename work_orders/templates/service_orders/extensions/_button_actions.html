@@ -5,12 +5,12 @@
   <!-- LEFT: Navigation -->
   <div class="d-flex flex-wrap gap-2 align-items-center">
     <a class="btn btn-outline-secondary btn-sm"
-       href="{% url 'shipments:vendor_booking_from_jobcost' %}?job_order={{ vb.job_order_id }}">
+       href="{% url 'work_orders:service_order_list' %}">
       Back
     </a>
 
     <a class="btn btn-outline-primary btn-sm"
-       href="{% url 'shipments:vendor_booking_print' vb.id %}"
+       href="{% url 'work_orders:service_order_print' vb.id %}"
        target="_blank">
       Print
       {% if vb.status == "DRAFT" %}
@@ -23,47 +23,47 @@
   <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end">
 
     {% if vb.status == "DRAFT" %}
-      <form method="post" action="{% url 'shipments:vendor_booking_submit' vb.id %}" class="d-inline">
+      <form method="post" action="{% url 'work_orders:service_order_submit' vb.id %}" class="d-inline">
         {% csrf_token %}
         <button class="btn btn-success btn-sm" type="submit">Submit</button>
       </form>
     {% endif %}
 
     {% if vb.status == "SUBMITTED" %}
-      <form method="post" action="{% url 'shipments:vendor_booking_approve' vb.id %}" class="d-inline">
+      <form method="post" action="{% url 'work_orders:service_order_approve' vb.id %}" class="d-inline">
         {% csrf_token %}
         <button class="btn btn-success btn-sm" type="submit">Approve</button>
       </form>
 
-      <form method="post" action="{% url 'shipments:vendor_booking_reject' vb.id %}" class="d-inline">
+      <form method="post" action="{% url 'work_orders:service_order_reject' vb.id %}" class="d-inline">
         {% csrf_token %}
         <button class="btn btn-outline-danger btn-sm" type="submit">Reject</button>
       </form>
     {% endif %}
 
     {% if vb.status == "APPROVED" %}
-      <form method="post" action="{% url 'shipments:vendor_booking_confirm' vb.id %}" class="d-inline">
+      <form method="post" action="{% url 'work_orders:service_order_confirm' vb.id %}" class="d-inline">
         {% csrf_token %}
         <button class="btn btn-primary btn-sm" type="submit">Confirm</button>
       </form>
     {% endif %}
 
     {% if vb.status == "CONFIRMED" %}
-      <form method="post" action="{% url 'shipments:vendor_booking_send' vb.id %}" class="d-inline">
+      <form method="post" action="{% url 'work_orders:service_order_send' vb.id %}" class="d-inline">
         {% csrf_token %}
         <button class="btn btn-primary btn-sm" type="submit">Send to Vendor</button>
       </form>
     {% endif %}
 
     {% if vb.status == "SENT" %}
-      <form method="post" action="{% url 'shipments:vendor_booking_close' vb.id %}" class="d-inline">
+      <form method="post" action="{% url 'work_orders:service_order_close' vb.id %}" class="d-inline">
         {% csrf_token %}
         <button class="btn btn-primary btn-sm" type="submit">Close</button>
       </form>
     {% endif %}
 
     {% if vb.status != "CANCELLED" and vb.status != "CLOSED" %}
-      <form method="post" action="{% url 'shipments:vendor_booking_cancel' vb.id %}" class="d-inline"
+      <form method="post" action="{% url 'work_orders:service_order_cancel' vb.id %}" class="d-inline"
             onsubmit="return confirm('Cancel Vendor Booking ini?');">
         {% csrf_token %}
         <button class="btn btn-outline-secondary btn-sm" type="submit">Cancel</button>

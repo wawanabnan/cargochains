@@ -1,0 +1,168 @@
+{% extends "adminbase.html" %}
+{% load indo_format %}
+
+{% block content %}
+
+<div class="app-content-header">
+  <div class="container-fluid d-flex flex-wrap gap-2 justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-0">Vendor Bookings</h4>
+      <div class="small text-muted">Create, review, print, confirm.</div>
+    </div>
+
+    <!-- CREATE (NEW ENTRY: no job order dropdown) -->
+    <div class="d-flex gap-2 align-items-center">
+      <a class="btn btn-primary btn-sm" href="{% url 'work_orders:service_order_create' %}">
+        <i class="bi bi-plus-lg me-1"></i> Create
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+
+    <!-- FILTER BAR -->
+    <form method="get" class="card mb-2">
+      <div class="card-body p-2">
+        <div class="row g-2 align-items-end">
+
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Status</label>
+            <select name="status" class="form-select form-select-sm">
+              <option value="">All</option>
+              <option value="DRAFT" {% if f_status == "DRAFT" %}selected{% endif %}>DRAFT</option>
+              <option value="CONFIRMED" {% if f_status == "CONFIRMED" %}selected{% endif %}>CONFIRMED</option>
+              <option value="CANCELLED" {% if f_status == "CANCELLED" %}selected{% endif %}>CANCELLED</option>
+              <option value="COMPLETED" {% if f_status == "COMPLETED" %}selected{% endif %}>COMPLETED</option>
+            </select>
+          </div>
+
+          <div class="col-md-5">
+            <label class="form-label small mb-1">Vendor</label>
+            <input type="text"
+                   class="form-control form-control-sm"
+                   name="vendor"
+                   value="{{ f_vendor }}"
+                   placeholder="Cari vendor...">
+          </div>
+
+          <div class="col-md-4 d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm" type="submit">
+              <i class="bi bi-funnel me-1"></i> Filter
+            </button>
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'work_orders:service_order_list' %}">
+              Reset
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </form>
+
+    <!-- TABLE -->
+    <div class="card">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 3%;">
+                  <input type="checkbox" id="chk-all">
+                </th>
+                <th style="width:140px">Booking #</th>
+                <th style="width:140px">Date</th>
+                <th>Vendor</th>
+                <th>Job Order</th>
+                <th style="width:12%">Payment Terms</th>
+                <th style="width:12%" class="text-end">Total</th>
+                <th class="text-center" style="width:10%">Status</th>
+
+              </tr>
+            </thead>
+            <tbody>
+              {% for vb in items %}
+                <tr class="row-clickable"  data-url="{% url 'work_orders:service_order_update' vb.id %}">
+                  <td onclick="event.stopPropagation();">
+                    <input type="checkbox" class="row-check" data-id="{{ vb.pk }}">
+                  </td>
+                  <td class="fw-semibold">{{ vb.vb_number|default:"-" }}</td>
+                  <td>{{ vb.booking_date|date:"d-m-Y" }}</td>
+                  <td>{{ vb.vendor }}</td>
+                  <td>{{ vb.job_order }}</td>
+                  <td>{{ vb.payment_term }}</td>
+                  <td class="text-end">{{ vb.total_amount|indo_number }}</td>
+                  <td class="text-center">
+                    {% if vb.status == "CONFIRMED" %}
+                      <span class="badge text-bg-success">CONFIRMED</span>
+                    {% elif vb.status == "DRAFT" %}
+                      <span class="badge text-bg-secondary">DRAFT</span>
+                    {% else %}
+                      <span class="badge text-bg-warning">{{ vb.status }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="8" class="text-muted p-3">No vendor bookings.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {% if is_paginated %}
+      <div class="card-footer d-flex justify-content-between align-items-center">
+        <div class="small text-muted">
+          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </div>
+        <div class="d-flex gap-2">
+          {% if page_obj.has_previous %}
+            <a class="btn btn-outline-secondary btn-sm"
+               href="?page={{ page_obj.previous_page_number }}&status={{ f_status }}&vendor={{ f_vendor }}">
+              Prev
+            </a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a class="btn btn-outline-secondary btn-sm"
+               href="?page={{ page_obj.next_page_number }}&status={{ f_status }}&vendor={{ f_vendor }}">
+              Next
+            </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_css %}
+<style>
+  .row-clickable {
+    cursor: pointer;
+  }
+  .row-clickable:hover {
+    background-color: rgba(0,0,0,0.03);
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+
+<script>
+document.addEventListener("click", function(e){
+  const tr = e.target.closest(".row-clickable");
+  if (!tr) return;
+
+  // biar checkbox / button di row tidak ikut trigger
+  if (e.target.closest("input, button, a")) return;
+
+  const url = tr.dataset.url;
+  if (url) window.location.href = url;
+});
+</script>
+
+{% endblock %}

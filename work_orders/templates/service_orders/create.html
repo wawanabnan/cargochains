@@ -1,0 +1,164 @@
+{% extends "adminbase.html" %}
+{% load indo_format %}
+
+{% block content %}
+<div class="app-content-header">
+  <div class="container-fluid d-flex justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-0">Create Vendor Booking</h4>
+      <div class="small text-muted">Pilih Job Order → cost akan muncul otomatis → pilih item & qty → create.</div>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'work_orders:service_order_list' %}">Back</a>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+
+    {% if messages %}
+      <div class="mt-2">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} py-2 mb-2">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post" class="card" id="vb-create-form">
+      {% csrf_token %}
+
+      <div class="card-body">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-6">
+            <label class="form-label small mb-1">Job Order</label>
+            <select name="job_order" id="job_order" class="form-select">
+              <option value="">-- pilih job order --</option>
+              {% for jo in job_orders %}
+               <option value="{{ jo.id }}" {% if selected_job_order|add:"" == jo.id|add:"" %}selected{% endif %}>
+                {{ jo }}
+              </option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Hanya job order yang memiliki vendor cost dengan sisa qty &gt; 0 yang ditampilkan.</div>
+          </div>
+
+          <div class="col-md-6"></div>
+        </div>
+      </div>
+
+      <div class="card-body pt-0">
+        <div id="costs-area" class="costs-area">
+          <div class="text-muted small">Pilih Job Order untuk melihat cost lines.</div>
+        </div>
+      </div>
+      <div class="card-footer d-flex justify-content-end gap-2">
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'work_orders:service_order_list' %}">
+          Cancel
+        </a>
+        <button type="submit" class="btn btn-primary btn-sm" id="btn-create" disabled>
+          Create
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+  .costs-area{
+    min-height: 360px;
+    max-height: 60vh;
+    overflow: auto;
+  }
+</style>
+
+
+<script>
+(function(){
+  const jobSelect = document.getElementById("job_order");
+  const costsArea = document.getElementById("costs-area");
+  const btnCreate = document.getElementById("btn-create");
+
+  function setLoading(){
+    costsArea.innerHTML = '<div class="text-muted small">Loading cost lines...</div>';
+    btnCreate.disabled = true;
+  }
+
+  function updateSubmit(){
+    const any = !!document.querySelector('input[name="pick"]:checked');
+    btnCreate.disabled = !any;
+  }
+
+  function bindAfterLoad(){
+    // select all
+    const chkAll = document.getElementById("chk-all");
+    if (chkAll){
+      chkAll.addEventListener("change", () => {
+        document.querySelectorAll('input[name="pick"]').forEach(cb => {
+          cb.checked = chkAll.checked;
+          const id = cb.value;
+          const qtyInput = document.querySelector(`input[name="qty_${id}"]`);
+          if (cb.checked && qtyInput && !qtyInput.value){
+            qtyInput.value = qtyInput.dataset.remaining || "";
+          }
+        });
+        updateSubmit();
+      });
+    }
+
+    // checkbox -> auto fill qty remaining
+    document.querySelectorAll('input[name="pick"]').forEach(cb => {
+      cb.addEventListener("change", () => {
+        const id = cb.value;
+        const qtyInput = document.querySelector(`input[name="qty_${id}"]`);
+        if (cb.checked && qtyInput && !qtyInput.value){
+          qtyInput.value = qtyInput.dataset.remaining || "";
+        }
+        updateSubmit();
+      });
+    });
+
+    // qty clamp (<= remaining)
+    document.querySelectorAll('input[data-remaining]').forEach(inp => {
+      inp.addEventListener("input", () => {
+        const max = parseFloat(inp.dataset.remaining || "0");
+        let v = parseFloat(inp.value || "0");
+        if (isNaN(v) || v < 0) v = 0;
+        if (v > max) v = max;
+        inp.value = (v === 0) ? "" : v;
+
+        // auto-check when user types qty
+        const id = inp.dataset.id;
+        if (id && inp.value){
+          const cb = document.querySelector(`input[name="pick"][value="${id}"]`);
+          if (cb) cb.checked = true;
+        }
+        updateSubmit();
+      });
+    }); 
+
+    updateSubmit();
+  }
+
+  async function loadCosts(jobId){
+    if (!jobId){
+      costsArea.innerHTML = '<div class="text-muted small">Pilih Job Order untuk melihat cost lines.</div>';
+      btnCreate.disabled = true;
+      return;
+    }
+    setLoading();
+    const url = "{% url 'work_orders:service_order_create_jobcosts' %}" + "?job_order=" + encodeURIComponent(jobId);
+    const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" }});
+    costsArea.innerHTML = await res.text();
+    bindAfterLoad();
+  }
+
+  jobSelect.addEventListener("change", () => loadCosts(jobSelect.value));
+  if (jobSelect.value) {
+    loadCosts(jobSelect.value);
+  }
+
+})();
+</script>
+{% endblock %}

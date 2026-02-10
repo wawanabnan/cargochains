@@ -56,58 +56,6 @@ from django.urls import path
 
 
 
-from shipments.views.vendor_booking_print import VendorBookingPrintView, VendorBookingPdfView
-from shipments.views.vendor_booking_confirm import VendorBookingConfirmView
-
-from shipments.views.vendor_bookings import (
-   
-    VendorBookingFromJobCostWizardView,
-    VendorBookingListView,
-    VendorBookingUpdateView,
-    
-)
-
-
-
-
-urlpatterns += [
-    # STEP 2 Wizard
-    path("vendor-bookings/from-jobcost/",VendorBookingFromJobCostWizardView.as_view(),name="vendor_booking_from_jobcost",),
-    path("vendor-bookings/<int:pk>/print/",VendorBookingPrintView.as_view(),name="vendor_booking_print",),
-    path("vendor-bookings/<int:pk>/pdf/", VendorBookingPdfView.as_view(), name="vendor_booking_pdf"),
-    path("vendor-bookings/<int:pk>/confirm/", VendorBookingConfirmView.as_view(), name="vendor_booking_confirm"),
-    path("vendor-bookings/", VendorBookingListView.as_view(), name="vendor_booking_list"),
-    path("vendor-bookings/<int:pk>/update/",  VendorBookingUpdateView.as_view(),  name="vendor_booking_update",)
-   
-
- 
-]
-
-
-
-
-from shipments.views.vendor_booking_actions import (
-    VendorBookingSubmitView,
-    VendorBookingApproveView,
-    VendorBookingRejectView,
-    VendorBookingConfirmView,
-    VendorBookingSendView,
-    VendorBookingCloseView,
-    VendorBookingCancelView,
-)
-
-urlpatterns += [
-    path("vendor-bookings/<int:pk>/submit/", VendorBookingSubmitView.as_view(), name="vendor_booking_submit"),
-    path("vendor-bookings/<int:pk>/approve/", VendorBookingApproveView.as_view(), name="vendor_booking_approve"),
-    path("vendor-bookings/<int:pk>/reject/", VendorBookingRejectView.as_view(), name="vendor_booking_reject"),
-    path("vendor-bookings/<int:pk>/confirm/", VendorBookingConfirmView.as_view(), name="vendor_booking_confirm"),
-    path("vendor-bookings/<int:pk>/send/", VendorBookingSendView.as_view(), name="vendor_booking_send"),
-    path("vendor-bookings/<int:pk>/close/", VendorBookingCloseView.as_view(), name="vendor_booking_close"),
-    path("vendor-bookings/<int:pk>/cancel/", VendorBookingCancelView.as_view(), name="vendor_booking_cancel"),
-
-]
-
-
 
 from shipments.views.vendor_bills import VendorBillListView, VendorBillCreateView, VendorBillUpdateView
 
@@ -116,16 +64,3 @@ urlpatterns += [
     path("vendor-bills/add/", VendorBillCreateView.as_view(), name="vendor_bill_add"),
     path("vendor-bills/<int:pk>/", VendorBillUpdateView.as_view(), name="vendor_bill_edit"),
 ]
-
-
-
-
-
-
-
-
-
-
-
-
-

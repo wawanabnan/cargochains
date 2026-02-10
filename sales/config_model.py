@@ -70,6 +70,25 @@ class SalesConfig(models.Model):
     customer_note = models.TextField(blank=True, default="")
     term_conditions = models.TextField(blank=True, default="")
 
+    vendor_note = models.TextField(blank=True, default="")
+    service_order_term_conditions = models.TextField(blank=True, default="")
+    
+    service_order_signature_source = models.CharField(
+        max_length=20,
+        choices=SignatureSource.choices,
+        default=SignatureSource.SALES_USER,
+    )
+
+    service_order_signature_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        help_text="Dipakai jika source = SPECIFIC_USER"
+    )
+
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

@@ -1,0 +1,79 @@
+{% extends "adminbase.html" %}
+
+{% block content %}
+<div class="app-content-header">
+  <div class="container-fluid">
+    <h4 class="mb-0">Create Vendor Booking</h4>
+    <div class="small text-muted">Pilih customer, job order, dan vendor untuk lanjut memilih cost.</div>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+
+    {% if messages %}
+      <div class="mt-2">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} py-2 mb-2">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post" class="card">
+      {% csrf_token %}
+      <div class="card-body">
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Customer</label>
+            <select class="form-select" name="customer"
+                    onchange="this.form.method='get'; this.form.submit();">
+              <option value="">Cari & pilih customer...</option>
+              {% for c in customers %}
+                <option value="{{ c.id }}" {% if v_customer|add:"" == c.id|add:"" %}selected{% endif %}>
+                  {{ c }}
+                </option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Hanya customer dengan vendor cost yang masih bisa dibooking.</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Job Order</label>
+            <select class="form-select" name="job_order"
+                    {% if not v_customer %}disabled{% endif %}
+                    onchange="this.form.method='get'; this.form.submit();">
+              <option value="">{% if v_customer %}Pilih job order...{% else %}Pilih customer dulu{% endif %}</option>
+              {% for jo in job_orders %}
+                <option value="{{ jo.id }}" {% if v_job_order|add:"" == jo.id|add:"" %}selected{% endif %}>
+                  {{ jo }}
+                </option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Job order belum completed & masih ada vendor cost tersedia.</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Vendor</label>
+            <select class="form-select" name="vendor" {% if not v_job_order %}disabled{% endif %}>
+              <option value="">{% if v_job_order %}Pilih vendor...{% else %}Pilih job order dulu{% endif %}</option>
+              {% for v in vendors %}
+                <option value="{{ v.id }}" {% if v_vendor|add:"" == v.id|add:"" %}selected{% endif %}>
+                  {{ v }}
+                </option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Vendor yang tampil hanya yang punya cost tersedia pada job order ini.</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="card-footer d-flex gap-2 justify-content-end">
+        <a class="btn btn-outline-secondary" href="{% url 'shipments:vendor_booking_list' %}">Cancel</a>
+        <button class="btn btn-primary" type="submit">Continue</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

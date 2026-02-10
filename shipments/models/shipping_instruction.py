@@ -15,10 +15,12 @@ class ShippingInstructionDocument(models.Model):
         # AIR_SLI = "AIR_SLI", "Air SLI"
         # TRUCK_TO = "TRUCK_TO", "Truck Transport Order"
 
-    vendor_booking = models.ForeignKey(
-        "VendorBooking",
+    vendor_booking = models.OneToOneField(
+        "work_orders.VendorBooking",
         on_delete=models.PROTECT,
-        related_name="vendor_documents",
+        null=True,
+        blank=True,
+        related_name="shipping_instruction",
     )
     job_order = models.ForeignKey(
         "job.JobOrder",

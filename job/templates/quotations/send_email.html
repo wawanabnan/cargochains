@@ -1,0 +1,58 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="container-fluid">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="mb-0">Send Email - Quotation {{ q.number }}</h4>
+      <div class="text-muted">Customer: {{ q.customer.name }}</div>
+    </div>
+    <a href="{% url 'job:quotation_detail' q.id %}" class="btn btn-outline-secondary">Back</a>
+  </div>
+
+  <form method="post" class="card card-body">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="mb-3">
+      <label class="form-label">{{ form.to.label }}</label>
+      {{ form.to }}
+      <div class="text-danger small">{{ form.to.errors }}</div>
+      <div class="text-muted small">{{ form.to.help_text }}</div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">{{ form.cc.label }}</label>
+      {{ form.cc }}
+      <div class="text-danger small">{{ form.cc.errors }}</div>
+      <div class="text-muted small">{{ form.cc.help_text }}</div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">{{ form.subject.label }}</label>
+      {{ form.subject }}
+      <div class="text-danger small">{{ form.subject.errors }}</div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">{{ form.message.label }}</label>
+      {{ form.message }}
+      <div class="text-danger small">{{ form.message.errors }}</div>
+    </div>
+
+    <div class="form-check mb-3">
+      {{ form.attach_pdf }}
+      <label class="form-check-label">{{ form.attach_pdf.label }}</label>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary" type="submit">Send</button>
+      <a class="btn btn-outline-secondary" href="{% url 'job:quotation_detail' q.id %}">Cancel</a>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

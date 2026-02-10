@@ -4,16 +4,16 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 
 from job.models.job_orders import JobOrder
-from shipments.services.vendor_booking_services import generate_vendor_bookings_from_job
+from work_orders.services.vendor_booking_services import generate_vendor_bookings_from_job
 from django.views import View
 from django.contrib import messages
 from django.utils import timezone
 from django.http import HttpResponseNotAllowed
-from shipments.models.vendor_bookings import VendorBooking
-from shipments.services.vendor_booking_totals import recompute_vendor_booking_totals
+from work_orders.models.vendor_bookings import VendorBooking
+from work_orders.services.vendor_booking_totals import recompute_vendor_booking_totals
 from decimal import Decimal
 from django.core.exceptions import ValidationError
-from shipments.utils.flash import flash_errors
+from work_orders.utils.flash import flash_errors
 
 
 
@@ -49,7 +49,7 @@ from decimal import Decimal
 from django.utils import timezone
 from django.contrib import messages
 
-from shipments.services.vendor_booking_totals import recompute_vendor_booking_totals
+from work_orders.services.vendor_booking_totals import recompute_vendor_booking_totals
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
 
@@ -63,6 +63,21 @@ def _d(v) -> Decimal:
         return Decimal(v)
     except Exception:
         return Decimal("0")
+
+
+def get_vb_group(vb) -> str:
+    """
+    Ambil cost_group utama dari VendorBooking berdasarkan snapshot lines.
+    Return uppercase: SEA/AIR/INLAND/..., atau "" jika kosong.
+    """
+    return (
+        vb.lines.values_list("cost_group", flat=True)
+        .exclude(cost_group__isnull=True)
+        .exclude(cost_group__exact="")
+        .distinct()
+        .first()
+        or ""
+    ).upper().strip()
 
 class VendorBookingActionView(LoginRequiredMixin, View):
     allowed_from = []
@@ -84,7 +99,7 @@ class VendorBookingActionView(LoginRequiredMixin, View):
 
         if vb.status not in self.allowed_from:
             messages.warning(request, "Aksi tidak diizinkan dari status ini.")
-            return redirect("shipments:vendor_booking_update", pk=vb.pk)
+            return redirect("work_orders:vendor_booking_update", pk=vb.pk)
 
         try:
             resp = self.before_transition(request, vb)
@@ -104,13 +119,13 @@ class VendorBookingActionView(LoginRequiredMixin, View):
                 return resp
 
         except ValidationError as e:
-              return redirect("shipments:vendor_booking_update", pk=vb.pk)
+              return redirect("work_orders:vendor_booking_update", pk=vb.pk)
 
 
         if self.success_message:
             messages.success(request, self.success_message)
 
-        return redirect("shipments:vendor_booking_update", pk=vb.pk)
+        return redirect("work_orders:vendor_booking_update", pk=vb.pk)
 
 
 class VendorBookingSubmitView(VendorBookingActionView):
@@ -165,7 +180,7 @@ class VendorBookingSubmitView(VendorBookingActionView):
         
         if errors:
             flash_errors(request, errors, title="Submit gagal", max_items=3)
-            return redirect("shipments:vendor_booking_update", pk=vb.pk)
+            return redirect("work_orders:vendor_booking_update", pk=vb.pk)
 
 
         # totals must be consistent for approver
@@ -197,8 +212,8 @@ class VendorBookingRejectView(VendorBookingActionView):
     success_message = "Rejected back to Draft"
 
 
-from shipments.models.shipping_instruction import ShippingInstructionDocument
-from shipments.services.vendor_booking_totals import recompute_vendor_booking_totals
+#from work_orders.models.shipping_instruction import ShippingInstructionDocument
+from work_orders.services.vendor_booking_totals import recompute_vendor_booking_totals
 from django.db import transaction
 from core.utils.numbering import get_next_number
 
@@ -232,7 +247,7 @@ class VendorBookingConfirmView(VendorBookingActionView):
         doc = getattr(vb, "shipping_instruction", None)
         if doc:
             messages.info(request, "Shipping Instruction sudah ada.")
-            return redirect("shipments:shipping_instruction_update", pk=doc.pk)
+            return redirect("work_orders:shipping_instruction_update", pk=doc.pk)
 
         # create doc
         doc = ShippingInstructionDocument.objects.create(
@@ -240,11 +255,11 @@ class VendorBookingConfirmView(VendorBookingActionView):
             job_order_id=vb.job_order_id,
             issued_date=timezone.localdate(),
             issued_by=request.user,
-            si_number=get_next_number("shipments", "SHIPPING_INSTRUCTION"),
+            si_number=get_next_number("work_orders", "SHIPPING_INSTRUCTION"),
         )
 
         # ✅ setelah confirm SEA, langsung lempar ke menu SI
-        return redirect("shipments:shipping_instruction_update", pk=doc.pk)
+        return redirect("work_orders:shipping_instruction_update", pk=doc.pk)
 
 
 

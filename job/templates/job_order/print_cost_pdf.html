@@ -4,7 +4,11 @@
 {% block title %}Job Order - Cost Sheet{% endblock %}
 
 {% block content %}
-<h2 class="mb-2">JOB ORDER COST SHEET VERSI BOOTSTRAP</h2>
+<br>
+<br>
+<br>
+
+<h2 class="mb-2">JOB ORDER COST</h2>
 
 <table class="table table-sm table-borderless mb-3" style="width:100%;">
   <tbody>
@@ -25,6 +29,12 @@
       <td>: {{ job_value|indo_number:2 }}</td>
       <td><strong>Currency / Rate</strong></td>
       <td>: {{ job_ccy }} / {{ job_rate|indo_number:3 }}</td>
+    </tr>
+     <tr>
+      <td><strong>Sales</strong></td>
+      <td>: {{job.sales_user}}</td>
+      <td><strong></strong></td>
+      <td>: </td>
     </tr>
   </tbody>
 </table>

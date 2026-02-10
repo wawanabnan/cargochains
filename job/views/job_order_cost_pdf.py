@@ -8,45 +8,6 @@ from django.template.loader import render_to_string
 from job.models.job_orders import JobOrder
 
 
-def joborder_cost_pdf_wkhtml(request, pk):
-    job = get_object_or_404(
-        JobOrder.objects.select_related("currency", "customer"),
-        pk=pk
-    )
-
-    # ===== Ambil data yang sama seperti preview =====
-    # PENTING: context ini HARUS sama dengan preview supaya template tidak kosong.
-    # Aku asumsi kamu sudah punya view preview yang bikin context ini.
-    # Jadi: copy konteks dari view preview kamu dan pakai di sini.
-    ctx = build_context_for_print(job)  # <- lihat fungsi di bawah
-
-    html = render_to_string("job_order/print_cost_pdf.html", ctx, request=request)
-
-    # ===== wkhtmltopdf config =====
-    wkhtml_path = getattr(settings, "WKHTMLTOPDF_CMD", None)
-    if wkhtml_path:
-        config = pdfkit.configuration(wkhtmltopdf=wkhtml_path)
-    else:
-        config = None  # pakai default dari PATH
-
-    options = {
-        "page-size": "A4",
-        "margin-top": "12mm",
-        "margin-right": "12mm",
-        "margin-bottom": "14mm",
-        "margin-left": "12mm",
-        "encoding": "UTF-8",
-        "print-media-type": "",          # pakai CSS @media print
-        "enable-local-file-access": "",  # penting kalau ada static/local assets
-        # "disable-smart-shrinking": "",  # aktifkan kalau layout suka mengecil sendiri
-    }
-
-    pdf = pdfkit.from_string(html, False, options=options, configuration=config)
-
-    resp = HttpResponse(pdf, content_type="application/pdf")
-    resp["Content-Disposition"] = f'inline; filename="job-cost-{job.number}.pdf"'
-    return resp
-
 
 def build_context_for_print(job):
     """
@@ -108,3 +69,42 @@ def build_context_for_print(job):
         "base_code": job_ccy,
         "is_idr": (job_ccy == "IDR"),
     }
+
+
+
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from django.contrib.auth.decorators import login_required
+
+from weasyprint import HTML
+
+
+@login_required
+def joborder_cost_pdf(request, pk):
+    # ctx kamu sudah punya dari logic sebelumnya
+    # contoh:
+    # job = get_object_or_404(JobOrder, pk=pk)
+    # ctx = build_context_for_print(job)
+
+    ctx = ...  # <-- pakai ctx yang sama dengan preview
+
+    html = render_to_string(
+        "job_order/print_cost_preview.html",
+        ctx,
+        request=request
+    )
+
+    # penting supaya {% static %}, img, css kebaca
+    base_url = request.build_absolute_uri("/")
+
+    # WeasyPrint otomatis:
+    # - include background
+    # - hormati @page di CSS
+    pdf_bytes = HTML(
+        string=html,
+        base_url=base_url
+    ).write_pdf()
+
+    resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+    resp["Content-Disposition"] = 'inline; filename="job-cost.pdf"'
+    return resp

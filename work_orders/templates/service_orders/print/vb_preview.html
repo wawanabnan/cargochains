@@ -1,0 +1,16 @@
+{% extends "print/base_preview_letterhead.html" %}
+{% load static %}
+
+{% block toolbar %}
+<div class="print-toolbar-outside">
+  <div class="d-grid gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'work_orders:service_order_update' vb.id %}">Back</a>
+    <a class="btn btn-outline-primary btn-sm" target="_blank" href="{% url 'work_orders:service_order_pdf' vb.id %}">Download PDF</a>
+    <button class="btn btn-primary btn-sm" type="button" onclick="window.print()">Print</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+  {% include "service_orders/print/_vb_body.html" %}
+{% endblock %}

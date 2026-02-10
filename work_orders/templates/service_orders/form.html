@@ -4,102 +4,75 @@
 
 {% block content %}
 
-<div class="app-content-header">
+<div class="app-content-header py-2">
   <div class="container-fluid d-flex flex-wrap gap-2 justify-content-between align-items-center">
+
+    <!-- LEFT: Title + Status + Meta -->
     <div>
-      <h4 class="mb-0">Vendor Booking</h4>
-      <div class="small text-muted">
-        Job Order: <span class="fw-semibold">{{ vb.job_order }}</span>
+       <div class="d-flex align-items-center gap-2">
+        <h4 class="mb-0">Vendor Booking</h4>
+
+        {% if vb.status == "CONFIRMED" %}
+          <span class="badge text-bg-success">CONFIRMED</span>
+        {% else %}
+          <span class="badge text-bg-secondary">DRAFT</span>
+        {% endif %}
+      </div>
+
+      <div class="small text-muted lh-sm">
+          Job Order: <span class="fw-semibold">{{ vb.job_order }}</span>
         · Vendor: <span class="fw-semibold">{{ vb.vendor }}</span>
       </div>
     </div>
 
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-      {% if vb.status == "CONFIRMED" %}
-        <span class="badge text-bg-success">CONFIRMED</span>
-      {% else %}
-        <span class="badge text-bg-secondary">DRAFT</span>
-      {% endif %}
-
-      <a class="btn btn-outline-secondary btn-sm"
-         href="{% url 'shipments:vendor_booking_from_jobcost' %}?job_order={{ vb.job_order_id }}">
-        Back
+    <!-- RIGHT: Actions -->
+     <a class="btn btn-outline-primary btn-sm" target="_blank"
+        href="{% url 'work_orders:service_order_print' vb.id %}">
+        Print Preview
       </a>
 
-      <a class="btn btn-outline-primary btn-sm"
-         href="{% url 'shipments:vendor_booking_print' vb.id %}"
-         target="_blank">
-        Print {% if vb.status == "DRAFT" %}<span class="ms-1 badge text-bg-warning">DRAFT</span>{% endif %}
+      <a class="btn btn-outline-secondary btn-sm" target="_blank"
+        href="{% url 'work_orders:service_order_pdf' vb.id %}">
+        PDF
       </a>
 
-      {% if vb.status == "DRAFT" %}
-        <form method="post" action="{% url 'shipments:vendor_booking_confirm' vb.id %}" class="d-inline">
-          {% csrf_token %}
-          <button class="btn btn-primary btn-sm" type="submit">
-            Confirm
-          </button>
-        </form>
-      {% endif %}
-    </div>
+     {% include 'service_orders/extensions/_button_actions.html'  %}
+
+
   </div>
 </div>
+
 <div class="app-content">
   <div class="container-fluid">
     <form method="post" class="card">
       {% csrf_token %}
-
-      {# ===== ERRORS: HEADER ===== #}
-      {% if form.non_field_errors %}
-        <div class="alert alert-danger alert-dismissible fade show">
-          <div class="fw-semibold mb-1">Header error</div>
-          <ul class="mb-0">
-            {% for err in form.non_field_errors %}
-              <li>{{ err }}</li>
-            {% endfor %}
-          </ul>
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-      {% endif %}
-
-      {% if form.errors %}
-        <div class="alert alert-danger alert-dismissible fade show">
-          <div class="fw-semibold mb-1">Header field error</div>
-          <ul class="mb-0">
-            {% for field in form %}
-              {% for err in field.errors %}
-                <li><strong>{{ field.label }}</strong>: {{ err }}</li>
-              {% endfor %}
-            {% endfor %}
-          </ul>
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-      {% endif %}
-
-      {# ===== ERRORS: FORMSET ===== #}
-      {% if formset.non_form_errors %}
-        <div class="alert alert-danger alert-dismissible fade show">
-          <div class="fw-semibold mb-1">Line error</div>
-          <ul class="mb-0">
-            {% for err in formset.non_form_errors %}
-              <li>{{ err }}</li>
-            {% endfor %}
-          </ul>
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-      {% endif %}
-
+       {{ form.media }}
+    
       <div class="card-body p-2">
 
         <div class="row g-2 mb-2">
-          <div class="col-md-3">
+          <div class="col-md-2">
+            <label class="form-label small mb-1">Date</label>
+            {{ form.booking_date }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small mb-1">Vendor</label>
+            {{ form.vendor }}
+          </div>
+          <div class="col-md-2">
             <label class="form-label small mb-1">Currency</label>
             {{ form.currency }}
           </div>
 
-          <div class="col-md-3">
+          <div class="col-md-2">
             <label class="form-label small mb-1">IDR Rate</label>
             {{ form.idr_rate }}
           </div>
+          <div class="col-md-2">
+            <label class="form-label small mb-1">Payment Term</label>
+            {{ form.payment_term }}
+          </div>
+         
         </div>
 
         <hr class="my-2">
@@ -132,9 +105,9 @@
                     {% if line.cost_type_id %}{{ line.cost_type.name }}{% else %}-{% endif %}
                   </td>
 
-                  <td class="text-end ws-cell ws-num">{{ f.description }}</td>
+                  <td>{{ f.description }}</td>
                   <td class="text-end ws-cell ws-num">{{ f.qty }}</td>
-                  <td class="text-center ws-cell ws-uom">{{ f.uom }}</td>
+                  <td class="text-center ws-cell ws-uom"> {{ line.uom.code }} {{ form.uom }}</td>
                   <td class="text-end ws-cell ws-num">{{ f.unit_price }}</td>
 
                   <td class="ws-cell">
@@ -184,7 +157,7 @@
 
             <tfoot>
               <tr>
-                <td colspan="5" class="text-end">Sub Total</td>
+                <td colspan="6" class="text-end">Sub Total</td>
                 <td class="text-end">
                   <span id="subtotal-preview" class="js-id-display" data-digits="2" data-raw="{{ totals.subtotal|default_if_none:'0' }}">
                     {{ totals.subtotal|default_if_none:"0" }}
@@ -208,7 +181,7 @@
                 </td>
               </tr>
               <tr>
-                <td colspan="5" class="text-end fw-bold">Grand Total</td>
+                <td colspan="6" class="text-end fw-bold">Grand Total</td>
                 <td class="text-end fw-bold">
                   <span id="total-preview" class="js-id-display" data-digits="2" data-raw="{{ totals.total_amount|default_if_none:'0' }}">
                     {{ totals.total_amount|default_if_none:"0" }}
@@ -218,45 +191,139 @@
             </tfoot>
           </table>
         </div>
+<!---------------------------------------------------------------------------------->
+<ul class="nav nav-tabs mt-3" id="soTabs" role="tablist">
+  <li class="nav-item">
+    <button class="nav-link active" id="tab-vendor-note" data-bs-toggle="tab" data-bs-target="#pane-vendor-note" type="button">
+      Vendor Note
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" id="tab-terms" data-bs-toggle="tab" data-bs-target="#pane-terms" type="button">
+      Term &amp; Conditions
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" id="tab-attachments" data-bs-toggle="tab" data-bs-target="#pane-attachments" type="button">
+      Attachments
+    </button>
+  </li>
+</ul>
 
-        {# ================================
-           LETTER FORM BELOW TABLE (COLLAPSE)
-           - Default collapsed
-           - Auto-open if letter_has_errors=True (from view)
-           ================================ #}
+<div class="tab-content border border-top-0 rounded-bottom p-3">
+  <div class="tab-pane fade show active" id="pane-vendor-note">
+    {{ form.vendor_note }}
+  </div>
 
+  <div class="tab-pane fade" id="pane-terms">
+    {{ form.term_conditions }}
+  </div>
+
+  <div class="tab-pane fade" id="pane-attachments">
+    {% if vb.status == "CLOSED" %}
+      <div class="alert alert-warning py-2 mb-3">Service Order sudah DONE. Upload/hapus attachment dikunci.</div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data"
+          action="{% url 'work_orders:service_order_attachment_add' vb.id %}">
+      {% csrf_token %}
+      <div class="row g-2 align-items-end">
+        <div class="col-md-6">
+          <label class="form-label small mb-1">File</label>
+          <input type="file" name="file" class="form-control" {% if vb.status == "DOME" %}disabled{% endif %} >
+        </div>
+        <div class="col-md-5">
+          <label class="form-label small mb-1">Description</label>
+          <input type="text" name="description" class="form-control"
+                 placeholder="Quotation Vendor / Booking Confirmation"
+                 {% if vb.status == "CLOSED" %}disabled{% endif %}>
+        </div>
+        <div class="col-md-1 d-grid">
+          <button class="btn btn-primary btn-sm" type="submit" {% if vb.status == "DONE" %}disabled{% endif %}>
+            Upload
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <hr class="my-3">
+
+    {% if vb.attachments.all %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Description</th>
+              <th class="text-muted">Uploaded</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in vb.attachments.all %}
+              <tr>
+                <td><a href="{{ a.file.url }}" target="_blank">{{ a.filename }}</a></td>
+                <td>{{ a.description }}</td>
+                <td class="text-muted small">{{ a.created_at }}</td>
+                <td class="text-end">
+                  <form method="post" action="{% url 'work_orders:service_order_attachment_delete' vb.id a.id %}">
+                    {% csrf_token %}
+                    <button class="btn btn-outline-danger btn-sm" type="submit" {% if vb.status == "CLOSED" %}disabled{% endif %}>
+                      Delete
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-muted small">Belum ada attachment.</div>
+    {% endif %}
+  </div>
+</div>
+
+
+<!------------------------------------------------------------------------------>
+     
         <div class="mt-3">
-          <div class="d-flex justify-content-between align-items-center">
-            <div class="fw-semibold">Letter Details</div>
-
-            <button
-              class="btn btn-sm btn-outline-secondary"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#vbLetterCollapse"
-              aria-controls="vbLetterCollapse"
-            >
-              Show / Hide
-            </button>
-          </div>
+           <div class="d-flex justify-content-end gap-2 mt-3">
+                 <button class="btn btn-sm btn-primary" type="submit">
+                 <i class="bi bi-save"></i>  Save
+               </button>
+            </div>
 
           <div class="collapse {% if letter_has_errors %}show{% endif %}" id="vbLetterCollapse">
             <div class="card mt-2">
               <div class="card-body p-2">
-                {% include "vendor_bookings/letters/_letter_section.html" %}
+
               </div>
             </div>
           </div>
         </div>
 
       </div>
+      {% if vb.status == "DRAFT" %}
 
+        <div class="collapse {% if letter_has_errors %}show{% endif %}" id="vbLetterCollapse">
+           
+  
+        </div>
+      
+      {% endif %}
       {# DEBUG tax_map type: {{ tax_map|default:"<NONE>" }} #}
       {{ tax_map|json_script:"tax-map" }}
 
     </form>
   </div>
 </div>
+<form id="so-attach-form"
+      method="post"
+      enctype="multipart/form-data"
+      action="{% url 'work_orders:service_order_attachment_add' vb.id %}">
+  {% csrf_token %}
+</form>
 
 
 {% endblock %}
@@ -378,7 +445,7 @@
 }
 </style>
 
-
+<link rel="stylesheet" href="{% static 'vendor/css/flatpickr.min.css' %}">
 <link rel="stylesheet" href="{% static 'vendor/css/select2.min.css' %}">
 
 {% endblock %}
@@ -388,12 +455,18 @@
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="{% static 'vendor/js/flatpickr.min.js' %}"></script>
 
-<script src="{% static 'js/idr_rate.js' %}">  </script>
+<script src="{% static 'vendor/js/idr_rate.js' %}">  </script>
 <script src="{% static 'vendor/js/select2.full.min.js' %}"> </script>
-<script src="{% static 'core/js/tax_select2.js' %}"> </script>
+<script src="{% static 'js/tax_select2.js' %}"> </script>
 
-
+<script>
+  flatpickr(".js-flatpickr", {
+    dateFormat: "Y-m-d",
+    allowInput: true,
+  });
+</script>
 
 <script>
 (function () {
@@ -537,6 +610,7 @@
     // taxes (select2 triggers change on the original select)
     document.addEventListener("change", (e) => {
       const t = e.target;
+     
       if (t && t.matches(TAX_SELECT_SELECTOR)) {
         recomputeWorksheet();
       }
@@ -562,6 +636,7 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     // ✅ 0) INIT SELECT2 PALING DULU
+    
     if (window.initTaxSelect2 && !window.__vbTaxSelect2Inited) {
       window.__vbTaxSelect2Inited = true;
       window.initTaxSelect2(document);
@@ -621,5 +696,6 @@
   });
 })();
 </script>
+
 
 {% endblock %}
