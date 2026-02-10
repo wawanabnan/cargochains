@@ -4,7 +4,7 @@
   <table>
     <tr>
       <td class="wrap">
-        <div><strong>Vendor Booking #</strong>: {{ vb.vb_number|default:"-" }}</div>
+        <div><strong>Service Order #</strong>: {{ vb.vb_number|default:"-" }}</div>
         <div><strong>Date</strong>: {{ vb.booking_date|date:"d-m-Y" }}</div>
         <div><strong>Job Order</strong>: {{ vb.job_order }}</div>
       </td>
@@ -70,7 +70,6 @@
     {% if tax_ppn > 0 %}
       <tr>
         <th colspan="6" class="text-end">
-          {# kalau mau label rate: ganti jadi vb.ppn_label_rate_display #}
           Tax Amount
         </th>
         <th class="text-end nowrap">{{ tax_ppn|indo_number }}</th>
@@ -80,7 +79,6 @@
     {% if tax_pph > 0 %}
       <tr>
         <th colspan="6" class="text-end">
-          {# kalau mau label rate: ganti jadi vb.pph_label_rate_display #}
           PPH Amount
         </th>
         <th class="text-end nowrap">{{ tax_pph|indo_number }}</th>
@@ -101,9 +99,36 @@
   </tfoot>
 </table>
 
-{% if vb.note %}
+{# ✅ Vendor Note #}
+{% if vb.vendor_note %}
   <div style="margin-top: 6mm;">
-    <strong>Note:</strong>
-    <div class="wrap">{{ vb.note }}</div>
+    <strong>Vendor Note:</strong>
+    <div class="wrap">{{ vb.vendor_note|safe }}</div>
+  </div>
+{% endif %}
+
+{# ✅ Term & Conditions #}
+{% if vb.term_conditions %}
+  <div style="margin-top: 5mm;">
+    <strong>Terms &amp; Conditions:</strong>
+    <div class="wrap">{{ vb.term_conditions|safe }}</div>
+  </div>
+{% endif %}
+
+{# ✅ Signature (from context: so_signer) #}
+{% if so_signer %}
+  <div style="margin-top: 10mm;">
+    <table style="width: 100%;">
+      <tr>
+        <td style="width: 55%;"></td>
+        <td style="width: 45%; text-align: center;">
+          <div>Approved By</div>
+          <div style="height: 80px;"></div>
+          <strong>
+            {{ so_signer.get_full_name|default:so_signer.username }}
+          </strong>
+        </td>
+      </tr>
+    </table>
   </div>
 {% endif %}

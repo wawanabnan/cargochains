@@ -94,7 +94,7 @@ class VendorBookingForm(forms.ModelForm):
     # -----------------------------
     # Init: load header_json -> fields
     # -----------------------------
-    def __init__(self, *args, **kwargs):
+    def __init__old(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         if not self.instance.pk and not self.initial.get("idr_rate"):
@@ -173,61 +173,150 @@ class VendorBookingForm(forms.ModelForm):
             if "class" not in self.fields[name].widget.attrs:
                 self.fields[name].widget.attrs["class"] = "form-control form-control-sm"
      
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    # -----------------------------
-    # Save: fields -> header_json
-    # -----------------------------
-    def save(self, commit=True):
-        obj = super().save(commit=False)
+        # default idr_rate for new object
+        if not self.instance.pk and not self.initial.get("idr_rate"):
+            self.initial["idr_rate"] = 1
 
-        hdr = obj.header_json or {}
-        # common
-        hdr["reference_no"] = self.cleaned_data.get("reference_no", "") or ""
-        hdr["shipper_name"] = self.cleaned_data.get("shipper_name", "") or ""
-        hdr["consignee_name"] = self.cleaned_data.get("consignee_name", "") or ""
-        hdr["notify_party_name"] = self.cleaned_data.get("notify_party_name", "") or ""
-        hdr["cargo_information"] = self.cleaned_data.get("cargo_information", "") or ""
+        # idr_rate readonly + css
+        if "idr_rate" in self.fields:
+            self.fields["idr_rate"].widget.attrs.update({
+                "readonly": "readonly",
+                "class": "form-control form-control-sm text-end js-idr-rate",
+            })
 
+        # readonly vb_number (safety)
+        if "vb_number" in self.fields:
+            self.fields["vb_number"].disabled = True
+
+        inst = getattr(self, "instance", None)
+        data = (inst.header_json or {}) if (inst and inst.pk) else {}
+
+        # populate json fields (only if field exists in form)
+        for k in ["reference_no", "shipper_name", "consignee_name", "notify_party_name", "cargo_information",
+                "pol", "pod", "etd", "eta",
+                "origin_airport", "dest_airport",
+                "pickup_location", "delivery_location", "pickup_date", "delivery_date"]:
+            if k in self.fields:
+                self.fields[k].initial = data.get(k, "")
+
+        # date-like keys that should be None when empty
+        for k in ["etd", "eta", "pickup_date", "delivery_date"]:
+            if k in self.fields:
+                self.fields[k].initial = data.get(k) or None
+
+        # job_order: update biasanya sudah ada instance
+        if "job_order" in self.fields:
+            self.fields["job_order"].required = False
+            if self.instance and self.instance.job_order_id:
+                self.initial.setdefault("job_order", self.instance.job_order_id)
+
+        # discount_amount default 0
+        if "discount_amount" in self.fields:
+            self.fields["discount_amount"].required = False
+            if self.instance and self.instance.discount_amount is not None:
+                self.initial.setdefault("discount_amount", self.instance.discount_amount)
+            else:
+                self.initial.setdefault("discount_amount", Decimal("0"))
+
+        # wht_rate default 0
+        if "wht_rate" in self.fields:
+            self.fields["wht_rate"].required = False
+            if self.instance and self.instance.wht_rate is not None:
+                self.initial.setdefault("wht_rate", self.instance.wht_rate)
+            else:
+                self.initial.setdefault("wht_rate", Decimal("0"))
+
+        if "cost_type" in self.fields:
+            self.fields["cost_type"].required = False
+
+        # optional: auto-fill shipper from job_order when create (skip for now)
+        if not (inst and inst.pk):
+            job = self.initial.get("job_order") or self.data.get("job_order")
+            # nanti kalau mau lookup JobOrder untuk autofill
+
+        # ensure default class for fields that don't have it
+        for name in self.fields:
+            if "class" not in self.fields[name].widget.attrs:
+                self.fields[name].widget.attrs["class"] = "form-control form-control-sm"
+
+        # -----------------------------
+        # ✅ Lock editing after APPROVED
+        # -----------------------------
+        LOCK_STATUSES = {
+            VendorBooking.ST_APPROVED,
+            VendorBooking.ST_SENT,
+            VendorBooking.ST_CONFIRMED,
+            VendorBooking.ST_DONE,
+            VendorBooking.ST_CANCELLED,
+        }
+
+        # DRAFT/SUBMITTED/REJECTED masih boleh edit
+        if inst and inst.pk and inst.status in LOCK_STATUSES:
+            for name, field in self.fields.items():
+                field.disabled = True
+
+            # keep vb_number always disabled
+            if "vb_number" in self.fields:
+                self.fields["vb_number"].disabled = True
+
+
+        # -----------------------------
+        # Save: fields -> header_json
+        # -----------------------------
+        def save(self, commit=True):
+            obj = super().save(commit=False)
+
+            hdr = obj.header_json or {}
+            # common
+            hdr["reference_no"] = self.cleaned_data.get("reference_no", "") or ""
+            hdr["shipper_name"] = self.cleaned_data.get("shipper_name", "") or ""
+            hdr["consignee_name"] = self.cleaned_data.get("consignee_name", "") or ""
+            hdr["notify_party_name"] = self.cleaned_data.get("notify_party_name", "") or ""
+            hdr["cargo_information"] = self.cleaned_data.get("cargo_information", "") or ""
+
+            
         
-    
-        obj.header_json = hdr
+            obj.header_json = hdr
+            
+            if commit:
+                obj.save()
+                self.save_m2m()
+            return obj
+
+        def clean(self):
+            cleaned = super().clean()
+
+            currency = cleaned.get("currency")
+            idr_rate = cleaned.get("idr_rate")
+            discount_amount = cleaned.get("discount_amount")
+
+            if currency and idr_rate in (None, ""):
+                self.add_error(
+                    "idr_rate",
+                    "IDR rate wajib diisi jika currency dipilih."
+                )
+
+            if not self.cleaned_data.get("idr_rate"):
+                self.cleaned_data["idr_rate"] = Decimal("1")
+
+            
+
+            if discount_amount is not None and discount_amount < 0:
+                self.add_error(
+                    "discount_amount",
+                    "Discount amount tidak boleh negatif."
+                )
+
+
+            self.instance.status = cleaned.get("status", self.instance.status)
+            self.instance.full_clean(exclude=None)  # trigger model.clean()
         
-        if commit:
-            obj.save()
-            self.save_m2m()
-        return obj
 
-    def clean(self):
-        cleaned = super().clean()
-
-        currency = cleaned.get("currency")
-        idr_rate = cleaned.get("idr_rate")
-        discount_amount = cleaned.get("discount_amount")
-
-        if currency and idr_rate in (None, ""):
-            self.add_error(
-                "idr_rate",
-                "IDR rate wajib diisi jika currency dipilih."
-            )
-
-        if not self.cleaned_data.get("idr_rate"):
-            self.cleaned_data["idr_rate"] = Decimal("1")
-
+            return cleaned
         
-
-        if discount_amount is not None and discount_amount < 0:
-            self.add_error(
-                "discount_amount",
-                "Discount amount tidak boleh negatif."
-            )
-
-
-        self.instance.status = cleaned.get("status", self.instance.status)
-        self.instance.full_clean(exclude=None)  # trigger model.clean()
-    
-
-        return cleaned
-    
 
 
 
@@ -291,22 +380,40 @@ class VendorBookingLineForm(forms.ModelForm):
 
         return cleaned
 
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
 
-        # field ini akan kita isi dari server / default
         if "job_order" in self.fields:
             self.fields["job_order"].required = False
 
-    
         if "discount_amount" in self.fields:
             self.fields["discount_amount"].required = False
             if self.initial.get("discount_amount") in (None, ""):
                 self.initial["discount_amount"] = Decimal("0")
 
-       
+        # -----------------------------
+        # Lock line items after APPROVED
+        # -----------------------------
+        from work_orders.models.vendor_bookings import VendorBooking
+
+        LOCK_STATUSES = {
+            VendorBooking.ST_APPROVED,
+            VendorBooking.ST_SENT,
+            VendorBooking.ST_CONFIRMED,
+            VendorBooking.ST_DONE,
+            VendorBooking.ST_CANCELLED,
+        }
+
+        inst = getattr(self, "instance", None)
+        parent = getattr(inst, "vendor_booking", None)
+
+        if parent and parent.status in LOCK_STATUSES:
+            for name, field in self.fields.items():
+                # keep hidden/system fields as-is
+                if name in ("job_cost", "cost_type", "uom", "sort_order", "is_active"):
+                    continue
+                field.disabled = True
+
        
 VendorBookingLineFormSet = inlineformset_factory(
     VendorBooking, VendorBookingLine,

@@ -10,15 +10,6 @@ from work_orders.views.service_orders import (
 )
 from work_orders.views.print import VendorBookingPrintView
 from work_orders.views.pdf import VendorBookingPdfView
-from work_orders.views.actions import (
-    VendorBookingSubmitView,
-    VendorBookingApproveView,
-    VendorBookingRejectView,
-    VendorBookingConfirmView,
-    VendorBookingSendView,
-    VendorBookingCloseView,
-    VendorBookingCancelView,
-)
 
 app_name = "work_orders"
 
@@ -37,7 +28,6 @@ urlpatterns = [
     path("service-orders/<int:pk>/pdf/", VendorBookingPdfView.as_view(), name="service_order_pdf"),
 
     # Actions
-    path("service-orders/<int:pk>/submit/", VendorBookingSubmitView.as_view(), name="service_order_submit"),
     
 ]
 

@@ -17,56 +17,105 @@
         <span class="ms-1 badge text-bg-warning">DRAFT</span>
       {% endif %}
     </a>
+
+    {# Open SEA Shipping Instruction #}
+    {% if vb.service_order_mode == "SEA" and vb.status in "CONFIRMED DONE" %}
+      <a class="btn btn-outline-info btn-sm"
+         href="{% url 'work_orders:service_order_open_sea_si' vb.id %}">
+        Open Shipping Instruction
+      </a>
+    {% endif %}
   </div>
 
   <!-- RIGHT: Workflow Actions -->
   <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end">
 
+    {# DRAFT → SUBMITTED #}
     {% if vb.status == "DRAFT" %}
-      <form method="post" action="{% url 'work_orders:service_order_submit' vb.id %}" class="d-inline">
+      <form method="post" action="{% url 'work_orders:service_order_submit' vb.id %}">
         {% csrf_token %}
-        <button class="btn btn-success btn-sm" type="submit">Submit</button>
+        <button class="btn btn-success btn-sm" type="submit">
+          Submit
+        </button>
       </form>
     {% endif %}
 
+    {# SUBMITTED → APPROVED / REJECTED #}
     {% if vb.status == "SUBMITTED" %}
-      <form method="post" action="{% url 'work_orders:service_order_approve' vb.id %}" class="d-inline">
+      <form method="post" action="{% url 'work_orders:service_order_approve' vb.id %}">
         {% csrf_token %}
-        <button class="btn btn-success btn-sm" type="submit">Approve</button>
+        <button class="btn btn-success btn-sm" type="submit">
+          Approve
+        </button>
       </form>
 
-      <form method="post" action="{% url 'work_orders:service_order_reject' vb.id %}" class="d-inline">
+      <form method="post"
+            action="{% url 'work_orders:service_order_reject' vb.id %}"
+            class="d-flex gap-1">
         {% csrf_token %}
-        <button class="btn btn-outline-danger btn-sm" type="submit">Reject</button>
+        <input type="text"
+               name="reason"
+               class="form-control form-control-sm"
+               placeholder="Reject reason"
+               required>
+        <button class="btn btn-outline-danger btn-sm" type="submit">
+          Reject
+        </button>
       </form>
     {% endif %}
 
+    {# REJECTED → DRAFT #}
+    {% if vb.status == "REJECTED" %}
+      <form method="post" action="{% url 'work_orders:service_order_back_to_draft' vb.id %}">
+        {% csrf_token %}
+        <button class="btn btn-warning btn-sm" type="submit">
+          Back to Draft
+        </button>
+      </form>
+    {% endif %}
+
+    {# APPROVED → SENT #}
     {% if vb.status == "APPROVED" %}
-      <form method="post" action="{% url 'work_orders:service_order_confirm' vb.id %}" class="d-inline">
+      <form method="post" action="{% url 'work_orders:service_order_mark_sent' vb.id %}">
         {% csrf_token %}
-        <button class="btn btn-primary btn-sm" type="submit">Confirm</button>
+        <button class="btn btn-primary btn-sm" type="submit">
+          Send to Vendor
+        </button>
       </form>
     {% endif %}
 
-    {% if vb.status == "CONFIRMED" %}
-      <form method="post" action="{% url 'work_orders:service_order_send' vb.id %}" class="d-inline">
-        {% csrf_token %}
-        <button class="btn btn-primary btn-sm" type="submit">Send to Vendor</button>
-      </form>
-    {% endif %}
-
+    {# SENT → CONFIRMED / CANCELLED #}
     {% if vb.status == "SENT" %}
-      <form method="post" action="{% url 'work_orders:service_order_close' vb.id %}" class="d-inline">
+      <form method="post" action="{% url 'work_orders:service_order_confirm_vendor' vb.id %}">
         {% csrf_token %}
-        <button class="btn btn-primary btn-sm" type="submit">Close</button>
+        <button class="btn btn-success btn-sm" type="submit">
+          Vendor Confirmed
+        </button>
+      </form>
+
+      <form method="post"
+            action="{% url 'work_orders:service_order_cancel' vb.id %}"
+            class="d-flex gap-1"
+            onsubmit="return confirm('Cancel Service Order ini?');">
+        {% csrf_token %}
+        <input type="text"
+               name="reason"
+               class="form-control form-control-sm"
+               placeholder="Cancel reason"
+               required>
+        <button class="btn btn-outline-danger btn-sm" type="submit">
+          Cancel
+        </button>
       </form>
     {% endif %}
 
-    {% if vb.status != "CANCELLED" and vb.status != "CLOSED" %}
-      <form method="post" action="{% url 'work_orders:service_order_cancel' vb.id %}" class="d-inline"
-            onsubmit="return confirm('Cancel Vendor Booking ini?');">
+    {# CONFIRMED → DONE #}
+    {% if vb.status == "CONFIRMED" %}
+      <form method="post" action="{% url 'work_orders:service_order_mark_done' vb.id %}">
         {% csrf_token %}
-        <button class="btn btn-outline-secondary btn-sm" type="submit">Cancel</button>
+        <button class="btn btn-dark btn-sm" type="submit">
+          Mark Done
+        </button>
       </form>
     {% endif %}
 

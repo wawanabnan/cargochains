@@ -324,17 +324,6 @@ class VendorBookingUpdateView(View):
         job_id = request.GET.get("job_order", vb.job_order_id)
         return reverse("work_orders:service_order_update", args=[vb.pk])
 
-    def _build_ctx(self, vb, form, formset, job_id=None):
-        ctx = {
-            "vb": vb,
-            "form": form,
-            "formset": formset,
-            "totals": calc_booking_totals(vb),
-
-        }
-        if job_id:
-            ctx["job_order_id"] = job_id
-        return ctx
 
     def _render_with_debug(self, request, vb, ctx, note=""):
         resp = render(request, self.template_name, ctx)
@@ -370,6 +359,18 @@ class VendorBookingUpdateView(View):
     @transaction.atomic
     def post(self, request, pk):
         vb = self.get_object(pk)
+            
+        EDITABLE_STATUSES = (
+            VendorBooking.ST_DRAFT,
+            VendorBooking.ST_SUBMITTED,
+            VendorBooking.ST_REJECTED,
+        )
+
+        if vb.status not in EDITABLE_STATUSES:
+            messages.warning(request, "Tidak bisa edit karena status sudah dikunci.")
+            return redirect(reverse("work_orders:service_order_update", args=[vb.id]))
+
+
        
         if vb.status != "DRAFT":
             messages.warning(request, "Vendor Booking sudah CONFIRMED. Tidak bisa diedit.")
@@ -427,25 +428,35 @@ class VendorBookingUpdateView(View):
         messages.success(request, "Tersimpan ✅")
         return redirect(self._success_url(request, booking))
     
-    
+  
     def _build_ctx(self, vb, form, formset, job_id=None):
-            
+        # SEA Shipping Instruction (aman dari DoesNotExist)
+        try:
+            sea_si = vb.shipping_instruction
+        except Exception:
+            sea_si = None
+
         ctx = {
             "vb": vb,
             "form": form,
             "formset": formset,
             "totals": calc_booking_totals(vb),
 
-            
-            # ✅ INI yang bikin helper kepanggil
+            # helper map taxes (dipakai template lines)
             "tax_map": _build_tax_map(),
 
-        
+            # SI shortcut button
+            "sea_si": sea_si,
+
+            # flags UI
+            "can_edit": (vb.status in (VendorBooking.ST_DRAFT, VendorBooking.ST_SUBMITTED, VendorBooking.ST_REJECTED)),
+            "is_done": (vb.status == VendorBooking.ST_DONE),
         }
+
         if job_id:
             ctx["job_order_id"] = job_id
-        return ctx
 
+        return ctx
 
 
 class VendorBookingListView(LoginRequiredMixin, ListView):

@@ -23,7 +23,7 @@ class VendorBookingPdfView(View):
         total = subtotal + tax_ppn - tax_pph - (vb.discount_amount or Decimal("0"))
 
         html = render_to_string(
-            "vendor_bookings/print/vb_pdf.html",
+            "service_orders/print/vb_pdf.html",
             {
                 "vb": vb,
                 "lines": lines,
