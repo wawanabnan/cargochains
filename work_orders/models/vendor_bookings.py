@@ -167,9 +167,13 @@ class VendorBooking(models.Model):
     # ===== Done (✅ baru) =====
     done_at = models.DateTimeField(null=True, blank=True)
     done_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True,
-        on_delete=PROTECT, related_name="+"
-    )
+    settings.AUTH_USER_MODEL,
+    on_delete=PROTECT,
+    related_name="+",
+    null=True,
+    blank=True,
+    db_constraint=False,  # <- kalau mau menghindari bentrok FK MariaDB tadi
+)
 
     # ===== Closed (legacy) =====
     closed_at = models.DateTimeField(null=True, blank=True)
@@ -294,6 +298,12 @@ class VendorBooking(models.Model):
         default=ServiceOrderMode.GENERAL,
         db_index=True,
         help_text="Mode Service Order untuk generate dokumen lanjutan"
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=PROTECT,
+        related_name="+",
     )
 
 

@@ -45,3 +45,8 @@ class VendorPaymentLine(models.Model):
     vendor_bill = models.ForeignKey(VendorBill, on_delete=PROTECT, null=True, blank=True, related_name="+")  # ✅ baru
     description = models.CharField(max_length=180, blank=True, default="")
     amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+
+    class Meta:
+       
+        db_table="vendor_payment_lines"
+

@@ -788,8 +788,9 @@ class VendorBookingCreateView(LoginRequiredMixin, TemplateView):
             vendor_id=locked_vendor_id,
             status=VendorBooking.ST_DRAFT,
             discount_amount=Decimal("0"),
-            vendor_note=cfg.vendor_note_default,
+            vendor_note=cfg.vendor_note,
             term_conditions=cfg.service_order_term_conditions,
+            created_by=request.user,
         )
         vb.save()
 

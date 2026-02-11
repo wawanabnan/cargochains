@@ -5,7 +5,7 @@ from django.db import models
 from django.db.models import Max
 from django.utils import timezone
 from job.models.job_orders import JobOrder
-from shipments.models.vendor_bookings import VendorBooking
+from work_orders.models.vendor_bookings import VendorBooking
 from core.utils.numbering import get_next_number
 
 class ShippingInstructionDocument(models.Model):

@@ -2,6 +2,7 @@ from django.db import models
 from decimal import Decimal
 from django.conf import settings
 from core.models.currencies import Currency
+from django_summernote.fields import SummernoteTextField
 
 class SignatureSource(models.TextChoices):
     SALES_USER = "SALES_USER", "Sales User"
@@ -67,11 +68,11 @@ class SalesConfig(models.Model):
         help_text="Fee dalam persen, contoh: 2.50",
     )
 
-    customer_note = models.TextField(blank=True, default="")
-    term_conditions = models.TextField(blank=True, default="")
+    customer_note =  SummernoteTextField(blank=True, default="")
+    term_conditions =  SummernoteTextField(blank=True, default="")
 
-    vendor_note = models.TextField(blank=True, default="")
-    service_order_term_conditions = models.TextField(blank=True, default="")
+    vendor_note =  SummernoteTextField(blank=True, default="")
+    service_order_term_conditions =  SummernoteTextField(blank=True, default="")
     
     service_order_signature_source = models.CharField(
         max_length=20,

@@ -1,23 +1,55 @@
 {% load indo_format %}
+<table style="width:100%; margin-top: 6mm;">
+  <tr>
+    <td style="width:60%;"></td>
+    <td style="width:40%; text-align:right;">
+      <div style="font-size:16px; font-weight:700; letter-spacing:.5px;">SERVICE ORDER</div>
+      <div style="margin-top:2mm;">
+        <strong><span style="font-size: 14px;">{{ vb.vb_number|default:"-" }}</span></strong>
+      </div>
+    </td>
+  </tr>
+</table>
+<table style="width:100%; margin-top: 4mm;">
+  <tr>
+    {# LEFT: To Vendor Contact + Address #}
+    <td class="wrap" style="width:60%; vertical-align:top;">
+      <div style="font-weight:700; margin-bottom:1mm;">To Vendor Contact</div>
 
-<div style="margin-top: 6mm;">
-  <table>
-    <tr>
-      <td class="wrap">
-        <div><strong>Service Order #</strong>: {{ vb.vb_number|default:"-" }}</div>
-        <div><strong>Date</strong>: {{ vb.booking_date|date:"d-m-Y" }}</div>
-        <div><strong>Job Order</strong>: {{ vb.job_order }}</div>
-      </td>
-      <td class="wrap" style="width: 45%;">
-        <div><strong>Vendor</strong>: {{ vb.vendor }}</div>
-        <div><strong>Payment Terms</strong>: {{ vb.payment_term|default:"-" }}</div>
-        <div><strong>Status</strong>: {{ vb.status }}</div>
-      </td>
-    </tr>
-  </table>
-</div>
+      <div class="mb=2">
+        <strong>{{ vb.vendor.name|default:vb.vendor|default:"-" }}</strong>
+      </div>
 
-<hr style="margin: 8mm 0 4mm;">
+      {# Address lines only if exist #}
+      {% if vb.vendor.address1 %}<div>{{ vb.vendor.address1 }}</div>{% endif %}
+      {% if vb.vendor.address2 %}<div>{{ vb.vendor.address2 }}</div>{% endif %}
+
+      {# village - district #}
+      {% if vb.vendor.village or vb.vendor.district %}
+        <div>
+          {{ vb.vendor.village|default:"" }}{% if vb.vendor.village and vb.vendor.district %} - {% endif %}{{ vb.vendor.district|default:"" }}
+        </div>
+      {% endif %}
+
+      {% if vb.vendor.regency %}<div>{{ vb.vendor.regency }}</div>{% endif %}
+      {% if vb.vendor.province %}<div>{{ vb.vendor.province }}</div>{% endif %}
+    </td>
+
+    {# RIGHT: Date + Payment Term #}
+    <td class="wrap" style="width:40%; vertical-align:top;">
+      <table style="width:100%;">
+        <tr>
+          <td style="width:40%;"><strong>Date</strong></td>
+          <td style="text-align:right;">{{ vb.booking_date|date:"d-m-Y" }}</td>
+        </tr>
+        <tr>
+          <td><strong>Payment Term</strong></td>
+          <td style="text-align:right;">{{ vb.payment_term|default:"-" }}</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 
 <table class="table table-bordered" style="font-size: 10.5px;">
   <thead>
@@ -41,7 +73,6 @@
         <td class="nowrap">{{ ln.uom.name|default:"-" }}</td>
         <td class="text-end nowrap">{{ ln.unit_price|indo_number }}</td>
 
-        {# Taxes: tampil rate per tax di line #}
         <td class="wrap">
           {% if ln.taxes.all %}
             {% for t in ln.taxes.all %}
@@ -69,18 +100,14 @@
 
     {% if tax_ppn > 0 %}
       <tr>
-        <th colspan="6" class="text-end">
-          Tax Amount
-        </th>
+        <th colspan="6" class="text-end">Tax Amount</th>
         <th class="text-end nowrap">{{ tax_ppn|indo_number }}</th>
       </tr>
     {% endif %}
 
     {% if tax_pph > 0 %}
       <tr>
-        <th colspan="6" class="text-end">
-          PPH Amount
-        </th>
+        <th colspan="6" class="text-end">PPH Amount</th>
         <th class="text-end nowrap">{{ tax_pph|indo_number }}</th>
       </tr>
     {% endif %}
@@ -115,18 +142,27 @@
   </div>
 {% endif %}
 
-{# ✅ Signature (from context: so_signer) #}
-{% if so_signer %}
-  <div style="margin-top: 10mm;">
-    <table style="width: 100%;">
+{# ✅ Signature (same vars as quotation: signature_name/title/image) #}
+{% if signature_name or signature_image %}
+  <div style="margin-top: 10mm; page-break-inside: avoid;">
+    <table style="width:100%;">
       <tr>
-        <td style="width: 55%;"></td>
-        <td style="width: 45%; text-align: center;">
+        <td style="width:55%;"></td>
+        <td style="width:45%; text-align:center;">
           <div>Approved By</div>
-          <div style="height: 80px;"></div>
-          <strong>
-            {{ so_signer.get_full_name|default:so_signer.username }}
-          </strong>
+
+          <div style="height: 22mm; margin-top: 2mm;">
+            {% if signature_image %}
+              <img src="{{ signature_image.url }}" style="height:60px; object-fit:contain;">
+            {% endif %}
+          </div>
+
+          {% if signature_name %}
+            <div style="font-weight:700;">{{ signature_name }}</div>
+          {% endif %}
+          {% if signature_title %}
+            <div style="font-size:10px;">{{ signature_title }}</div>
+          {% endif %}
         </td>
       </tr>
     </table>

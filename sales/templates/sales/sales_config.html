@@ -13,7 +13,7 @@
 
       <form method="post" novalidate id="sales-settings-form">
         {% csrf_token %}
-
+        {{ form.media }}
         <div class="card-body">
           {% if form.non_field_errors %}
             <div class="alert alert-danger py-2">{{ form.non_field_errors }}</div>
@@ -179,7 +179,7 @@
 document.addEventListener("DOMContentLoaded", function () {
   // TinyMCE: keep SAME config as before, only extend selector
   tinymce.init({
-    selector: "#id_customer_note, #id_term_conditions, #id_vendor_note, #id_service_order_term_conditions",
+    //selector: "#id_customer_note, #id_term_conditions, #id_vendor_note, #id_service_order_term_conditions",
     height: 380,
     menubar: false,
     plugins: "lists link table code autoresize",

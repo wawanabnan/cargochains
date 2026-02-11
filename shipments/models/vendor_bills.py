@@ -4,7 +4,7 @@ from django.utils import timezone
 
 from partners.models import Partner
 from core.models.currencies import Currency
-from shipments.models.vendor_bookings import VendorBooking  # kalau memang ada
+from work_orders.models.vendor_bookings import VendorBooking  # kalau memang ada
 from core.models.taxes import Tax
 
 class VendorBill(models.Model):

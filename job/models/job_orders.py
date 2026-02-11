@@ -20,6 +20,7 @@ from django.utils.safestring import mark_safe
 from geo.models import Location
 from django.db import transaction
 from django.utils import formats
+from django_summernote.fields import SummernoteTextField
 
 
 class JobOrderQuerySet(models.QuerySet):
@@ -93,7 +94,7 @@ class JobOrder(TimeStampedModel):
         blank=True,
         help_text="Goods or matrial package and dimensions",
     )
-    customer_note = models.TextField(
+    customer_note = SummernoteTextField(
        
         blank=True,
         verbose_name="Customer Notes",
@@ -106,7 +107,7 @@ class JobOrder(TimeStampedModel):
         help_text="Types your service level agreements."
     )
 
-    term_conditions = models.TextField(blank=True)
+    term_conditions = SummernoteTextField(blank=True)
     
     quantity = models.DecimalField(
         max_digits=10,

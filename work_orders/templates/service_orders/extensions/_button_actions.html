@@ -4,6 +4,20 @@
 
   <!-- LEFT: Navigation -->
   <div class="d-flex flex-wrap gap-2 align-items-center">
+
+     <!-- RIGHT: Actions -->
+     <a class="btn btn-outline-primary btn-sm" target="_blank"
+        href="{% url 'work_orders:service_order_print' vb.id %}">
+        Print Preview
+      </a>
+
+      <a class="btn btn-outline-secondary btn-sm" target="_blank"
+        href="{% url 'work_orders:service_order_pdf' vb.id %}">
+        PDF
+      </a>
+
+
+
     <a class="btn btn-outline-secondary btn-sm"
        href="{% url 'work_orders:service_order_list' %}">
       Back
