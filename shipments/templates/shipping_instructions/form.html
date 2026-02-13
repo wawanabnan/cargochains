@@ -1,0 +1,270 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="row align-items-center">
+      <div class="col-sm-7">
+        <h3 class="m-0">Edit Shipping Instruction</h3>
+        <div class="text-muted small">
+          <span class="fw-semibold">{{ doc.document_no }}</span>
+          • {{ doc.letter_date }}
+          • Status:
+          {% if doc.status == "CANCELLED" %}
+            <span class="badge text-bg-danger">CANCELLED</span>
+          {% elif doc.status == "ISSUED" %}
+            <span class="badge text-bg-success">ISSUED</span>
+          {% else %}
+            <span class="badge text-bg-secondary">DRAFT</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="col-sm-5 text-end">
+
+  <a href="{% url 'shipments:si_list' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left"></i> List
+  </a>
+
+  {% if doc.status == "DRAFT" %}
+    <form method="post" action="{% url 'shipments:si_issue' doc.id %}" class="d-inline">
+      {% csrf_token %}
+      <button class="btn btn-success btn-sm">
+        <i class="bi bi-check-circle"></i> Issue
+      </button>
+    </form>
+  {% endif %}
+
+  {% if doc.status != "CANCELLED" %}
+    <form method="post" action="{% url 'shipments:si_cancel' doc.id %}" class="d-inline">
+      {% csrf_token %}
+      <button class="btn btn-danger btn-sm"
+              onclick="return confirm('Cancel Shipping Instruction?')">
+        <i class="bi bi-x-circle"></i> Cancel
+      </button>
+    </form>
+  {% endif %}
+ 
+
+  {% if doc.status != "CANCELLED" %}
+    <button form="si-form" type="submit" class="btn btn-primary btn-sm">
+      <i class="bi bi-save"></i> Save
+    </button>
+  {% endif %}
+
+</div>
+
+
+
+    </div>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+
+    {% if doc.status == "CANCELLED" %}
+      <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i>
+        Document CANCELLED. Read-only.
+      </div>
+    {% endif %}
+
+    <form id="si-form" method="post" novalidate>
+      {% csrf_token %}
+
+      {# global form errors #}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+      {% if sea_form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ sea_form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <div class="row g-3">
+
+        <!-- LEFT: Header -->
+        <div class="col-lg-6">
+          <div class="card">
+            <div class="card-header">
+              <strong>Header</strong>
+            </div>
+            <div class="card-body">
+
+              <div class="row g-3">
+
+                <div class="col-md-6">
+                  <label class="form-label">Letter Date</label>
+                  {{ form.letter_date }}
+                  {% if form.letter_date.errors %}
+                    <div class="text-danger small">{{ form.letter_date.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Status</label>
+                  {{ form.status }}
+                  {% if form.status.errors %}
+                    <div class="text-danger small">{{ form.status.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Shipper Name</label>
+                  {{ form.shipper_name }}
+                  {% if form.shipper_name.errors %}
+                    <div class="text-danger small">{{ form.shipper_name.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Shipper Address</label>
+                  {{ form.shipper_address }}
+                  {% if form.shipper_address.errors %}
+                    <div class="text-danger small">{{ form.shipper_address.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Customer Name</label>
+                  {{ form.customer_name }}
+                  {% if form.customer_name.errors %}
+                    <div class="text-danger small">{{ form.customer_name.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Customer Address</label>
+                  {{ form.customer_address }}
+                  {% if form.customer_address.errors %}
+                    <div class="text-danger small">{{ form.customer_address.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Reference No</label>
+                  {{ form.reference_no }}
+                  {% if form.reference_no.errors %}
+                    <div class="text-danger small">{{ form.reference_no.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: SEA Detail -->
+        <div class="col-lg-6">
+          <div class="card">
+            <div class="card-header">
+              <strong>SEA Detail</strong>
+            </div>
+            <div class="card-body">
+
+              <div class="row g-3">
+
+                <div class="col-md-6">
+                  <label class="form-label">Carrier Name</label>
+                  {{ sea_form.carrier_name }}
+                  {% if sea_form.carrier_name.errors %}
+                    <div class="text-danger small">{{ sea_form.carrier_name.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Vessel Name</label>
+                  {{ sea_form.vessel_name }}
+                  {% if sea_form.vessel_name.errors %}
+                    <div class="text-danger small">{{ sea_form.vessel_name.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Voyage No</label>
+                  {{ sea_form.voyage_no }}
+                  {% if sea_form.voyage_no.errors %}
+                    <div class="text-danger small">{{ sea_form.voyage_no.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">ETD</label>
+                  {{ sea_form.etd }}
+                  {% if sea_form.etd.errors %}
+                    <div class="text-danger small">{{ sea_form.etd.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">ETA</label>
+                  {{ sea_form.eta }}
+                  {% if sea_form.eta.errors %}
+                    <div class="text-danger small">{{ sea_form.eta.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-12">
+                  <label class="form-label">POL</label>
+                  {{ sea_form.pol }}
+                  {% if sea_form.pol.errors %}
+                    <div class="text-danger small">{{ sea_form.pol.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-12">
+                  <label class="form-label">POD</label>
+                  {{ sea_form.pod }}
+                  {% if sea_form.pod.errors %}
+                    <div class="text-danger small">{{ sea_form.pod.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-12">
+                  <label class="form-label">Final Destination</label>
+                  {{ sea_form.final_destination }}
+                  {% if sea_form.final_destination.errors %}
+                    <div class="text-danger small">{{ sea_form.final_destination.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Special Instructions</label>
+                  {{ sea_form.special_instructions }}
+                  {% if sea_form.special_instructions.errors %}
+                    <div class="text-danger small">{{ sea_form.special_instructions.errors|striptags }}</div>
+                  {% endif %}
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer actions -->
+      <div class="mt-3 d-flex gap-2">
+        <a href="{% url 'shipments:si_detail' doc.id %}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i> Back
+        </a>
+
+        {% if doc.status != "CANCELLED" %}
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save"></i> Save
+          </button>
+        {% endif %}
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}

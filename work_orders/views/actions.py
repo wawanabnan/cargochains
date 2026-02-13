@@ -167,6 +167,8 @@ class ServiceOrderConfirmVendorView(LoginRequiredMixin, View):
         messages.success(request, "Vendor confirmed ✅")
         return _redirect_update(vb.id)
 
+from django.utils import timezone
+from shipments.models.shipping_instruction import ShippingInstructionDocument
 
 class ServiceOrderCancelView(LoginRequiredMixin, View):
     def post(self, request, pk: int):
@@ -181,11 +183,22 @@ class ServiceOrderCancelView(LoginRequiredMixin, View):
             messages.error(request, "Cancel reason wajib diisi.")
             return _redirect_update(vb.id)
 
+        now = timezone.now()
+
         vb.status = VendorBooking.ST_CANCELLED
-        vb.cancelled_at = timezone.now()
+        vb.cancelled_at = now
         vb.cancelled_by = request.user
         vb.cancel_reason = reason
         vb.save(update_fields=["status", "cancelled_at", "cancelled_by", "cancel_reason"])
+
+        doc = getattr(vb, "shipping_instruction", None)
+        if doc and doc.status != ShippingInstructionDocument.Status.CANCELLED:
+            doc.status = ShippingInstructionDocument.Status.CANCELLED
+            doc.cancelled_at = now
+            doc.cancelled_by = request.user
+            doc.save(update_fields=["status", "cancelled_at", "cancelled_by"])
+            messages.info(request, "Shipping Instruction ikut di-cancel.")
+
         messages.warning(request, "Service Order cancelled ⚠️")
         return _redirect_update(vb.id, tab="tab-attachments")
 
@@ -206,6 +219,29 @@ class ServiceOrderMarkDoneView(LoginRequiredMixin, View):
         return _redirect_update(vb.id)
 
 
+
+from django.http import HttpResponseForbidden
+class ServiceOrderOpenSeaSIView(LoginRequiredMixin, View):
+    """
+    Open SEA Shipping Instruction for a Service Order.
+    - Guard: vb.service_order_mode == SEA
+    - Guard: vb.status in (CONFIRMED, DONE)
+    - Action: create doc (idempotent) then redirect to SI detail
+    """
+
+    def get(self, request, *args, **kwargs):
+        vb = get_object_or_404(VendorBooking, pk=kwargs["pk"])
+
+        if vb.service_order_mode != "SEA":
+            return HttpResponseForbidden("Service Order mode is not SEA.")
+        if vb.status not in ("CONFIRMED", "DONE"):
+            return HttpResponseForbidden("Shipping Instruction is available only after CONFIRMED.")
+
+        doc, _created = _generate_sea_si_for_so(vb, issued_by=request.user)
+
+        # TODO: sesuaikan URL detail doc kamu
+        # Contoh:
+        return redirect("shipments:shipping_instruction_document_detail", pk=doc.pk)
 
 
 def _generate_sea_si_for_so(vb: VendorBooking, issued_by):
@@ -241,4 +277,3 @@ def _generate_sea_si_for_so(vb: VendorBooking, issued_by):
 
     SeaShippingInstructionDetail.objects.get_or_create(document=doc)
     return doc, True
-

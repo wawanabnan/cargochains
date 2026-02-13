@@ -2,7 +2,7 @@
   <a href="#" class="nav-link">
     <i class="nav-icon bi bi-bag-check"></i>
     <p>
-      Sales
+      Job Files
       <i class="nav-arrow bi bi-chevron-right"></i>
     </p>
   </a>
@@ -29,7 +29,7 @@
     <li class="nav-item">
       <a href="#" class="nav-link">
         <i class="nav-icon bi bi-cash-stack"></i>
-        <p>Costing</p>
+        <p>Job Cost</p>
       </a>
     </li>
 
@@ -45,6 +45,13 @@
         <p>Customers</p>
       </a>
     </li>
+     <li class="nav-item">
+      <a href="{% url 'sales:vendor_list' %}" class="nav-link">
+        <i class="nav-icon bi bi-building-check"></i>
+        <p>Vendor</p>
+      </a>
+    </li>
+    
       <li class="nav-item">
   <a href="{% url 'core:exchange_rate_list' %}"
      class="nav-link {% if request.resolver_match.url_name and 'settings_exchange_rate' in request.resolver_match.url_name %}active{% endif %}">

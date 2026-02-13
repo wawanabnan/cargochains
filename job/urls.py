@@ -4,7 +4,7 @@ from job.views.job_cost_types import CostTypeListView, CostTypeCreateView, CostT
 
 
 from job.views.action import (
-    job_confirm, job_hold, job_resume, job_complete, job_cancel
+    job_confirm, job_start_progress, job_hold, job_resume, job_complete, job_cancel
 )
 
 
@@ -70,11 +70,12 @@ urlpatterns = [
 
 
     path("job-order/<int:pk>/confirm/", job_confirm, name="job_confirm"),
+    path("job/<int:pk>/start-progress/", job_start_progress, name="job_start_progress"),
     path("job-order/<int:pk>/hold/", job_hold, name="job_hold"),
     path("job-order/<int:pk>/resume/", job_resume, name="job_resume"),
     path("job-order/<int:pk>/complete/", job_complete, name="job_complete"),
     path("job-order/<int:pk>/cancel/", job_cancel, name="job_cancel"),
-       
+
     path("reports/job/", sales_report, name="sales_report"),
     path("reports/job/pdf/", sales_report_pdf, name="sales_report_pdf"),
          
@@ -132,3 +133,4 @@ from job.views.quote_email import QuotationSendEmailView
 urlpatterns += [
     path("quotations/<int:pk>/send-email/", QuotationSendEmailView.as_view(), name="quotation_send_email"),
 ]
+

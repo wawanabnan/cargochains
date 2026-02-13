@@ -1,0 +1,147 @@
+{% extends "adminbase.html" %}
+{% block content %}
+
+<div class="app-content-header">
+  <div class="container-fluid">
+    <div class="row align-items-center">
+      <div class="col-sm-6">
+        <h3 class="m-0">Shipping Instruction</h3>
+        <div class="text-muted small">List dokumen Shipping Instruction</div>
+      </div>
+      <div class="col-sm-6 text-end">
+        {# no create button #}
+        <a href="{% url 'work_orders:service_order_list' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left"></i> Service Orders
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="card">
+      <div class="card-header">
+        <form method="get" class="row g-2 align-items-center">
+          <div class="col-md-4">
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="text" name="q" class="form-control"
+                     placeholder="Search document no..."
+                     value="{{ request.GET.q }}">
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <select name="status" class="form-select">
+              <option value="">All Status</option>
+              <option value="DRAFT" {% if request.GET.status == "DRAFT" %}selected{% endif %}>DRAFT</option>
+              <option value="ISSUED" {% if request.GET.status == "ISSUED" %}selected{% endif %}>ISSUED</option>
+              <option value="CANCELLED" {% if request.GET.status == "CANCELLED" %}selected{% endif %}>CANCELLED</option>
+            </select>
+          </div>
+
+          <div class="col-md-5 text-end">
+            <button class="btn btn-primary btn-sm" type="submit">
+              <i class="bi bi-funnel"></i> Filter
+            </button>
+            <a class="btn btn-outline-secondary btn-sm" href="{% url 'shipments:si_list' %}">
+              <i class="bi bi-x-circle"></i> Reset
+            </a>
+          </div>
+        </form>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-striped table-sm mb-0">
+            <thead>
+              <tr>
+                <th>Doc No</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Job Order</th>
+                <th>Service Order</th>
+                <th class="text-end" style="width: 140px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for doc in items %}
+                <tr>
+                  <td class="fw-semibold">{{ doc.document_no }}</td>
+                  <td>{{ doc.letter_date }}</td>
+                  <td>
+                    {% if doc.status == "CANCELLED" %}
+                      <span class="badge text-bg-danger">CANCELLED</span>
+                    {% elif doc.status == "ISSUED" %}
+                      <span class="badge text-bg-success">ISSUED</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary">DRAFT</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ doc.job_order }}</td>
+                  <td>
+                    {% if doc.vendor_booking %}
+                      {{ doc.vendor_booking.vb_number }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    <a href="{% url 'shipments:si_detail' doc.id %}" class="btn btn-outline-primary btn-sm">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                    {% if doc.status != "CANCELLED" %}
+                      <a href="{% url 'shipments:si_update' doc.id %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center text-muted py-4">
+                    No Shipping Instruction found.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {% if is_paginated %}
+      <div class="card-footer">
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ request.GET.q }}&status={{ request.GET.status }}">Prev</a>
+              </li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">Prev</span></li>
+            {% endif %}
+
+            <li class="page-item disabled">
+              <span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+            </li>
+
+            {% if page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ request.GET.q }}&status={{ request.GET.status }}">Next</a>
+              </li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">Next</span></li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+      {% endif %}
+
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

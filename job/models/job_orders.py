@@ -237,6 +237,7 @@ class JobOrder(TimeStampedModel):
 
     ST_QUOTATION = "QUOTATION"  
     ST_DRAFT = "DRAFT"
+    ST_IN_COSTING = "IN_COSTING"
     ST_IN_PROGRESS= "IN_PROGRESS"
     ST_ON_HOLD = "ON_HOLD"
     ST_CANCELLED = "CANCELLED"
@@ -245,6 +246,7 @@ class JobOrder(TimeStampedModel):
     STATUS_CHOICES = [
         (ST_QUOTATION, "Quotation"),
         (ST_DRAFT, "Draft"),
+        (ST_IN_COSTING, "In Costing"),
         (ST_IN_PROGRESS, "In Progress"),
         (ST_ON_HOLD, "On Hold"),
         (ST_CANCELLED, "Cancelled"),
@@ -294,6 +296,7 @@ class JobOrder(TimeStampedModel):
 
     STATUS_COLORS = {
         ST_DRAFT: "secondary",
+        ST_IN_COSTING: "primary",
         ST_IN_PROGRESS: "info",
         ST_ON_HOLD: "warning",
         ST_COMPLETED: "success",
@@ -311,7 +314,20 @@ class JobOrder(TimeStampedModel):
             f'<span class="badge text-bg-{color}">{label}</span>'
         )
     
+    @property
+    def job_status_label_print (self):
+        label = self.get_status_display()
+        return mark_safe(
+            f'<span class="label-print">{label}</span>'
+        )
     
+    @property
+    def is_cost_locked(self):
+        return self.status in {
+            self.ST_IN_PROGRESS,
+            self.ST_COMPLETED,
+            self.ST_CANCELLED,
+        }
     # --- helpers transisi (opsional tapi saya rekomendasikan) ---
     def can_confirm(self):
         return self.status == self.ST_DRAFT
@@ -319,13 +335,26 @@ class JobOrder(TimeStampedModel):
     def confirm(self, user):
         if not self.can_confirm():
             raise ValueError("Job is not in DRAFT.")
-        self.status = self.ST_IN_PROGRESS
+        self.status = self.ST_IN_COSTING
         self.confirmed_at = timezone.now()
         self.confirmed_by = user
 
         # reset hold data (just in case)
         self.hold_at = None
         self.hold_reason = ""
+
+    def can_start_progress(self):
+        return self.status == self.ST_IN_COSTING
+
+    def start_progress(self, user):
+        if not self.can_start_progress():
+            raise ValueError("Job is not in IN_COSTING.")
+        self.status = self.ST_IN_PROGRESS
+
+        # reset hold data (just in case)
+        self.hold_at = None
+        self.hold_reason = ""
+
 
     def can_hold(self):
         return self.status == self.ST_IN_PROGRESS
@@ -364,6 +393,8 @@ class JobOrder(TimeStampedModel):
         self.cancelled_at = timezone.now()
         self.cancelled_by = user
         self.cancel_reason = reason.strip()
+
+
 
     def complete(self, user):
     # 1️⃣ hanya boleh complete dari IN_PROGRESS

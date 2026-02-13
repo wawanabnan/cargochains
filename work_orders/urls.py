@@ -54,6 +54,7 @@ from work_orders.views.actions import (
     ServiceOrderConfirmVendorView,
     ServiceOrderCancelView,
     ServiceOrderMarkDoneView,
+    ServiceOrderOpenSeaSIView
 )
 
 urlpatterns += [
@@ -64,7 +65,8 @@ urlpatterns += [
     path("service-orders/<int:pk>/mark-sent/", ServiceOrderMarkSentView.as_view(), name="service_order_mark_sent"),
     path("service-orders/<int:pk>/confirm-vendor/", ServiceOrderConfirmVendorView.as_view(), name="service_order_confirm_vendor"),
     path("service-orders/<int:pk>/cancel/", ServiceOrderCancelView.as_view(), name="service_order_cancel"),
-    path("service-orders/<int:pk>/done/", ServiceOrderMarkDoneView.as_view(), name="service_order_mark_done"),
+    path("service-orders/<int:pk>/sea-si/",ServiceOrderOpenSeaSIView.as_view(),name="service_order_open_sea_si"),
+    path("service-orders/<int:pk>/mark-done/",ServiceOrderMarkDoneView.as_view(),name="service_order_mark_done"),
 ]
 
 

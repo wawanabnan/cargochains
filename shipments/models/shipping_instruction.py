@@ -9,12 +9,25 @@ from work_orders.models.vendor_bookings import VendorBooking
 from core.utils.numbering import get_next_number
 
 class ShippingInstructionDocument(models.Model):
-    class LetterType(models.TextChoices):
-        SEA_SI = "SEA_SI", "Sea Shipping Instruction"
-        # nanti tambah:
-        # AIR_SLI = "AIR_SLI", "Air SLI"
-        # TRUCK_TO = "TRUCK_TO", "Truck Transport Order"
+    class Status(models.TextChoices):
+        DRAFT = "DRAFT", "Draft"
+        ISSUED = "ISSUED", "Issued"
+        CANCELLED = "CANCELLED", "Cancelled"
 
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.DRAFT,
+        db_index=True,
+    )
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
     vendor_booking = models.OneToOneField(
         "work_orders.VendorBooking",
         on_delete=models.PROTECT,
@@ -28,12 +41,7 @@ class ShippingInstructionDocument(models.Model):
         related_name="job_order_documents",
     )
 
-    letter_type = models.CharField(
-        max_length=20,
-        choices=LetterType.choices,
-        default=LetterType.SEA_SI,
-    )
-
+  
     # numbering per type: SI001, SI002...
     sequence_no = models.PositiveIntegerField()
     document_no = models.CharField(max_length=30, unique=True)
@@ -59,34 +67,11 @@ class ShippingInstructionDocument(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(
-                fields=["letter_type", "sequence_no"],
-                name="uniq_doc_sequence_per_letter_type",
-            )
-        ]
+        models.UniqueConstraint(fields=["sequence_no"], name="uniq_si_sequence_no"),
+    ]
 
-    @staticmethod
-    def next_sequence(letter_type: str) -> int:
-        last = (
-            ShippingInstructionDocument.objects
-            .filter(letter_type=letter_type)
-            .aggregate(m=Max("sequence_no"))
-            .get("m")
-        )
-        return (last or 0) + 1
-
-    @staticmethod
-    def format_document_no(letter_type: str, seq: int) -> str:
-        prefix_map = {
-            ShippingInstructionDocument.LetterType.SEA_SI: "SI",
-            # nanti:
-            # AIR_SLI: "SLI",
-            # TRUCK_TO: "TO",
-        }
-        prefix = prefix_map.get(letter_type, "DOC")
-        return f"{prefix}{seq:03d}"
-
-
+   
+    
 
     def save(self, *args, **kwargs):
         if not self.document_no:

@@ -10,72 +10,15 @@
     return isNaN(n) ? 0 : n;
   }
 
-  function pick(row, prefix, suffix) {
-    return (
-      row.querySelector(`input[name^="${prefix}-"][name$="-${suffix}"]`) ||
-      row.querySelector(`input[name$="-${suffix}"]`)
-    );
-  }
-
-  function calcAmount2(row, prefix) {
-    const qtyEl = pick(row, prefix, "qty");
-    const priceEl = pick(row, prefix, "price");
-    const rateEl = pick(row, prefix, "rate");
-    const estEl = pick(row, prefix, "est_amount");
-
-    if (!qtyEl || !priceEl || !rateEl || !estEl) return;
-
-    const qty = parseID(qtyEl.value);
-    const price = parseID(priceEl.value);
-    const rate = parseID(rateEl.value) || 1;
-
-    const amount = qty * price * rate;
-
-
-    estEl.value = fmtID(amount);
-    estEl.dispatchEvent(new Event("change", { bubbles: true }));
-    if (estEl) {
-      estEl.value = fmtID(amount);
-
-      // ✅ bersihkan merah kalau sudah valid
-      if (amount > 0) estEl.classList.remove("is-invalid");
-    }
-
-  }
-
-  function calcAmount(row) {
-    const qtyEl   = row.querySelector('input[name$="-qty"]');
-    const priceEl = row.querySelector('input[name$="-price"]');
-    const rateEl  = row.querySelector('input[name$="-rate"]');
-    const estEl   = row.querySelector('input[name$="-est_amount"]');
-
-    if (!qtyEl || !priceEl || !rateEl || !estEl) return;
-
-    const qty   = parseID(qtyEl.value);      // aman untuk "1.00" dan "1,00"
-    const price = parseID(priceEl.value);    // "10.000,00"
-    const rate  = parseID(rateEl.value);     // "1,00"
-
-    const amount = qty * price * rate;
-    estEl.value = fmtID(amount);
-
-    // bersihkan merah kalau sudah valid
-    if (amount > 0) estEl.classList.remove("is-invalid");
-
-    updateEstimatedTotal();  // <--- penting
-  }
-
-
-
-
   function fmtID(n) {
-    return Number(n || 0).toLocaleString("id-ID", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+    const num = Number(n || 0);
+    if (!isFinite(num)) return "0,00";
+
+    const fixed = num.toFixed(2);
+    let [intPart, decPart] = fixed.split(".");
+    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return `${intPart},${decPart}`;
   }
-
-
-  
 
   function detectPrefix() {
     const el = document.querySelector('input[id^="id_"][id$="-TOTAL_FORMS"]');
@@ -88,48 +31,43 @@
     if (touched) touched.value = "1";
   }
 
+  function pick(row, prefix, suffix) {
+    return (
+      row.querySelector(`input[name^="${prefix}-"][name$="-${suffix}"]`) ||
+      row.querySelector(`select[name^="${prefix}-"][name$="-${suffix}"]`) ||
+      row.querySelector(`input[name$="-${suffix}"]`) ||
+      row.querySelector(`select[name$="-${suffix}"]`)
+    );
+  }
+
   // ---------- COST TYPE META (DB-driven) ----------
   function getCostTypeMeta(costTypeId) {
     const map = window.COST_TYPE_META || {};
     return map[String(costTypeId)] || null;
   }
 
-  function vendorModeFromCostType2(selectEl) {
-    // default aman: jika tidak ada meta, anggap butuh vendor
+  function vendorModeFromCostType(selectEl) {
     if (!selectEl) return true;
+
+    // 1) prioritas data-requires-vendor dari option
+    const opt =
+      selectEl.options && selectEl.selectedIndex >= 0
+        ? selectEl.options[selectEl.selectedIndex]
+        : null;
+
+    const attr = opt ? opt.getAttribute("data-requires-vendor") : null;
+    if (attr === "1") return true;
+    if (attr === "0") return false;
+
+    // 2) fallback meta map
     const ctId = selectEl.value;
     if (!ctId) return true;
 
     const meta = getCostTypeMeta(ctId);
     if (!meta) return true;
 
-    return !!meta.requires_vendor; // true => vendor mode, false => internal note mode
+    return !!meta.requires_vendor;
   }
-
-function vendorModeFromCostType(selectEl) {
-  if (!selectEl) return true;
-
-  // 1) prioritas: data-requires-vendor dari <option>
-  const opt = selectEl.options && selectEl.selectedIndex >= 0
-    ? selectEl.options[selectEl.selectedIndex]
-    : null;
-
-  const attr = opt ? opt.getAttribute("data-requires-vendor") : null;
-  if (attr === "1") return true;
-  if (attr === "0") return false;
-
-  // 2) fallback: COST_TYPE_META (kalau tersedia)
-  const ctId = selectEl.value;
-  if (!ctId) return true;
-
-  const meta = getCostTypeMeta(ctId);
-  if (!meta) return true;
-
-  return !!meta.requires_vendor;
-}
-
-
-
 
   function applyCostTypeMode(row, prefix) {
     const ct =
@@ -154,10 +92,11 @@ function vendorModeFromCostType(selectEl) {
       nw.classList.remove("d-none");
     }
 
-    // ✅ OVERRIDE: kalau field invalid, paksa tampil biar merah kelihatan
+    // paksa tampil kalau invalid (biar merah keliatan)
     const vEl = row.querySelector('select[name$="-vendor"]');
-    const nEl = row.querySelector('input[name$="-internal_note"], textarea[name$="-internal_note"]');
-
+    const nEl = row.querySelector(
+      'input[name$="-internal_note"], textarea[name$="-internal_note"]'
+    );
     if (vEl && vEl.classList.contains("is-invalid")) vw.classList.remove("d-none");
     if (nEl && nEl.classList.contains("is-invalid")) nw.classList.remove("d-none");
   }
@@ -178,40 +117,219 @@ function vendorModeFromCostType(selectEl) {
     format();
   }
 
-
-//------------ATTACH ROW-----------------------------------------------------------------------//
-
-function attachRow(row, prefix) {
-
-  // ===== ambil element SATU KALI =====
-  const qtyEl   = row.querySelector('input[name$="-qty"]');
-  const priceEl = row.querySelector('input[name$="-price"]');
-  const rateEl  = row.querySelector('input[name$="-rate"]');
-  const curEl   = row.querySelector('select[name$="-currency"]');
-
-  const estEl = row.querySelector('input[name$="-est_amount"]');
-  const actEl = row.querySelector('input[name$="-actual_amount"]');
-
-  bindQtyInput(qtyEl);
-  bindMoneyInput(priceEl);
-  bindMoneyInput(rateEl);
-  bindMoneyInput(estEl);
-  bindMoneyInput(actEl);
-
-  // ===== realtime calc =====
-  [qtyEl, priceEl, rateEl].forEach((el) => {
-    if (!el || el.dataset.calcInit) return;
-    el.dataset.calcInit = "1";
-
-    el.addEventListener("input", function () {
-      markTouched();
-      calcAmount(row);
+  function bindQtyInput(el) {
+    if (!el || el.dataset.qtyInit) return;
+    el.dataset.qtyInit = "1";
+    el.addEventListener("blur", function () {
+      const n = parseID(el.value);
+      el.value = fmtID(n);
     });
+  }
+
+  // ---------- Calc amount & total ----------
+  function calcAmount(row, prefix) {
+    const qtyEl = pick(row, prefix, "qty");
+    const priceEl = pick(row, prefix, "price");
+    const rateEl = pick(row, prefix, "rate");
+    const estEl = pick(row, prefix, "est_amount");
+
+    if (!qtyEl || !priceEl || !rateEl || !estEl) return;
+
+    const qty = parseID(qtyEl.value);
+    const price = parseID(priceEl.value);
+    const rate = parseID(rateEl.value) || 1;
+
+    const amount = qty * price * rate;
+    estEl.value = fmtID(amount);
+
+    if (amount > 0) estEl.classList.remove("is-invalid");
+
+    updateEstimatedTotal();
+  }
+
+  function updateEstimatedTotal() {
+    const out = document.getElementById("jobcost-est-total");
+    if (!out) return;
+
+    let total = 0;
+
+    document.querySelectorAll("#jobcost-body tr.jobcost-row").forEach((row) => {
+      // skip deleted/hidden
+      const del = row.querySelector('input[name$="-DELETE"]');
+      if (del && del.checked) return;
+      if (row.classList.contains("d-none")) return;
+
+      const est = row.querySelector('input[name$="-est_amount"]');
+      total += parseID(est ? est.value : 0);
+    });
+
+    out.textContent = fmtID(total);
+  }
+
+  // ---------- Expand/Collapse Detail Row ----------
+  function getDetailRow(mainRow) {
+    const next = mainRow ? mainRow.nextElementSibling : null;
+    if (next && next.classList && next.classList.contains("jobcost-detail-row")) return next;
+    return null;
+  }
+
+  function refreshCostDetail(mainRow) {
+    const detailRow = getDetailRow(mainRow);
+    if (!detailRow) return;
+
+    // qty (ambil dari input agar realtime)
+    let qty = 0;
+    const qtyInput = mainRow.querySelector('input[name$="-qty"]');
+    if (qtyInput) qty = Number(parseID(qtyInput.value || "0"));
+    else qty = Number(mainRow.dataset.qty || 0);
+
+    const allocated = Number(mainRow.dataset.allocated || 0);
+    const remaining = Math.max(qty - allocated, 0);
+
+    const elAlloc = detailRow.querySelector(".js-alloc-qty");
+    const elRem = detailRow.querySelector(".js-rem-qty");
+    const badge = detailRow.querySelector(".js-so-badge");
+    const btnSO = detailRow.querySelector(".js-create-so");
+    // =====================
+    // Amount to SO (qty x price)
+    // =====================
+    const priceInput = mainRow.querySelector('input[name$="-price"]');
+    const curSelect  = mainRow.querySelector('select[name$="-currency"]');
+
+    const price = priceInput ? Number(parseID(priceInput.value || "0")) : 0;
+    const ccyText = curSelect ? (curSelect.options[curSelect.selectedIndex]?.text || "") : "";
+
+    const soAmount = qty * price; // selalu original currency
+
+    const elSoAmt = detailRow.querySelector(".js-so-amt");
+    const elSoCcy = detailRow.querySelector(".js-so-ccy");
+
+    if (elSoAmt) elSoAmt.textContent = fmtID(soAmount);
+    if (elSoCcy) elSoCcy.textContent = ccyText || "";
+
+
+
+    if (elAlloc) elAlloc.textContent = fmtID(allocated);
+    if (elRem) elRem.textContent = fmtID(remaining);
+
+    if (elAlloc) {
+      elAlloc.textContent = fmtID(allocated);
+
+      elAlloc.classList.remove("text-success","text-primary","text-muted");
+
+      if (allocated <= 0) {
+        elAlloc.classList.add("text-muted");
+      } else if (remaining <= 0) {
+        elAlloc.classList.add("text-success");
+      } else {
+        elAlloc.classList.add("text-primary");
+      }
+    }
+
+    if (badge) {
+      if (qty > 0 && remaining <= 0) {
+        badge.className = "badge text-bg-success js-so-badge";
+        badge.textContent = "Fully SO";
+      } else if (allocated > 0 && remaining > 0) {
+        badge.className = "badge text-bg-warning js-so-badge";
+        badge.textContent = "Partial";
+      } else {
+        badge.className = "badge text-bg-secondary js-so-badge";
+        badge.textContent = "Not SO";
+      }
+    }
+
+    if (btnSO) btnSO.classList.toggle("d-none", !(remaining > 0));
+
+    // cache
+    mainRow.dataset.qty = String(qty);
+  }
+
+  function bindCostExpandCollapse(container) {
+    if (!container) return;
+    if (container.dataset.costExpandBound === "1") return; // anti double bind
+    container.dataset.costExpandBound = "1";
+
+    container.addEventListener("click", function (e) {
+      const btn = e.target.closest(".js-toggle-cost-detail");
+      if (!btn) return;
+
+      const mainRow = btn.closest("tr.jobcost-row");
+      if (!mainRow) return;
+
+      const detailRow = getDetailRow(mainRow);
+      if (!detailRow) return;
+
+      refreshCostDetail(mainRow);
+
+      const opening = detailRow.classList.contains("d-none");
+      detailRow.classList.toggle("d-none", !opening);
+
+      btn.setAttribute("aria-expanded", opening ? "true" : "false");
+      const chev = btn.querySelector(".js-chevron");
+      if (chev) chev.textContent = opening ? "▼" : "▶";
+    });
+
+    container.addEventListener("input", function (e) {
+      const qtyInput = e.target.closest('input[name$="-qty"]');
+      if (!qtyInput) return;
+
+      const mainRow = qtyInput.closest("tr.jobcost-row");
+      if (!mainRow) return;
+
+      const detailRow = getDetailRow(mainRow);
+      if (!detailRow || detailRow.classList.contains("d-none")) return;
+
+      refreshCostDetail(mainRow);
+    });
+  }
+
+  // ---------- Readonly lock ----------
+  function applyCostReadonly() {
+  const wrap = document.getElementById("jobcost-area");
+  if (!wrap) return;
+
+  const locked = wrap.dataset.costLocked === "1";
+
+  // disable hanya field input
+  wrap.querySelectorAll("input, select, textarea").forEach(el => {
+    el.disabled = locked;
   });
 
- 
-  // ===== currency → auto rate (no /core prefix) =====
+  // tombol expand tetap aktif
+  wrap.querySelectorAll(".js-toggle-cost-detail").forEach(btn => {
+    btn.disabled = false;
+  });
+}
 
+  // ---------- ATTACH ROW ----------
+  function attachRow(row, prefix) {
+    const qtyEl = row.querySelector('input[name$="-qty"]');
+    const priceEl = row.querySelector('input[name$="-price"]');
+    const rateEl = row.querySelector('input[name$="-rate"]');
+    const curEl = row.querySelector('select[name$="-currency"]');
+
+    const estEl = row.querySelector('input[name$="-est_amount"]');
+    const actEl = row.querySelector('input[name$="-actual_amount"]');
+
+    bindQtyInput(qtyEl);
+    bindMoneyInput(priceEl);
+    bindMoneyInput(rateEl);
+    bindMoneyInput(estEl);
+    bindMoneyInput(actEl);
+
+    // realtime calc
+    [qtyEl, priceEl, rateEl].forEach((el) => {
+      if (!el || el.dataset.calcInit) return;
+      el.dataset.calcInit = "1";
+
+      el.addEventListener("input", function () {
+        markTouched();
+        calcAmount(row, prefix);
+      });
+    });
+
+    // currency -> auto rate
     if (curEl && rateEl && !curEl.dataset.rateInit) {
       curEl.dataset.rateInit = "1";
 
@@ -231,11 +349,10 @@ function attachRow(row, prefix) {
           const data = await res.json();
           if (!data.ok || !data.rate_to_idr) return;
 
-          // rate_to_idr string "15650.000000" -> tampil 2 desimal indo
           rateEl.value = fmtID(parseFloat(data.rate_to_idr));
 
           markTouched();
-          calcAmount(row);
+          calcAmount(row, prefix);
           updateEstimatedTotal();
         } catch (e) {
           // silent
@@ -243,34 +360,25 @@ function attachRow(row, prefix) {
       });
     }
 
-
-
-  // ===== delete row =====
-  const btn = row.querySelector(".remove-row");
-  const del = row.querySelector('input[name$="-DELETE"]');
-
-  if (btn && del && !btn.dataset.delInit) {
-    btn.dataset.delInit = "1";
-    btn.addEventListener("click", function (e) {
-      e.preventDefault();
-      markTouched();
-      del.checked = true;
-      row.classList.add("d-none");
-      updateEstimatedTotal();
-    });
+    // initial
+    calcAmount(row, prefix);
+    updateEstimatedTotal();
   }
 
-  // initial calc
-  calcAmount(row);
-  updateEstimatedTotal();
-}
+  // ---------- REMOVE row (main + detail) ----------
+  function hideRowWithDetail(mainRow) {
+    const detail = getDetailRow(mainRow);
+    if (detail) detail.classList.add("d-none");
+    mainRow.classList.add("d-none");
+  }
 
+  function removeRowWithDetail(mainRow) {
+    const detail = getDetailRow(mainRow);
+    if (detail) detail.remove();
+    mainRow.remove();
+  }
 
-
-
-//------------END OF ATTACH ROW-----------//
-
-
+  // ---------- ADD NEW ROW (append main + detail) ----------
   function addNewRow() {
     const prefix = detectPrefix();
     const tbody = document.getElementById("jobcost-body");
@@ -278,22 +386,24 @@ function attachRow(row, prefix) {
     const totalForms = prefix ? document.getElementById(`id_${prefix}-TOTAL_FORMS`) : null;
     if (!prefix || !tbody || !tpl || !totalForms) return;
 
-    markTouched(); // ✅ add row dianggap perubahan
+    markTouched();
 
     const idx = parseInt(totalForms.value || "0", 10);
     const html = tpl.innerHTML.replace(/__prefix__/g, idx).trim();
 
     const wrap = document.createElement("tbody");
     wrap.innerHTML = html;
-    const row = wrap.querySelector("tr.jobcost-row") || wrap.querySelector("tr");
-    if (!row) return;
 
-    tbody.appendChild(row);
+    const rows = wrap.querySelectorAll("tr");
+    if (!rows || rows.length === 0) return;
+
+    // append ALL rows (main + detail)
+    rows.forEach((r) => tbody.appendChild(r));
+    const row = rows[0]; // main row
+
     totalForms.value = idx + 1;
 
-    // ✅ IMPORTANT:
-    // Paksa numeric default "0,00" agar Django menganggap form "changed"
-    // sehingga saat SAVE tanpa isi, formset tetap divalidasi dan row tidak hilang.
+    // default values
     const est = row.querySelector(`input[name="${prefix}-${idx}-est_amount"]`);
     const act = row.querySelector(`input[name="${prefix}-${idx}-actual_amount"]`);
     if (est) est.value = "0,00";
@@ -302,19 +412,22 @@ function attachRow(row, prefix) {
     const ct = row.querySelector(`select[name="${prefix}-${idx}-cost_type"]`);
     if (ct) ct.value = "";
 
-    // ✅ default baru: qty=1,00 price=0,00 rate=1,00
     const qty = row.querySelector(`input[name="${prefix}-${idx}-qty"]`);
     const price = row.querySelector(`input[name="${prefix}-${idx}-price"]`);
     const rate = row.querySelector(`input[name="${prefix}-${idx}-rate"]`);
 
-    if (qty) qty.value = "1.00";        // input type=number -> pakai dot
-    if (price) price.value = "0,00";    // money input -> format ID
-    if (rate) rate.value = "1,00";      // money input -> format ID
-
+    if (qty) qty.value = "1,00";
+    if (price) price.value = "0,00";
+    if (rate) rate.value = "1,00";
 
     attachRow(row, prefix);
-    calcAmount(row, prefix);
+    applyCostTypeMode(row, prefix);
 
+    // refresh detail row content if user opens it
+    row.dataset.qty = "1";
+    row.dataset.allocated = row.dataset.allocated || "0";
+
+    applyCostReadonly();
   }
 
   // ======================================================
@@ -332,14 +445,13 @@ function attachRow(row, prefix) {
     const totalForms = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
     if (!tbody || !tpl || !totalForms) return;
 
-    // init existing rows
-    //tbody.querySelectorAll("tr.jobcost-row").forEach((row) => attachRow(row, prefix));
+    // init existing main rows
     tbody.querySelectorAll("tr.jobcost-row").forEach((row) => {
       attachRow(row, prefix);
-      applyCostTypeMode(row, prefix); // ✅ WAJIB
+      applyCostTypeMode(row, prefix);
     });
 
-    // delegate change cost_type (bind sekali per tbody element)
+    // delegate change cost_type (bind sekali)
     if (!tbody.dataset.ctDelegateInit) {
       tbody.dataset.ctDelegateInit = "1";
       tbody.addEventListener("change", function (e) {
@@ -350,15 +462,51 @@ function attachRow(row, prefix) {
           el.matches(`select[name^="${prefix}-"][name$="-cost_type"]`) ||
           el.matches('select[name$="-cost_type"]')
         ) {
-          const row = el.closest(".jobcost-row");
+          const row = el.closest("tr.jobcost-row");
           if (row) applyCostTypeMode(row, prefix);
         }
       });
     }
+
+    // bind expand/collapse once (AJAX safe)
+    const area = document.getElementById("jobcost-area") || document;
+    bindCostExpandCollapse(area);
+
+    // bind remove once via delegation (AJAX safe)
+    if (!tbody.dataset.removeDelegateInit) {
+      tbody.dataset.removeDelegateInit = "1";
+      tbody.addEventListener("click", function (e) {
+        const btn = e.target.closest(".remove-row");
+        if (!btn) return;
+
+        e.preventDefault();
+        markTouched();
+
+        const mainRow = btn.closest("tr.jobcost-row");
+        if (!mainRow) return;
+
+        const del = mainRow.querySelector('input[name$="-DELETE"]');
+
+        if (del) {
+          // existing row -> mark DELETE & hide both
+          del.checked = true;
+          hideRowWithDetail(mainRow);
+          updateEstimatedTotal();
+          return;
+        }
+
+        // new row (no DELETE checkbox) -> remove DOM rows
+        removeRowWithDetail(mainRow);
+        updateEstimatedTotal();
+      });
+    }
+
+    applyCostReadonly();
+    updateEstimatedTotal();
   };
 
   // ======================================================
-  // BIND ADD BUTTON ONCE (delegation)
+  // BIND ADD BUTTON ONCE
   // ======================================================
   if (!document.body.dataset.jobcostAddBound) {
     document.body.dataset.jobcostAddBound = "1";
@@ -372,36 +520,6 @@ function attachRow(row, prefix) {
       },
       true
     );
-  }
-
-  function bindQtyInput(el) {
-    if (!el || el.dataset.qtyInit) return;
-    el.dataset.qtyInit = "1";
-
-    el.addEventListener("blur", function () {
-      const n = parseID(el.value);
-      el.value = fmtID(n);          // hasil: "2,00"
-    });
-  }
-
-
-  function updateEstimatedTotal(prefix) {
-    const out = document.getElementById("jobcost-est-total");
-    if (!out) return;
-
-    let total = 0;
-
-    document.querySelectorAll("#jobcost-body tr.jobcost-row").forEach((row) => {
-      const del = row.querySelector('input[name$="-DELETE"]');
-      if (del && del.checked) return;
-
-      const est = row.querySelector(`input[name^="${prefix}-"][name$="-est_amount"]`)
-              || row.querySelector('input[name$="-est_amount"]');
-
-      total += parseID(est ? est.value : 0);
-    });
-
-    out.textContent = fmtID(total);
   }
 
   // initial load

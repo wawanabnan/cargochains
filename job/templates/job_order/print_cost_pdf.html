@@ -1,19 +1,18 @@
-{% extends "print/base_a4_pdf.html" %}
+{% extends "print/base_pdf.html" %}
 {% load indo_format %}
 
-{% block title %}Job Order - Cost Sheet{% endblock %}
-
 {% block content %}
-<br>
-<br>
-<br>
+<div class="text-center" style="margin-bottom: 70px;">
+<h1 class="mb-2">Job Order</h1>
+<span id="subtitle">Cost and Profitability</span>
+</div>
 
-<h2 class="mb-2">JOB ORDER COST</h2>
 
-<table class="table table-sm table-borderless mb-3" style="width:100%;">
+
+<table class="table table-sm table-bordered mb-3" style="width:100%;">
   <tbody>
     <tr>
-      <td style="width:18%;"><strong>Job No</strong></td>
+      <td style="width:18%;"><strong>Job Order #</strong></td>
       <td style="width:32%;">: {{ job.number }}</td>
       <td style="width:18%;"><strong>Date</strong></td>
       <td style="width:32%;">: {{ job.job_date|date:"d M Y" }}</td>
@@ -33,96 +32,123 @@
      <tr>
       <td><strong>Sales</strong></td>
       <td>: {{job.sales_user}}</td>
-      <td><strong></strong></td>
-      <td>: </td>
+      <td><strong>Job Status</strong></td>
+      <td>: {{ job.job_status_label_print }}</td>
     </tr>
   </tbody>
 </table>
 
-<h5 class="mt-2 mb-2">Job Costs (Amount in IDR)</h5>
 
-<table class="table table-sm table-bordered align-middle tbl-fixed">
-  <colgroup>
-    <col style="width:14%;">
-    <col style="width:30%;">
-    <col style="width:6%;">
-    <col style="width:6%;">
-    <col style="width:14%;">
-    <col style="width:15%;">
-    <col style="width:15%;">
-  </colgroup>
-  <thead class="table-light">
-    <tr>
-      <th>Cost Type</th>
-      <th>Vendor</th>
-      <th class="text-end">Qty</th>
-      <th>CUR</th>
-      <th class="text-end">PRICE</th>
-      <th class="text-end">Rate</th>
-      <th class="text-end">Amount (IDR)</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for ln in lines %}
-    <tr>
-      <td class="wrap">{{ ln.cost_type }}</td>
-      <td class="wrap">{{ ln.vendor }}</td>
-      <td class="text-end num">{{ ln.qty }}</td>
-      <td class="nowrap">{{ ln.currency }}</td>
-      <td class="text-end num">{{ ln.price|indo_number:2 }}</td>
-      <td class="text-end num">{{ ln.rate|indo_number:3 }}</td>
-      <td class="text-end num">{{ ln.amount_idr|indo_number:2 }}</td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="7" class="text-center">No cost lines.</td></tr>
-    {% endfor %}
-  </tbody>
-  <tfoot>
-    <tr>
-      <th colspan="6" class="text-end">TOTAL JOB COST</th>
-      <th class="text-end num">{{ total_cost_idr|indo_number:2 }}</th>
-    </tr>
-  </tfoot>
-</table>
+<div id="cost-area">
+  <span id="cost-title">Job Cost </span>
+  <table class="table table-sm table-bordered align-middle tbl-fixed">
+    <colgroup>
+      <col style="width:14%;">
+      <col style="width:30%;">
+      <col style="width:6%;">
+      <col style="width:6%;">
+      <col style="width:14%;">
+      <col style="width:15%;">
+      <col style="width:15%;">
+    </colgroup>
+    <thead class="table-light">
+      <tr>
+        <th>Cost Type</th>
+        <th>Vendor</th>
+        <th class="text-end">Qty</th>
+        <th>Currency</th>
+        <th class="text-end">Price</th>
+        <th class="text-end">Rate</th>
+        <th class="text-end">Amount (IDR)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ln in lines %}
+      <tr>
+        <td class="wrap">{{ ln.cost_type }}</td>
+        <td class="wrap">{{ ln.vendor }}</td>
+        <td class="text-end num">{{ ln.qty }}</td>
+        <td class="nowrap text-center">{{ ln.currency }}</td>
+        <td class="text-end num">{{ ln.price|indo_number:2 }}</td>
+        <td class="text-end num">{{ ln.rate|indo_number:3 }}</td>
+        <td class="text-end num">{{ ln.amount_idr|indo_number:2 }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center">No cost lines.</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th colspan="6" class="text-end">Total Job Cost</th>
+        <th class="text-end num">{{ total_cost_idr|indo_number:2 }}</th>
+      </tr>
+    </tfoot>
+  </table>
+</div>
 
-<h5 class="mt-3 mb-2">Profitability</h5>
+<div id="profitability-area">
+  <span id="profitability-title">Profitability </span>
+  <table class="table table-sm table-bordered align-middle">
+    <colgroup>
+      <col style="width:46%;">
+      <col style="width:12%;">
+      <col style="width:12%;">
+      <col style="width:15%;">
+      <col style="width:15%;">
+    </colgroup>
+    <thead class="table-light">
+      <tr>
+        <th>Description</th>
+        <th>Currency</th>
+        <th>Rate</th>
+        <th class="text-end">Amount</th>
+        <th class="text-end">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Job Revenue</td>
+        <td>{{ job_ccy }}</td>
+        <td class="text-end num">{{ job_rate|indo_number:3 }}</td>
+        <td class="text-end num">{{ job_value|indo_number:2 }}</td>
+        <td class="text-end num">{{ job_value_idr|indo_number:2 }}</td>
+      </tr>
+      <tr>
+        <td>Job Cost</td>
+        <td>IDR</td>
+        <td class="text-end num">1.000</td>
+        <td class="text-end num">{{ total_cost_idr|indo_number:2 }}</td>
+        <td class="text-end num">{{ total_cost_idr|indo_number:2 }}</td>
+      </tr>
+      <tr>
+        <td colspan="4" class="text-end"><strong>Profitability</strong></td>
+        <td class="text-end num"><strong>{{ profit_idr|indo_number:2 }}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div style="margin-top:50px; font-size:10px; color:#6c757d;">
+  Printed: {{ printed_at|date:"d/m/Y H:i" }} -   By: {{ printed_by.get_full_name|default:printed_by.username }}
+</div>
 
-<table class="table table-sm table-bordered align-middle">
-  <colgroup>
-    <col style="width:46%;">
-    <col style="width:12%;">
-    <col style="width:12%;">
-    <col style="width:15%;">
-    <col style="width:15%;">
-  </colgroup>
-  <thead class="table-light">
-    <tr>
-      <th>Item</th>
-      <th>Currency</th>
-      <th>Rate</th>
-      <th class="text-end">Amount</th>
-      <th class="text-end">Total</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Total Nilai Job Order (No Tax)</td>
-      <td>{{ job_ccy }}</td>
-      <td class="text-end num">{{ job_rate|indo_number:3 }}</td>
-      <td class="text-end num">{{ job_value|indo_number:2 }}</td>
-      <td class="text-end num">{{ job_value_idr|indo_number:2 }}</td>
-    </tr>
-    <tr>
-      <td>Total Job Cost (No Tax)</td>
-      <td>IDR</td>
-      <td class="text-end num">1.000</td>
-      <td class="text-end num">{{ total_cost_idr|indo_number:2 }}</td>
-      <td class="text-end num">{{ total_cost_idr|indo_number:2 }}</td>
-    </tr>
-    <tr>
-      <td colspan="4" class="text-end"><strong>PROFIT</strong></td>
-      <td class="text-end num"><strong>{{ profit_idr|indo_number:2 }}</strong></td>
-    </tr>
-  </tbody>
-</table>
 {% endblock %}
+
+
+{% block extra_css%}
+<style>
+#subtitle {font-size:12px}
+#cost-title,#profitability-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom:5px;
+ }
+
+ #cost-title {
+  margin-top:50px;
+  margin-;
+ }
+</style>
+{% endblock %}
+
+
+

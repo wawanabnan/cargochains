@@ -1,0 +1,277 @@
+{% load indo_format %}
+
+<table class="table table-sm mb-0 align-middle table-bordered" id="jobcost-table">
+  <thead class="table-light">
+    <tr>
+      <th style="width:190px;">Cost Type</th>
+      <th>Description</th>
+      <th style="width:180px;">Vendor / Note</th>
+      <th class="text-end" style="width:60px">Qty</th>
+      <th class="text-end" style="width:120px">Price</th>
+      <th style="width:90px">Currency</th>
+      <th class="text-end" style="width:80px">Rate</th>
+
+      <th class="text-end" style="width:120px;">Amount</th>
+
+      {% if show_actual %}
+        <th class="text-end" style="width:120px;">Actual Amount</th>
+      {% endif %}
+
+      <th class="text-center" style="width:40px;">Del</th>
+    </tr>
+  </thead>
+
+  <tbody id="jobcost-body">
+    {% for f in cost_formset.forms %}
+      <tr class="jobcost-row"
+          data-allocated="{{ f.instance.vb_allocated_qty|default_if_none:0 }}"
+          data-qty="{{ f.instance.qty|default_if_none:0 }}">
+        {{ f.id }}
+
+        <td class="p-0">
+          <div class="d-flex align-items-center gap-1">
+            <button type="button"
+                    class="btn btn-link btn-sm p-0 text-secondary js-toggle-cost-detail cost-toggle"
+                    aria-expanded="false"
+                    title="Show details"
+                    style="text-decoration:none;">
+              <span class="js-chevron">▶</span>
+            </button>
+
+            <div class="flex-grow-1">
+              <select name="{{ f.cost_type.html_name }}" id="{{ f.cost_type.id_for_label }}" class="form-select form-select-sm">
+                <option value="">-- pilih cost type --</option>
+                {% for ct in f.cost_type.field.queryset %}
+                  <option value="{{ ct.pk }}"
+                          {% if f.cost_type.value|stringformat:"s" == ct.pk|stringformat:"s" %}selected{% endif %}
+                          data-default-service="{{ ct.default_service_type }}"
+                          data-requires-vendor="{{ ct.requires_vendor|yesno:'1,0' }}"
+                          data-cost-group="{{ ct.cost_group }}">
+                    {{ ct.name }}
+                  </option>
+                {% endfor %}
+              </select>
+
+              {% if f.cost_type.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ f.cost_type.errors|striptags }}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </td>
+
+        <td class="p-0">
+          {{ f.description }}
+        </td>
+
+        <td class="p-0">
+          <div class="js-vendor-wrap d-none">
+            {{ f.vendor }}
+          </div>
+          <div class="js-internal-note-wrap">
+            {{ f.internal_note }}
+          </div>
+        </td>
+
+        <td class="p-0">{{ f.qty }}</td>
+        <td class="p-0 text-end">{{ f.price }}</td>
+
+        {# ✅ Render currency manual supaya bisa data-code #}
+        <td class="p-0">
+          <select name="{{ f.currency.html_name }}"
+                  id="{{ f.currency.id_for_label }}"
+                  class="form-select form-select-sm">
+            {% for c in f.currency.field.queryset %}
+              <option value="{{ c.pk }}"
+                      data-code="{{ c.code }}"
+                      {% if f.currency.value|stringformat:"s" == c.pk|stringformat:"s" %}selected{% endif %}>
+                {{ c.code }}
+              </option>
+            {% endfor %}
+          </select>
+          {% if f.currency.errors %}
+            <div class="invalid-feedback d-block">
+              {{ f.currency.errors|striptags }}
+            </div>
+          {% endif %}
+        </td>
+
+        <td class="p-0 text-end">{{ f.rate }}</td>
+
+        <td class="p-0 text-end">
+          {{ f.est_amount }}
+        </td>
+
+        {% if show_actual %}
+          <td class="p-0 text-end">
+            {{ f.actual_amount }}
+          </td>
+        {% endif %}
+
+        <td class="text-center p-0">
+          <div class="d-none">
+            {{ f.DELETE }}
+          </div>
+          <button type="button"
+                  class="btn btn-link btn-sm text-danger remove-row"
+                  style="margin:0;padding:0;">
+            x
+          </button>
+        </td>
+      </tr>
+
+      {# ✅ DETAIL ROW (collapsed by default) #}
+      <tr class="jobcost-detail-row d-none">
+        <td colspan="{% if show_actual %}10{% else %}9{% endif %}" class="bg-light p-2">
+          <div class="d-flex flex-wrap align-items-center gap-3 small">
+            <div id="text-allocated">
+              <span class="text-muted">Allocated:</span>
+              <span class="fw-semibold js-alloc-qty">0,00</span>
+            </div>
+            <div>
+              <span class="text-muted">Remaining:</span>
+              <span class="fw-semibold js-rem-qty">0,00</span>
+            </div>
+
+            {# ✅ Amount to SO (qty x price) in ORIGINAL currency #}
+            <div>
+              <span class="text-muted">Amount to SO:</span>
+              <span class="fw-semibold js-so-amt">0,00</span>
+              <span class="text-muted js-so-ccy">IDR</span>
+            </div>
+
+            <div class="ms-auto">
+              <span class="badge text-bg-danger js-so-badge">Not SO</span>
+            </div>
+
+            <div>
+              <a href="#"
+                 class="btn btn-sm btn-primary js-create-so d-none btn-so-mini">
+                Create SO
+              </a>
+            </div>
+          </div>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+
+  <tfoot>
+    <tr class="fw-semibold">
+      <td colspan="7" class="text-end">Estimated Total</td>
+      <td class="text-end" id="jobcost-est-total">{{ est_total_cost|indo_number }}</td>
+      {% if show_actual %}<td></td>{% endif %}
+      <td></td>
+    </tr>
+  </tfoot>
+</table>
+
+<template id="jobcost-empty-row">
+  {% with f=cost_formset.empty_form %}
+    <tr class="jobcost-row"
+        data-allocated="0"
+        data-qty="0">
+      {{ f.id }}
+
+      <td class="p-0">
+        <div class="d-flex align-items-center gap-1">
+          <button type="button"
+                  class="btn btn-link btn-sm p-0 text-secondary js-toggle-cost-detail cost-toggle"
+                  aria-expanded="false"
+                  title="Show details"
+                  style="text-decoration:none;">
+            <span class="js-chevron">▶</span>
+          </button>
+
+          <div class="flex-grow-1">
+            {{ f.cost_type }}
+          </div>
+        </div>
+      </td>
+
+      <td class="p-0">
+        {{ f.description }}
+      </td>
+
+      <td class="p-0">
+        <div class="js-vendor-wrap d-none">
+          {{ f.vendor }}
+        </div>
+        <div class="js-internal-note-wrap">
+          {{ f.internal_note }}
+        </div>
+      </td>
+
+      <td class="p-0 text-end">{{ f.qty }}</td>
+      <td class="p-0 text-end">{{ f.price }}</td>
+
+      {# ✅ manual currency select for empty row too #}
+      <td class="p-0">
+        <select name="{{ f.currency.html_name }}"
+                id="{{ f.currency.id_for_label }}"
+                class="form-select form-select-sm">
+          {% for c in f.currency.field.queryset %}
+            <option value="{{ c.pk }}" data-code="{{ c.code }}"
+                    {% if f.currency.value|stringformat:"s" == c.pk|stringformat:"s" %}selected{% endif %}>
+              {{ c.code }}
+            </option>
+          {% endfor %}
+        </select>
+      </td>
+
+      <td class="p-0 text-end">{{ f.rate }}</td>
+
+      <td class="p-0 text-end">
+        {{ f.est_amount }}
+      </td>
+
+      {% if show_actual %}
+        <td class="p-0 text-end">
+          {{ f.actual_amount }}
+        </td>
+      {% endif %}
+
+      <td class="text-center p-0">
+        <button type="button" class="btn btn-link btn-sm text-danger remove-row" style="margin:0;padding:0;">
+          x
+        </button>
+        <div class="d-none">
+          {{ f.DELETE }}
+        </div>
+      </td>
+    </tr>
+
+    <tr class="jobcost-detail-row d-none">
+      <td colspan="{% if show_actual %}10{% else %}9{% endif %}" class="bg-light p-2">
+        <div class="d-flex flex-wrap align-items-center gap-3 small">
+          <div>
+            <span class="text-muted">Allocated:</span>
+            <span class="fw-semibold js-alloc-qty">0,00</span>
+          </div>
+          <div>
+            <span class="text-muted">Remaining:</span>
+            <span class="fw-semibold js-rem-qty">0,00</span>
+          </div>
+
+          <div>
+            <span class="text-muted">Amount to SO:</span>
+            <span class="fw-semibold js-so-amt">0,00</span>
+            <span class="text-muted js-so-ccy">IDR</span>
+          </div>
+
+          <div class="ms-auto">
+            <span class="badge text-bg-secondary js-so-badge">Not SO</span>
+          </div>
+
+          <div>
+            <a href="#"
+               class="btn btn-sm btn-outline-primary js-create-so d-none btn-so-mini">
+              Create SO
+            </a>
+          </div>
+        </div>
+      </td>
+    </tr>
+  {% endwith %}
+</template>

@@ -23,7 +23,7 @@ app_name = "shipments"
 
 urlpatterns = [
    # SYSTEM (API)
-path("api/public/track/<str:tracking_no>/", PublicTrackShipmentView.as_view(), name="public-track"),
+#path("api/public/track/<str:tracking_no>/", PublicTrackShipmentView.as_view(), name="public-track"),
 path("api/ops/trips/<int:trip_id>/dispatch/", csrf_exempt(TripDispatchPickupView.as_view()), name="ops-trip-dispatch"),
 path("api/token/", obtain_auth_token),  # optional
 path("api/ops/shipments/<str:tracking_no>/pod/", ShipmentPodUploadView.as_view(), name="ops-shipment-pod"),
@@ -63,4 +63,31 @@ urlpatterns += [
     path("vendor-bills/", VendorBillListView.as_view(), name="vendor_bill_list"),
     path("vendor-bills/add/", VendorBillCreateView.as_view(), name="vendor_bill_add"),
     path("vendor-bills/<int:pk>/", VendorBillUpdateView.as_view(), name="vendor_bill_edit"),
+]
+
+
+from django.urls import path
+from shipments.views.shipping_instruction import (
+    ShippingInstructionListView,
+    ShippingInstructionDetailView,
+    ShippingInstructionUpdateView,
+    ShippingInstructionIssueView,
+    ShippingInstructionCancelView
+)
+
+urlpatterns += [
+    path("shipping-instructions/", ShippingInstructionListView.as_view(), name="si_list"),
+    path("shipping-instructions/<int:pk>/", ShippingInstructionDetailView.as_view(), name="si_detail"),
+    path("shipping-instructions/<int:pk>/edit/", ShippingInstructionUpdateView.as_view(), name="si_update"),
+    path("shipping-instructions/<int:pk>/issue/",ShippingInstructionIssueView.as_view(),name="si_issue"),
+    path("shipping-instructions/<int:pk>/cancel/",ShippingInstructionCancelView.as_view(),name="si_cancel"),
+]
+
+
+
+from django.urls import path
+from shipments.views.public_tracking import PublicTrackAPIView
+
+urlpatterns += [
+    path("api/public/track/<str:tracking_no>/", PublicTrackAPIView.as_view(), name="public-track"),
 ]

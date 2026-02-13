@@ -426,6 +426,7 @@ textarea.form-control-sm{
 <script src="{% static 'js/job/idr_kurs.js' %}">  </script>
 <script src="{% static 'vendor/js/select2.full.min.js' %}"> </script>
 <script src="{% static 'js/tax_select2_autoinit.js' %}"> </script>
+<script src="{% static 'js/job/location_init.js' %}"> </script>
 
 
 
@@ -695,7 +696,11 @@ document.addEventListener("DOMContentLoaded", function () {
             text: x.text,
             kind: x.kind || "",
             code: x.code || "",
-            subtext: x.subtext || ""
+            subtext: x.subtext || "",
+            district: x.district || "",
+            region: x.region || "",
+            province: x.province || ""
+
           })),
           pagination: data.pagination || { more: false }
         })
@@ -873,6 +878,40 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
   });
+});
+</script>
+
+<script>
+$(function () {
+
+  function initLocationSelect2($el, url) {
+    $el.select2({
+      width: "100%",
+      ajax: {
+        url: url,
+        dataType: "json",
+        delay: 250,
+        data: (params) => ({ q: params.term || "" }),
+        processResults: (data) => {
+          const results = (data || []).map(item => ({
+            id: item.id,
+            text: item.label,
+            district: item.district,
+            region: item.region,
+            province: item.province
+          }));
+          return { results };
+        },
+      },
+    });
+  }
+
+  const $origin = $("#id_origin_location");
+  const $pickup = $("#id_pickup_location");
+
+  if ($origin.length) initLocationSelect2($origin, "/ajax/locations/");
+  if ($pickup.length) initLocationSelect2($pickup, "/ajax/locations/");
+
 });
 </script>
 

@@ -1,53 +1,151 @@
 {% load indo_format %}
- <div class="card">
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-sm mb-0 align-middle">
-            <thead class="table-light">
-              <tr>
-                <th style="width:40px;">No</th>
-                <th>Description</th>
-                <th class="text-center" style="width:80px;">Qty</th>
-                <th class="text-end" style="width:120px;">Price</th>
-                <th class="text-end" style="width:120px;">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% if costs %}
-                {% for c in costs %}
-                  <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ c.description }}</td>
-                    <td class="text-center">
-                      {{ c.qty|indo_number }}
-                    </td>
-                    <td class="text-end">
-                      {{ c.price|indo_number }}
-                    </td>
-                    <td class="text-end">
-                      {{ c.amount|indo_number }}
-                    </td>
-                  </tr>
-                {% endfor %}
-              {% else %}
-                <tr>
-                  <td colspan="5" class="text-center py-3 text-muted">
-                    Belum ada job cost.
-                  </td>
-                </tr>
-              {% endif %}
-            </tbody>
-            {% if costs %}
-              <tfoot>
-                <tr class="fw-semibold">
-                  <td colspan="4" class="text-end">Total Job Cost</td>
-                  <td class="text-end">
-                    {{ total_cost|indo_number }}
-                  </td>
-                </tr>
-              </tfoot>
-            {% endif %}
-          </table>
+
+
+<table class="table table-sm mb-0 align-middle table-bordered" id="jobcost-table">
+  <thead class="table-light">
+    <tr>
+      <th style="width:190px;">Cost Type</th>
+      <th>Description</th>
+      <th style="width:180px;">Vendor / Note</th>
+      <th class="text-end" style="width:60px">Qty</th>
+      <th class="text-end" style="width:120px">Price</th>
+      <th style="width:90px">Currency</th>
+      <th class="text-end" style="width:80px">Rate</th>
+      
+      <th class="text-end" style="width:120px;">Amount</th>
+
+      {% if show_actual %}
+        <th class="text-end" style="width:120px;">Actual Amount</th>
+      {% endif %}
+
+      <th class="text-center" style="width:40px;">Del</th>
+    </tr>
+  </thead>
+
+  <tbody id="jobcost-body">
+    {% for f in cost_formset.forms %}
+      <tr class="jobcost-row">
+        {{ f.id }}
+
+        <td class="p-0">
+          <select name="{{ f.cost_type.html_name }}" id="{{ f.cost_type.id_for_label }}"  class="form-select form-select-sm">
+            <option value="">-- pilih cost type --</option>
+            {% for ct in f.cost_type.field.queryset %}
+            <option value="{{ ct.pk }}"
+                    {% if f.cost_type.value|stringformat:"s" == ct.pk|stringformat:"s" %}selected{% endif %}
+                    data-default-service="{{ ct.default_service_type }}"
+                    data-requires-vendor="{{ ct.requires_vendor|yesno:'1,0' }}"
+                    data-cost-group="{{ ct.cost_group }}">
+              {{ ct.name }}
+            </option>
+            {% endfor %}
+          </select>
+        {# tetap tampilkan error kalau ada #}
+        {% if f.cost_type.errors %}
+          <div class="invalid-feedback d-block">
+            {{ f.cost_type.errors|striptags }}
+          </div>
+        {% endif %}
+
+        </td>
+
+        <td class="p-0">
+          {{ f.description }}
+        </td>
+
+        <td class="p-0">
+          <div class="js-vendor-wrap d-none">
+            {{ f.vendor }}
+          </div>
+          <div class="js-internal-note-wrap">
+            {{ f.internal_note }}
+          </div>
+        </td>
+         <td class="p-0">{{ f.qty }}</td>
+        <td class="p-0 text-end">{{ f.price }}</td>
+        <td class="p-0">{{ f.currency }}</td>
+        <td class="p-0 text-end">{{ f.rate }}</td>
+
+         <td class="p-0 text-end">
+            {{ f.est_amount }}
+         </td>
+
+        {% if show_actual %}
+          <td class="p-0 text-end">
+            {{ f.actual_amount }}
+          </td>
+        {% endif %}
+
+        <td class="text-center p-0">
+          <div class="d-none">
+            {{ f.DELETE }}
+          </div>
+          <button type="button"
+                  class="btn btn-link btn-sm text-danger remove-row"
+                  style="margin:0;padding:0;">
+            x
+          </button>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+
+  <tfoot>
+    <tr class="fw-semibold">
+      <td colspan="7" class="text-end">Estimated Total</td>
+      <td class="text-end" id="jobcost-est-total">{{ est_total_cost|indo_number }}</td>
+      {% if show_actual %}<td></td>{% endif %}
+      <td></td>
+    </tr>
+
+   
+  
+  </tfoot>
+</table>
+ 
+<template id="jobcost-empty-row">
+  {% with f=cost_formset.empty_form %}
+    <tr class="jobcost-row">
+      {{ f.id }}
+
+      <td class="p-0">
+        {{ f.cost_type }}
+      </td>
+       <td class="p-0">
+          {{ f.description }}
+        </td>
+
+
+      <td class="p-0">
+        <div class="js-vendor-wrap d-none">
+          {{ f.vendor }}
         </div>
-      </div>
-    </div>
+        <div class="js-internal-note-wrap">
+          {{ f.internal_note }}
+        </div>
+      </td>
+      <td class="p-0 text-end">{{ f.qty }}</td>
+      <td class="p-0 text-end">{{ f.price }}</td>
+      <td class="p-0">{{ f.currency }}</td>
+      <td class="p-0 text-end">{{ f.rate }}</td>
+      <td class="p-0 text-end">
+        {{ f.est_amount }}
+      </td>
+
+      {% if show_actual %}
+        <td class="p-0 text-end">
+          {{ f.actual_amount }}
+        </td>
+      {% endif %}
+
+      <td class="text-center p-0">
+        <button type="button" class="btn btn-link btn-sm text-danger remove-row" style="margin:0;padding:0;">
+          x
+        </button>
+        <div class="d-none">
+          {{ f.DELETE }}
+        </div>
+      </td>
+    </tr>
+  {% endwith %}
+</template>

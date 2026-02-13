@@ -77,9 +77,27 @@ from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 
 from weasyprint import HTML
+from django.utils import timezone
+
+
+def build_job_cost_print_context(request, job):
+    # ini contoh ya—isi sesuai context yang kamu pakai di preview sekarang
+    ctx = {
+        "job": job,
+        # "cost_formset": ...,
+        # "est_total_cost": ...,
+        # "show_actual": ...,
+    }
+
+    # ✅ inject print meta
+    ctx["printed_at"] = timezone.localtime()
+    ctx["printed_by"] = request.user
+
+    return ctx
 
 
 @login_required
+
 def joborder_cost_pdf(request, pk):
     # ctx kamu sudah punya dari logic sebelumnya
     # contoh:
@@ -87,9 +105,9 @@ def joborder_cost_pdf(request, pk):
     # ctx = build_context_for_print(job)
 
     ctx = ...  # <-- pakai ctx yang sama dengan preview
-
+    
     html = render_to_string(
-        "job_order/print_cost_preview.html",
+        "job_order/print_cost_pdf.html",
         ctx,
         request=request
     )

@@ -320,7 +320,7 @@ class VendorBooking(models.Model):
 
         if creating:
             if not self.vb_number:
-                self.vb_number = get_next_number("shipments", "VENDOR_BOOKING")
+                self.vb_number = get_next_number("work_orders", "SERVICE_ORDER")
 
     
         super().save(*args, **kwargs)

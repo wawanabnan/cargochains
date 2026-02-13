@@ -497,107 +497,6 @@ class VendorBookingListView(LoginRequiredMixin, ListView):
         return ctx
 
 
-class VendorBookingCreateContextView(LoginRequiredMixin, TemplateView):
-    """
-    STEP 1 (page wizard):
-    - pilih Customer -> Job Order -> Vendor
-    - lalu redirect ke STEP 2 wizard (from jobcost)
-    """
-    template_name = "service_orders/create_context.html"
-
-    def _eligible_jobcost_qs(self):
-        """
-        Eligible job costs untuk dibuat booking:
-        - job_order status != COMPLETED
-        - cost_type.requires_vendor = True
-        - vendor NOT NULL
-        - vb_open_qty > 0  (qty - vb_allocated_qty)
-        """
-        return (
-            JobCost.objects
-            .select_related("job_order", "job_order__customer", "vendor", "cost_type")
-            .filter(
-                job_order__status__in=[
-                    JobOrder.ST_DRAFT,
-                    JobOrder.ST_IN_PROGRESS,
-                    JobOrder.ST_ON_HOLD,
-                    # exclude cancelled & completed by default
-                ],
-                cost_type__requires_vendor=True,
-                vendor__isnull=False,
-            )
-            .filter(qty__gt=0)  # safety
-            .filter(qty__gt=models.F("vb_allocated_qty"))  # remaining > 0
-        )
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-
-        customer_id = (self.request.GET.get("customer") or "").strip()
-        job_order_id = (self.request.GET.get("job_order") or "").strip()
-        vendor_id = (self.request.GET.get("vendor") or "").strip()
-
-        base = self._eligible_jobcost_qs()
-
-        # ---- customers eligible ----
-        cust_ids = (
-            base.values_list("job_order__customer_id", flat=True)
-            .distinct()
-        )
-        customers = Customer.objects.filter(id__in=cust_ids).order_by("name")
-
-        # ---- job orders eligible for selected customer ----
-        job_orders = JobOrder.objects.none()
-        if customer_id.isdigit():
-            jo_ids = (
-                base.filter(job_order__customer_id=int(customer_id))
-                .values_list("job_order_id", flat=True)
-                .distinct()
-            )
-            job_orders = JobOrder.objects.filter(id__in=jo_ids).order_by("-id")
-
-        # ---- vendors eligible for selected job order ----
-        vendors = Vendor.objects.none()
-        if job_order_id.isdigit():
-            v_ids = (
-                base.filter(job_order_id=int(job_order_id))
-                .values_list("vendor_id", flat=True)
-                .distinct()
-            )
-            vendors = Vendor.objects.filter(id__in=v_ids).order_by("name")
-
-        ctx.update({
-            "customers": customers,
-            "job_orders": job_orders,
-            "vendors": vendors,
-
-            "v_customer": customer_id,
-            "v_job_order": job_order_id,
-            "v_vendor": vendor_id,
-        })
-        return ctx
-
-    def post(self, request, *args, **kwargs):
-        customer_id = (request.POST.get("customer") or "").strip()
-        job_order_id = (request.POST.get("job_order") or "").strip()
-        vendor_id = (request.POST.get("vendor") or "").strip()
-
-        # basic validation
-        if not (customer_id.isdigit() and job_order_id.isdigit() and vendor_id.isdigit()):
-            messages.error(request, "Lengkapi pilihan customer, job order, dan vendor.")
-            # preserve selection
-            return redirect(
-                f"{reverse('work_orders:service_order_create_context')}?"
-                f"customer={customer_id}&job_order={job_order_id}&vendor={vendor_id}"
-            )
-
-        # redirect to existing wizard (step 2)
-        url = reverse("work_orders:service_order_from_jobcost")
-        return redirect(f"{url}?job_order={job_order_id}&vendor={vendor_id}")
-
-
-
-
 # --- imports yang dibutuhkan ---
 # pakai helper yang sudah ada di file om (kalau class ini ditaruh di file yang sama, ga perlu import)
 # from work_orders:.views.vendor_bookings import _get_cost_group_from_jobcost
@@ -609,6 +508,7 @@ def _to_decimal(val: str) -> Decimal:
         return Decimal("0")
 
 
+from work_orders.utils.descriptions import build_line_description
 class VendorBookingCreateView(LoginRequiredMixin, TemplateView):
     """
     /vendor-bookings/create/
@@ -782,6 +682,12 @@ class VendorBookingCreateView(LoginRequiredMixin, TemplateView):
             messages.error(request, "Tidak ada line valid untuk dibuat.")
             return redirect(f"{reverse('work_orders:service_order_create')}?job_order={job.id}")
 
+        
+        locked_group = _get_cost_group_from_jobcost(selected[0])  # ex: "SEA"
+        mode = (locked_group or "").strip().upper()
+        if mode not in ("SEA", "AIR", "INLAND"):
+            mode = "GENERAL"
+
 
         vb = VendorBooking(
             job_order=job,
@@ -790,6 +696,7 @@ class VendorBookingCreateView(LoginRequiredMixin, TemplateView):
             discount_amount=Decimal("0"),
             vendor_note=cfg.vendor_note,
             term_conditions=cfg.service_order_term_conditions,
+            service_order_mode=mode, 
             created_by=request.user,
         )
         vb.save()
@@ -806,9 +713,9 @@ class VendorBookingCreateView(LoginRequiredMixin, TemplateView):
             qty = Decimal(alloc or 0)
             amount = (qty * unit_price).quantize(Decimal("0.01"))
 
-            desc = (getattr(jc, "description", "") or "") or (jc.cost_type.name if jc.cost_type_id else "")
             uom_id = jc.cost_type.uom_id if jc.cost_type_id else None
-
+            desc = build_line_description(job, jc)
+            
             vb_lines.append(VendorBookingLine(
                 vendor_booking=vb,
                 job_cost=jc,

@@ -236,4 +236,17 @@ class JobCost(models.Model):
         """
         return self.vb_status != self.VB_FULL
     
+
+    from decimal import Decimal
+
+    @property
+    def foreign_amount(self):
+        # amount dalam currency asli (tanpa rate)
+        return (self.qty or Decimal("0")) * (self.price or Decimal("0"))
+
+    @property
+    def is_idr(self):
+        return (self.currency and self.currency.code and self.currency.code.upper() == "IDR")
+
+        
    

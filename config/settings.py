@@ -196,24 +196,23 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 ALLOW_CREATE_SUPERUSER_ON_SETUP = True
 
-
 REST_FRAMEWORK = {
-    # AUTH
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.TokenAuthentication",
     ],
-
-    # THROTTLING
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
         "anon": "30/min",
         "public_track": "20/min",
     },
 }
-
 
 
 SITE_BASE_URL = "http://192.168.1.2:8000"

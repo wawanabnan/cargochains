@@ -7,6 +7,8 @@ from django.contrib.auth.decorators import login_required
 from weasyprint import HTML
 from job.models.job_orders import JobOrder
 from job.models.job_orders import JobOrder
+from django.utils import timezone
+
 
 def build_context_for_print(job):
     """
@@ -78,11 +80,12 @@ def joborder_cost_preview(request, pk):
 
     # ✅ sama seperti PDF
     ctx = build_context_for_print(job)
+    
     ctx["watermark_status"] = (job.status or "").upper()
+    ctx["printed_at"] = timezone.localtime()
+    ctx["printed_by"] = request.user
 
     return render(request, "job_order/print_cost_preview.html", ctx)
-
-
 
 @login_required
 def joborder_cost_pdf(request, pk):
@@ -94,6 +97,8 @@ def joborder_cost_pdf(request, pk):
     # ✅ ini yang bikin "lines" dll muncul
     ctx = build_context_for_print(job)
     ctx["watermark_status"] = (job.status or "").upper()
+    ctx["printed_at"] = timezone.localtime()
+    ctx["printed_by"] = request.user
 
     html = render_to_string(
         "job_order/print_cost_pdf.html",  # atau print_cost_pdf.html (sesuai punyamu)

@@ -223,6 +223,9 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='shippinginstructiondocument',
-            constraint=models.UniqueConstraint(fields=('letter_type', 'sequence_no'), name='uniq_doc_sequence_per_letter_type'),
+            constraint=models.UniqueConstraint(
+                fields=('sequence_no',),
+                name='uniq_doc_sequence'
+            ),
         ),
     ]

@@ -7,51 +7,42 @@ from ..models import Location
 from django.core.cache import cache  # optional, tapi aman
 
 
+# geo/views/adds.py
+from django.http import JsonResponse
+from django.views import View
+from django.db.models import Q
+from geo.models import Location  # sesuaikan kalau model-nya beda
+
+def children_by_parent(request, parent_id: int):
+    qs = Location.objects.filter(parent_id=parent_id, status="active").order_by("name").values("id","name","kind")
+    return JsonResponse({"results": list(qs)})
+
+
+
 class LocationAutocompleteView(View):
-    """
-    Autocomplete untuk geo.Location.
-    Mencari berdasarkan nama (village/district/regency/province).
-    Menampilkan label lengkap (desa → kecamatan → kabupaten → provinsi).
-    """
+    """Return JSON for autocomplete fields."""
 
     def get(self, request):
         q = (request.GET.get("q") or "").strip()
         if not q:
             return JsonResponse([], safe=False)
 
-        # Prioritas pencarian:
-        # (1) nama lokasi mengandung q
-        # (2) lokasi parent juga mengandung q
         qs = (
-            Location.objects.filter(
-                Q(name__icontains=q) |
-                Q(parent__name__icontains=q) |
-                Q(parent__parent__name__icontains=q)
-            )
-            .filter(kind__in=["village", "district", "regency", "province"])
-            .select_related("parent", "parent__parent", "parent__parent__parent")
-            .order_by("kind", "name")[:20]
+            Location.objects
+            .filter(Q(name__icontains=q) | Q(kind__icontains=q))
+            .order_by("name")[:20]
         )
 
-        results = []
-        for loc in qs:
-            # Build full hierarchy path
-            parts = [loc.name]
-            p = loc.parent
-            while p:
-                parts.append(p.name)
-                p = p.parent
-
-            full_label = " → ".join(parts)  # reversed later
-
-            results.append({
-                "id": loc.id,
-                "name": loc.name,
-                "kind": loc.kind,
-                "label": " → ".join(reversed(parts)),  # Village → District → Regency …
-            })
-
-        return JsonResponse(results, safe=False)
+        data = [
+            {
+                "id": obj.pk,
+                "name": obj.name,
+                "kind": getattr(obj, "kind", ""),
+                "label": f"{obj.name}{f' [{obj.kind}]' if getattr(obj, 'kind', '') else ''}",
+            }
+            for obj in qs
+        ]
+        return JsonResponse(data, safe=False)
 
 
 class LocationAjaxView(View):
@@ -84,6 +75,7 @@ class LocationAjaxView(View):
         items = [self.normalize(loc) for loc in self.get_queryset(q)]
         return JsonResponse(items, safe=False)  # LIST → safe=False
     
+    
 
 class ProvincesView(View):
     def get(self, request):
@@ -113,52 +105,131 @@ class VillagesView(View):
         return JsonResponse([{"id": x.id, "name": x.name} for x in qs], safe=False)
 
 
+
 class LocationChildrenView(View):
     def get(self, request):
         parent_id = request.GET.get("parent")
         if not parent_id:
+            # Kalau nggak ada parent, balikin array kosong
             return JsonResponse([], safe=False)
 
-        cache_key = f"geo_children_v3:{parent_id}"
-        cached = cache.get(cache_key)
-        if cached is not None:
-            return JsonResponse(cached, safe=False)
+        try:
+            parent_id_int = int(parent_id)
+        except (TypeError, ValueError):
+            return JsonResponse([], safe=False)
 
-        parent = (
+        # Anak langsung dari parent tersebut (bisa kab/kota, kec, desa)
+        qs = (
             Location.objects
-            .filter(pk=parent_id)
-            .only("id", "kind")
-            .first()
+            .filter(parent_id=parent_id_int)
+            .order_by("name")
+            .values("id", "name")  # supaya ringan, cuma ambil id & name
         )
-        if not parent:
-            return JsonResponse([], safe=False)
 
-        # base queryset: semua anak berdasarkan parent_id
-        qs = Location.objects.filter(parent_id=parent.id)
-
-        # aturan cascade wilayah Indonesia
-        if parent.kind == "country":
-            qs = qs.filter(kind="province")
-
-        elif parent.kind == "province":
-            # kabupaten + kota (biarkan tanpa filter kind)
-            pass
-
-        elif parent.kind in ("regency", "city"):
-            # regency → district
-            # city → district   (UNTUK KOTA ADM. JAKARTA!)
-            qs = qs.filter(kind="district")
-
-        elif parent.kind == "district":
-            qs = qs.filter(kind="village")
-
-        else:
-            qs = Location.objects.none()
-
-        qs = qs.only("id", "name").order_by("name")
-
-        data = [{"id": obj.id, "name": obj.name} for obj in qs]
-
-        cache.set(cache_key, data, 3600)
-
+        data = list(qs)
         return JsonResponse(data, safe=False)
+
+
+
+import re
+from django.http import JsonResponse
+from django.views import View
+from django.db.models import Q, Case, When, IntegerField
+
+from geo.models import Location
+
+
+class LocationSelect2View(View):
+    PAGE_SIZE = 20
+    EXCLUDED_KINDS = {"village"}  # hanya buang village
+
+    PORT_KINDS = {"port", "offshore-terminal"}
+    AIRPORT_KINDS = {"airport"}
+
+    # kata-kata yang dianggap "tipe", akan dibuang dari query pencarian
+    STOPWORDS = {
+        "kabupaten", "kab",
+        "kecamatan", "kec",
+        "kota", "city",
+        "provinsi", "prov",
+        "pelabuhan", "port",
+        "bandara", "airport",
+    }
+
+    def get(self, request):
+        q = (request.GET.get("q") or request.GET.get("term") or "").strip()
+        page = int(request.GET.get("page") or 1)
+        q_l = q.lower()
+
+        qs = Location.objects.all().exclude(kind__in=self.EXCLUDED_KINDS)
+
+        if not q:
+            return JsonResponse({"results": [], "pagination": {"more": False}})
+
+        # --- 1) detect tipe (optional) ---
+        kind_filter = None
+        if re.search(r"\b(airport|bandara)\b", q_l):
+            kind_filter = self.AIRPORT_KINDS
+        elif re.search(r"\b(pelabuhan|port)\b", q_l):
+            kind_filter = self.PORT_KINDS
+        elif re.search(r"\b(kabupaten|kab)\b", q_l):
+            kind_filter = {"regency"}
+        elif re.search(r"\b(kecamatan|kec)\b", q_l):
+            kind_filter = {"district"}
+        elif re.search(r"\b(provinsi|prov)\b", q_l):
+            kind_filter = {"province"}
+        elif re.search(r"\b(kota|city)\b", q_l):
+            kind_filter = {"city"}
+
+        # --- 2) bersihkan query: buang stopwords biar "kabupaten sume" jadi "sume" ---
+        tokens = re.findall(r"[a-z0-9]+", q_l)
+        tokens = [t for t in tokens if t not in self.STOPWORDS]
+        q_clean = " ".join(tokens).strip() or q  # fallback kalau habis semua
+
+        # --- 3) search utama pakai q_clean ---
+        qs = qs.filter(
+            Q(name__icontains=q_clean) |
+            Q(display_name__icontains=q_clean) |
+            Q(code__icontains=q_clean) |
+            Q(iata_code__icontains=q_clean) |
+            Q(unlocode__icontains=q_clean) |
+            Q(kind__icontains=q_clean)
+        )
+
+        # apply filter tipe kalau ada
+        if kind_filter:
+            qs = qs.filter(kind__in=kind_filter)
+
+        # --- 4) ranking: yang name diawali q_clean naik ke atas ---
+        qs = qs.annotate(
+            rank=Case(
+                When(code__iexact=q_clean, then=50),
+                When(iata_code__iexact=q_clean, then=45),
+                When(unlocode__iexact=q_clean, then=40),
+                When(name__istartswith=q_clean, then=30),
+                When(display_name__istartswith=q_clean, then=25),
+                When(name__icontains=q_clean, then=20),
+                When(display_name__icontains=q_clean, then=15),
+                default=0,
+                output_field=IntegerField(),
+            )
+        ).order_by("-rank", "name")
+
+        # pagination
+        total = qs.count()
+        start = (page - 1) * self.PAGE_SIZE
+        end = start + self.PAGE_SIZE
+        items = qs[start:end]
+
+        results = []
+        for obj in items:
+            code = (obj.iata_code or obj.unlocode or obj.code or "").strip()
+            results.append({
+                "id": obj.pk,
+                "text": obj.name,
+                "subtext": obj.display_name or "",
+                "kind": (obj.kind or "").upper(),
+                "code": code,
+            })
+
+        return JsonResponse({"results": results, "pagination": {"more": end < total}})

@@ -9,12 +9,7 @@
 
   <ul class="nav nav-treeview">
 
-    <li class="nav-item">
-      <a href="{% url 'sales:vendor_list' %}" class="nav-link">
-        <i class="nav-icon bi bi-building-check"></i>
-        <p>Vendor</p>
-      </a>
-    </li>
+   
 
     <li class="nav-item">
       <a href="#"  class="nav-link">
@@ -30,6 +25,14 @@
       <p>Tracking</p>
     </a>
   </li>
+  <li class="nav-item">
+  <a href="{% url 'shipments:si_list' %}"
+     class="nav-link {% if request.resolver_match.app_name == 'shipments' %}active{% endif %}">
+    <i class="nav-icon bi bi-file-earmark-text"></i>
+    <p>Shipping Instruction</p>
+  </a>
+</li>
+
 
 
   </ul>

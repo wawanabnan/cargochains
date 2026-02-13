@@ -8,14 +8,28 @@ from django.core.exceptions import ValidationError
 from job.services.posting  import ensure_job_costing_posted
 
 
+
 @login_required
 @require_POST
 def job_confirm(request, pk):
     job = get_object_or_404(JobOrder, pk=pk)
     try:
-        job.confirm(request.user)  # Draft -> On Going
+        job.confirm(request.user)  # Draft -> In Costing
         job.save()
-        messages.success(request, "Job confirmed: Draft → On Going")
+        messages.success(request, "Job confirmed: Draft → In Costing")
+    except Exception as e:
+        messages.error(request, str(e))
+    return redirect("job:job_order_detail", pk=pk)
+
+
+@login_required
+@require_POST
+def job_start_progress(request, pk):
+    job = get_object_or_404(JobOrder, pk=pk)
+    try:
+        job.start_progress(request.user)  # In Costing -> In Progress
+        job.save()
+        messages.success(request, "Job started: In Costing → In Progress")
     except Exception as e:
         messages.error(request, str(e))
     return redirect("job:job_order_detail", pk=pk)

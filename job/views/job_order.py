@@ -374,8 +374,29 @@ from django.db import transaction
 
 class JobOrderCostsUpdateView(LoginRequiredMixin, View):
 
+    
     def post(self, request, pk):
+
         job = get_object_or_404(JobOrder, pk=pk)
+
+        if job.status in {
+                JobOrder.ST_IN_PROGRESS,
+                JobOrder.ST_COMPLETED,
+                JobOrder.ST_CANCELLED,
+            }:
+            is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+            msg = "Job Cost terkunci saat status IN PROGRESS."
+
+            if is_ajax:
+                return JsonResponse({
+                    "ok": False,
+                    "ajax": True,
+                    "message": msg,
+                }, status=403)
+
+            messages.error(request, msg)
+            return redirect("job:job_order_detail", pk=job.pk)
+
 
         formset = JobCostFormSet(request.POST, instance=job)
         is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
@@ -389,7 +410,7 @@ class JobOrderCostsUpdateView(LoginRequiredMixin, View):
         if not touched:
             if is_ajax:
                 html = render_to_string(
-                    "job_order/extension/cost_detail.html",
+                    "job_order/extension/_cost_detail.html",
                     {
                         "job": job,
                         "cost_formset": JobCostFormSet(instance=job),
@@ -440,11 +461,12 @@ class JobOrderCostsUpdateView(LoginRequiredMixin, View):
 
             if is_ajax:
                 html = render_to_string(
-                    "job_order/extension/cost_detail.html",
+                    "job_order/extension/_cost_detail.html",
                     {
                         "job": job,
                         "cost_formset": formset,
                         "cost_type_meta_json": cost_type_meta_json(),
+                        "cost_locked": job.is_cost_locked, 
                     },
                     request=request,
                 )
@@ -480,11 +502,12 @@ class JobOrderCostsUpdateView(LoginRequiredMixin, View):
         if is_ajax:
             fresh_formset = JobCostFormSet(instance=job)
             html = render_to_string(
-                "job_order/extension/cost_detail.html",
+                "job_order/extension/_cost_detail.html",
                 {
                     "job": job,
                     "cost_formset": fresh_formset,
                     "cost_type_meta_json": cost_type_meta_json(),
+                    "cost_locked": job.is_cost_locked,
                 },
                 request=request,
             )
