@@ -183,7 +183,7 @@ class QuotationCreateView(LoginRequiredMixin, CreateView):
         ctx = self.get_context_data()
         return render(request, self.template_name, ctx)
 
-    def post_old(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
 
         data = request.POST.copy()
 
@@ -230,58 +230,6 @@ class QuotationCreateView(LoginRequiredMixin, CreateView):
 
         messages.success(request, "Quotation berhasil dibuat.",extra_tags="ui-inline") 
         return redirect(self.get_success_url())
-
-    def post(self, request, *args, **kwargs):
-        data = request.POST.copy()
-
-        qd = (data.get("quote_date") or "").strip()
-        if qd and not (data.get("job_date") or "").strip():
-            data["job_date"] = qd
-
-        qform = QuotationForm(data)
-        form = JobOrderForm(data)
-
-        if not (qform.is_valid() and form.is_valid()):
-            # biar bukan 500, tampilkan error form normal
-            ctx = self.get_context_data(qform=qform, form=form)
-            return render(request, self.template_name, ctx, status=400)
-
-        try:
-            with transaction.atomic():
-                job: JobOrder = form.save(commit=False)
-                job.status = JobOrder.ST_QUOTATION
-                job.sales_user = request.user
-                if not job.number:
-                    job.number = f"TMP-{uuid4().hex[:12].upper()}"
-                job.job_date = qform.cleaned_data["quote_date"]
-                job.save()
-                form.save_m2m()
-
-                quotation = qform.save(commit=False)
-                quotation.job_order = job
-                quotation.status = QuotationStatus.DRAFT
-                quotation.save()
-
-            messages.success(request, "Quotation berhasil dibuat.", extra_tags="ui-inline")
-            return redirect(self.get_success_url())
-
-        except Exception as e:
-            # ⚠️ TEMP DEBUG TRAP — tampilkan traceback hanya untuk superuser
-            if request.user.is_superuser and request.GET.get("debug") == "1":
-                tb = traceback.format_exc()
-                payload_keys = ", ".join(sorted(list(data.keys())))
-                return HttpResponse(
-                    "<pre>"
-                    f"ERROR: {type(e).__name__}: {e}\n\n"
-                    f"POST keys: {payload_keys}\n\n"
-                    f"{tb}"
-                    "</pre>",
-                    status=500,
-                    content_type="text/html",
-                )
-
-            # non-superuser tetap dapat 500 normal
-            raise
 
 
 class QuotationUpdateView(LoginRequiredMixin, UpdateView):

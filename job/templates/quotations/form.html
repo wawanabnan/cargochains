@@ -866,33 +866,6 @@ function normalizeListsHTML(html) {
   return doc.body.innerHTML;
 }
 
-
-
- tinymce.init({
-    selector: "#id_term_conditions, #id_customer_note",
-    height: 280,
-    menubar: false,
-    plugins: "lists link table code autoresize",
-    toolbar: "undo redo | bold italic underline | bullist numlist | link table | removeformat | code",
-    branding: false,
-    setup: function (editor) {
-      editor.on("change keyup", function () {
-        editor.save(); // sync balik ke textarea untuk submit Django
-      });
-    }
-  });
-
-  // normalize paling penting: sebelum submit form
-  const form = notes?.closest("form") || term?.closest("form");
-  if (form) {
-    form.addEventListener("submit", function () {
-      if (window.tinymce) tinymce.triggerSave();
-      ["id_customer_note", "id_term_conditions"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = normalizeListsHTML(el.value);
-      });
-    });
-  }
 });
 </script>
 
