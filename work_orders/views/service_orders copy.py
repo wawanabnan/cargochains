@@ -58,15 +58,6 @@ def get_sales_cfg():
         # fallback aman kalau tabel belum siap saat boot/reload
         return None
     
-def cfg_value(attr: str, default=""):
-    """
-    Ambil attribute dari cfg kalau ada, kalau tidak -> default.
-    """
-    cfg = get_sales_cfg()
-    if not cfg:
-        return default
-    return getattr(cfg, attr, default) or default
-    
 def _to_decimal(val: str) -> Decimal:
     try:
         return Decimal(str(val or "").strip())
@@ -267,8 +258,8 @@ class VendorBookingFromJobCostWizardView(LoginRequiredMixin, TemplateView):
             vendor_id=locked_vendor_id,
             status="DRAFT",
             discount_amount=Decimal("0"),
-            vendor_note=cfg_value("vendor_note_default", ""),  
-            term_conditions=cfg_value("service_order_term_conditions", "")
+            vendor_note=cfg.vendor_note_default,
+            term_conditions=cfg.service_order_term_conditions,
         )
         vb.save()
 
@@ -354,7 +345,7 @@ class VendorBookingUpdateView(View):
 
         # Prefill note/terms dari config hanya jika masih kosong
         from sales.models import SalesConfig  # sesuaikan path kalau beda
-        cfg = get_sales_cfg()
+        cfg = SalesConfig.get_solo()
 
         initial = {}
         if not (vb.vendor_note or "").strip():
@@ -621,8 +612,8 @@ class VendorBookingCreateView(LoginRequiredMixin, TemplateView):
         job_id = (request.POST.get("job_order") or "").strip()
         if not job_id.isdigit():
             messages.error(request, "Job Order wajib dipilih.")
-           # return redirect(f"{reverse('work_orders:service_order_create')}?job_order={job.id}")
-            return redirect(reverse("work_orders:service_order_create"))
+            return redirect(f"{reverse('work_orders:service_order_create')}?job_order={job.id}")
+
 
         job = get_object_or_404(JobOrder, pk=int(job_id))
 
@@ -710,8 +701,8 @@ class VendorBookingCreateView(LoginRequiredMixin, TemplateView):
             vendor_id=locked_vendor_id,
             status=VendorBooking.ST_DRAFT,
             discount_amount=Decimal("0"),
-            vendor_note=cfg_value("vendor_note", ""),
-            term_conditions=cfg_value("service_order_term_conditions", ""),
+            vendor_note=cfg.vendor_note,
+            term_conditions=cfg.service_order_term_conditions,
             service_order_mode=mode, 
             created_by=request.user,
         )
