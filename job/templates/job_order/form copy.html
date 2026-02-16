@@ -2,401 +2,937 @@
 {% load static %}
 
 {% block content %}
-<div class="app-content-header">
-  <div class="container-fluid">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-      <div>
-        <div class="d-flex align-items-center gap-2">
-          <h3 class="mb-0">Job Order</h3>
-          {% if job %}
-            <span class="badge text-bg-primary">Update</span>
-            <span class="text-muted small">#{{ job.number }}</span>
-          {% else %}
-            <span class="badge text-bg-success">Create</span>
-          {% endif %}
-        </div>
-        <div class="text-muted small">Header information for job execution and billing</div>
-      </div>
 
-      <div class="d-flex align-items-center gap-2">
-        <a href="{% url 'job:job_order_list' %}" class="btn btn-outline-secondary btn-sm">
-          <i class="fa fa-arrow-left me-1"></i> Back
-        </a>
-        <button form="joborder-form" type="submit" class="btn btn-primary btn-sm">
-          <i class="fa fa-save me-1"></i> Save
-        </button>
+<div class="app-content-header py-1">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-6">
+        <h4 class="mb-0">Job Orders</h4>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-end">
+          <li class="breadcrumb-item active" aria-current="page">
+            <a href="{% url 'job:job_order_list' %}" class="btn btn-outline-secondary btn-sm">
+              <i class="fa fa-list me-1"></i> Back to List
+            </a>
+
+          </li>
+        </ol>
       </div>
     </div>
   </div>
 </div>
 
-<div class="app-content">
-  <div class="container-fluid">
+<div class="app-content mt-0">
+  <div class="container-fluid ">
+  
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
 
-    <form id="joborder-form" method="post" novalidate>
-      {% csrf_token %}
-      {% if job %}
-        <input type="hidden" name="job_id" value="{{ job.pk }}">
-      {% endif %}
-
-      {# =================== ERROR SUMMARY (SINGLE BLOCK) =================== #}
-      {% if form.errors or form.non_field_errors %}
-        <div class="alert alert-danger d-flex gap-2 align-items-start mb-3">
-          <i class="fa fa-triangle-exclamation mt-1"></i>
-          <div class="flex-grow-1">
-            <div class="fw-semibold">Ada error input. Cek field merah.</div>
-            {% if form.non_field_errors %}
-              <div class="mt-1">{{ form.non_field_errors }}</div>
-            {% endif %}
-          </div>
+        {% if form.errors or form.non_field_errors %}
+        <div class="alert alert-danger">
+          <ul class="mb-0">
+            {% for field, errors in form.errors.items %}
+              {% for error in errors %}
+                <li><strong>{{ field }}:</strong> {{ error }}</li>
+              {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
         </div>
-      {% endif %}
+        {% endif %}
+       
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {{ form.media }}
+          {% if job %}
+            <input type="hidden" name="job_id" value="{{ job.pk }}">
+          {% endif %}
 
-      <div class="cc-form">
 
-        {# =================== SECTION: GENERAL =================== #}
-        <div class="card cc-card shadow-sm">
-          <div class="card-header cc-card-header">
-            <div class="d-flex align-items-center justify-content-between">
-              <div class="fw-semibold">General</div>
-              <div class="text-muted small">Basic job info</div>
-            </div>
-          </div>
-          <div class="card-body">
 
-            <div class="cc-grid">
-              <div class="cc-field">
-                <label class="form-label">Job Date</label>
-                <div class="input-group input-group-sm">
-                  {{ form.job_date }}
-                  <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+          <div class="card" style="border-bottom: 0px;" id="card-ku">
+            <div class="card-body">
+             
+              <div class="row">
+                <div class="col-md-4">
+                     <div class="form-group row">
+                         <label class="col-sm-4 col-form-label">Job #</label>
+                          <div class="col-sm-8">
+                            {% if "number_display" in form.fields %}
+                              {{ form.number_display }}
+                              {{ form.number }}  {# hidden #}
+                            {% else %}
+                              {{ form.number }}
+                            {% endif %}
+                          </div>
+                       
+                      </div>
+
                 </div>
-                <div class="cc-err">{{ form.job_date.errors }}</div>
-              </div>
-
-              <div class="cc-field">
-                <label class="form-label">Order #</label>
-                {{ form.order_number }}
-                <div class="cc-err">{{ form.order_number.errors }}</div>
-              </div>
-
-              <div class="cc-field cc-span-2">
-                <label class="form-label">Customer</label>
-                {{ form.customer }}
-                <div class="cc-err">{{ form.customer.errors }}</div>
-              </div>
-
-              <div class="cc-field cc-span-2">
-                <label class="form-label">Service</label>
-                {{ form.service }}
-                <div class="cc-err">{{ form.service.errors }}</div>
-              </div>
-
-              <div class="cc-field cc-span-2">
-                <label class="form-label">Cargo Description</label>
-                {{ form.cargo_description }}
-                <div class="cc-err">{{ form.cargo_description.errors }}</div>
-              </div>
-
-              <div class="cc-field">
-                <label class="form-label">Quantity</label>
-                {{ form.quantity }}
-                <div class="cc-err">{{ form.quantity.errors }}</div>
-              </div>
-
-              {% if job %}
-              <div class="cc-field">
-                <label class="form-label">Job Order #</label>
-                <input type="text" class="form-control form-control-sm" value="{{ job.number }}" readonly>
-              </div>
-              {% endif %}
-            </div>
-
-          </div>
-        </div>
-
-        {# =================== SECTION: ROUTE / LOCATION =================== #}
-        <div class="card cc-card shadow-sm">
-          <div class="card-header cc-card-header">
-            <div class="d-flex align-items-center justify-content-between">
-              <div class="fw-semibold">Route</div>
-              <div class="text-muted small">Pickup & delivery</div>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="cc-grid">
-              <div class="cc-field cc-span-2">
-                <label class="form-label">Pick Up</label>
-                {{ form.pickup }}
-                <div class="cc-err">{{ form.pickup.errors }}</div>
-              </div>
-
-              <div class="cc-field cc-span-2">
-                <label class="form-label">Delivery</label>
-                {{ form.delivery }}
-                <div class="cc-err">{{ form.delivery.errors }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {# =================== SECTION: COMMERCIAL =================== #}
-        <div class="card cc-card shadow-sm">
-          <div class="card-header cc-card-header">
-            <div class="d-flex align-items-center justify-content-between">
-              <div class="fw-semibold">Commercial</div>
-              <div class="text-muted small">Currency & totals</div>
-            </div>
-          </div>
-
-          <div class="card-body">
-            <div class="cc-grid">
-
-              <div class="cc-field cc-span-2">
-                <label class="form-label">PIC</label>
-                {{ form.pic }}
-                <div class="cc-err">{{ form.pic.errors }}</div>
-              </div>
-
-              <div class="cc-field">
-                <label class="form-label">Payment Term</label>
-                {{ form.payment_term }}
-                <div class="cc-err">{{ form.payment_term.errors }}</div>
-              </div>
-
-              <div class="cc-field">
-                <label class="form-label">Currency</label>
-                {{ form.currency }}
-                <div class="cc-err">{{ form.currency.errors }}</div>
-              </div>
-
-              <div class="cc-field cc-span-2" id="row-kurs">
-                <label class="form-label">Kurs IDR</label>
-                <input type="text" name="kurs_idr" id="id_kurs_idr"
-                       value="{{ form.kurs_idr.value|default:'0,00' }}"
-                       class="form-control form-control-sm text-end">
-              </div>
-
-              <div class="cc-field">
-                <label class="form-label">Total Amount</label>
-                {{ form.total_amount }}
-                <div class="cc-err">{{ form.total_amount.errors }}</div>
-              </div>
-
-              <div class="cc-field">
-                <label class="form-label">Grand Total</label>
-                {{ form.grand_total }}
-                <div class="cc-err">{{ form.grand_total.errors }}</div>
-              </div>
-
-              <div class="cc-field cc-span-2">
-                <div class="cc-switches">
-                  <div class="cc-switch">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div>
-                        <div class="fw-semibold small mb-0">Apply Tax</div>
-                        <div class="text-muted small">1.1%</div>
+                <div class="col-md-4">
+                     <div class="form-group row">
+                         <label class="col-sm-4 col-form-label">Reference #</label>
+                          <div class="col-sm-8">
+                              {{ form.order_number }}
+                          </div>
+                       
                       </div>
-                      <div class="form-check form-switch m-0">
-                        {{ form.is_tax }}
-                      </div>
-                    </div>
-                    <div class="mt-2">
-                      <label class="form-label small mb-1">Tax Amount</label>
-                      {{ form.tax_amount }}
-                      <div class="cc-err">{{ form.tax_amount.errors }}</div>
-                    </div>
-                  </div>
 
-                  <div class="cc-switch">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div>
-                        <div class="fw-semibold small mb-0">Apply PPH</div>
-                        <div class="text-muted small">2%</div>
-                      </div>
-                      <div class="form-check form-switch m-0">
-                        {{ form.is_pph }}
-                      </div>
-                    </div>
-                    <div class="mt-2">
-                      <label class="form-label small mb-1">PPH Amount</label>
-                      {{ form.pph_amount }}
-                      <div class="cc-err">{{ form.pph_amount.errors }}</div>
-                    </div>
-                  </div>
                 </div>
+                 
+                <div class="col-md-4">
+                    <div class="form-group row">
+                        <label for="staticEmail" class="col-sm-4 col-form-label">Customer</label>
+                        <div class="col-sm-8">
+                          {{ form.customer }}
+                        </div>
+                      </div>
+
               </div>
 
-              <div class="cc-field cc-span-2">
-                <label class="form-label">Internal Remarks</label>
-                {{ form.remarks_internal }}
-                <div class="cc-err">{{ form.remarks_internal.errors }}</div>
+
+ 
+  
+
+              </div>
+               <div class="row">
+                <div class="col-md-4">
+                     <div class="form-group row">
+                        <label for="staticEmail" class="col-sm-4 col-form-label">T.O.P</label>
+                        <div class="col-sm-8">
+                          {{ form.payment_term }}
+                        </div>
+                      </div>
+
+                </div>
+                <div class="col-md-4">
+                     <div class="form-group row">
+                        <label for="staticEmail" class="col-sm-4 col-form-label">Contact</label>
+                        <div class="col-sm-8">
+                          {{ form.pic }}
+                        </div>
+                      </div>
+
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group row">
+                        <label for="staticEmail" class="col-sm-4 col-form-label">Currency</label>
+                        <div class="col-sm-8">
+                           {{ form.currency }}
+                        </div>
+                      </div>
+
+                </div>  
+              </div>
+              <div class="row">
+                <div class="col-md-4">
+                     <div class="form-group row">
+                        <label for="staticEmail" class="col-sm-4 col-form-label">Job Date</label>
+                        <div class="col-sm-8">
+                          {{ form.job_date }}
+                        </div>
+                      </div>
+
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group row">
+                        <label for="staticEmail" class="col-sm-4 col-form-label">ETD</label>
+                        <div class="col-sm-8">
+                          {{ form.shp_date }}
+                        </div>
+                      </div>
+
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group row">
+                        <label for="staticEmail" class="col-sm-4 col-form-label">IDR Rate</label>
+                        <div class="col-sm-8">
+                            {{ form.kurs_idr }}
+                        </div>
+                      </div>
+
+                </div>  
+              </div>
+            </div>   
+         </div>
+          
+            {% include 'job_order/extension/pricing.html' %}
+       
+   
+
+          
+              <ul class="nav nav-tabs  fq-tabs mt-3" id="partyTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active"
+                          id="route-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#routeTab"
+                          type="button" role="tab"
+                          aria-controls="routeTab" aria-selected="true">Route & Location</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link"
+                          id="cargo-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#cargoTab"
+                          type="button" role="tab"
+                          aria-controls="cargoTab" aria-selected="true">Cargo Information</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link "
+                          id="customer-note-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#customerNoteTab"
+                          type="button" role="tab"
+                          aria-controls="shipperTab" aria-selected="true">Customer Note</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link"
+                          id="term-note-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#termNoteTab"
+                          type="button" role="tab"
+                          aria-controls="consigneeTab" aria-selected="false">Term & Conditions</button>
+                </li>
+               
+              </ul>
+              <div class="tab-content p-2 fq-tab-content " id="myTabContent" style="background-color: #fff;">
+                 <div class="tab-pane fade show active" 
+                    id="routeTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                      {% include 'job_order/extension/route.html' %}
+        
+        
+                </div>
+                 <div class="tab-pane fade show " 
+                    id="cargoTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                    {% include 'job_order/extension/cargo.html' %}
+        
+                </div>
+                <div class="tab-pane fade show " 
+                    id="customerNoteTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                      
+                    
+                    {{ form.customer_note }}
+        
+                </div>
+                <div class="tab-pane fade show " 
+                    id="termNoteTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                    {{ form.term_conditions }}
+        
+                </div>
+              
+               
               </div>
 
-            </div>
+
+
+        
+  
+          <div class="mt-1"></div>
+          
+          <!-- SUBMIT -->
+          <div class="mt-4 d-flex justify-content-end gap-2">
+
+            <a href="{% url 'job:job_order_list' %}"
+              class="btn btn-outline-secondary btn-sm">
+              <i class="fa fa-times me-1"></i> Cancel
+            </a>
+
+            <button type="submit" class="btn btn-sm btn-primary">
+              <i class="fa fa-save me-1"></i>
+              {% if job %}Update{% else %}Create{% endif %}
+            </button>
+
           </div>
 
-          <div class="card-footer bg-body-tertiary">
-            <div class="d-flex justify-content-end gap-2">
-              <a href="{% url 'job:job_order_list' %}" class="btn btn-outline-secondary">
-                Cancel
-              </a>
-              <button type="submit" class="btn btn-primary">
-                <i class="fa fa-save me-1"></i> Save
-              </button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </form>
-
+           {{ tax_map|json_script:"tax-map" }}
+        </form>
+  
   </div>
 </div>
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
 <style>
-  /* Container feel */
-  
-  /* Card polish */
-  .cc-card { border-radius: 14px; border: 1px solid rgba(0,0,0,.06); }
-  .cc-card-header { background: transparent; border-bottom: 1px solid rgba(0,0,0,.06); }
 
-  /* Grid modern (2 columns inside, tapi keseluruhan tetap single-column) */
-  .cc-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px 14px;
-  }
-  .cc-span-2 { grid-column: span 2; }
+/* Paksa tinggi textarea pickup/delivery */
+textarea[name="pickup"],
+textarea[name="delivery"]{
+  height: 140px !important;
+  min-height: 140px !important;
+  resize: vertical;
+}
 
-  /* Field style */
-  .cc-field .form-label { font-size: .78rem; font-weight: 600; color: rgba(0,0,0,.72); margin-bottom: 6px; }
-  .cc-field .form-control,
-  .cc-field .form-select { border-radius: 10px; }
-  .cc-field .input-group .form-control { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
-  .cc-field .input-group-text { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
+/* Kalau AdminLTE ngunci semua form-control-sm */
+textarea.form-control-sm{
+  height: auto !important;
+  min-height: 140px !important;
+}
 
-  /* Error */
-  .cc-err ul, .cc-err { margin: 6px 0 0; }
-  .cc-err { font-size: .78rem; color: #dc3545; }
-  .cc-err ul { padding-left: 18px; }
 
-  /* Switch boxes */
-  .cc-switches { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  .cc-switch { border: 1px solid rgba(0,0,0,.06); border-radius: 14px; padding: 12px; background: rgba(0,0,0,.015); }
+#job-order-table  tr td  {
+  padding:0px 10px!important
+}
+#job-order-table  tr td .form-select,
+#job-order-table  tr td .form-control {
+  border:0px
+}
 
-  /* Mobile */
-  @media (max-width: 991px) {
-    .cc-grid { grid-template-columns: 1fr; }
-    .cc-span-2 { grid-column: span 1; }
-    .cc-switches { grid-template-columns: 1fr; }
-  }
+.card .card-ku > input.form-control {
+  border:0px !important
+}
+
+.nav-tabs{
+  border-bottom: 0;
+}
+
+/* tab-content yang punya border */
+.fq-tab-content{
+  border: 1px solid rgba(0,0,0,.12);
+  padding: 1rem;
+  background: #fff;
+}
+
+/* tab-pane polos */
+.fq-tab-content .tab-pane{
+  border: 0 !important;
+  padding: 0;
+}
+
+/* active tab nyatu ke content */
+.nav-tabs .nav-link.active{
+  background: #fff;
+  border-bottom-color: #fff; /* nutup border content */
+}
+
+
+
+
+
+
 </style>
+<style>
+  /* =========================
+   Select2 AdminLTE BS5 FIX
+   ========================= */
+
+.select2-container { width: 100% !important; }
+
+/* === MAIN BOX === */
+.select2-container--default .select2-selection--single{
+  height: calc(2.375rem + 2px);     /* BS5 */
+  padding: 0 .75rem;               /* HAPUS padding vertikal */
+  border: 1px solid #ced4da;
+  border-radius: 0 !important;     /* 🔥 buang rounded */
+  background-color: #fff;
+
+  display: flex;
+  align-items: center;             /* 🔥 vertical center */
+}
+
+/* === SELECTED TEXT === */
+.select2-container--default .select2-selection--single
+.select2-selection__rendered{
+  padding: 0 !important;
+  line-height: normal !important;  /* 🔥 jangan pakai line-height lama */
+  color: #212529;
+
+  display: flex;
+  align-items: center;             /* 🔥 center text */
+  height: 100%;
+}
+
+/* === ARROW === */
+.select2-container--default .select2-selection--single
+.select2-selection__arrow{
+  height: 100%;
+  right: .5rem;
+}
+
+/* === CLEAR (X) BUTTON FIX === */
+.select2-container--default .select2-selection--single
+.select2-selection__clear{
+  position: relative;
+  top: 0;
+  margin-right: 1.75rem;           /* jarak dari arrow */
+  height: 100%;
+
+  display: flex;
+  align-items: center;             /* 🔥 biar ga jatuh */
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* === FOCUS === */
+.select2-container--default.select2-container--focus
+.select2-selection--single{
+  border-color: #86b7fe;
+  box-shadow: none;                /* AdminLTE style */
+}
+
+/* === DROPDOWN === */
+.select2-container--default .select2-dropdown{
+  border-radius: 0 !important;     /* 🔥 lurus juga */
+  border: 1px solid #ced4da;
+  margin-top: -1px;                /* nempel */
+}
+
+/* === OPTION === */
+.select2-container--default .select2-results__option{
+  padding: .5rem .75rem;
+}
+
+/* === OPEN STATE (biar satu komponen) === */
+.select2-container--open
+.select2-selection--single{
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+</style>
+<style>
+  .s2loc-row{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.s2loc-left{min-width:0;flex:1;}
+.s2loc-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.s2loc-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.s2loc-code{font-size:.75rem;font-weight:800;padding:.12rem .45rem;border-radius:999px;background:rgba(0,0,0,.06);}
+.s2loc-badge{font-size:.72rem;font-weight:800;padding:.12rem .45rem;border-radius:999px;background:rgba(0,0,0,.06);}
+.s2loc-badge.is-airport{background:rgba(13,110,253,.12);color:#0d6efd;}
+.s2loc-badge.is-port{background:rgba(25,135,84,.12);color:#198754;}
+.s2loc-badge.is-city{background:rgba(108,117,125,.12);color:#6c757d;}
+
+</style>
+
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
+
+      <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
 {% endblock %}
 
 {% block extra_js %}
+
+
+
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-{# JS om tetap dipakai (copy dari versi sebelumnya) #}
+
+
+<script src="{% static 'js/job/idr_kurs.js' %}">  </script>
+<script src="{% static 'vendor/js/select2.full.min.js' %}"> </script>
+<script src="{% static 'js/tax_select2_autoinit.js' %}"> </script>
+<script src="{% static 'js/job/location_init.js' %}"> </script>
+
+
+
 <script>
-(function(){
+(function () {
+
+  // =========================
+  // Helpers angka Indonesia
+  // =========================
   function parseID(v) {
-    if (!v) return 0;
+    if (v === null || v === undefined) return 0;
     let s = String(v).trim();
-    if (s.indexOf(",") >= 0) {
+    if (!s) return 0;
+
+    s = s.replace(/\s+/g, "");
+
+    // Indonesia style: 1.234.567,89
+    if (s.includes(",")) {
       s = s.replace(/\./g, "").replace(",", ".");
-      const n = parseFloat(s);
-      return isNaN(n) ? 0 : n;
+      const n = Number(s);
+      return Number.isFinite(n) ? n : 0;
     }
-    const n = parseFloat(s);
-    return isNaN(n) ? 0 : n;
+
+    // plain number
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
   }
 
-  function fmtID(n){
-    return Number(n || 0).toLocaleString("id-ID", {
+  function fmtID(n) {
+    const x = Number(n || 0);
+    return x.toLocaleString("id-ID", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
   }
 
-  function recalc(){
-    const totalEl = document.getElementById("id_total_amount");
-    const taxEl   = document.getElementById("id_tax_amount");
-    const grandEl = document.getElementById("id_grand_total");
-    const isTaxEl = document.getElementById("id_is_tax");
-    const pphEl   = document.getElementById("id_pph_amount");
-    const isPphEl = document.getElementById("id_is_pph");
-    if (!totalEl || !taxEl || !grandEl) return;
-
-    let total = parseID(totalEl.value);
-    let tax   = (isTaxEl && isTaxEl.checked) ? total * 0.011 : 0;
-    let pph   = (isPphEl && isPphEl.checked) ? total * 0.02 : 0;
-    let grand = total + tax - pph;
-
-    totalEl.value = fmtID(total);
-    taxEl.value   = fmtID(tax);
-    if (pphEl) pphEl.value = fmtID(pph);
-    grandEl.value = fmtID(grand);
+  function fmtID3(n) {
+    const x = Number(n || 0);
+    return x.toLocaleString("id-ID", {
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3
+    });
   }
 
-  document.addEventListener("DOMContentLoaded", function(){
+  function setReadonly(el) {
+    if (!el) return;
+    el.readOnly = true;
+    el.setAttribute("tabindex", "-1");
+  }
+
+  // =========================
+  // KURS helpers (raw + limit 3 desimal)
+  // =========================
+  function normalizeKursRaw(v) {
+    let s = String(v ?? "").trim().replace(/\s+/g, "");
+    if (!s) return "";
+
+    // kalau indo: 1.234,567 -> 1234.567
+    if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+    // keep digit + dot
+    s = s.replace(/[^\d.]/g, "");
+    // rapihin dot ganda
+    const parts = s.split(".");
+    const intPart = parts[0] || "";
+    const decPart = (parts[1] || "").slice(0, 3); // ✅ max 3 digit
+    return decPart ? `${intPart}.${decPart}` : intPart;
+  }
+
+  function setKursPretty(kursInput) {
+    if (!kursInput) return;
+    const raw = normalizeKursRaw(kursInput.value);
+    kursInput.dataset.raw = raw;
+    kursInput.value = raw ? fmtID3(Number(raw)) : "";
+  }
+
+  function setKursRaw(kursInput) {
+    if (!kursInput) return;
+    const raw = normalizeKursRaw(kursInput.value);
+    kursInput.dataset.raw = raw;
+    kursInput.value = raw; // plain decimal buat edit
+  }
+
+  // =========================
+  // Hitung total (tanpa format)
+  // =========================
+  function recalcTotalRaw() {
+    const qtyEl   = document.getElementById("id_qty");
+    const priceEl = document.getElementById("id_price");
     const totalEl = document.getElementById("id_total_amount");
+
+    if (!qtyEl || !priceEl || !totalEl) return;
+
+    const qty = parseID(qtyEl.value);
+    const price = parseID(priceEl.value);
+    const total = qty * price;
+
+    totalEl.value = fmtID(total);
+  }
+
+  function formatInput2(el) {
+    if (!el) return;
+    const n = parseID(el.value);
+    el.value = fmtID(n);
+  }
+
+  // =========================
+  // MAIN DOM READY
+  // =========================
+  document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.querySelector("form");
+    if (!form) return;
+
+    const qtyEl   = document.getElementById("id_qty");
+    const priceEl = document.getElementById("id_price");
+    const totalEl = document.getElementById("id_total_amount");
+
     const taxEl   = document.getElementById("id_tax_amount");
-    const grandEl = document.getElementById("id_grand_total");
-    const isTaxEl = document.getElementById("id_is_tax");
     const pphEl   = document.getElementById("id_pph_amount");
-    const isPphEl = document.getElementById("id_is_pph");
-    const form    = document.querySelector("form");
+    const grandEl = document.getElementById("id_grand_total");
 
     const currencyEl = document.getElementById("id_currency");
     const kursRow    = document.getElementById("row-kurs");
     const kursInput  = document.getElementById("id_kurs_idr");
 
-    function toggleKurs() {
-      if (!currencyEl || !kursRow || !kursInput) return;
-      const selected = currencyEl.options[currencyEl.selectedIndex].text.trim();
-      if (selected !== "IDR") kursRow.style.display = "";
-      else { kursRow.style.display = "none"; kursInput.value = "1,00"; }
-    }
+    // =========================
+    // Readonly fields
+    // =========================
+    setReadonly(totalEl);
+    setReadonly(taxEl);
+    setReadonly(pphEl);
+    setReadonly(grandEl);
 
-    if (currencyEl) {
-      toggleKurs();
-      currencyEl.addEventListener("change", toggleKurs);
-    }
+    // =========================
+    // Auto select on focus
+    // =========================
+    [qtyEl, priceEl, kursInput].forEach(function (el) {
+      if (!el) return;
+      el.addEventListener("focus", function () {
+        setTimeout(() => el.select(), 0);
+      });
+    });
 
-    if (taxEl) taxEl.readOnly = true;
-    if (pphEl) pphEl.readOnly = true;
-
-    if (totalEl) {
-      totalEl.addEventListener("blur", recalc);
-      totalEl.addEventListener("change", recalc);
-    }
-    if (isTaxEl) isTaxEl.addEventListener("change", recalc);
-    if (isPphEl) isPphEl.addEventListener("change", recalc);
-
-    recalc();
-
-    if (form) {
-      form.addEventListener("submit", function(){
-        if (totalEl) totalEl.value = parseID(totalEl.value);
-        if (taxEl) taxEl.value   = parseID(taxEl.value);
-        if (grandEl) grandEl.value = parseID(grandEl.value);
-        if (pphEl) pphEl.value = parseID(pphEl.value);
-        if (kursInput) kursInput.value = parseID(kursInput.value);
+    // =========================
+    // Event qty & price
+    // =========================
+    if (qtyEl) {
+      qtyEl.addEventListener("input", recalcTotalRaw);
+      qtyEl.addEventListener("blur", function () {
+        formatInput2(qtyEl);
+        recalcTotalRaw();
       });
     }
 
-    if (typeof flatpickr !== "undefined") {
-      document.querySelectorAll(".js-jobdate").forEach(function (el) {
-        const fp = flatpickr(el, { dateFormat: "d-m-Y", allowInput: true, clickOpens: true });
-        el.addEventListener("focus", function () { fp.open(); });
+    if (priceEl) {
+      priceEl.addEventListener("input", recalcTotalRaw);
+      priceEl.addEventListener("blur", function () {
+        formatInput2(priceEl);
+        recalcTotalRaw();
+      });
+    }
+
+    // =========================
+    // Initial calc & format
+    // =========================
+    recalcTotalRaw();
+
+    // =========================
+    // Before submit → kirim angka plain
+    // =========================
+    form.addEventListener("submit", function () {
+      if (qtyEl) qtyEl.value = parseID(qtyEl.value);
+      if (priceEl) priceEl.value = parseID(priceEl.value);
+
+      if (totalEl) totalEl.value = parseID(totalEl.value);
+      if (taxEl) taxEl.value = parseID(taxEl.value);
+      if (pphEl) pphEl.value = parseID(pphEl.value);
+      if (grandEl) grandEl.value = parseID(grandEl.value);
+
+      // kurs kirim raw (plain decimal), bukan formatted
+      if (kursInput) {
+        kursInput.value = kursInput.dataset.raw || normalizeKursRaw(kursInput.value) || "";
+      }
+    });
+
+    // =========================
+    // Flatpickr (unchanged)
+    // =========================
+    if (typeof flatpickr === "undefined") {
+      console.warn("Flatpickr belum ter-load");
+      return;
+    }
+
+    const inputs = document.querySelectorAll(".js-jobdate");
+    if (!inputs.length) return;
+
+    inputs.forEach(function (el) {
+      const fp = flatpickr(el, {
+        dateFormat: "d-m-Y",
+        allowInput: true,
+        clickOpens: true,
+        altInput: false,
+        defaultDate: el.value || null,
+        locale: { firstDayOfWeek: 1 }
+      });
+
+      el.addEventListener("focus", function () {
+        fp.open();
+      });
+    });
+
+  });
+
+})();
+</script>
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const $ = window.jQuery;
+  if (!$ || !$.fn.select2) return;
+
+  function kindClass(kind) {
+    kind = (kind || "").toLowerCase();
+    if (kind === "airport") return "is-airport";
+    if (kind === "seaport") return "is-port";
+    if (kind === "city") return "is-city";
+    return "is-other";
+  }
+
+  function renderItem2(item) {
+    if (item.loading) return item.text;
+
+    const $row = $('<div class="s2loc-row"></div>');
+    const $left = $('<div class="s2loc-left"></div>');
+    const $right = $('<div class="s2loc-right"></div>');
+
+    $left.append($('<div class="s2loc-title"></div>').text(item.text || ""));
+
+    if (item.code) $right.append($('<div class="s2loc-code"></div>').text(item.code));
+    if (item.kind) $right.append($('<span class="s2loc-badge"></span>').addClass(kindClass(item.kind)).text(item.kind));
+
+    $row.append($left).append($right);
+    return $row;
+  }
+
+
+  function renderItem(item) {
+    if (item.loading) return item.text;
+
+    const title = item.text || "";
+    const chain = [item.region, item.province].filter(Boolean).join(" — ");
+    const sub = item.subtext || "";
+
+    return $(`
+      <div>
+        <div><strong>${title}</strong> ${item.kind ? `<span class="text-muted">[${item.kind}]</span>` : ""}</div>
+        <div class="text-muted small">${chain || sub}</div>
+      </div>
+    `);
+  }
+
+
+  $(".js-location-select").each(function () {
+    const $el = $(this);
+
+    // penting: kalau pernah ke-init, destroy dulu biar gak dobel
+    if ($el.data("select2")) $el.select2("destroy");
+
+    $el.select2({
+      width: "100%",
+      placeholder: $el.data("placeholder") || "Pilih",
+      allowClear: true,
+      minimumInputLength: 1,
+      ajax: {
+        url: $el.data("url"),
+        dataType: "json",
+        delay: 250,
+        data: params => ({ q: params.term || "", page: params.page || 1 }),
+        processResults: data => ({
+          results: (data.results || []).map(x => ({
+            id: x.id,
+            text: x.text,
+            kind: x.kind || "",
+            code: x.code || "",
+            subtext: x.subtext || "",
+            district: x.district || "",
+            region: x.region || "",
+            province: x.province || ""
+
+          })),
+          pagination: data.pagination || { more: false }
+        })
+      },
+      templateResult: renderItem,
+      templateSelection: item => item.text || ""
+    });
+    });
+   
+  });
+  
+
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const $ = window.jQuery;
+  if (!$ || !$.fn.select2) return;
+
+  // 1) init select2 location kamu di sini...
+  // ...
+
+  // 2) init taxes select2
+  if (window.initTaxSelect2) {
+    window.initTaxSelect2(document);
+  }
+});
+</script>
+
+<script>
+(function () {
+  let TAX_MAP = {};
+
+  function readTaxMap() {
+    const el = document.getElementById("tax-map");
+    if (!el) return {};
+    try { return JSON.parse(el.textContent); } catch { return {}; }
+  }
+
+  function numID(v){
+    if(v==null) return 0;
+    let s = String(v).trim().replace(/\s+/g,"");
+    if(!s) return 0;
+    if(s.includes(",")) s = s.replace(/\./g,"").replace(",",".");
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function fmtID(n){
+    return new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(Number(n ?? 0));
+  }
+
+  // support kalau field kamu bukan <input> tapi <span>/<div>
+  function setMoney(el, value){
+    if (!el) return;
+    const s = fmtID(value);
+    if ("value" in el) el.value = s;
+    else el.textContent = s;
+    el.dataset && (el.dataset.raw = String(value ?? 0));
+  }
+
+  function getSelectedTaxIds(){
+    const sel = document.getElementById("id_taxes");
+    if(!sel) return [];
+    return Array.from(sel.selectedOptions || []).map(o=>o.value).filter(Boolean);
+  }
+
+  function computeTaxes(base, taxIds){
+    let vat = 0;
+    let wht = 0;
+
+    taxIds.forEach((id) => {
+      const t = TAX_MAP[String(id)];
+      if (!t) return;
+
+      const r = (Number(t.rate || 0) / 100.0); // percent
+      const amt = base * r;
+
+      if (t.is_withholding) wht += amt;
+      else vat += amt;
+    });
+
+    return { vat, wht };
+  }
+
+  function recalc(){
+    const qtyEl   = document.getElementById("id_qty");
+    const priceEl = document.getElementById("id_price");
+    const taxesEl = document.getElementById("id_taxes");
+
+    const totalEl = document.getElementById("id_total_amount");
+    const taxEl   = document.getElementById("id_tax_amount");
+    const pphEl   = document.getElementById("id_pph_amount");
+    const grandEl = document.getElementById("id_grand_total");
+
+    if(!qtyEl || !priceEl || !taxesEl || !totalEl || !taxEl || !grandEl) return;
+
+    const qty = numID(qtyEl.value);
+    const price = numID(priceEl.value);
+    const base = qty * price;
+
+    const taxIds = getSelectedTaxIds();
+    const t = computeTaxes(base, taxIds);
+
+    const grand = base + t.vat - t.wht;
+
+    setMoney(totalEl, base);
+    setMoney(taxEl, t.vat);
+    if (pphEl) setMoney(pphEl, t.wht);
+    setMoney(grandEl, grand);
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    // ✅ baca tax-map setelah DOM siap
+    TAX_MAP = readTaxMap();
+    console.log("TAX_MAP size:", Object.keys(TAX_MAP).length);
+
+    // init select2 taxes (kalau ada)
+    if (window.initTaxSelect2) window.initTaxSelect2(document);
+
+    // readonly output
+    ["id_total_amount","id_tax_amount","id_pph_amount","id_grand_total"].forEach(id=>{
+      const el = document.getElementById(id);
+      if (el && "readOnly" in el) el.readOnly = true;
+    });
+
+    const $ = window.jQuery;
+    const taxesEl = document.getElementById("id_taxes");
+    const qtyEl = document.getElementById("id_qty");
+    const priceEl = document.getElementById("id_price");
+
+    if(qtyEl){
+      qtyEl.addEventListener("input", recalc);
+      qtyEl.addEventListener("blur", ()=>{ qtyEl.value = fmtID(numID(qtyEl.value)); recalc(); });
+    }
+    if(priceEl){
+      priceEl.addEventListener("input", recalc);
+      priceEl.addEventListener("blur", ()=>{ priceEl.value = fmtID(numID(priceEl.value)); recalc(); });
+    }
+
+    if(taxesEl){
+      if($ && $.fn.select2) $(taxesEl).on("change", recalc);
+      else taxesEl.addEventListener("change", recalc);
+    }
+
+    recalc();
+  });
+
+})();
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const term_conditions = document.getElementById("id_term_conditions");
+  const notes = document.getElementById("id_customer_note");
+
+ // console.log("term_conditions el:", term_conditions, "notes el:", notes);
+ // console.log("term_conditions tag:", term_conditions?.tagName, "notes tag:", notes?.tagName);
+
+  if (!term_conditions && !notes) return;
+
+  // Kalau sudah pernah init, jangan init ulang
+  if (window.tinymce?.get("id_term_conditions_note") || window.tinymce?.get("id_customer_note")) return;
+
+  tinymce.init({
+    selector: "#id_term_conditions, #id_customer_note",
+    height: 280,
+    menubar: false,
+    plugins: "lists link table code autoresize",
+    toolbar: "undo redo | bold italic underline | bullist numlist | link table | removeformat | code",
+    branding: false,
+    setup: function (editor) {
+      editor.on("change keyup", function () {
+        editor.save(); // sync balik ke textarea untuk submit Django
       });
     }
   });
-})();
+});
 </script>
+
+<script>
+$(function () {
+
+  function initLocationSelect2($el, url) {
+    $el.select2({
+      width: "100%",
+      ajax: {
+        url: url,
+        dataType: "json",
+        delay: 250,
+        data: (params) => ({ q: params.term || "" }),
+        processResults: (data) => {
+          const results = (data || []).map(item => ({
+            id: item.id,
+            text: item.label,
+            district: item.district,
+            region: item.region,
+            province: item.province
+          }));
+          return { results };
+        },
+      },
+    });
+  }
+
+  const $origin = $("#id_origin_location");
+  const $pickup = $("#id_pickup_location");
+
+  if ($origin.length) initLocationSelect2($origin, "/ajax/locations/");
+  if ($pickup.length) initLocationSelect2($pickup, "/ajax/locations/");
+
+});
+</script>
+
 {% endblock %}

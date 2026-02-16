@@ -35,22 +35,42 @@
       </div>
     </div>
 
-    <!-- ROW 3 : Pickup - Delivery Address (TEXTAREA) -->
-    <div class="row">
-      <div class="col-md-6">
-        <div class="mb-3">
-          <label class="form-label">Pickup Address</label>
-          {{ form.pickup}}
-        </div>
-      </div>
+   <!-- ROW 3 : Pickup - Delivery Address (TEXTAREA) -->
+  <div class="row">
+    <div class="col-md-6">
+      <div class="mb-3">
+        <label class="form-label">Pickup Address</label>
 
-      <div class="col-md-6">
-        <div class="mb-3">
-          <label class="form-label">Delivery Address</label>
-          {{ form.delivery }}
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="id_pickup_from_origin">
+          <label class="form-check-label" for="id_pickup_from_origin">
+            ambil alamat dari origin location
+          </label>
         </div>
+
+      
+
+        {{ form.pickup }}
       </div>
     </div>
+
+    <div class="col-md-6">
+      <div class="mb-3">
+        <label class="form-label">Delivery Address</label>
+
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="id_delivery_from_destination">
+          <label class="form-check-label" for="id_delivery_from_destination">
+            ambil alamat dari destination location
+          </label>
+        </div>
+
+      
+        {{ form.delivery }}
+      </div>
+    </div>
+  </div>
+
 
   </div>
 </div>

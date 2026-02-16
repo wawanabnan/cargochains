@@ -658,7 +658,7 @@ document.addEventListener("DOMContentLoaded", function () {
     return "is-other";
   }
 
-  function renderItem(item) {
+  function renderItem2(item) {
     if (item.loading) return item.text;
 
     const $row = $('<div class="s2loc-row"></div>');
@@ -673,6 +673,23 @@ document.addEventListener("DOMContentLoaded", function () {
     $row.append($left).append($right);
     return $row;
   }
+
+
+  function renderItem(item) {
+    if (item.loading) return item.text;
+
+    const title = item.text || "";
+    const chain = [item.region, item.province].filter(Boolean).join(" — ");
+    const sub = item.subtext || "";
+
+    return $(`
+      <div>
+        <div><strong>${title}</strong> ${item.kind ? `<span class="text-muted">[${item.kind}]</span>` : ""}</div>
+        <div class="text-muted small">${chain || sub}</div>
+      </div>
+    `);
+  }
+
 
   $(".js-location-select").each(function () {
     const $el = $(this);
@@ -708,7 +725,8 @@ document.addEventListener("DOMContentLoaded", function () {
       templateResult: renderItem,
       templateSelection: item => item.text || ""
     });
-  });
+    });
+    
 });
 </script>
 
@@ -862,23 +880,99 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (!term_conditions && !notes) return;
 
-  // Kalau sudah pernah init, jangan init ulang
-  if (window.tinymce?.get("id_term_conditions_note") || window.tinymce?.get("id_customer_note")) return;
-
-  tinymce.init({
-    selector: "#id_term_conditions, #id_customer_note",
-    height: 280,
-    menubar: false,
-    plugins: "lists link table code autoresize",
-    toolbar: "undo redo | bold italic underline | bullist numlist | link table | removeformat | code",
-    branding: false,
-    setup: function (editor) {
-      editor.on("change keyup", function () {
-        editor.save(); // sync balik ke textarea untuk submit Django
-      });
-    }
+  $el.select2({
+      width: "100%",
+      placeholder: $el.data("placeholder") || "Pilih",
+      allowClear: true,
+      minimumInputLength: 1,
+      ajax: {
+        url: $el.data("url"),
+        dataType: "json",
+        delay: 250,
+        data: params => ({ q: params.term || "", page: params.page || 1 }),
+        processResults: data => ({
+          results: (data.results || []).map(x => ({
+            id: x.id,
+            text: x.text,
+            kind: x.kind || "",
+            code: x.code || "",
+            subtext: x.subtext || "",
+            district: x.district || "",
+            region: x.region || "",
+            province: x.province || ""
+          })),
+          pagination: data.pagination || { more: false }
+        })
+      }
+    });
   });
-});
+
+  // ============================
+  // COPY ORIGIN → PICKUP
+  // ============================
+
+  const $origin = $("#id_origin");
+  const $destination = $("#id_destination");
+  const $pickupTextarea = $("#id_pickup");
+  const $deliveryTextarea = $("#id_delivery");
+
+  const $chkPickup = $("#id_pickup_from_origin");
+  const $chkDelivery = $("#id_delivery_from_destination");
+
+  function formatAddress(loc) {
+    const lines = [];
+    if (loc.district || loc.text) lines.push((loc.district || loc.text).trim());
+    if (loc.region) lines.push(loc.region.trim());
+    if (loc.province) lines.push(loc.province.trim());
+    return lines.filter(Boolean).join("\n");
+  }
+
+  function renderPickupPreview(loc) {
+    $("#pickup_district").text(loc.district || loc.text || "-");
+    $("#pickup_region").text(loc.region || "-");
+    $("#pickup_province").text(loc.province || "-");
+  }
+
+  function renderDeliveryPreview(loc) {
+    $("#delivery_district").text(loc.district || loc.text || "-");
+    $("#delivery_region").text(loc.region || "-");
+    $("#delivery_province").text(loc.province || "-");
+  }
+
+  function copyOriginToPickup() {
+    const data = $origin.select2("data");
+    if (!data || !data.length) return;
+
+    const loc = data[0];
+    renderPickupPreview(loc);
+    if ($pickupTextarea.length) $pickupTextarea.val(formatAddress(loc));
+  }
+
+  function copyDestinationToDelivery() {
+    const data = $destination.select2("data");
+    if (!data || !data.length) return;
+
+    const loc = data[0];
+    renderDeliveryPreview(loc);
+    if ($deliveryTextarea.length) $deliveryTextarea.val(formatAddress(loc));
+  }
+
+  $chkPickup.on("change", function () {
+    if (this.checked) copyOriginToPickup();
+  });
+
+  $chkDelivery.on("change", function () {
+    if (this.checked) copyDestinationToDelivery();
+  });
+
+  $origin.on("change", function () {
+    if ($chkPickup.is(":checked")) copyOriginToPickup();
+  });
+
+  $destination.on("change", function () {
+    if ($chkDelivery.is(":checked")) copyDestinationToDelivery();
+  });
+
 </script>
 
 <script>
