@@ -234,7 +234,6 @@ class QuotationCreateView(LoginRequiredMixin, CreateView):
     def post(self, request, *args, **kwargs):
         data = request.POST.copy()
 
-        # copy quote_date -> job_date (seperti punya om)
         qd = (data.get("quote_date") or "").strip()
         if qd and not (data.get("job_date") or "").strip():
             data["job_date"] = qd
@@ -242,16 +241,8 @@ class QuotationCreateView(LoginRequiredMixin, CreateView):
         qform = QuotationForm(data)
         form = JobOrderForm(data)
 
-        # Perangkap 1: kalau form invalid, log detail (bukan 500)
         if not (qform.is_valid() and form.is_valid()):
-            logger.warning(
-                "QuotationCreate INVALID user=%s path=%s q_errors=%s jo_errors=%s POST_keys=%s",
-                getattr(request.user, "username", None),
-                request.path,
-                qform.errors.as_json(),
-                form.errors.as_json(),
-                list(data.keys()),
-            )
+            # biar bukan 500, tampilkan error form normal
             ctx = self.get_context_data(qform=qform, form=form)
             return render(request, self.template_name, ctx, status=400)
 
@@ -260,10 +251,8 @@ class QuotationCreateView(LoginRequiredMixin, CreateView):
                 job: JobOrder = form.save(commit=False)
                 job.status = JobOrder.ST_QUOTATION
                 job.sales_user = request.user
-
                 if not job.number:
                     job.number = f"TMP-{uuid4().hex[:12].upper()}"
-
                 job.job_date = qform.cleaned_data["quote_date"]
                 job.save()
                 form.save_m2m()
@@ -277,25 +266,22 @@ class QuotationCreateView(LoginRequiredMixin, CreateView):
             return redirect(self.get_success_url())
 
         except Exception as e:
-            # Perangkap 2: log exception + context penting
-            logger.exception(
-                "QuotationCreate EXCEPTION user=%s path=%s POST_keys=%s job_number=%s",
-                getattr(request.user, "username", None),
-                request.path,
-                list(data.keys()),
-                data.get("number") or data.get("job_number") or None,
-            )
+            # ⚠️ TEMP DEBUG TRAP — tampilkan traceback hanya untuk superuser
+            if request.user.is_superuser and request.GET.get("debug") == "1":
+                tb = traceback.format_exc()
+                payload_keys = ", ".join(sorted(list(data.keys())))
+                return HttpResponse(
+                    "<pre>"
+                    f"ERROR: {type(e).__name__}: {e}\n\n"
+                    f"POST keys: {payload_keys}\n\n"
+                    f"{tb}"
+                    "</pre>",
+                    status=500,
+                    content_type="text/html",
+                )
 
-            # Optional: log SQL terakhir (kadang membantu kalau IntegrityError)
-            try:
-                if hasattr(connection, "queries") and connection.queries:
-                    logger.error("Last SQL: %s", connection.queries[-1])
-            except Exception:
-                pass
-
-            messages.error(request, f"{type(e).__name__}: {e}", extra_tags="ui-inline")
-            ctx = self.get_context_data(qform=qform, form=form)
-            return render(request, self.template_name, ctx, status=500)
+            # non-superuser tetap dapat 500 normal
+            raise
 
 
 class QuotationUpdateView(LoginRequiredMixin, UpdateView):
@@ -554,7 +540,7 @@ class QuotationDeleteView(LoginRequiredMixin, View):
 
         if not ids:
             messages.error(request, "Tidak ada data yang dipilih.")
-            return redirect("sales:freight_quotation_list")
+            return redirect("job:quotation_list")
 
         qs = Quotation.objects.filter(pk__in=ids)
 
