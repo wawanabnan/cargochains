@@ -34,12 +34,6 @@ from core.models.payment_terms import PaymentTerm
 from core.models.currencies import Currency
 from sales.utils.signature import build_signature_context_for_quotation
 
-import logging
-import traceback
-from django.db import connection
-
-logger = logging.getLogger("cargochains.quotation_create")
-
 
 def _quotation_print_context(q: Quotation):
     """
@@ -183,7 +177,7 @@ class QuotationCreateView(LoginRequiredMixin, CreateView):
         ctx = self.get_context_data()
         return render(request, self.template_name, ctx)
 
-    def post_old(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
 
         data = request.POST.copy()
 
@@ -230,73 +224,6 @@ class QuotationCreateView(LoginRequiredMixin, CreateView):
 
         messages.success(request, "Quotation berhasil dibuat.",extra_tags="ui-inline") 
         return redirect(self.get_success_url())
-
-    def post(self, request, *args, **kwargs):
-        data = request.POST.copy()
-
-        # copy quote_date -> job_date (seperti punya om)
-        qd = (data.get("quote_date") or "").strip()
-        if qd and not (data.get("job_date") or "").strip():
-            data["job_date"] = qd
-
-        qform = QuotationForm(data)
-        form = JobOrderForm(data)
-
-        # Perangkap 1: kalau form invalid, log detail (bukan 500)
-        if not (qform.is_valid() and form.is_valid()):
-            logger.warning(
-                "QuotationCreate INVALID user=%s path=%s q_errors=%s jo_errors=%s POST_keys=%s",
-                getattr(request.user, "username", None),
-                request.path,
-                qform.errors.as_json(),
-                form.errors.as_json(),
-                list(data.keys()),
-            )
-            ctx = self.get_context_data(qform=qform, form=form)
-            return render(request, self.template_name, ctx, status=400)
-
-        try:
-            with transaction.atomic():
-                job: JobOrder = form.save(commit=False)
-                job.status = JobOrder.ST_QUOTATION
-                job.sales_user = request.user
-
-                if not job.number:
-                    job.number = f"TMP-{uuid4().hex[:12].upper()}"
-
-                job.job_date = qform.cleaned_data["quote_date"]
-                job.save()
-                form.save_m2m()
-
-                quotation = qform.save(commit=False)
-                quotation.job_order = job
-                quotation.status = QuotationStatus.DRAFT
-                quotation.save()
-
-            messages.success(request, "Quotation berhasil dibuat.", extra_tags="ui-inline")
-            return redirect(self.get_success_url())
-
-        except Exception as e:
-            # Perangkap 2: log exception + context penting
-            logger.exception(
-                "QuotationCreate EXCEPTION user=%s path=%s POST_keys=%s job_number=%s",
-                getattr(request.user, "username", None),
-                request.path,
-                list(data.keys()),
-                data.get("number") or data.get("job_number") or None,
-            )
-
-            # Optional: log SQL terakhir (kadang membantu kalau IntegrityError)
-            try:
-                if hasattr(connection, "queries") and connection.queries:
-                    logger.error("Last SQL: %s", connection.queries[-1])
-            except Exception:
-                pass
-
-            messages.error(request, f"{type(e).__name__}: {e}", extra_tags="ui-inline")
-            ctx = self.get_context_data(qform=qform, form=form)
-            return render(request, self.template_name, ctx, status=500)
-
 
 class QuotationUpdateView(LoginRequiredMixin, UpdateView):
     model = Quotation
