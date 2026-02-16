@@ -74,82 +74,78 @@ app_name = "sales"
 
 urlpatterns = [
     # ===== QUOTATIONS =====
-    path("freight/quotations/",                   FreightQuotationListView.as_view(),   name="quotation_list"),
-    path("freight/quotations/<int:pk>/",          FreightQuotationDetailView.as_view(), name="quotation_details"),  # ← pakai nama plural 'details'
+   # path("freight/quotations/",                   FreightQuotationListView.as_view(),   name="quotation_list"),
+    #path("freight/quotations/<int:pk>/",          FreightQuotationDetailView.as_view(), name="quotation_details"),  # ← pakai nama plural 'details'
  
-    path("freight/quotations/add/",               FreightQuotationAddView.as_view(),  name="quotation_add"),
-    path("freight/quotations/<int:pk>/edit/",     FreightQuotationEditView.as_view(),  name="quotation_edit"),
+    #path("freight/quotations/add/",               FreightQuotationAddView.as_view(),  name="quotation_add"),
+    #path("freight/quotations/<int:pk>/edit/",     FreightQuotationEditView.as_view(),  name="quotation_edit"),
 
 
    # path("freight/quotations/lines/",                login_required(quotation_add_lines,  login_url="account:login"), name="quotation_add_lines"),
    
-    path("freight/quotations/<int:pk>/print/",       login_required(quotation_print,      login_url="account:login"), name="quotation_print"),
-    path("freight/quotations/<int:pk>/pdf/",         login_required(quotation_pdf,        login_url="account:login"), name="quotation_pdf"),
+    #path("freight/quotations/<int:pk>/print/",       login_required(quotation_print,      login_url="account:login"), name="quotation_print"),
+    #path("freight/quotations/<int:pk>/pdf/",         login_required(quotation_pdf,        login_url="account:login"), name="quotation_pdf"),
 
     # ===== ORDERS =====
-    path("freight/orders/",                          FreightOrderListView.as_view(),       name="order_list"),
-    path("freight/orders/<int:pk>/",                 FreightOrderDetailView.as_view(),     name="order_details"),     # ← pakai nama plural 'details'
+    #path("freight/orders/",                          FreightOrderListView.as_view(),       name="order_list"),
+    #path("freight/orders/<int:pk>/",                 FreightOrderDetailView.as_view(),     name="order_details"),     # ← pakai nama plural 'details'
 
     # ===== LEGACY ALIASES (biar reverse lama '..._detail' tetap hidup) =====
-    path("freight/quotations/<int:pk>/",             FreightQuotationDetailView.as_view(), name="quotation_detail"),
-    path("freight/orders/<int:pk>/",                 FreightOrderDetailView.as_view(),     name="order_detail"),
+    #path("freight/quotations/<int:pk>/",             FreightQuotationDetailView.as_view(), name="quotation_detail"),
+    #path("freight/orders/<int:pk>/",                 FreightOrderDetailView.as_view(),     name="order_detail"),
 
     # ===== LEGACY REDIRECTS (singular → plural) =====
-    path("freight/quotation/",                       RedirectView.as_view(pattern_name="sales:quotation_list",  permanent=False)),
-    path("freight/quotation/<int:pk>/",              RedirectView.as_view(pattern_name="sales:quotation_details", permanent=False)),
-    path("freight/order/",                           RedirectView.as_view(pattern_name="sales:order_list",       permanent=False)),
-    path("freight/order/<int:pk>/",                  RedirectView.as_view(pattern_name="sales:order_details",     permanent=False)),
-    path("freight/quotation/add/",                   RedirectView.as_view(pattern_name="sales:quotation_add",     permanent=False)),
-    path("freight/quotation/lines/",                 RedirectView.as_view(pattern_name="sales:quotation_add_lines", permanent=False)),
+    #path("freight/quotation/",                       RedirectView.as_view(pattern_name="sales:quotation_list",  permanent=False)),
+    #path("freight/quotation/<int:pk>/",              RedirectView.as_view(pattern_name="sales:quotation_details", permanent=False)),
+    #path("freight/order/",                           RedirectView.as_view(pattern_name="sales:order_list",       permanent=False)),
+    #path("freight/order/<int:pk>/",                  RedirectView.as_view(pattern_name="sales:order_details",     permanent=False)),
+    #path("freight/quotation/add/",                   RedirectView.as_view(pattern_name="sales:quotation_add",     permanent=False)),
+    #path("freight/quotation/lines/",                 RedirectView.as_view(pattern_name="sales:quotation_add_lines", permanent=False)),
 
     #path("freight/quotations/<int:pk>/generate-so/", sales_access_required(quotation_generate_so), name="quotation_generate_so"),
     #path("freight/orders/<int:pk>/status/", action_views.order_set_status, name="order_set_status"),
 
     # sales/urls.py
-    path("quotations/", FqListView.as_view(), name="fq_list"),
-    path("quotations/add/", FqCreateView.as_view(), name="fq_add"),
-    path("quotations/<int:pk>/edit/", FqUpdateView.as_view(), name="fq_edit"),
+    #path("quotations/", FqListView.as_view(), name="fq_list"),
+    #path("quotations/add/", FqCreateView.as_view(), name="fq_add"),
+    #path("quotations/<int:pk>/edit/", FqUpdateView.as_view(), name="fq_edit"),
     
-    path(
-        "quotations/<int:pk>/",
-        FqDetailView.as_view(),
-        name="fq_detail",
-    ),
-     path(
-        "quotations/<int:pk>/delete/",
-        FqDeleteView.as_view(),
-        name="fq_delete",
-    ),
+    #path(
+    #    "quotations/<int:pk>/",
+    #    FqDetailView.as_view(),
+    #    name="fq_detail",
+    #),
+    # path(
+    #    "quotations/<int:pk>/delete/",
+    #    FqDeleteView.as_view(),
+    #    name="fq_delete",
+    #),
 
     # Bulk delete
-    path(
-        "quotations/bulk-delete/",
-        FqBulkDeleteView.as_view(),
-        name="fq_bulk_delete",
-    ),
+    #path(
+    #    "quotations/bulk-delete/",
+    #    FqBulkDeleteView.as_view(),
+    #    name="fq_bulk_delete",
+    #),
    
-    path(
-        "quotations/<int:pk>/pdf/",
-        FreightQuotationPdfHtmlView.as_view(),
-        name="fq_pdf",
-    ),
+    #path(
+    #    "quotations/<int:pk>/pdf/",
+    #    FreightQuotationPdfHtmlView.as_view(),
+    #    name="fq_pdf",
+    #),
 
-    path(
-        "quotations/<int:pk>/status/",
-        FqStatusUpdateView.as_view(),
-        name="fq_change_status",
-    ),
+    #path(
+    #    "quotations/<int:pk>/status/",
+    #    FqStatusUpdateView.as_view(),
+    #    name="fq_change_status",
+    #),
 
     # FREIGHT ORDERS
-    path("freight-orders/", FoListView.as_view(), name="fo_list"),
-    path("freight-orders/<int:pk>/", FoDetailView.as_view(), name="fo_detail"),
-    path("freight-orders/<int:pk>/status/", FoStatusUpdateView.as_view(), name="fo_change_status"),
-    path("freight-orders/<int:pk>/edit-fields/", FoEditFieldsView.as_view(), name="fo_edit_fields"),
-    path(
-        "freight-orders/<int:pk>/print/",
-        FreightOrderPdfHtmlView.as_view(),
-        name="fo_pdf",
-    ),
+    #path("freight-orders/", FoListView.as_view(), name="fo_list"),
+    #path("freight-orders/<int:pk>/", FoDetailView.as_view(), name="fo_detail"),
+    #path("freight-orders/<int:pk>/status/", FoStatusUpdateView.as_view(), name="fo_change_status"),
+    #path("freight-orders/<int:pk>/edit-fields/", FoEditFieldsView.as_view(), name="fo_edit_fields"),
+    #path("freight-orders/<int:pk>/print/",FreightOrderPdfHtmlView.as_view(),name="fo_pdf",),
     
     #path("job-orders/", JobOrderListView.as_view(), name="job_order_list"),
     #path("job-order/add/", JobOrderCreateView.as_view(), name="job_order_add"),

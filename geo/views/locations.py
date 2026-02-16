@@ -228,6 +228,8 @@ class LocationSelect2View(View):
                 When(code__iexact=q_clean, then=50),
                 When(iata_code__iexact=q_clean, then=45),
                 When(unlocode__iexact=q_clean, then=40),
+                When(name__iexact=q_clean, then=35),
+                When(display_name__iexact=q_clean, then=33),
                 When(name__istartswith=q_clean, then=30),
                 When(display_name__istartswith=q_clean, then=25),
                 When(name__icontains=q_clean, then=20),
