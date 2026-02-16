@@ -154,7 +154,7 @@
     <!-- BULK FORM -->
     <form id="bulk-form"
           method="post"
-          action="{% url 'sales:fq_bulk_delete' %}"
+          action="{% url 'job:quotation_bulk_delete' %}"
           class="d-none">
       {% csrf_token %}
       <input type="hidden" name="ids" id="bulk-ids">
@@ -305,7 +305,7 @@ document.addEventListener("DOMContentLoaded", function () {
   var btnResetFilters = document.getElementById("btn-reset-filters");
   if (btnResetFilters) {
     btnResetFilters.addEventListener("click", function () {
-      window.location.href = "{% url 'sales:fq_list' %}";
+      window.location.href = "{% url 'job:quotation_list' %}";
     });
   }
 

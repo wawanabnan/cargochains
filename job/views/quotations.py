@@ -467,3 +467,47 @@ class QuotationConvertToOrderView(View):
                 extra_tags="ui-modal",
             )
             return redirect("job:quotation_detail", pk=q.id)
+
+
+
+
+ALLOWED_DELETE_STATUSES = ("DRAFT", "CANCELLED", "EXPIRED")
+
+class QuotationDeleteView(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        ids_raw = (request.POST.get("ids") or "").split(",")
+        ids = [i for i in ids_raw if i.strip().isdigit()]
+
+        if not ids:
+            messages.error(request, "Tidak ada data yang dipilih.")
+            return redirect("sales:freight_quotation_list")
+
+        qs = Quotation.objects.filter(pk__in=ids)
+
+        # Boleh delete hanya yang status dalam ALLOWED_DELETE_STATUSES
+        deletable = qs.filter(status__in=ALLOWED_DELETE_STATUSES)
+        blocked = qs.exclude(status__in=ALLOWED_DELETE_STATUSES)
+
+        deleted_count = deletable.count()
+        blocked_count = blocked.count()
+
+        if deleted_count:
+            deletable.delete()
+            messages.success(
+                request,
+                f"{deleted_count} quotation (Draft/Cancelled/Expired) berhasil dihapus.",
+            )
+
+        if blocked_count:
+            messages.warning(
+                request,
+                f"{blocked_count} quotation tidak bisa dihapus (status bukan Draft/Cancelled/Expired).",
+            )
+
+        if not deleted_count and not blocked_count:
+            messages.info(request, "Tidak ada quotation yang dihapus.")
+
+        return redirect("job:quotation_list")
+
+
