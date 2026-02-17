@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 from core.utils.system_message import SystemMessage
 from job.models.job_orders import JobOrder
+from job.models.job_costs import JobCost
 from django.core.exceptions import ValidationError
 from job.services.posting  import ensure_job_costing_posted
 
@@ -24,7 +25,7 @@ def job_confirm(request, pk):
 
 @login_required
 @require_POST
-def job_start_progress(request, pk):
+def job_start_progress2(request, pk):
     job = get_object_or_404(JobOrder, pk=pk)
     try:
         job.start_progress(request.user)  # In Costing -> In Progress
@@ -32,6 +33,28 @@ def job_start_progress(request, pk):
         messages.success(request, "Job started: In Costing → In Progress")
     except Exception as e:
         messages.error(request, str(e))
+    return redirect("job:job_order_detail", pk=pk)
+
+
+from django.db.models import Exists, OuterRef
+
+@login_required
+@require_POST
+def job_start_progress(request, pk):
+    job = get_object_or_404(JobOrder, pk=pk)
+
+    # 🚫 Block kalau cost kosong
+    if not job.job_costs.exists():
+        messages.error(request, "Tidak bisa Start Progress karena Cost masih kosong.")
+        return redirect("job:job_order_detail", pk=pk)
+
+    try:
+        job.start_progress(request.user)  # In Costing -> In Progress
+        job.save()
+        messages.success(request, "Job started: In Costing → In Progress")
+    except Exception as e:
+        messages.error(request, str(e))
+
     return redirect("job:job_order_detail", pk=pk)
 
 

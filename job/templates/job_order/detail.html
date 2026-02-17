@@ -205,7 +205,9 @@
 
     </div>
     <div class="card mt-2" style="border-bottom:0px">
+     
       <div class="card-header">
+          {% if job.status != "DRAFT" %}
         <a
           href="{% url 'job:joborder_cost_preview' job.id %}"
           target="_blank"
@@ -218,7 +220,7 @@
         href="{% url 'job:joborder_cost_pdf' job.pk %}">
         📄 Pdf
       </a>
-      
+      {% endif %}
       </div>
 
     </div>
@@ -289,18 +291,17 @@
                   
                   <div class="d-flex justify-content-between align-items-center p-2 border " style="border-top: 0px !important">
                   
-                    {% if not job.is_cost_locked %}
+                    {% if not job.is_cost_locked and job.status != "DRAFT" %}
+                    
                     <button type="button" class="btn btn-outline-primary btn-sm" id="btn-jobcost-add">
                       <i class="bi bi-plus-lg"></i> Add Row
                     </button>
 
                     <button type="submit" name="next" value="detail" class="btn btn-primary btn-sm">
-                      <i class="bi bi-save"></i> Save & Continue Costs
+                      <i class="bi bi-save"></i> Save
                     </button>
 
-                    <button type="submit" name="next" value="list" class="btn btn-outline-secondary btn-sm">
-                      <i class="bi bi-arrow-left"></i> Save & Back to List
-                    </button>
+                   
                     {% endif %}
                   </div>
                 </div>
