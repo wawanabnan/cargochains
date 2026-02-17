@@ -658,22 +658,6 @@ document.addEventListener("DOMContentLoaded", function () {
     return "is-other";
   }
 
-  function renderItem2(item) {
-    if (item.loading) return item.text;
-
-    const $row = $('<div class="s2loc-row"></div>');
-    const $left = $('<div class="s2loc-left"></div>');
-    const $right = $('<div class="s2loc-right"></div>');
-
-    $left.append($('<div class="s2loc-title"></div>').text(item.text || ""));
-
-    if (item.code) $right.append($('<div class="s2loc-code"></div>').text(item.code));
-    if (item.kind) $right.append($('<span class="s2loc-badge"></span>').addClass(kindClass(item.kind)).text(item.kind));
-
-    $row.append($left).append($right);
-    return $row;
-  }
-
 
   function renderItem(item) {
     if (item.loading) return item.text;
