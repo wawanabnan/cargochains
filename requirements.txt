@@ -44,4 +44,4 @@ playwright>=1.40
 beautifulsoup4>=4.12
 lxml>=4.9
 django-summernote
-bleach<6
+bleach==4.1.0
