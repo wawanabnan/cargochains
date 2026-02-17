@@ -71,7 +71,7 @@
 
         {# Link ke JobOrder kalau sudah ada #}
         {% if quotation.job_order and quotation.job_order.status == 'DRAFT' %}
-        <a class="btn btn-outline-success"
+        <a class="btn btn-sm btn-outline-success"
           href="{% url 'job:job_order_detail' quotation.job_order.id %}">
           View Job Order
         </a>
