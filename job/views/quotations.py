@@ -184,6 +184,10 @@ class QuotationCreateView(LoginRequiredMixin, CreateView):
         return render(request, self.template_name, ctx)
 
     def post(self, request, *args, **kwargs):
+        print("scheme", request.scheme)
+        print("is_secure", request.is_secure())
+        print("host", request.get_host())
+        print("meta proto", request.META.get("HTTP_X_FORWARDED_PROTO"))
 
         data = request.POST.copy()
 
