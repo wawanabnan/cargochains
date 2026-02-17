@@ -152,14 +152,15 @@
 
       const text = el.getAttribute("data-text") || "";
 
+      
       // level: success | error | warning | info
       const level =
         tags.find((t) => ["success", "error", "warning", "info"].includes(t)) ||
         "info";
 
       // ui selector
-      //const isError = level === "error";
-
+      const isError = level === "error";
+      
       const ui =
         isError
           ? "modal"
@@ -190,7 +191,7 @@
 
       // inline alert
       //showAlert(text, level, { timeout: 5000 });
-      const isError = level === "error";
+      //const isError = level === "error";
       showAlert(text, level, { timeout: isError ? 0 : 5000 });
     });
   });
