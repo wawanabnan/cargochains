@@ -17,7 +17,7 @@ class ProfileModalView(LoginRequiredMixin, View):
         return render(request, self.template_name, {"form": form})
     
 class ProfileModalSubmitView(LoginRequiredMixin, View):
-    template_name = "core/profile_modal_form.html"
+    template_name = "core/user_profiles/modal_form.html"
 
     def post(self, request):
         UserProfile.objects.get_or_create(user=request.user)  # ✅ ensure exists
