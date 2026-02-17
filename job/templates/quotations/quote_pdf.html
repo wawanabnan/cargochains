@@ -86,9 +86,9 @@
         <div><b>Notes</b></div>
         <div class="wrap">{{ jo.customer_note|safe }}</div>
       {% endif %}
-      {% if jo.sla_note %}
+      {% if jo.term_conditions %}
         <div style="margin-top:8px;"><b>Syarat dan Kondition</b></div>
-        <div class="wrap">{{ jo.sla_note|safe }}</div>
+        <div class="wrap">{{ jo.term_conditions|safe }}</div>
       {% endif %}
     </td>
     <td style="width:40%; vertical-align:top;">

@@ -1,6 +1,20 @@
 {% extends "print/base_preview_letterhead.html" %}
 {% load indo_format %}
 
+{% block toolbar %}
+<div class="print-toolbar-outside">
+  <button type="button" class="btn btn-outline-secondary w-100 mb-2" onclick="window.print()">
+    Print
+  </button>
+  <a class="btn btn-danger w-100"
+     href="{% url 'job:quotation_pdf'  object.pk %}"
+     target="_blank" rel="noopener">
+    PDF
+  </a>
+</div>
+{% endblock %}
+
+
 {% block content %}
 
 <h2 style="margin:0 0 8px 0;text-align: right;">QUOTATION</h2>
@@ -86,9 +100,9 @@
         <div><b>Notes</b></div>
         <div class="wrap">{{ jo.customer_note|safe }}</div>
       {% endif %}
-      {% if jo.sla_note %}
+      {% if jo.term_conditions %}
         <div style="margin-top:8px;"><b>Syarat dan Kondition</b></div>
-        <div class="wrap">{{ jo.sla_note|safe }}</div>
+        <div class="wrap">{{ jo.term_conditions|safe }}</div>
       {% endif %}
     </td>
     <td style="width:40%; vertical-align:top;">
