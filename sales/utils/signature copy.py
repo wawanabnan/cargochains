@@ -2,32 +2,9 @@
 
 from dataclasses import dataclass
 from typing import Optional, Any
-from functools import lru_cache
-from django.db.utils import ProgrammingError, OperationalError
 
-from sales.models import SignatureSource
+from sales.models import SalesConfig, SignatureSource
 
-
-# ==========================================================
-# SAFE LAZY CONFIG LOADER (ANTI CRASH SAAT BOOT)
-# ==========================================================
-
-@lru_cache(maxsize=1)
-def _get_sales_cfg():
-    """
-    Ambil SalesConfig secara aman.
-    Tidak akan crash walaupun tabel belum siap.
-    """
-    try:
-        from sales.models import SalesConfig  # import di dalam (lazy)
-        return SalesConfig.get_solo()
-    except (ProgrammingError, OperationalError):
-        return None
-
-
-# ==========================================================
-# DATA CLASS
-# ==========================================================
 
 @dataclass(frozen=True)
 class SignatureContext:
@@ -36,10 +13,6 @@ class SignatureContext:
     title: str = ""
     image: Optional[Any] = None  # ImageField/FileField or None
 
-
-# ==========================================================
-# SAFE HELPERS
-# ==========================================================
 
 def _safe_user_name(user) -> str:
     if not user:
@@ -64,49 +37,31 @@ def _safe_signature_image(user):
     return getattr(p, "signature", None) if p else None
 
 
-# ==========================================================
-# RESOLVERS
-# ==========================================================
-
-def _resolve_user_for_quotation(quotation, cfg):
-    if not cfg:
-        return None
-
+def _resolve_user_for_quotation(quotation, cfg: SalesConfig):
     if cfg.quotation_signature_source == SignatureSource.SALES_USER:
         return getattr(quotation, "sales_user", None)
+    return cfg.quotation_signature_user
 
-    return getattr(cfg, "quotation_signature_user", None)
 
-
-def _resolve_user_for_job(job, cfg):
-    if not cfg:
-        return None
-
+def _resolve_user_for_job(job, cfg: SalesConfig):
     if cfg.joborder_signature_source == SignatureSource.SALES_USER:
         return getattr(job, "sales_user", None)
+    return cfg.joborder_signature_user
 
-    return getattr(cfg, "joborder_signature_user", None)
-
-
-# ==========================================================
-# PUBLIC BUILDERS
-# ==========================================================
 
 def build_signature_context_for_quotation(quotation) -> dict:
     """
     Return dict siap-tempel ke template:
     signature_user, signature_name, signature_title, signature_image
     """
-    cfg = _get_sales_cfg()
+    cfg = SalesConfig.get_solo()
     user = _resolve_user_for_quotation(quotation, cfg)
-
     ctx = SignatureContext(
         user=user,
         name=_safe_user_name(user),
         title=_safe_title(user),
         image=_safe_signature_image(user),
     )
-
     return {
         "signature_user": ctx.user,
         "signature_name": ctx.name,
@@ -116,16 +71,14 @@ def build_signature_context_for_quotation(quotation) -> dict:
 
 
 def build_signature_context_for_job(job) -> dict:
-    cfg = _get_sales_cfg()
+    cfg = SalesConfig.get_solo()
     user = _resolve_user_for_job(job, cfg)
-
     ctx = SignatureContext(
         user=user,
         name=_safe_user_name(user),
         title=_safe_title(user),
         image=_safe_signature_image(user),
     )
-
     return {
         "signature_user": ctx.user,
         "signature_name": ctx.name,

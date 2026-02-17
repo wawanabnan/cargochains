@@ -52,20 +52,13 @@ from sales.models import SalesConfig
 
 @lru_cache(maxsize=1)
 def get_sales_cfg():
+    from sales.models import SalesConfig
     try:
         return SalesConfig.get_solo()
     except (ProgrammingError, OperationalError):
-        # fallback aman kalau tabel belum siap saat boot/reload
+        # jangan biarkan None ke-cache
+        get_sales_cfg.cache_clear()
         return None
-    
-def cfg_value(attr: str, default=""):
-    """
-    Ambil attribute dari cfg kalau ada, kalau tidak -> default.
-    """
-    cfg = get_sales_cfg()
-    if not cfg:
-        return default
-    return getattr(cfg, attr, default) or default
     
 def _to_decimal(val: str) -> Decimal:
     try:

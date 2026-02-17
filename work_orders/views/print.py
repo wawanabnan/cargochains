@@ -2,6 +2,7 @@ from decimal import Decimal
 from django.views.generic import DetailView
 from work_orders.models.vendor_bookings import VendorBooking
 from sales.models import SalesConfig
+from django.db.utils import ProgrammingError, OperationalError
 
 
 class VendorBookingPrintView(DetailView):
