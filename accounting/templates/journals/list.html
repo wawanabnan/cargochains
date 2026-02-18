@@ -1,7 +1,15 @@
 {% extends "adminbase.html" %}
 {% block content %}
-<a href="{% url 'accounting:journal_add' %}" class="btn btn-sm btn-primary">+ Add Journal</a>
 
+<div class="app-content-header">
+  <div class="container-fluid">
+    <a href="{% url 'accounting:journal_add' %}" class="btn btn-sm btn-primary">+ Add Journal</a>
+
+
+  </div>
+</div>
+
+<div class="app-content">
   <div class="container-fluid py-3">
     <h4>Journals</h4>
 
@@ -30,4 +38,5 @@
       </tbody>
     </table>
   </div>
+
 {% endblock %}
