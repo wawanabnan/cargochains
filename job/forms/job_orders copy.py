@@ -1,16 +1,23 @@
 from decimal import Decimal, InvalidOperation
 from django import forms
-from job.models.job_orders import JobOrder
-from partners.models import Customer  # proxy Customer yang sudah om buat
 from django.urls import reverse_lazy
+from django.utils import timezone
+
+from job.models.job_orders import JobOrder
+from partners.models import Customer
 from geo.models import Location
-from core.services.customer_notes import get_customer_notes
-
-PPH_RATE = Decimal("0.02")  # 2% dari DPP (total_amount)
-
+from core.models.taxes import Tax
+from sales.services.config import get_sales_defaults
 
 class JobOrderForm(forms.ModelForm):
-    # Override field angka supaya bisa pakai format "1.000,00"
+    taxes = forms.ModelMultipleChoiceField(
+        queryset=Tax.objects.all().order_by("name"),
+        required=False,
+        widget=forms.SelectMultiple(attrs={
+            "class": "vb-taxes",
+            "multiple": "multiple",
+        })
+    )
     qty = forms.CharField(
         required=False,
         widget=forms.TextInput(attrs={"class": "form-control form-control-sm text-end"})
@@ -36,8 +43,6 @@ class JobOrderForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(attrs={"class": "form-control form-control-sm text-end"})
     )
-
-    # PPH dihitung otomatis, tapi tetap kita definisikan supaya bisa ditampilkan
     pph_amount = forms.CharField(
         required=False,
         label="PPH Amount",
@@ -47,8 +52,6 @@ class JobOrderForm(forms.ModelForm):
             "tabindex": "-1",
         })
     )
-
-    # ✅ FIX UTAMA: override kurs_idr agar bisa input "1,00" / "15.000,00"
     kurs_idr = forms.CharField(
         required=False,
         widget=forms.TextInput(attrs={
@@ -60,26 +63,29 @@ class JobOrderForm(forms.ModelForm):
     job_date = forms.DateField(
         label="Job Date",
         input_formats=["%d-%m-%Y", "%Y-%m-%d"],
-        widget=forms.TextInput(
-            attrs={
-                "class": "form-control form-control-sm js-jobdate",
-                "autocomplete": "off",
-                "placeholder": "dd-mm-yyyy",
-            }
-        ),
+        widget=forms.TextInput(attrs={
+            "class": "form-control form-control-sm js-jobdate",
+            "autocomplete": "off",
+            "placeholder": "dd-mm-yyyy",
+        }),
     )
 
+    shp_date = forms.DateField(
+        label="Job Date",
+        input_formats=["%d-%m-%Y", "%Y-%m-%d"],
+        widget=forms.TextInput(attrs={
+            "class": "form-control form-control-sm js-jobdate",
+            "autocomplete": "off",
+            "placeholder": "dd-mm-yyyy",
+        }),
+    )
+
+   
+    
     class Meta:
         model = JobOrder
         fields = "__all__"
-        exclude = [
-           
-            "created",
-            "modified",
-            "sales_user",
-            "total_in_idr",
-            "status",
-        ]
+        exclude = ["created", "modified", "sales_user", "total_in_idr", "status","sla_note"]
         widgets = {
             "service": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "customer": forms.Select(attrs={"class": "form-select form-select-sm"}),
@@ -93,138 +99,156 @@ class JobOrderForm(forms.ModelForm):
                 "data-placeholder": "Pilih destination",
                 "data-url": reverse_lazy("geo:locations_select2"),
             }),
-            "cargo_description": forms.Textarea(
-                attrs={"class": "form-control form-control-sm", "rows": 2}
-            ),
-            "cargo_dimension": forms.Textarea(
-                attrs={"class": "form-control form-control-sm", "rows": 2}
-            ),
-            "customer_note": forms.Textarea(
-                attrs={"class": "form-control form-control-sm", "rows": 2}
-            ),
-            "sla_note": forms.Textarea(
-                attrs={"class": "form-control form-control-sm", "rows": 2}
-            ),
 
-            "pickup": forms.Textarea(
-                attrs={"class": "form-control", "rows": 2}
-            ),
-            "delivery": forms.Textarea(
-                attrs={"class": "form-control", "rows": 2}
-            ),
-            "shipper_name": forms.TextInput(
-                attrs={"class": "form-control form-control-sm", "step": "0.01"}
-            ),
-           
-            "consignee_name": forms.TextInput(
-                attrs={"class": "form-control form-control-sm", "step": "0.01"}
-            ),
-           
-            "quantity": forms.NumberInput(
-                attrs={"class": "form-control form-control-sm", "step": "0.01"}
-            ),
-            "pic": forms.TextInput(attrs={"class": "form-control form-control-sm"}),
+            "cargo_description": forms.Textarea(attrs={
+                "rows": 4,
+                "style": "min-height:auto;",
+            }),
+             "cargo_dimension": forms.Textarea(attrs={
+                "rows": 4,
+                "style": "min-height:auto;",
+            }),
+             "pickup": forms.Textarea(attrs={
+                "rows": 5,
+                "style": "min-height:auto;",
+            }),
+             "delivery": forms.Textarea(attrs={
+                "rows": 5,
+                "style": "min-height:auto;",
+            }),
 
+            "customer_note": forms.Textarea(attrs={"class": "form-control form-control-sm", "rows": 4}),
+            "term_conditions": forms.Textarea(attrs={"class": "form-control form-control-sm", "rows": 4}),
             "payment_term": forms.Select(attrs={"class": "form-select form-select-sm"}),
             "currency": forms.Select(attrs={"class": "form-select form-select-sm"}),
-
-            "remarks_internal": forms.Textarea(
-                attrs={"class": "form-control form-control-sm", "rows": 3}
-            ),
-
+           # "remarks_internal": forms.Textarea(attrs={"class": "form-control form-control-sm", "rows": 3}),
             "is_tax": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "is_pph": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            
 
-            # ⚠️ jangan taruh widget utk total/tax/pph/grand/kurs di sini
-            # karena field-field tsb sudah dioverride di atas.
         }
+
+    # ---------- helper ----------
+    def _fmt_id(self, val):
+        if val is None or val == "":
+            return ""
+        d = Decimal(str(val))
+        s = f"{d:,.2f}"  # 1,234.56
+        return s.replace(",", "_").replace(".", ",").replace("_", ".")
+
+    def _parse_id_decimal(self, value_str, field_label="angka"):
+        if value_str in (None, ""):
+            return Decimal("0")
+        s = str(value_str).strip().replace(" ", "")
+        if "," in s:
+            s = s.replace(".", "").replace(",", ".")
+        try:
+            return Decimal(s)
+        except InvalidOperation:
+            raise forms.ValidationError(f"Format {field_label} tidak valid. Gunakan contoh: 1.000,00")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
 
-        defaults = get_customer_notes()
         instance = getattr(self, "instance", None)
         is_create = not (instance and instance.pk)
+        is_edit = bool(instance and instance.pk)
 
+        defaults =get_sales_defaults(target="job_order")
+
+        # service dropdown tampil name aja
+        if "service" in self.fields:
+            self.fields["service"].label_from_instance = lambda obj: obj.name
+
+        # customer queryset
+        if "customer" in self.fields:
+            self.fields["customer"].queryset = Customer.objects.all().order_by("name")
+
+        # number hidden on create + not required
         if "number" in self.fields and is_create:
-        # hide real field
             self.fields["number"].required = False
             self.fields["number"].widget = forms.HiddenInput()
-
-            # add dummy display
             self.fields["number_display"] = forms.CharField(
                 label=self.fields["number"].label or "Job #",
                 required=False,
                 initial="(auto)",
                 disabled=True,
-                widget=forms.TextInput(attrs={
-                    "class": "form-control form-control-sm",
-                })
-            ) 
-       
+                widget=forms.TextInput(attrs={"class": "form-control form-control-sm"})
+            )
 
-        def _empty(v):
-            return not (v or "").strip()
+        # default job_date on create GET
+        if is_create and not self.is_bound:
+            self.initial.setdefault("job_date", timezone.now().date())
+            self.initial.setdefault("shp_date", timezone.now().date())
+           
 
-        # =========================
-        # SALES DEFAULT NOTES (safe)
-        # =========================
+        # ===== NOTES DEFAULT (tanpa truncate 255 karena sudah TextField) =====
+        def _empty(v): return not (v or "").strip()
 
-        # CREATE: form baru (GET) → isi initial dari CoreSetting
-        if not instance.pk and not self.is_bound:
-            if "customer_note" in self.fields and _empty(self.initial.get("customer_note", "")):
-                self.initial["customer_note"] = defaults.get("customer_note", "") or ""
-            if "sla_note" in self.fields and _empty(self.initial.get("sla_note", "")):
-                self.initial["sla_note"] = defaults.get("sla_note", "") or ""
+        if not self.is_bound:
+            if is_create:
+                if "customer_note" in self.fields and _empty(self.initial.get("customer_note", "")):
+                    self.initial["customer_note"] = defaults.get("customer_note", "") or ""
+                if "term_conditions" in self.fields and _empty(self.initial.get("term_conditions", "")):
+                    self.initial["term_conditions"] = defaults.get("term_conditions", "") or ""
+            else:
+                if "customer_note" in self.fields and _empty(getattr(instance, "customer_note", "")):
+                    self.initial["customer_note"] = defaults.get("customer_note", "") or ""
+                if "term_conditions" in self.fields and _empty(getattr(instance, "term_conditions", "")):
+                    self.initial["term_conditions"] = defaults.get("term_conditions", "") or ""
 
-        # UPDATE: edit (GET) → isi initial hanya kalau instance masih kosong
-        if instance.pk and not self.is_bound:
-            if "customer_note" in self.fields and _empty(getattr(instance, "customer_note", "")):
-                self.initial["customer_note"] = defaults.get("customer_note", "") or ""
-            if "sla_note" in self.fields and _empty(getattr(instance, "sla_note", "")):
-                self.initial["sla_note"] = defaults.get("sla_note", "") or ""
+        # ===== EDIT GET: format angka agar tampil indo =====
+        if is_edit and not self.is_bound:
+            self.initial["price"] = self._fmt_id(getattr(instance, "price", 0) or 0)
+            self.initial["qty"] = self._fmt_id(getattr(instance, "qty", 0) or 0)
+            self.initial["kurs_idr"] = self._fmt_id(getattr(instance, "kurs_idr", 1) or 1)
 
+            # ini yang kemarin bikin kosong di edit:
+            self.initial["total_amount"] = self._fmt_id(getattr(instance, "total_amount", 0) or 0)
+            self.initial["tax_amount"] = self._fmt_id(getattr(instance, "tax_amount", 0) or 0)
+            self.initial["pph_amount"] = self._fmt_id(getattr(instance, "pph_amount", 0) or 0)
+            self.initial["grand_total"] = self._fmt_id(getattr(instance, "grand_total", 0) or 0)
 
-
+        # ===== ORIGIN/DESTINATION (SATU KALI SAJA) =====
         if "origin" in self.fields:
             self.fields["origin"].queryset = Location.objects.none()
             if self.is_bound:
-                oid = (self.data.get("origin") or "").strip()
-                if oid.isdigit():
+                oid = (self.data.get(self.add_prefix("origin")) or "").strip()
+                if oid:
                     self.fields["origin"].queryset = Location.objects.filter(pk=oid)
+            elif is_edit and getattr(instance, "origin_id", None):
+                self.fields["origin"].queryset = Location.objects.filter(pk=instance.origin_id)
+                self.initial["origin"] = instance.origin_id  # supaya selected
 
         if "destination" in self.fields:
             self.fields["destination"].queryset = Location.objects.none()
             if self.is_bound:
-                did = (self.data.get("destination") or "").strip()
-                if did.isdigit():
+                did = (self.data.get(self.add_prefix("destination")) or "").strip()
+                if did:
                     self.fields["destination"].queryset = Location.objects.filter(pk=did)
+            elif is_edit and getattr(instance, "destination_id", None):
+                self.fields["destination"].queryset = Location.objects.filter(pk=instance.destination_id)
+                self.initial["destination"] = instance.destination_id
 
-
-        # dropdown customer → proxy Customer (cuma yang punya role customer)
-        if "customer" in self.fields:
-            self.fields["customer"].queryset = Customer.objects.all().order_by("name")
-
-        # styling massal (jaga-jaga kalau ada field tambahan)
+       
+        # styling massal
         for name, field in self.fields.items():
-            widget = field.widget
-            if isinstance(widget, forms.CheckboxInput):
-                widget.attrs.setdefault("class", "form-check-input")
-            elif isinstance(widget, forms.Select):
-                widget.attrs.setdefault("class", "form-select form-select-sm")
+            w = field.widget
+            if isinstance(w, forms.CheckboxInput):
+                w.attrs.setdefault("class", "form-check-input")
+            elif isinstance(w, forms.Select):
+                w.attrs.setdefault("class", "form-select form-select-sm")
             else:
-                css = widget.attrs.get("class", "")
+                css = w.attrs.get("class", "")
                 if "form-control" not in css:
                     css = "form-control form-control-sm"
-                if name in ("total_amount", "tax_amount", "grand_total", "pph_amount", "kurs_idr", "total_in_idr","qty","price"):
+                if name in ("total_amount", "tax_amount", "grand_total", "pph_amount", "kurs_idr", "qty", "price"):
                     if "text-end" not in css:
                         css += " text-end"
-                widget.attrs["class"] = css
+                w.attrs["class"] = css
 
-        
-        # default angka untuk form baru
-        if not self.instance.pk and not self.is_bound:
+        # create default angka
+        if is_create and not self.is_bound:
             self.initial.setdefault("qty", "0,00")
             self.initial.setdefault("price", "0,00")
             self.initial.setdefault("total_amount", "0,00")
@@ -233,32 +257,11 @@ class JobOrderForm(forms.ModelForm):
             self.initial.setdefault("pph_amount", "0,00")
             self.initial.setdefault("kurs_idr", "1,00")
 
-        # total_amount read-only (tetap ikut submit)
+        # total_amount read-only
         if "total_amount" in self.fields:
             self.fields["total_amount"].widget.attrs["readonly"] = True
             self.fields["total_amount"].help_text = "Otomatis: qty × price"
 
-
-
-    # ========== helper parse angka Indonesia ==========
-    def _parse_id_decimal(self, value_str, field_label="angka"):
-        """
-        '1.000.000,00' -> Decimal('1000000.00')
-        """
-        if value_str in (None, ""):
-            return Decimal("0")
-        s = str(value_str).strip()
-        s = s.replace(" ", "")
-        if "," in s:
-            s = s.replace(".", "").replace(",", ".")
-        try:
-            return Decimal(s)
-        except InvalidOperation:
-            raise forms.ValidationError(
-                f"Format {field_label} tidak valid. Gunakan contoh: 1.000,00"
-            )
-
-    # ========== clean utama ==========
     def clean(self):
         cleaned = super().clean()
 
@@ -277,56 +280,27 @@ class JobOrderForm(forms.ModelForm):
         total = (qty * price).quantize(Decimal("0.01"))
         cleaned["qty"] = qty
         cleaned["price"] = price
-        cleaned["total_amount"] = total  # selalu override
+        cleaned["total_amount"] = total
 
-        # ----- TAXES dari MASTER TAX -----
-        tax_amount = Decimal("0.00")
-        pph_amount = Decimal("0.00")
+        # ----- TAX/PPH/GRAND (ambil dari input/JS jika ada; fallback hitung) -----
+        def _money(name, default="0"):
+            v = cleaned.get(name)
+            if v in (None, ""):
+                return Decimal(default)
+            return self._parse_id_decimal(v, name) if isinstance(v, str) else Decimal(str(v))
 
-        taxes = cleaned.get("taxes")  # biasanya queryset/list tax objects
-        if taxes:
-            for t in taxes:
-                # 1) kalau master tax punya rumus sendiri
-                if hasattr(t, "calculate") and callable(getattr(t, "calculate")):
-                    amt = t.calculate(total)
-                    amt = amt if isinstance(amt, Decimal) else Decimal(str(amt or "0"))
-                else:
-                    # 2) fallback: pakai rate (kalau memang ada)
-                    # dukung beberapa naming umum: rate, rate_percent
-                    rate = None
-                    if hasattr(t, "rate") and t.rate is not None:
-                        rate = Decimal(str(t.rate))
-                    elif hasattr(t, "rate_percent") and t.rate_percent is not None:
-                        rate = Decimal(str(t.rate_percent)) / Decimal("100")
-                    else:
-                        rate = Decimal("0")
+        tax_amount = _money("tax_amount", "0").quantize(Decimal("0.01"))
+        pph_amount = _money("pph_amount", "0").quantize(Decimal("0.01"))
 
-                    amt = (total * rate).quantize(Decimal("0.01"))
-
-                # klasifikasi: withholding/pph vs tax penambah
-                # dukung flag umum: is_withholding, is_pph, kind/code/category
-                is_withholding = False
-                if hasattr(t, "is_withholding"):
-                    is_withholding = bool(t.is_withholding)
-                elif hasattr(t, "is_pph"):
-                    is_withholding = bool(t.is_pph)
-                elif hasattr(t, "code"):
-                    is_withholding = (str(t.code).lower() == "pph")
-                elif hasattr(t, "kind"):
-                    is_withholding = (str(t.kind).lower() == "pph")
-
-                if is_withholding:
-                    pph_amount += amt
-                else:
-                    tax_amount += amt
-
-        tax_amount = tax_amount.quantize(Decimal("0.01"))
-        pph_amount = pph_amount.quantize(Decimal("0.01"))
-        grand = (total + tax_amount - pph_amount).quantize(Decimal("0.01"))
+        grand_in = cleaned.get("grand_total")
+        if grand_in in (None, ""):
+            grand_total = (total + tax_amount - pph_amount).quantize(Decimal("0.01"))
+        else:
+            grand_total = _money("grand_total", "0").quantize(Decimal("0.01"))
 
         cleaned["tax_amount"] = tax_amount
         cleaned["pph_amount"] = pph_amount
-        cleaned["grand_total"] = grand
+        cleaned["grand_total"] = grand_total
 
         # ----- KURS -----
         currency = cleaned.get("currency")

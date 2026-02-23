@@ -11,7 +11,8 @@ class SalesConfigForm(forms.ModelForm):
             "default_currency",
             "quotation_valid_days",
             "sales_fee_percent",
-
+            "bank_transfer_info",
+            "default_payment_term",
             # Quotation
             "quotation_signature_source",
             "quotation_signature_user",
@@ -38,6 +39,11 @@ class SalesConfigForm(forms.ModelForm):
 
             "vendor_note": forms.Textarea(attrs={"rows": 8}),
             "service_order_term_conditions": forms.Textarea(attrs={"rows": 10}),
+            "bank_transfer_info": forms.Textarea(attrs={
+                "class":"form-control",
+                "rows": 4,
+                "style": "min-height:auto;",
+            }),
 
             # OPTIONAL:
             # "service_order_vendor_note_default": forms.Textarea(attrs={"rows": 8}),
@@ -52,6 +58,9 @@ class SalesConfigForm(forms.ModelForm):
                 "class": "form-control",
                 "placeholder": "IDR",
             })
+
+        
+    
 
         # numeric inputs
         if "quotation_valid_days" in self.fields:
@@ -77,6 +86,7 @@ class SalesConfigForm(forms.ModelForm):
             "joborder_signature_user",
             "service_order_signature_source",
             "service_order_signature_user",
+            "default_payment_term",
         ]:
             if f in self.fields:
                 self.fields[f].widget.attrs.update({"class": "form-select"})

@@ -199,10 +199,19 @@ class JobOrder(TimeStampedModel):
         default=0,
     )
 
+    down_payment_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
 
+    is_proforma = models.BooleanField(default=False)
     pph_amount = models.DecimalField(
         max_digits=12,
         decimal_places=2,
+        null=True,
+        blank=True,
         default=0,
     )
 
@@ -261,6 +270,38 @@ class JobOrder(TimeStampedModel):
         db_index=True,
     )
 
+    # DISCOUNT
+    DISCOUNT_TYPE_CHOICES = [
+        ("PERCENT", "Percent"),
+        ("AMOUNT", "Fixed Amount"),
+    ]
+    discount_type = models.CharField(
+        max_length=10,
+        choices=DISCOUNT_TYPE_CHOICES,
+        default="PERCENT",
+    )
+
+    discount_value = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    discount_notes = models.TextField(blank=True, default="")
+
+    class JobSource(models.TextChoices):
+      
+        CUSTOMER_PO = "CUSTOMER_PO", "Customer PO"
+        EMAIL = "EMAIL", "Email"
+
+    job_source = models.CharField(
+        max_length=20,
+        choices=JobSource.choices,
+        null=True,
+        blank=True
+    )
+    
+    bank_transfer_info = models.TextField(
+        null=True,
+        blank=True
+    )
+    
+
     # audit transisi
     confirmed_at = models.DateTimeField(null=True, blank=True)
     confirmed_by = models.ForeignKey(
@@ -269,7 +310,7 @@ class JobOrder(TimeStampedModel):
     )
 
     hold_at = models.DateTimeField(null=True, blank=True)
-    hold_reason = models.CharField(max_length=255, blank=True, null=True), 
+    hold_reason = models.CharField(max_length=255, blank=True, null=True)
 
     completed_at = models.DateTimeField(null=True, blank=True)
     completed_by = models.ForeignKey(
@@ -328,6 +369,36 @@ class JobOrder(TimeStampedModel):
             self.ST_COMPLETED,
             self.ST_CANCELLED,
         }
+    
+
+    # job.models.job_orders.JobOrder
+
+    from decimal import Decimal
+
+    @property
+    def discount_amount(self):
+        if not self.discount_type or not self.discount_value:
+            return Decimal("0")
+
+        base = self.total_amount or Decimal("0")
+
+        if self.discount_type == "AMOUNT":
+            return min(self.discount_value, base)
+
+        if self.discount_type == "PERCENT":
+            pct = min(self.discount_value, Decimal("100"))
+            return (base * pct / Decimal("100")).quantize(Decimal("0.01"))
+
+        return Decimal("0")
+
+    @property
+    def can_generate_proforma(self):
+        return (
+            self.status != self.ST_DRAFT
+            and not self.is_proforma
+        )
+
+
     # --- helpers transisi (opsional tapi saya rekomendasikan) ---
     def can_confirm(self):
         return self.status == self.ST_DRAFT

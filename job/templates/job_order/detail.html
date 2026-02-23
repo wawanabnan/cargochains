@@ -74,6 +74,14 @@
           <!-- RIGHT: ACTION BUTTONS -->
           <div class="d-flex align-items-center gap-1">
 
+            {% if job.can_generate_proforma %}
+<form method="post" action="{% url 'job:generate_proforma' job.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-sm btn-primary">
+        Generate Proforma Invoice
+    </button>
+</form>
+{% endif %}
           
       <a class="btn btn-sm btn-outline-primary" target="_blank"
         href="{% url 'job:job_order_print_preview' job.pk %}">

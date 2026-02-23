@@ -1,0 +1,34 @@
+
+          <table class="table table-bordered" id="job-order-table">
+              <thead class="table-light">
+              <th >Service</th>
+              <th width="7%">Qty</th>
+              <th width="8%">Unit</th>
+              <th width="12%">price</th>
+              <th width="22%">Tax</th>
+              <th width="14%">Amount</th>
+            </thead>
+            <tbody>
+               <td> {{ form.service }}</td> 
+               <td class="text-end"> {{ form.qty }}</td> 
+               <td> Lunsump</td> 
+               <td class="text-end"> {{ form.price }}</td>
+               <td> {{ form.taxes }}</td> 
+               <td class="text-end"> {{ form.total_amount}}</td> 
+            </tbody>
+            <tfoot>
+              <tr>
+                <td class="text-end" colspan="5">Tax Amount</td>
+                <td> {{ form.tax_amount }}</td>
+              </tr> 
+              <tr>
+                <td class="text-end" colspan="5">PPH Amount</td>
+                <td> {{ form.pph_amount }}</td>
+              </tr> 
+              <tr>
+                <td class="text-end" colspan="5">Grand Total</td>
+                <td> {{ form.grand_total }}</td>
+              </tr> 
+
+            </tfoot>
+          </table>

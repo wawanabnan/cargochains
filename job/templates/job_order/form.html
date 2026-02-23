@@ -45,7 +45,7 @@
         </div>
         {% endif %}
        
-        <form method="post" novalidate>
+        <form method="post" novalidate id="jobOrderForm">
           {% csrf_token %}
           {{ form.media }}
           {% if job %}
@@ -75,9 +75,9 @@
                 </div>
                 <div class="col-md-4">
                      <div class="form-group row">
-                         <label class="col-sm-4 col-form-label">Reference #</label>
+                         <label class="col-sm-4 col-form-label">Sources</label>
                           <div class="col-sm-8">
-                              {{ form.order_number }}
+                              {{ form.job_source }}
                           </div>
                        
                       </div>
@@ -102,18 +102,18 @@
                <div class="row">
                 <div class="col-md-4">
                      <div class="form-group row">
-                        <label for="staticEmail" class="col-sm-4 col-form-label">T.O.P</label>
+                        <label for="staticEmail" class="col-sm-4 col-form-label">Date</label>
                         <div class="col-sm-8">
-                          {{ form.payment_term }}
+                          {{ form.job_date }}
                         </div>
                       </div>
 
                 </div>
                 <div class="col-md-4">
                      <div class="form-group row">
-                        <label for="staticEmail" class="col-sm-4 col-form-label">Contact</label>
+                        <label for="staticEmail" class="col-sm-4 col-form-label">Referenc#</label>
                         <div class="col-sm-8">
-                          {{ form.pic }}
+                          {{ form.order_number }}
                         </div>
                       </div>
 
@@ -131,18 +131,18 @@
               <div class="row">
                 <div class="col-md-4">
                      <div class="form-group row">
-                        <label for="staticEmail" class="col-sm-4 col-form-label">Job Date</label>
+                        <label for="staticEmail" class="col-sm-4 col-form-label">ETD</label>
                         <div class="col-sm-8">
-                          {{ form.job_date }}
+                           {{ form.shp_date }}
                         </div>
                       </div>
 
                 </div>
                 <div class="col-md-4">
                   <div class="form-group row">
-                        <label for="staticEmail" class="col-sm-4 col-form-label">ETD</label>
+                        <label for="staticEmail" class="col-sm-4 col-form-label">Contact</label>
                         <div class="col-sm-8">
-                          {{ form.shp_date }}
+                          {{ form.pic }}
                         </div>
                       </div>
 
@@ -187,6 +187,13 @@
                           type="button" role="tab"
                           aria-controls="shipperTab" aria-selected="true">Customer Note</button>
                 </li>
+                 <li class="nav-item" role="presentation">
+                  <button class="nav-link "
+                          id="payment-info-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#paymentInfoTab"
+                          type="button" role="tab"
+                          aria-controls="shipperTab" aria-selected="true">Payment Information</button>
+                </li>
                 <li class="nav-item" role="presentation">
                   <button class="nav-link"
                           id="term-note-tab-btn"
@@ -216,6 +223,14 @@
                       
                     
                     {{ form.customer_note }}
+        
+                </div>
+                 <div class="tab-pane fade show " 
+                    id="paymentInfoTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                      
+                    
+                     {% include 'job_order/extension/payment_info.html' %}
         
                 </div>
                 <div class="tab-pane fade show " 
@@ -405,6 +420,11 @@ textarea.form-control-sm{
 .s2loc-badge.is-port{background:rgba(25,135,84,.12);color:#198754;}
 .s2loc-badge.is-city{background:rgba(108,117,125,.12);color:#6c757d;}
 
+#btnDiscount {
+    font-size: 11px !important;
+    padding: 3px 8px !important;
+}
+
 </style>
 
 <link rel="stylesheet"
@@ -430,567 +450,13 @@ textarea.form-control-sm{
 
 
 
-<script>
-(function () {
+<script src="{% static 'js/job/job_utils.js' %}"></script>
+<script src="{% static 'js/job/job_taxes.js' %}"></script>
+<script src="{% static 'js/job/job_calc.js' %}"></script>
+<script src="{% static 'js/job/job_discount.js' %}"></script>
+<script src="{% static 'js/job/job_location.js' %}"></script>
+<script src="{% static 'js/job/job_form.js' %}"></script>
 
-  // =========================
-  // Helpers angka Indonesia
-  // =========================
-  function parseID(v) {
-    if (v === null || v === undefined) return 0;
-    let s = String(v).trim();
-    if (!s) return 0;
 
-    s = s.replace(/\s+/g, "");
-
-    // Indonesia style: 1.234.567,89
-    if (s.includes(",")) {
-      s = s.replace(/\./g, "").replace(",", ".");
-      const n = Number(s);
-      return Number.isFinite(n) ? n : 0;
-    }
-
-    // plain number
-    const n = Number(s);
-    return Number.isFinite(n) ? n : 0;
-  }
-
-  function fmtID(n) {
-    const x = Number(n || 0);
-    return x.toLocaleString("id-ID", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  }
-
-  function fmtID3(n) {
-    const x = Number(n || 0);
-    return x.toLocaleString("id-ID", {
-      minimumFractionDigits: 3,
-      maximumFractionDigits: 3
-    });
-  }
-
-  function setReadonly(el) {
-    if (!el) return;
-    el.readOnly = true;
-    el.setAttribute("tabindex", "-1");
-  }
-
-  // =========================
-  // KURS helpers (raw + limit 3 desimal)
-  // =========================
-  function normalizeKursRaw(v) {
-    let s = String(v ?? "").trim().replace(/\s+/g, "");
-    if (!s) return "";
-
-    // kalau indo: 1.234,567 -> 1234.567
-    if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
-    // keep digit + dot
-    s = s.replace(/[^\d.]/g, "");
-    // rapihin dot ganda
-    const parts = s.split(".");
-    const intPart = parts[0] || "";
-    const decPart = (parts[1] || "").slice(0, 3); // ✅ max 3 digit
-    return decPart ? `${intPart}.${decPart}` : intPart;
-  }
-
-  function setKursPretty(kursInput) {
-    if (!kursInput) return;
-    const raw = normalizeKursRaw(kursInput.value);
-    kursInput.dataset.raw = raw;
-    kursInput.value = raw ? fmtID3(Number(raw)) : "";
-  }
-
-  function setKursRaw(kursInput) {
-    if (!kursInput) return;
-    const raw = normalizeKursRaw(kursInput.value);
-    kursInput.dataset.raw = raw;
-    kursInput.value = raw; // plain decimal buat edit
-  }
-
-  // =========================
-  // Hitung total (tanpa format)
-  // =========================
-  function recalcTotalRaw() {
-    const qtyEl   = document.getElementById("id_qty");
-    const priceEl = document.getElementById("id_price");
-    const totalEl = document.getElementById("id_total_amount");
-
-    if (!qtyEl || !priceEl || !totalEl) return;
-
-    const qty = parseID(qtyEl.value);
-    const price = parseID(priceEl.value);
-    const total = qty * price;
-
-    totalEl.value = fmtID(total);
-  }
-
-  function formatInput2(el) {
-    if (!el) return;
-    const n = parseID(el.value);
-    el.value = fmtID(n);
-  }
-
-  // =========================
-  // MAIN DOM READY
-  // =========================
-  document.addEventListener("DOMContentLoaded", function () {
-
-    const form = document.querySelector("form");
-    if (!form) return;
-
-    const qtyEl   = document.getElementById("id_qty");
-    const priceEl = document.getElementById("id_price");
-    const totalEl = document.getElementById("id_total_amount");
-
-    const taxEl   = document.getElementById("id_tax_amount");
-    const pphEl   = document.getElementById("id_pph_amount");
-    const grandEl = document.getElementById("id_grand_total");
-
-    const currencyEl = document.getElementById("id_currency");
-    const kursRow    = document.getElementById("row-kurs");
-    const kursInput  = document.getElementById("id_kurs_idr");
-
-    // =========================
-    // Readonly fields
-    // =========================
-    setReadonly(totalEl);
-    setReadonly(taxEl);
-    setReadonly(pphEl);
-    setReadonly(grandEl);
-
-    // =========================
-    // Auto select on focus
-    // =========================
-    [qtyEl, priceEl, kursInput].forEach(function (el) {
-      if (!el) return;
-      el.addEventListener("focus", function () {
-        setTimeout(() => el.select(), 0);
-      });
-    });
-
-    // =========================
-    // Event qty & price
-    // =========================
-    if (qtyEl) {
-      qtyEl.addEventListener("input", recalcTotalRaw);
-      qtyEl.addEventListener("blur", function () {
-        formatInput2(qtyEl);
-        recalcTotalRaw();
-      });
-    }
-
-    if (priceEl) {
-      priceEl.addEventListener("input", recalcTotalRaw);
-      priceEl.addEventListener("blur", function () {
-        formatInput2(priceEl);
-        recalcTotalRaw();
-      });
-    }
-
-    // =========================
-    // Initial calc & format
-    // =========================
-    recalcTotalRaw();
-
-    // =========================
-    // Before submit → kirim angka plain
-    // =========================
-    form.addEventListener("submit", function () {
-      if (qtyEl) qtyEl.value = parseID(qtyEl.value);
-      if (priceEl) priceEl.value = parseID(priceEl.value);
-
-      if (totalEl) totalEl.value = parseID(totalEl.value);
-      if (taxEl) taxEl.value = parseID(taxEl.value);
-      if (pphEl) pphEl.value = parseID(pphEl.value);
-      if (grandEl) grandEl.value = parseID(grandEl.value);
-
-      // kurs kirim raw (plain decimal), bukan formatted
-      if (kursInput) {
-        kursInput.value = kursInput.dataset.raw || normalizeKursRaw(kursInput.value) || "";
-      }
-    });
-
-    // =========================
-    // Flatpickr (unchanged)
-    // =========================
-    if (typeof flatpickr === "undefined") {
-      console.warn("Flatpickr belum ter-load");
-      return;
-    }
-
-    const inputs = document.querySelectorAll(".js-jobdate");
-    if (!inputs.length) return;
-
-    inputs.forEach(function (el) {
-      const fp = flatpickr(el, {
-        dateFormat: "d-m-Y",
-        allowInput: true,
-        clickOpens: true,
-        altInput: false,
-        defaultDate: el.value || null,
-        locale: { firstDayOfWeek: 1 }
-      });
-
-      el.addEventListener("focus", function () {
-        fp.open();
-      });
-    });
-
-  });
-
-})();
-</script>
-
-
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  const $ = window.jQuery;
-  if (!$ || !$.fn.select2) return;
-
-  function kindClass(kind) {
-    kind = (kind || "").toLowerCase();
-    if (kind === "airport") return "is-airport";
-    if (kind === "seaport") return "is-port";
-    if (kind === "city") return "is-city";
-    return "is-other";
-  }
-
-
-  function renderItem(item) {
-    if (item.loading) return item.text;
-
-    const title = item.text || "";
-    const chain = [item.region, item.province].filter(Boolean).join(" — ");
-    const sub = item.subtext || "";
-
-    return $(`
-      <div>
-        <div><strong>${title}</strong> ${item.kind ? `<span class="text-muted">[${item.kind}]</span>` : ""}</div>
-        <div class="text-muted small">${chain || sub}</div>
-      </div>
-    `);
-  }
-
-
-  $(".js-location-select").each(function () {
-    const $el = $(this);
-
-    // penting: kalau pernah ke-init, destroy dulu biar gak dobel
-    if ($el.data("select2")) $el.select2("destroy");
-
-    $el.select2({
-      width: "100%",
-      placeholder: $el.data("placeholder") || "Pilih",
-      allowClear: true,
-      minimumInputLength: 1,
-      ajax: {
-        url: $el.data("url"),
-        dataType: "json",
-        delay: 250,
-        data: params => ({ q: params.term || "", page: params.page || 1 }),
-        processResults: data => ({
-          results: (data.results || []).map(x => ({
-            id: x.id,
-            text: x.text,
-            kind: x.kind || "",
-            code: x.code || "",
-            subtext: x.subtext || "",
-            district: x.district || "",
-            region: x.region || "",
-            province: x.province || ""
-
-          })),
-          pagination: data.pagination || { more: false }
-        })
-      },
-      templateResult: renderItem,
-      templateSelection: item => item.text || ""
-    });
-    });
-    
-});
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  const $ = window.jQuery;
-  if (!$ || !$.fn.select2) return;
-
-  // 1) init select2 location kamu di sini...
-  // ...
-
-  // 2) init taxes select2
-  if (window.initTaxSelect2) {
-    window.initTaxSelect2(document);
-  }
-});
-</script>
-
-<script>
-(function () {
-  let TAX_MAP = {};
-
-  function readTaxMap() {
-    const el = document.getElementById("tax-map");
-    if (!el) return {};
-    try { return JSON.parse(el.textContent); } catch { return {}; }
-  }
-
-  function numID(v){
-    if(v==null) return 0;
-    let s = String(v).trim().replace(/\s+/g,"");
-    if(!s) return 0;
-    if(s.includes(",")) s = s.replace(/\./g,"").replace(",",".");
-    const n = Number(s);
-    return Number.isFinite(n) ? n : 0;
-  }
-
-  function fmtID(n){
-    return new Intl.NumberFormat("id-ID", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(Number(n ?? 0));
-  }
-
-  // support kalau field kamu bukan <input> tapi <span>/<div>
-  function setMoney(el, value){
-    if (!el) return;
-    const s = fmtID(value);
-    if ("value" in el) el.value = s;
-    else el.textContent = s;
-    el.dataset && (el.dataset.raw = String(value ?? 0));
-  }
-
-  function getSelectedTaxIds(){
-    const sel = document.getElementById("id_taxes");
-    if(!sel) return [];
-    return Array.from(sel.selectedOptions || []).map(o=>o.value).filter(Boolean);
-  }
-
-  function computeTaxes(base, taxIds){
-    let vat = 0;
-    let wht = 0;
-
-    taxIds.forEach((id) => {
-      const t = TAX_MAP[String(id)];
-      if (!t) return;
-
-      const r = (Number(t.rate || 0) / 100.0); // percent
-      const amt = base * r;
-
-      if (t.is_withholding) wht += amt;
-      else vat += amt;
-    });
-
-    return { vat, wht };
-  }
-
-  function recalc(){
-    const qtyEl   = document.getElementById("id_qty");
-    const priceEl = document.getElementById("id_price");
-    const taxesEl = document.getElementById("id_taxes");
-
-    const totalEl = document.getElementById("id_total_amount");
-    const taxEl   = document.getElementById("id_tax_amount");
-    const pphEl   = document.getElementById("id_pph_amount");
-    const grandEl = document.getElementById("id_grand_total");
-
-    if(!qtyEl || !priceEl || !taxesEl || !totalEl || !taxEl || !grandEl) return;
-
-    const qty = numID(qtyEl.value);
-    const price = numID(priceEl.value);
-    const base = qty * price;
-
-    const taxIds = getSelectedTaxIds();
-    const t = computeTaxes(base, taxIds);
-
-    const grand = base + t.vat - t.wht;
-
-    setMoney(totalEl, base);
-    setMoney(taxEl, t.vat);
-    if (pphEl) setMoney(pphEl, t.wht);
-    setMoney(grandEl, grand);
-  }
-
-  document.addEventListener("DOMContentLoaded", function () {
-    // ✅ baca tax-map setelah DOM siap
-    TAX_MAP = readTaxMap();
-    console.log("TAX_MAP size:", Object.keys(TAX_MAP).length);
-
-    // init select2 taxes (kalau ada)
-    if (window.initTaxSelect2) window.initTaxSelect2(document);
-
-    // readonly output
-    ["id_total_amount","id_tax_amount","id_pph_amount","id_grand_total"].forEach(id=>{
-      const el = document.getElementById(id);
-      if (el && "readOnly" in el) el.readOnly = true;
-    });
-
-    const $ = window.jQuery;
-    const taxesEl = document.getElementById("id_taxes");
-    const qtyEl = document.getElementById("id_qty");
-    const priceEl = document.getElementById("id_price");
-
-    if(qtyEl){
-      qtyEl.addEventListener("input", recalc);
-      qtyEl.addEventListener("blur", ()=>{ qtyEl.value = fmtID(numID(qtyEl.value)); recalc(); });
-    }
-    if(priceEl){
-      priceEl.addEventListener("input", recalc);
-      priceEl.addEventListener("blur", ()=>{ priceEl.value = fmtID(numID(priceEl.value)); recalc(); });
-    }
-
-    if(taxesEl){
-      if($ && $.fn.select2) $(taxesEl).on("change", recalc);
-      else taxesEl.addEventListener("change", recalc);
-    }
-
-    recalc();
-  });
-
-})();
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  const term_conditions = document.getElementById("id_term_conditions");
-  const notes = document.getElementById("id_customer_note");
-
- // console.log("term_conditions el:", term_conditions, "notes el:", notes);
- // console.log("term_conditions tag:", term_conditions?.tagName, "notes tag:", notes?.tagName);
-
-  if (!term_conditions && !notes) return;
-
-  $el.select2({
-      width: "100%",
-      placeholder: $el.data("placeholder") || "Pilih",
-      allowClear: true,
-      minimumInputLength: 1,
-      ajax: {
-        url: $el.data("url"),
-        dataType: "json",
-        delay: 250,
-        data: params => ({ q: params.term || "", page: params.page || 1 }),
-        processResults: data => ({
-          results: (data.results || []).map(x => ({
-            id: x.id,
-            text: x.text,
-            kind: x.kind || "",
-            code: x.code || "",
-            subtext: x.subtext || "",
-            district: x.district || "",
-            region: x.region || "",
-            province: x.province || ""
-          })),
-          pagination: data.pagination || { more: false }
-        })
-      }
-    });
-  });
-
-  // ============================
-  // COPY ORIGIN → PICKUP
-  // ============================
-
-  const $origin = $("#id_origin");
-  const $destination = $("#id_destination");
-  const $pickupTextarea = $("#id_pickup");
-  const $deliveryTextarea = $("#id_delivery");
-
-  const $chkPickup = $("#id_pickup_from_origin");
-  const $chkDelivery = $("#id_delivery_from_destination");
-
-  function formatAddress(loc) {
-    const lines = [];
-    if (loc.district || loc.text) lines.push((loc.district || loc.text).trim());
-    if (loc.region) lines.push(loc.region.trim());
-    if (loc.province) lines.push(loc.province.trim());
-    return lines.filter(Boolean).join("\n");
-  }
-
-  function renderPickupPreview(loc) {
-    $("#pickup_district").text(loc.district || loc.text || "-");
-    $("#pickup_region").text(loc.region || "-");
-    $("#pickup_province").text(loc.province || "-");
-  }
-
-  function renderDeliveryPreview(loc) {
-    $("#delivery_district").text(loc.district || loc.text || "-");
-    $("#delivery_region").text(loc.region || "-");
-    $("#delivery_province").text(loc.province || "-");
-  }
-
-  function copyOriginToPickup() {
-    const data = $origin.select2("data");
-    if (!data || !data.length) return;
-
-    const loc = data[0];
-    renderPickupPreview(loc);
-    if ($pickupTextarea.length) $pickupTextarea.val(formatAddress(loc));
-  }
-
-  function copyDestinationToDelivery() {
-    const data = $destination.select2("data");
-    if (!data || !data.length) return;
-
-    const loc = data[0];
-    renderDeliveryPreview(loc);
-    if ($deliveryTextarea.length) $deliveryTextarea.val(formatAddress(loc));
-  }
-
-  $chkPickup.on("change", function () {
-    if (this.checked) copyOriginToPickup();
-  });
-
-  $chkDelivery.on("change", function () {
-    if (this.checked) copyDestinationToDelivery();
-  });
-
-  $origin.on("change", function () {
-    if ($chkPickup.is(":checked")) copyOriginToPickup();
-  });
-
-  $destination.on("change", function () {
-    if ($chkDelivery.is(":checked")) copyDestinationToDelivery();
-  });
-
-</script>
-
-<script>
-$(function () {
-
-  function initLocationSelect2($el, url) {
-    $el.select2({
-      width: "100%",
-      ajax: {
-        url: url,
-        dataType: "json",
-        delay: 250,
-        data: (params) => ({ q: params.term || "" }),
-        processResults: (data) => {
-          const results = (data || []).map(item => ({
-            id: item.id,
-            text: item.label,
-            district: item.district,
-            region: item.region,
-            province: item.province
-          }));
-          return { results };
-        },
-      },
-    });
-  }
-
-  const $origin = $("#id_origin_location");
-  const $pickup = $("#id_pickup_location");
-
-  if ($origin.length) initLocationSelect2($origin, "/ajax/locations/");
-  if ($pickup.length) initLocationSelect2($pickup, "/ajax/locations/");
-
-});
-</script>
 
 {% endblock %}

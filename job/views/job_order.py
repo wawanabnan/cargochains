@@ -223,6 +223,12 @@ class JobOrderUpdateView(LoginRequiredMixin, View):
     def post(self, request, pk):
         job = self.get_object(pk)
 
+        print("\n====== RAW REQUEST.POST ======")
+        for k, v in request.POST.items():
+            print(k, "=>", v)
+        print("================================\n")
+
+        
         form = JobOrderForm(request.POST, request.FILES, instance=job)
 
         if not form.is_valid():
@@ -536,6 +542,24 @@ class JobOrderGenerateInvoiceView(LoginRequiredMixin, View):
         return redirect("sales:invoice_detail", pk=invoice.pk)
     
 
+class JobOrderGenerateProformaView(View):
+
+    def post(self, request, pk):
+        job = get_object_or_404(Job, pk=pk)
+
+        if not job.can_generate_proforma:
+            messages.warning(request, "Proforma tidak bisa dibuat.")
+            return redirect('job_detail', pk=job.pk)
+
+        # ====== LOGIC GENERATE PROFORMA DI SINI ======
+        # Misalnya buat nomor proforma, simpan PDF, dll
+        # Untuk sekarang kita hanya set flag saja
+
+        job.is_proforma = True
+        job.save()
+
+        messages.success(request, "Proforma invoice berhasil dibuat.")
+        return redirect('job_detail', pk=job.pk)
 
 
 def _build_tax_map():

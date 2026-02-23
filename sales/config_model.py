@@ -3,6 +3,8 @@ from decimal import Decimal
 from django.conf import settings
 from core.models.currencies import Currency
 from django_summernote.fields import SummernoteTextField
+from core.models.payment_terms import PaymentTerm
+
 
 class SignatureSource(models.TextChoices):
     SALES_USER = "SALES_USER", "Sales User"
@@ -89,7 +91,17 @@ class SalesConfig(models.Model):
         help_text="Dipakai jika source = SPECIFIC_USER"
     )
 
-
+    bank_transfer_info = models.TextField(
+        null=True,
+        blank=True
+    )
+    default_payment_term = models.ForeignKey(
+        PaymentTerm,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sales_default_configs"
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

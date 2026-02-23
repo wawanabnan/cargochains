@@ -48,8 +48,9 @@ from partners.models import Vendor
 from sales.models import SalesConfig
 
 
-cfg = SalesConfig.get_solo()
-
+#cfg = SalesConfig.get_solo()
+#def get_cfg():
+#    return SalesConfig.get_solo()
 
 def _to_decimal(val: str) -> Decimal:
     try:
@@ -244,7 +245,7 @@ class VendorBookingFromJobCostWizardView(LoginRequiredMixin, TemplateView):
         first_jc = lines_payload[0][0]  # (jc, alloc)
        # cg = (getattr(first_jc, "cost_group", "") or "").upper().strip()
         cg = _get_cost_group_from_jobcost(first_jc)  # ✅ ambil dari cost_type.cost_group
-
+        cfg = SalesConfig.get_solo()
 
         vb = VendorBooking(
             job_order=job,

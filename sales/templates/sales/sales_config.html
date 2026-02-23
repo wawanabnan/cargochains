@@ -20,26 +20,44 @@
           {% endif %}
 
           {# ===================== GENERAL (OUTSIDE TAB) ===================== #}
-          <div class="row g-3">
-            <div class="col-md-4">
-              <label class="form-label small mb-1">Default Currency</label>
-              {{ form.default_currency }}
-              {% if form.default_currency.errors %}<div class="text-danger small mt-1">{{ form.default_currency.errors }}</div>{% endif %}
-            </div>
+          <div class="row">
+              <div class="col-md-5">
+                 <div class="row mb-2">
+                    <div class="col-md-12">
+                      <label class="form-label small mb-1">Default Currency</label>
+                      {{ form.default_currency }}
+                      {% if form.default_currency.errors %}<div class="text-danger small mt-1">{{ form.default_currency.errors }}</div>{% endif %}
+                    </div>
+                 </div>
 
-            <div class="col-md-4">
-              <label class="form-label small mb-1">Quotation Valid Days</label>
-              {{ form.quotation_valid_days }}
-              <div class="text-secondary small mt-1">0 = tidak pakai masa berlaku.</div>
-              {% if form.quotation_valid_days.errors %}<div class="text-danger small mt-1">{{ form.quotation_valid_days.errors }}</div>{% endif %}
-            </div>
+                <div class="row mb-2">
+                    <div class="col-md-12">
+                      <label class="form-label small mb-1">Quotation Valid Days</label>
+                      {{ form.quotation_valid_days }}
+                      <div class="text-secondary small mt-1">0 = tidak pakai masa berlaku.</div>  
+                    {% if form.quotation_valid_days.errors %}<div class="text-danger small mt-1">{{ form.quotation_valid_days.errors }}</div>{% endif %}
+                      </div>
+                  </div>
 
-            <div class="col-md-4">
-              <label class="form-label small mb-1">Sales Fee (%)</label>
-              {{ form.sales_fee_percent }}
-              {% if form.sales_fee_percent.errors %}<div class="text-danger small mt-1">{{ form.sales_fee_percent.errors }}</div>{% endif %}
-            </div>
+                <div class="row mb-2">
+                  <div class="col-md-12">  
+                    <label class="form-label small mb-1">Sales Fee (%)</label>
+                    {{ form.sales_fee_percent }}
+                    {% if form.sales_fee_percent.errors %}<div class="text-danger small mt-1">{{ form.sales_fee_percent.errors }}</div>{% endif %}
+                    </div>
+                  </div>
+              </div>
+              <div class="col-md-1"></div>
+              <div class="col-md-5">
+                  <label class="form-label small ">Default Term of Payment</label>
+                    {{ form.default_payment_term  }}
+                   <label class="form-label small mb-1">Bank Transfer Info</label>
+                    {{ form.bank_transfer_info  }} 
+
+              </div>
+
           </div>
+         
 
           <hr class="my-4">
 
@@ -58,6 +76,7 @@
                 Service Order
               </button>
             </li>
+            
           </ul>
 
           <div class="tab-content border border-top-0 rounded-bottom p-3" id="cfgTabsContent">
@@ -152,7 +171,8 @@
 
             </div>
           </div>
-
+          
+          
 
           </div> {# /tab-content #}
 

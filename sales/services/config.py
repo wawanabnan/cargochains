@@ -22,6 +22,7 @@ def get_sales_defaults(*, target: str = "job_order") -> Dict[str, Any]:
     data: Dict[str, Any] = {
         "customer_note": (cfg.customer_note or "").strip(),
         "term_conditions": (cfg.term_conditions or "").strip(),
+        "bank_transfer_info": (cfg.bank_transfer_info or "").strip(),
         "sales_fee_percent": str(cfg.sales_fee_percent or "0.00"),
         "quotation_valid_days": int(cfg.quotation_valid_days or 0),
         "default_currency": cfg.default_currency_id,

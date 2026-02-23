@@ -1,34 +1,77 @@
+<table class="table table-bordered" id="job-order-table">
+  <thead class="table-light">
+    <th>Service</th>
+    <th width="7%">Qty</th>
+    <th width="8%">Unit</th>
+    <th width="12%">Price</th>
+    <th width="22%">Tax</th>
+    <th width="14%">Amount</th>
+  </thead>
 
-          <table class="table table-bordered" id="job-order-table">
-              <thead class="table-light">
-              <th >Service</th>
-              <th width="7%">Qty</th>
-              <th width="8%">Unit</th>
-              <th width="12%">price</th>
-              <th width="22%">Tax</th>
-              <th width="14%">Amount</th>
-            </thead>
-            <tbody>
-               <td> {{ form.service }}</td> 
-               <td class="text-end"> {{ form.qty }}</td> 
-               <td> Lunsump</td> 
-               <td class="text-end"> {{ form.price }}</td>
-               <td> {{ form.taxes }}</td> 
-               <td class="text-end"> {{ form.total_amount}}</td> 
-            </tbody>
-            <tfoot>
-              <tr>
-                <td class="text-end" colspan="5">Tax Amount</td>
-                <td> {{ form.tax_amount }}</td>
-              </tr> 
-              <tr>
-                <td class="text-end" colspan="5">PPH Amount</td>
-                <td> {{ form.pph_amount }}</td>
-              </tr> 
-              <tr>
-                <td class="text-end" colspan="5">Grand Total</td>
-                <td> {{ form.grand_total }}</td>
-              </tr> 
+  <tbody>
+    <tr>
+      <td>{{ form.service }}</td>
+      <td class="text-end">{{ form.qty }}</td>
+      <td>Lumpsum</td>
+      <td class="text-end">{{ form.price }}</td>
+      <td>{{ form.taxes }}</td>
+      <td class="text-end">{{ form.total_amount }}</td>
+    </tr>
+  </tbody>
 
-            </tfoot>
-          </table>
+  <tfoot>
+    <!-- DISCOUNT: taruh setelah total_amount (DPP) -->
+ 
+    <tr>
+  <td colspan="5" class="text-end align-middle">
+  <div class="form-check form-switch d-inline-flex align-items-center gap-2">
+    <input class="form-check-input"
+           type="checkbox"
+           id="discountTypeSwitch">
+
+    <label class="form-check-label fw-semibold mb-0"
+           for="discountTypeSwitch"
+           id="discountTypeLabel">
+
+     
+      Discount (%)
+    </label>
+     <input type="hidden"
+             name="discount_type"
+             id="id_discount_type"
+             value="{{ form.discount_type.value|default:'PERCENT' }}">
+
+  </div>
+</td>
+ <td class="text-end">
+  <input type="text"
+         id="id_discount_value"
+         name="discount_value"
+         class="form-control form-control-sm text-end"
+         value="{{ form.discount_value.value|default_if_none:'0,00' }}">
+</td>
+</tr>
+
+    <!-- OPTIONAL: tampilkan DPP after discount (read-only display) -->
+    <tr>
+      <td class="text-end" colspan="5">Sub Total</td>
+      <td>
+        <input type="text"
+               class="form-control form-control-sm text-end"
+                id="id_subtotal"
+               readonly
+               value="0,00">
+      </td>
+    </tr>
+
+    <tr>
+      <td class="text-end" colspan="5">Tax Amount</td>
+      <td>{{ form.tax_amount }}</td>
+    </tr>
+    <tr>
+      <td class="text-end" colspan="5">Grand Total</td>
+      <td>{{ form.grand_total }}</td>
+    </tr>
+  </tfoot>
+</table>
+
