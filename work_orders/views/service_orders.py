@@ -603,14 +603,11 @@ class VendorBookingCreateView(LoginRequiredMixin, TemplateView):
         return {row["job_cost_id"]: (row["used"] or Decimal("0")) for row in sums}
 
     def post(self, request, *args, **kwargs):
+        print("POST MASUK CREATE VB")
         job_id = (request.POST.get("job_order") or "").strip()
-        #if not job_id.isdigit():
-        #    messages.error(request, "Job Order wajib dipilih.")
-        #    return redirect(f"{reverse('work_orders:service_order_create')}?job_order={job.id}")
-
         if not job_id.isdigit():
             messages.error(request, "Job Order wajib dipilih.")
-            return redirect(f"{reverse('work_orders:service_order_create')}?job_order={job_id}")
+            return redirect(f"{reverse('work_orders:service_order_create')}?job_order={job.id}")
 
 
         job = get_object_or_404(JobOrder, pk=int(job_id))
