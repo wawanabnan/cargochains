@@ -10,7 +10,7 @@
         <h3 class="mb-0">Vendor Payments</h3>
       </div>
       <div class="col-sm-6 text-end">
-        <a href="{% url 'payments:vendor_payment_add' %}" class="btn btn-primary">
+        <a href="{% url 'billing:vendor_payment_add' %}" class="btn btn-primary">
           <i class="fas fa-plus"></i> Add Payment
         </a>
       </div>
@@ -51,7 +51,7 @@
                   </td>
                   <td>{{ p.status }}</td>
                   <td class="text-end">
-                    <a href="{% url 'payments:vendor_payment_edit' p.id %}"
+                    <a href="{% url 'billing::vendor_payment_edit' p.id %}"
                        class="btn btn-sm btn-outline-secondary">
                       Edit
                     </a>

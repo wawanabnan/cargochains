@@ -1,20 +1,27 @@
 {% extends "adminbase.html" %}
 {% block content %}
-
 <div class="app-content-header">
   <div class="container-fluid">
-    <a href="{% url 'accounting:journal_add' %}" class="btn btn-sm btn-primary">+ Add Journal</a>
-
-
+    <div class="row">
+      <div class="col-sm-6">
+        <h3 class="mb-0">Journals</h3>
+      </div>
+      <div class="col-sm-6 text-end">
+        <a href="{% url 'accounting:journal_add' %}" class="btn btn-primary">
+          <i class="fas fa-plus"></i> Add New
+        </a>
+      </div>
+    </div>
   </div>
 </div>
 
+
 <div class="app-content">
   <div class="container-fluid py-3">
-    <h4>Journals</h4>
+   
 
-    <table class="table table-sm">
-      <thead>
+    <table class="table table-bordered">
+      <thead class="table-light">
         <tr>
           <th>Date</th>
           <th>Number</th>
@@ -33,7 +40,7 @@
             <td class="text-end">{{ j.total_credit }}</td>
           </tr>
         {% empty %}
-          <tr><td colspan="5" class="text-muted">Belum ada journal</td></tr>
+          <tr><td colspan="5" class="text-muted center">Belum ada journal</td></tr>
         {% endfor %}
       </tbody>
     </table>

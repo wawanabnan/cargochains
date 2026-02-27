@@ -12,7 +12,7 @@ from billing.models.vendor_payment import VendorPayment
 class VendorPaymentListView(LoginRequiredMixin, View):
     def get(self, request):
         qs = VendorPayment.objects.select_related("vendor", "currency").all()
-        return render(request, "vendor_billing/list.html", {"items": qs})
+        return render(request, "vendor_payments/list.html", {"items": qs})
 
 
 class VendorPaymentCreateView(LoginRequiredMixin, View):
