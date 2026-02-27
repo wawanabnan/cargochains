@@ -243,7 +243,7 @@ class QuotationUpdateView(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse_lazy("job:quotation_detail", kwargs={"pk": self.object.pk})
 
-    def get_context_data(self, *, qform=None, form=None, **kwargs):
+    def get_context_data2(self, *, qform=None, form=None, **kwargs):
         quotation = self.object  # sudah ada di UpdateView
         if qform is None:
             qform = QuotationForm(instance=quotation)
@@ -292,6 +292,31 @@ class QuotationUpdateView(LoginRequiredMixin, UpdateView):
 
         messages.success(request, "Quotation berhasil diupdate.")
         return redirect(self.get_success_url())
+    
+    def get_context_data(self, *, qform=None, form=None, **kwargs):
+        quotation = self.object
+
+        if qform is None:
+            qform = QuotationForm(instance=quotation)
+
+        if form is None:
+            form = JobOrderForm(instance=quotation.job_order)
+
+        # 🔥 INI YANG PENTING
+        attachments = quotation.job_order.job_order_attachments.all()
+
+        ctx = {
+            "qform": qform,
+            "form": form,
+            "mode": "edit",
+            "tax_map": _build_tax_map(),
+            "object": quotation,
+            "quotation": quotation,
+            "job": quotation.job_order,
+            "attachments": attachments,   # 🔥 WAJIB ADA
+        }
+
+        return ctx
 
 class QuotationStatusUpdateView(LoginRequiredMixin, View):
     """
