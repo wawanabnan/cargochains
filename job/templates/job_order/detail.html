@@ -69,9 +69,11 @@
                {{ job.job_status_label }}
               </span>
             {% endif %}
+
             {% if jo.remaining_invoiceable == 0 %}
             <span class="badge bg-success">Fully Invoiced</span>
             {% else %}
+            
             <span class="badge bg-warning text-dark">
                 Remaining: {{ jo.remaining_invoiceable|indo_number }}
             </span>
