@@ -70,20 +70,19 @@
             <nav class="mt-2">
   <!--begin::Sidebar Menu-->
   <ul
-    class="nav sidebar-menu flex-column"
-    data-lte-toggle="treeview"
-    role="navigation"
-    aria-label="Main navigation"
-    data-accordion="false"
-    id="navigation"
-  >
-
+  class="nav sidebar-menu flex-column"
+  data-lte-toggle="treeview"
+  role="navigation"
+  aria-label="Main navigation"
+  data-accordion="true"
+  id="navigation"
+>
     <!-- DASHBOARD -->
     <li class="nav-item">
       <a href="{% url 'account:dashboard' %}"
          class="nav-link {% if request.resolver_match.app_name == 'account' %}active{% endif %}">
         <i class="nav-icon bi bi-speedometer"></i>
-        <p>Dashboard</p>
+        <p>DASHBOARD</p>
       </a>
     </li>
 
@@ -93,7 +92,7 @@
     <!-- SALES TREE -->
   
       {% include "partials/sales_menu.html" %}
-      {% include "partials/invoicing_menu.html" %}
+      {% include "partials/billing_menu.html" %}
       {% include "partials/shipment_menu.html" %}
       {% include "partials/accounting_menu.html" %}
       {% include "partials/system_setting.html" %}

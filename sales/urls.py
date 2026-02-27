@@ -35,30 +35,11 @@ from .views.freight import (
     FoEditFieldsView
 )
 
-from sales.views.invoices import (
-    InvoiceListView, InvoiceUpdateView,
-    InvoiceDetailView, InvoiceDeleteView, 
-    InvoiceCreateManualView,
-    InvoiceConfirmView
-)
 
 from .views.freight_pdf import  FreightQuotationPdfHtmlView
 from .views.fo_pdf import FreightOrderPdfHtmlView  # sesuaikan path
-from .views.invoice_pdf_html import InvoicePdfHtmlView  # sesuaikan path
+#from .views.invoice_pdf_html import InvoicePdfHtmlView  # sesuaikan path
 
-
-from .views.job_order import (
-    JobOrderListView,
-    JobOrderCreateView,
-    JobOrderUpdateView,
-    JobOrderDetailView,
-    JobOrderAttachmentUploadView,
-    JobOrderAttachmentDeleteView,
-     JobOrderBulkStatusView,
-     JobOrderCostsUpdateView,
-     JobOrderGenerateInvoiceView
-    
-)
 
 from .views.jo_revenue_pdf import JobOrderRevenuePdfView
 
@@ -180,25 +161,7 @@ urlpatterns = [
     path("customers/contacts/<int:pk>/update/", CustomerContactUpdateView.as_view(), name="customer_contact_update"),
 
 
-    path("invoices/", InvoiceListView.as_view(), name="invoice_list"),
-    path("invoices/<int:pk>/", InvoiceDetailView.as_view(), name="invoice_detail"),
-    path("invoices/<int:pk>/edit/", InvoiceUpdateView.as_view(), name="invoice_edit"),
-    path("invoices/<int:pk>/delete/", InvoiceDeleteView.as_view(), name="invoice_delete"),
-
-    # optional: generate invoice from job order via modal/form
-    path("invoices/add/", InvoiceCreateManualView.as_view(), name="invoice_add"),
-    # sales/urls.py
-   
-   
-     path(
-        "invoices/<int:pk>/pdf/",
-         InvoicePdfHtmlView.as_view(),
-         name="invoice_pdf",
-    ),
-
-     path("invoices/<int:pk>/confirm/", InvoiceConfirmView.as_view(), name="invoice_confirm"),
-
-
+    
 
 ]
 
@@ -229,3 +192,5 @@ from sales.views.sales_config import SalesConfigView
 urlpatterns += [
     path("sales-config/", SalesConfigView.as_view(), name="sales_config"),
 ]
+
+

@@ -21,7 +21,7 @@ from geo.models import Location
 from django.db import transaction
 from django.utils import formats
 from django_summernote.fields import SummernoteTextField
-
+from django.db.models import Sum
 
 class JobOrderQuerySet(models.QuerySet):
     def visible(self):
@@ -391,117 +391,201 @@ class JobOrder(TimeStampedModel):
 
         return Decimal("0")
 
+
     @property
-    def can_generate_proforma(self):
+    def down_payment_amount(self):
+        percent = self.down_payment_percent or Decimal("0.00")
+        base = self.grand_total or Decimal("0.00")
+
+        if percent <= 0:
+            return Decimal("0.00")
+
+        return (base * percent) / Decimal("100")
+
+    @property
+    def remaining_balance(self):
+        remaining = (self.grand_total or Decimal("0.00")) - self.down_payment_amount
+        return remaining if remaining > 0 else Decimal("0.00")
+    
+    @property
+    def subtotal_after_discount(self):
+        total = self.total_amount or Decimal("0.00")
+        discount = self.discount_amount or Decimal("0.00")
+        return total - discount
+
+    @property
+    def total_invoiced(self):
+        total = self.invoices.filter(
+            invoice_type__in=["DP", "FINAL"]
+        ).aggregate(
+            total=Sum("total_amount")
+        )["total"]
+        return total or Decimal("0.00")
+    
+    @property
+    def remaining_invoiceable(self):
+        base = self.grand_total or Decimal("0.00")
+        remaining = base - self.total_invoiced
+        return remaining if remaining > 0 else Decimal("0.00")
+
+    @property
+    def has_dp(self):
+        return bool(self.down_payment_percent and self.down_payment_percent > 0)
+
+    @property
+    def has_dp_invoice(self):
+        return self.invoices.filter(invoice_type="DP").exists()
+
+    @property
+    def has_final_invoice(self):
+        return self.invoices.filter(invoice_type="FINAL").exists()
+
+    @property
+    def can_generate_dp(self):
         return (
-            self.status != self.ST_DRAFT
-            and not self.is_proforma
+            self.status == self.ST_IN_COSTING
+            and self.has_dp
+            and not self.has_dp_invoice
+        )
+
+    @property
+    def can_generate_final(self):
+        return (
+            self.status == self.ST_IN_PROGRESS
+            and self.remaining_invoiceable > 0
+            and (not self.has_dp or self.has_dp_invoice)
+            and not self.has_final_invoice
         )
 
 
     # --- helpers transisi (opsional tapi saya rekomendasikan) ---
+    
+
+    # ===============================
+    # CONFIRM (DRAFT → IN_COSTING)
+    # ===============================
     def can_confirm(self):
         return self.status == self.ST_DRAFT
 
+
     def confirm(self, user):
         if not self.can_confirm():
-            raise ValueError("Job is not in DRAFT.")
+            raise ValidationError("Job is not in DRAFT.")
+
         self.status = self.ST_IN_COSTING
         self.confirmed_at = timezone.now()
         self.confirmed_by = user
 
-        # reset hold data (just in case)
+        # reset hold data
         self.hold_at = None
         self.hold_reason = ""
 
+
+    # ===============================
+    # START PROGRESS (IN_COSTING → IN_PROGRESS)
+    # ===============================
     def can_start_progress(self):
         return self.status == self.ST_IN_COSTING
 
+
     def start_progress(self, user):
         if not self.can_start_progress():
-            raise ValueError("Job is not in IN_COSTING.")
+            raise ValidationError("Job is not in IN_COSTING.")
+
+        # 🔥 RULE BARU: jika ada DP, harus sudah dibuat
+        if self.has_dp and not self.has_dp_invoice:
+            raise ValidationError(
+                "Down Payment invoice must be generated before moving to In Progress."
+            )
+
         self.status = self.ST_IN_PROGRESS
 
-        # reset hold data (just in case)
+        # reset hold data
         self.hold_at = None
         self.hold_reason = ""
 
 
+    # ===============================
+    # HOLD
+    # ===============================
     def can_hold(self):
         return self.status == self.ST_IN_PROGRESS
 
+
     def hold(self, user, reason: str):
         if not self.can_hold():
-            raise ValueError("Job is not IN_PROGRESS.")
+            raise ValidationError("Job is not IN_PROGRESS.")
+
         if not (reason or "").strip():
-            raise ValueError("Hold reason is required.")
+            raise ValidationError("Hold reason is required.")
+
         self.status = self.ST_ON_HOLD
         self.hold_at = timezone.now()
         self.hold_reason = reason.strip()
 
+
+    # ===============================
+    # RESUME
+    # ===============================
     def can_resume(self):
         return self.status == self.ST_ON_HOLD
 
+
     def resume(self, user):
         if not self.can_resume():
-            raise ValueError("Job is not ON_HOLD.")
+            raise ValidationError("Job is not ON_HOLD.")
+
         self.status = self.ST_IN_PROGRESS
 
-    def can_complete(self):
-        return self.status == self.ST_IN_PROGRESS
 
+    # ===============================
+    # CANCEL
+    # ===============================
     def can_cancel(self):
-        # cancel boleh dari draft/ongoing/hold,
-        # tapi kalau sudah posted journal, nanti kita bikin fitur reversal (jangan cancel langsung)
-        return self.status in {self.ST_DRAFT, self.ST_IN_PROGRESS, self.ST_ON_HOLD} 
+        return self.status in {
+            self.ST_DRAFT,
+            self.ST_IN_COSTING,
+            self.ST_IN_PROGRESS,
+            self.ST_ON_HOLD,
+        }
+
 
     def cancel(self, user, reason: str):
         if not self.can_cancel():
-            raise ValueError("Job cannot be cancelled (maybe already posted).")
+            raise ValidationError("Job cannot be cancelled.")
+
         if not (reason or "").strip():
-            raise ValueError("Cancel reason is required.")
+            raise ValidationError("Cancel reason is required.")
+
         self.status = self.ST_CANCELLED
         self.cancelled_at = timezone.now()
         self.cancelled_by = user
         self.cancel_reason = reason.strip()
 
 
-
+    # ===============================
+    # COMPLETE (IN_PROGRESS → COMPLETED)
+    # ===============================
     def complete(self, user):
-    # 1️⃣ hanya boleh complete dari IN_PROGRESS
         if self.status != self.ST_IN_PROGRESS:
             raise ValidationError("Job hanya bisa di-complete dari status In Progress.")
 
         if self.complete_journal_id:
-            raise ValidationError(
-                "Job ini sudah pernah dibuat jurnal Complete."
-            )
+            raise ValidationError("Job ini sudah pernah dibuat jurnal Complete.")
 
         costs = self.job_costs.filter(is_active=True)
 
-        # ✅ Accrual basis:
-        # - actual_amount TIDAK wajib saat complete
-        # - boleh complete walau estimate kosong? (pilih salah satu)
-
-        # Opsi A (tetap wajib ada cost line, tapi tidak wajib estimate > 0)
         if not costs.exists():
             raise ValidationError("Tidak bisa Complete: belum ada job cost.")
 
-        # Opsi B (opsional disiplin: minimal ada estimate > 0)
-        # if not costs.filter(est_amount__gt=0).exists():
-        #     raise ValidationError("Tidak bisa Complete: Estimate Amount belum diisi.")
-
-        # 3️⃣ update status (set dulu supaya posting bisa pakai completed_at)
         self.status = self.ST_COMPLETED
         self.completed_at = timezone.now()
         self.completed_by = user
         self.save(update_fields=["status", "completed_at", "completed_by"])
 
-        # 4️⃣ HOOK AUTO POSTING COGS (idempotent di service)
+        # auto posting COGS
         from job.services.posting import ensure_job_costing_posted
         ensure_job_costing_posted(self)
-
-
 
     class Meta:
       
@@ -513,18 +597,46 @@ class JobOrder(TimeStampedModel):
     def __str__(self):
         return self.number
 
-    def save(self, *args, **kwargs):
-        if not self.pk and not (self.number or "").strip():
-            self.number = get_next_number("job", "JOB_ORDER")
-        super().save(*args, **kwargs)
 
+    def save(self, *args, **kwargs):
+
+        is_new = self.pk is None
+
+        # ===== STATUS TRANSITION CHECK =====
+        if not is_new:
+            old = type(self).objects.get(pk=self.pk)
+
+            # Jika status berubah
+            if old.status != self.status:
+
+                # Rule: tidak boleh masuk IN_PROGRESS jika DP belum dibuat
+                if self.status == self.ST_IN_PROGRESS:
+                    if self.has_dp and not self.has_dp_invoice:
+                        raise ValidationError(
+                            "Down Payment invoice must be generated before moving to In Progress."
+                        )
+
+        # ===== AUTO NUMBERING (existing logic) =====
+        if is_new and not (self.number or "").strip():
+            self.number = get_next_number("job", "JOB_ORDER")
+
+        super().save(*args, **kwargs)
 
     @classmethod
     def visible(cls):
         # sesuai desain om: job status QUOTATION tidak muncul di list normal
         return cls.objects.exclude(status=cls.ST_QUOTATION)
     
-    
+    def clean(self):
+        super().clean()
+
+        # Rule: tidak boleh masuk IN_PROGRESS jika DP belum dibuat
+        if self.status == self.ST_IN_PROGRESS:
+            if self.has_dp and not self.has_dp_invoice:
+                raise ValidationError(
+                    "Down Payment invoice must be generated before moving to In Progress."
+                )
+        
     def convert_from_quotation(self, *, user=None, job_date=None):
         self.status = self.ST_DRAFT
 

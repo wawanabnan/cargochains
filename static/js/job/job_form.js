@@ -57,7 +57,7 @@
 
       if (label) {
         label.textContent = switchEl.checked
-          ? "Discount (Rp)"
+          ? "Discount (Fixed)"
           : "Discount (%)";
       }
 
@@ -70,7 +70,7 @@
 
         if (label) {
           label.textContent = switchEl.checked
-            ? "Discount (Rp)"
+            ? "Discount (Fixed)"
             : "Discount (%)";
         }
 

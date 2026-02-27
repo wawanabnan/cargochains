@@ -300,6 +300,8 @@ class QuotationStatusUpdateView(LoginRequiredMixin, View):
     """
     @transaction.atomic
     def post(self, request, pk):
+        print("🔥 MASUK METHOD POST UPDATE 🔥")
+        print("POST DATA:", request.POST)
         q = Quotation.objects.select_for_update().get(pk=pk)
         new_status = request.POST.get("status")
 

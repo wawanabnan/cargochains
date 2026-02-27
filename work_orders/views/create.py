@@ -11,7 +11,7 @@ from django.views.generic import TemplateView
 
 from job.models.job_orders import JobOrder
 from job.models.job_costs import JobCost
-from shipments.models.vendor_bookings import VendorBooking, VendorBookingLine
+from work_orders.models.vendor_bookings import VendorBooking, VendorBookingLine
 
 # pakai helper yang sudah ada di file om (kalau class ini ditaruh di file yang sama, ga perlu import)
 # from shipments.views.vendor_bookings import _get_cost_group_from_jobcost

@@ -1,0 +1,155 @@
+{% extends "print/base_preview_letterhead.html" %}
+{% load indo_format %}
+
+{% block toolbar %}
+<div class="print-toolbar-outside">
+  <button type="button" class="btn btn-outline-secondary w-100 mb-2" onclick="window.print()">
+    Print
+  </button>
+  <a class="btn btn-danger w-100"
+     href="{% url 'job:job_order_pdf' jo.id %}"
+     target="_blank" rel="noopener">
+    PDF
+  </a>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<h2 style="margin:0 0 8px 0;text-align: right;">Job Order</h2>
+<p style="margin:0 0 8px 0;text-align: right;">{{ number }}</p>
+<br>
+
+<table style="width:100%; margin-bottom:10px;">
+  <tr>
+    <td style="width:60%; vertical-align:top;">
+      To : {{ jo.customer.name }}
+      {% for line in jo.customer.address_lines %}
+        <div>{{ line }}</div>
+      {% endfor %}
+    </td>
+
+    <td style="width:35%; vertical-align:top;">
+      <br>
+      <table>
+        <tr><td>Date</td><td>{{ q.quote_date|date:"d-m-Y" }}</td></tr>
+        <tr><td>Payment Term</td><td>{{ jo.payment_term.name }}</td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<table class="table table-bordered">
+  <thead class="table-light">
+    <tr>
+      <th>Description</th>
+      <th class="text-end nowrap" style="width:8%">Qty</th>
+      <th class="text-end nowrap" style="width:16%">Price</th>
+      <th class="text-end nowrap" style="width:14%">Tax</th>
+      <th class="text-end nowrap" style="width:16%">Amount</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr>
+      <td class="wrap">{{ jo.print_description|linebreaksbr }}</td>
+      <td class="text-end nowrap">{{ jo.qty|indo_number }}</td>
+      <td class="text-end nowrap">{{ jo.price|indo_number }}</td>
+      <td class="text-end nowrap">{{ jo.ppn_label_rate_display }}</td>
+      <td class="text-end nowrap">{{ jo.total_amount|indo_number }}</td>
+    </tr>
+  </tbody>
+
+  <tfoot>
+     <tr>
+      <td class="text-end" colspan="4">Discount</td>
+      <td class="text-end">{{ jo.discount_value|indo_number }}</td>
+    </tr>
+    <tr>
+      <td class="text-end" colspan="4">Sub Total</td>
+      <td class="text-end">{{ jo.total_amount|indo_number }}</td>
+    </tr>
+    <tr>
+      <td class="text-end" colspan="4">VAT</td>
+      <td class="text-end">{{ jo.tax_amount|indo_number }}</td>
+    </tr>
+    <tr>
+      <td class="text-end" colspan="4">Total</td>
+      <td class="text-end">{{ jo.grand_total|indo_number }}</td>
+    </tr>
+    {% if jo.pph_amount %}
+      <tr>
+        <td class="text-end" colspan="4"><b>PPH</b></td>
+        <td class="text-end nowrap">-{{ jo.pph_amount }}</td>
+      </tr>
+    {% endif %}
+  </tfoot>
+</table>
+
+<table style="margin-top:10px;">
+  <tr>
+    <td style="width:60%; vertical-align:top;">
+      {% if jo.customer_note %}
+        <div><b>Notes</b></div>
+        <div class="wrap">{{ jo.customer_note|safe }}</div>
+      {% endif %}
+      {% if jo.sla_note %}
+        <div style="margin-top:8px;"><b>Syarat dan Kondition</b></div>
+        <div class="wrap">{{ jo.sla_note|safe }}</div>
+      {% endif %}
+    </td>
+    <td style="width:40%; vertical-align:top;"></td>
+  </tr>
+</table>
+
+<div style="margin-top:24px;">
+  <div style="height:70px;">
+    {% if signature_image %}
+      <img src="{{ signature_image.url }}" style="height:60px; object-fit:contain;">
+    {% endif %}
+  </div>
+
+  <div style="font-weight:600;">{{ signature_name }}</div>
+  {% if signature_title %}
+    <div style="font-size:12px; color:#666;">{{ signature_title }}</div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* list indent fix */
+  .wrap ul, .wrap ol {
+    list-style-position: outside !important;
+    padding-left: 1.7em !important;
+    margin: 4px 0 0 0 !important;
+    text-indent: 0 !important;
+  }
+  .wrap li {
+    margin: 2px 0 !important;
+    padding-left: 0 !important;
+    text-indent: 0 !important;
+  }
+  .wrap li p { margin: 0 !important; }
+
+  /* toolbar OUTSIDE the paper */
+  .print-toolbar-outside{
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 99999;
+    width: 140px;
+    padding: 10px;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(6px);
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 10px 28px rgba(0,0,0,.12);
+  }
+
+  @media print{
+    .print-toolbar-outside{ display:none !important; }
+  }
+</style>
+{% endblock %}

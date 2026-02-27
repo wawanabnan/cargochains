@@ -5,11 +5,12 @@ from django.views import View
 from weasyprint import HTML
 from work_orders.models.vendor_bookings import VendorBooking
 
+
 class VendorBookingPdfView(View):
     def get(self, request, pk: int):
         vb = (
             VendorBooking.objects
-            .select_related("job_order", "vendor", "payment_term")
+            .select_related("job_order", "vendor", "payment_term", "approved_by")
             .prefetch_related("lines__taxes", "lines__uom", "lines__cost_type")
             .get(pk=pk)
         )
@@ -22,6 +23,16 @@ class VendorBookingPdfView(View):
 
         total = subtotal + tax_ppn - tax_pph - (vb.discount_amount or Decimal("0"))
 
+        # 🔥 Tambahkan ini
+        signature_image = None
+        signature_name = None
+        signature_title = None
+
+        if vb.approved_by:
+            signature_name = vb.approved_by.get_full_name()
+            signature_title = getattr(vb.approved_by, "title", "")
+            signature_image = getattr(vb.approved_by, "signature", None)
+
         html = render_to_string(
             "service_orders/print/vb_pdf.html",
             {
@@ -31,6 +42,9 @@ class VendorBookingPdfView(View):
                 "tax_ppn": tax_ppn,
                 "tax_pph": tax_pph,
                 "total": total,
+                "signature_image": signature_image,
+                "signature_name": signature_name,
+                "signature_title": signature_title,
             },
             request=request,
         )

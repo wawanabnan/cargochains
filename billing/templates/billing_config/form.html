@@ -1,0 +1,184 @@
+{% extends "adminbase.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="app-content-header py-2">
+  <div class="container-fluid d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="mb-0">Billing Configuration</h3>
+      <small class="text-muted">Manage invoice settings, bank info, notes & journals</small>
+    </div>
+    <div>
+      <button form="billing-config-form" type="submit" class="btn btn-primary">
+        <i class="bi bi-save"></i> Save Configuration
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="app-content mt-2">
+  <div class="container-fluid">
+
+    <form id="billing-config-form" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="card card-outline card-primary">
+        <div class="card-header p-2">
+            <ul class="nav nav-tabs" id="config-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active"
+                            id="bank-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#bank"
+                            type="button"
+                            role="tab">
+                    Bank
+                    </button>
+                </li>
+
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link"
+                            id="notes-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#notes"
+                            type="button"
+                            role="tab">
+                    Notes & Terms
+                    </button>
+                </li>
+
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link"
+                            id="signature-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#signature"
+                            type="button"
+                            role="tab">
+                    Signature
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-body tab-content">
+          <!-- ================= BANK ================= -->
+          <div class="tab-pane fade show active" id="bank" role="tabpanel">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                {{ form.bank_name.label_tag }}
+                {{ form.bank_name }}
+              </div>
+              <div class="col-md-6 mb-3">
+                {{ form.bank_account_name.label_tag }}
+                {{ form.bank_account_name }}
+              </div>
+              <div class="col-md-6 mb-3">
+                {{ form.bank_account_number.label_tag }}
+                {{ form.bank_account_number }}
+              </div>
+              <div class="col-md-6 mb-3">
+                {{ form.swift_code.label_tag }}
+                {{ form.swift_code }}
+              </div>
+              <div class="col-md-12 mb-3">
+                {{ form.bank_address.label_tag }}
+                {{ form.bank_address }}
+              </div>
+            </div>
+          </div>
+
+          <!-- ================= NOTES ================= -->
+          <div class="tab-pane fade" id="notes">
+            <div class="mb-4">
+              <label class="form-label fw-bold">Default Customer Note</label>
+              {{ form.default_customer_note }}
+            </div>
+            <div class="mb-4">
+              <label class="form-label fw-bold">Terms & Conditions</label>
+              {{ form.default_terms_conditions }}
+            </div>
+            <div>
+              <label class="form-label fw-bold">Footer Note</label>
+              {{ form.default_footer_note }}
+            </div>
+          </div>
+
+         
+          <!-- ================= SIGNATURE ================= -->
+           <div class="tab-pane fade" id="signature">
+                <div class="row mb-3">
+                <div class="col-md-6">
+                {{ form.signature_mode.label_tag }}
+                {{ form.signature_mode }}
+                </div>
+                <div class="col-md-6 mt-4">
+                <div class="form-check">
+                    {{ form.auto_show_signature }}
+                    {{ form.auto_show_signature.label_tag }}
+                </div>
+                </div>
+                </div>
+
+                <!-- MANUAL SIGNATURE -->
+                <div id="manual-signature" class="border p-3 rounded bg-light mb-3">
+                    <h6 class="text-muted">Manual Signature</h6>
+                    <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.signature_name.label_tag }}
+                        {{ form.signature_name }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.signature_title.label_tag }}
+                        {{ form.signature_title }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.signature_image.label_tag }}
+                        {{ form.signature_image }}
+                    </div>
+                    </div>
+                </div>
+
+                <!-- USER SIGNATURE -->
+                <div id="user-signature" class="border p-3 rounded bg-light">
+                    <h6 class="text-muted">Use Signature From User Profile</h6>
+                    <div class="mb-3">
+                    {{ form.signature_user.label_tag }}
+                    {{ form.signature_user }}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js%}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    const modeField = document.getElementById("id_signature_mode");
+    const manualDiv = document.getElementById("manual-signature");
+    const userDiv = document.getElementById("user-signature");
+
+    function toggleSignatureMode() {
+        if (modeField.value === "USER") {
+            manualDiv.style.display = "none";
+            userDiv.style.display = "block";
+        } else {
+            manualDiv.style.display = "block";
+            userDiv.style.display = "none";
+        }
+    }
+
+    modeField.addEventListener("change", toggleSignatureMode);
+    toggleSignatureMode();
+});
+</script>
+{% endblock %}

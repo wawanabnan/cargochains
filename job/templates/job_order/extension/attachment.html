@@ -1,26 +1,23 @@
-{# --- ATTACHMENTS CARD --- #}
-<div class="card mt-3">
-  <div class="card-header py-2 d-flex justify-content-between align-items-center">
-    <span class="fw-semibold">Attachments</span>
-  </div>
+{# --- ATTACHMENTS CARD (AJAX CLEAN) --- #}
+<div class="card mt-3 border-0">
   <div class="card-body">
 
-    {# LIST ATTACHMENTS #}
+    {# ================= LIST ================= #}
     {% if attachments %}
       <div class="table-responsive mb-3">
         <table class="table table-sm align-middle">
           <thead class="table-light">
             <tr>
-              <th style="width: 40%;">File</th>
+              <th style="width:40%;">File</th>
               <th>Description</th>
-              <th style="width: 20%;">Uploaded At</th>
-              <th style="width: 12%;">By</th>
-              <th style="width: 80px;" class="text-end">Action</th>
+              <th style="width:20%;">Uploaded At</th>
+              <th style="width:12%;">By</th>
+              <th style="width:80px;" class="text-end">Action</th>
             </tr>
           </thead>
           <tbody>
             {% for a in attachments %}
-              <tr>
+              <tr data-id="{{ a.pk }}">
                 <td>
                   <a href="{{ a.file.url }}" target="_blank">
                     {{ a.filename }}
@@ -29,21 +26,14 @@
                 <td>{{ a.description|default:"-" }}</td>
                 <td>{{ a.created|date:"d-m-Y H:i" }}</td>
                 <td>
-                  {% if a.uploaded_by %}
-                    {{ a.uploaded_by.get_full_name|default:a.uploaded_by.username }}
-                  {% else %}
-                    -
-                  {% endif %}
+                  {{ a.uploaded_by.get_full_name|default:a.uploaded_by.username }}
                 </td>
                 <td class="text-end">
-                  <form method="post"
-                        action="{% url 'sales:job_order_attachment_delete' job.pk a.pk %}"
-                        onsubmit="return confirm('Hapus file ini?');">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-danger btn-xs">
-                      <i class="fa fa-trash"></i>
-                    </button>
-                  </form>
+                  <button type="button"
+                          class="btn btn-outline-danger btn-xs delete-attachment"
+                          data-id="{{ a.pk }}">
+                    <i class="fa fa-trash"></i>
+                  </button>
                 </td>
               </tr>
             {% endfor %}
@@ -51,29 +41,110 @@
         </table>
       </div>
     {% else %}
-      <p class="text-muted mb-3">Belum ada attachment untuk job order ini.</p>
+      <p class="text-muted mb-3">
+        Belum ada attachment untuk job order ini.
+      </p>
     {% endif %}
 
-    {# FORM UPLOAD ATTACHMENT #}
-    <form method="post"
-          action="{% url 'job:job_order_attachment_add' job.pk %}"
-          enctype="multipart/form-data"
-          class="row g-2 align-items-end">
-      {% csrf_token %}
+    {# ================= UPLOAD ================= #}
+    <div class="row g-2 align-items-end mt-2">
       <div class="col-md-4">
         <label class="form-label form-label-sm mb-1">File</label>
-        {{ attachment_form.file }}
+        <input type="file"
+               id="attachmentFile"
+               class="form-control form-control-sm">
       </div>
+
       <div class="col-md-5">
         <label class="form-label form-label-sm mb-1">Description</label>
-        {{ attachment_form.description }}
+        <input type="text"
+               id="attachmentDesc"
+               class="form-control form-control-sm">
       </div>
+
       <div class="col-md-3 d-flex align-items-end">
-        <button type="submit" class="btn btn-primary btn-sm">
+        <button type="button"
+                id="uploadBtn"
+                class="btn btn-primary btn-sm w-100">
           <i class="fa fa-upload me-1"></i> Upload
         </button>
       </div>
-    </form>
+    </div>
 
   </div>
 </div>
+
+<script>
+(function () {
+
+  const uploadBtn = document.getElementById("uploadBtn");
+  const csrfToken = "{{ csrf_token }}";
+
+  if (!uploadBtn) return;
+
+  // ================= UPLOAD =================
+  uploadBtn.addEventListener("click", function () {
+
+    const fileInput = document.getElementById("attachmentFile");
+    const descInput = document.getElementById("attachmentDesc");
+
+    if (!fileInput || !fileInput.files.length) {
+      alert("Pilih file dulu om.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+    formData.append("description", descInput.value);
+
+    fetch("{% url 'job:job_order_attachment_add' job.pk %}", {
+  method: "POST",
+  headers: {
+    "X-CSRFToken": csrfToken
+  },
+  body: formData
+})
+.then(res => {
+  console.log("STATUS:", res.status);
+  return res.text();   // kita baca raw dulu
+})
+.then(text => {
+  console.log("RESPONSE:", text);
+  location.reload();
+});
+
+  });
+
+  // ================= DELETE =================
+  document.addEventListener("click", function (e) {
+
+    const btn = e.target.closest(".delete-attachment");
+    if (!btn) return;
+
+    if (!confirm("Hapus file ini?")) return;
+
+    const attId = btn.dataset.id;
+
+    fetch(
+      "{% url 'job:job_order_attachment_delete' job.pk 0 %}".replace("0", attId),
+      {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": csrfToken
+        }
+      }
+    )
+    .then(res => res.json())
+    .then(data => {
+      if (!data.success) {
+        alert("Gagal hapus file.");
+        return;
+      }
+
+      location.reload();
+    });
+
+  });
+
+})();
+</script>

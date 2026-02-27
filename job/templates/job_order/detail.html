@@ -11,7 +11,7 @@
   
     <div class="d-flex justify-content-between align-items-center">
       <div>
-        <h1 class="h4 mb-0">Job Order Detail</h1>
+        <h1>Job Order Detail</h1>
         <div class="text-muted small">
           Job No: <strong>{{ job.number }}</strong><br>
           Date: {{ job.job_date|date:"d-m-Y" }}
@@ -44,17 +44,17 @@
   </div>
 </div>
 <div class="app-content">
-  <div class="container-fluid">
-    <div class="card shadow-sm">
+    <div class="container-fluid">
+    <div class="card shadow-sm mb-2">
       <div class="card-header py-2">
         <div class="d-flex align-items-center justify-content-between">
 
           <!-- LEFT: TITLE + STATUS -->
           <div class="d-flex align-items-center gap-2">
-            <div class="fw-semibold">
+            <h4>
               Job Orders
              
-            </div>
+            </h4>
             
             {% if job.status %}
               <span class="badge
@@ -69,29 +69,49 @@
                {{ job.job_status_label }}
               </span>
             {% endif %}
+            {% if jo.remaining_invoiceable == 0 %}
+            <span class="badge bg-success">Fully Invoiced</span>
+            {% else %}
+            <span class="badge bg-warning text-dark">
+                Remaining: {{ jo.remaining_invoiceable|indo_number }}
+            </span>
+            {% endif %}
           </div>
 
           <!-- RIGHT: ACTION BUTTONS -->
           <div class="d-flex align-items-center gap-1">
+            {% if job.can_generate_dp %}
+            <form method="post" action="{% url 'job:generate_dp_invoice' job.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-primary">
+                    Generate DP Invoice
+                </button>
+            </form>
+            {% endif %}
 
-            {% if job.can_generate_proforma %}
-<form method="post" action="{% url 'job:generate_proforma' job.pk %}">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-sm btn-primary">
-        Generate Proforma Invoice
-    </button>
-</form>
-{% endif %}
+            {% if job.can_generate_final %}
+            <form method="post" action="{% url 'job:generate_final_invoice' job.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-success">
+                    {% if not job.has_dp %}
+                        Generate Invoice
+                    {% else %}
+                        Generate Final Invoice
+                    {% endif %}
+                </button>
+            </form>
+            {% endif %}
+           
           
       <a class="btn btn-sm btn-outline-primary" target="_blank"
         href="{% url 'job:job_order_print_preview' job.pk %}">
         Preview
       </a>
 
-      <a class="btn btn-sm btn-outline-success" target="_blank"
-        href="{% url 'job:job_order_pdf' job.pk %}">
-         PDF
-      </a>
+       <a  href="{% url 'job:job_order_edit' job.pk %}"
+           class="btn btn-success btn-sm">
+          <i class="fa fa-edit me-1"></i> Edit
+        </a>
                     
             {% if object.complete_journal_id %}
             <a class="btn btn-outline-secondary btn-sm"
@@ -122,15 +142,7 @@
             <!-- ===== STATUS ACTIONS ===== -->
 
             <!-- CONFIRM: Draft → On Going -->
-            {% if job.status == 'DRAFT' %}
-              <form method="post"
-                    action="{% url 'job:job_confirm' job.pk %}">
-                {% csrf_token %}
-                <button class="btn btn-primary btn-sm">
-                  <i class="bi bi-check-circle"></i> Start Costing
-                </button>
-              </form>
-            {% endif %}
+            
 
             {% if job.status == job.ST_IN_COSTING %}
             <form method="post" action="{% url 'job:job_start_progress' job.pk %}" class="d-inline">
@@ -212,126 +224,88 @@
    
 
     </div>
+    {% if job.status == "DRAFT" %}
+    <div class="card">
+      <div class="card-body text-center">
+        Klik Start Costing untuk membuat Job Cost <br><br>
+      
+              <form method="post"
+                action="{% url 'job:job_confirm' job.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-primary btn-sm">
+                  <i class="bi bi-check-circle"></i> Start Costing
+                </button>
+              </form>
+           
+
+      </div>
+    </div>
+
+    {% else %}
     <div class="card mt-2" style="border-bottom:0px">
      
-      <div class="card-header">
-          {% if job.status != "DRAFT" %}
+      <div class="card-header border-0">
+          
         <a
           href="{% url 'job:joborder_cost_preview' job.id %}"
           target="_blank"
           class="btn btn-sm btn-outline-primary"
         >
-          🖨️ Preview
+          🖨️ 
         </a>
-      <a class="btn btn-sm btn-outline-danger"
-        target="_blank"
-        href="{% url 'job:joborder_cost_pdf' job.pk %}">
-        📄 Pdf
-      </a>
-      {% endif %}
+     
+    
       </div>
 
     </div>
-
-    {#===========================================#}
-    <ul class="nav nav-pills nav-fill  mynav mt-0" 
-                id="myTab" role="tablist" style="border-top:0px">
-              <li class="nav-item" role="presentation">
-                <button class="nav-link active " 
-                        id="home-tab" 
-                        data-bs-toggle="tab" data-bs-target="#costTab" 
-                        type="button" role="tab" 
-                        aria-controls="home" aria-selected="true">Job Cost
-                </button>
-              </li>
-               <li class="nav-item" role="presentation">
-                <button class="nav-link" 
-                        id="home-tab" 
-                        data-bs-toggle="tab" data-bs-target="#noteTab" 
-                        type="button" role="tab" 
-                        aria-controls="home" aria-selected="true">Note
-                </button>
-              </li>
-              <li class="nav-item" role="presentation">
-                <button class="nav-link" 
-                        id="profile-tab" 
-                        data-bs-toggle="tab" data-bs-target="#attachmentTab" 
-                        type="button" role="tab" 
-                        aria-controls="profile" aria-selected="false">Attachment
-                </button>
-              </li>
-              
-            
-    </ul>
-
     
-<script>
-  window.COST_TYPE_META = {{ cost_type_meta_json|default:"{}"|safe }};
-</script>
+  
+    
+    <script>
+      window.COST_TYPE_META = {{ cost_type_meta_json|default:"{}"|safe }};
+    </script>
 
     <div id="jobcost-alert" class="alert alert-info d-none"></div>
     <pre id="jobcost-debug"
      class="small bg-light border rounded p-2 mt-2 d-none"
      style="max-height: 260px; overflow:auto;"></pre>
-
-   
- 
-    <div class="tab-content border border-0 mt-0" id="myCargoPriceTab">
-        <div class="tab-pane fade show active" id="costTab" role="tabpanel" aria-labelledby="cargotab">
-          
-            <form method="post" action="{% url 'job:job_order_costs_update' job.pk %}" novalidate id="jobcost-form">
-                {% csrf_token %}
-                {{ cost_formset.management_form }}
-
-                {% if cost_formset.non_form_errors %}
-                  <div class="alert alert-danger py-2 mb-2">{{ cost_formset.non_form_errors }}</div>
-                {% endif %}
-
-               
-                <div class="card border-0">
-                  <div class="card-body p-0">
-                      <input type="hidden"  name="jobcost_touched"  id="jobcost-touched" value="0">
-
-                    <div class="table-responsive" id="jobcost-area" data-cost-locked="{{ job.is_cost_locked|yesno:'1,0' }}">
-                        {% include 'job_order/extension/_cost_detail.html' %}
-                    </div>
-                  </div>
-                  
-                  <div class="d-flex justify-content-between align-items-center p-2 border " style="border-top: 0px !important">
-                  
-                    {% if not job.is_cost_locked and job.status != "DRAFT" %}
                     
-                    <button type="button" class="btn btn-outline-primary btn-sm" id="btn-jobcost-add">
-                      <i class="bi bi-plus-lg"></i> Add Row
-                    </button>
+    <form method="post" action="{% url 'job:job_order_costs_update' job.pk %}" novalidate id="jobcost-form">
+        {% csrf_token %}
+        {{ cost_formset.management_form }}
 
-                    <button type="submit" name="next" value="detail" class="btn btn-primary btn-sm">
-                      <i class="bi bi-save"></i> Save
-                    </button>
+        {% if cost_formset.non_form_errors %}
+          <div class="alert alert-danger py-2 mb-2">{{ cost_formset.non_form_errors }}</div>
+        {% endif %}
 
-                   
-                    {% endif %}
-                  </div>
-                </div>
+        
+        <div class="card border-0">
+          <div class="card-body p-0">
+              <input type="hidden"  name="jobcost_touched"  id="jobcost-touched" value="0">
+
+            <div class="table-responsive" id="jobcost-area" data-cost-locked="{{ job.is_cost_locked|yesno:'1,0' }}">
+                {% include 'job_order/extension/_cost_detail.html' %}
+            </div>
+          </div>
+          {% if not job.is_cost_locked and job.status != "DRAFT" %}
+            <div class="d-flex justify-content-between align-items-center p-2 border " style="border-top: 0px !important">
+              <button type="button" class="btn btn-outline-primary btn-sm" id="btn-jobcost-add">
+                <i class="bi bi-plus-lg"></i> Add Row
+              </button>
+
+              <button type="submit" name="next" value="detail" class="btn btn-primary btn-sm">
+                <i class="bi bi-save"></i> Save
+              </button>
+            </div>
+           {% endif %}
+        </div>
+        
+    </form>       
+      {% endif %}
                 
-            </form>       
-                    
-        </div>
-        <div class="tab-pane fade show active" 
-            id="noteTab" 
-            role="tabpanel" aria-labelledby="notetab">
-            
-
-        </div>
-        <div class="tab-pane fade" id="attachmentTab" 
-              role="tabpanel" aria-labelledby="price-tab">
-                {% include 'job_order/extension/attachment.html' %}
-
-        </div>
-          
-    </div>
-  </div>  
-</div>
+    </div>        
+ </div>
+ 
 
 {% endblock %}
 {% block extra_css %}

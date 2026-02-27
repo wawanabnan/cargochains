@@ -1,0 +1,106 @@
+{% extends "adminbase.html" %}
+
+{% block content %}
+
+<div class="app-header">
+  <div class="container-fluid py-2 d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">
+      Generate Invoice - {{ freight_order.number|default:"Freight Order #" }}
+    </h5>
+
+    <a href="{% url 'sales:invoice_list' %}" class="btn btn-outline-secondary btn-sm">
+      Back to Invoices
+    </a>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+
+    <div class="card mb-3">
+      <div class="card-body py-2">
+        <div class="row">
+          <div class="col-md-4">
+            <div class="fw-semibold">Freight Order</div>
+            <div>{{ freight_order.number }} (ID: {{ freight_order.id }})</div>
+          </div>
+          <div class="col-md-4">
+            <div class="fw-semibold">Customer</div>
+            <div>{{ freight_order.customer.name }}</div>
+          </div>
+          <div class="col-md-4 text-md-end">
+            <div class="fw-semibold">Total Freight Order</div>
+            <div>{{ total_fo|floatformat:2 }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <form method="post">
+        {% csrf_token %}
+        <div class="card-body">
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+              {{ form.non_field_errors }}
+            </div>
+          {% endif %}
+
+          <div class="mb-3">
+            <label class="form-label d-block">Invoice Mode</label>
+            {{ form.mode }}
+            {{ form.mode.errors }}
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              {{ form.invoice_date.label_tag }}
+              {{ form.invoice_date }}
+              {{ form.invoice_date.errors }}
+            </div>
+            <div class="col-md-6 mb-3">
+              {{ form.due_date.label_tag }}
+              {{ form.due_date }}
+              {{ form.due_date.errors }}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            {{ form.amount.label_tag }}
+            {{ form.amount }}
+            <div class="form-text">
+              Untuk mode FULL, amount akan otomatis memakai total Freight Order ({{ total_fo|floatformat:2 }}).
+            </div>
+            {{ form.amount.errors }}
+          </div>
+
+          <div class="mb-3">
+            {{ form.notes_customer.label_tag }}
+            {{ form.notes_customer }}
+            {{ form.notes_customer.errors }}
+          </div>
+
+          <div class="mb-3">
+            {{ form.notes_internal.label_tag }}
+            {{ form.notes_internal }}
+            {{ form.notes_internal.errors }}
+          </div>
+
+        </div>
+
+        <div class="card-footer d-flex justify-content-between">
+          <a href="{% url 'sales:invoice_list' %}" class="btn btn-outline-secondary">
+            Cancel
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <i class="fa fa-bolt me-1"></i> Generate Invoice
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

@@ -2,7 +2,6 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from accounting.services.posting import create_journal, post_journal
 from accounting.models.settings import AccountingSettings
 
 from decimal import Decimal

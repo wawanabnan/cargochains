@@ -1,5 +1,45 @@
 {% extends "print/base_pdf_letterhead.html" %}
 
 {% block content %}
+
+  {% if vb.watermark_label %}
+  <div class="so-watermark-wrapper">
+      <div class="so-watermark">
+          {{ vb.watermark_label }}
+      </div>
+  </div>
+  {% endif %}
   {% include "service_orders/print/_vb_body.html" %}
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+@page {
+    size: A4;
+    margin: 20mm;
+}
+
+.so-watermark-wrapper {
+    position: fixed;
+    top: 60%;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    z-index: -1;
+}
+
+.so-watermark {
+    display: inline-block;
+
+    font-size: 110px;
+    font-weight: 800;
+    color: rgba(120,120,120,0.05);
+
+    letter-spacing: 8px;
+    white-space: nowrap;
+
+    transform: rotate(-28deg);
+}
+</style>
 {% endblock %}

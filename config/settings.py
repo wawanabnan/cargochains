@@ -34,7 +34,7 @@ INSTALLED_APPS = [
     "sales_configuration",
     'job',
     "accounting",
-    'payments',
+    'billing',
     "rest_framework",
     "rest_framework.authtoken",
     "corsheaders",

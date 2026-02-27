@@ -7,7 +7,7 @@
   <div class="container-fluid">
     <div class="row">
       <div class="col-sm-6">
-        <h4 class="mb-0">Quotations</h4>
+        <h4 class="mb-0">Quotation</h4>
       </div>
       <div class="col-sm-6">
         <ol class="breadcrumb float-sm-end">
@@ -30,8 +30,22 @@
           <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
 
+        {% if form.errors or form.non_field_errors %}
+        <div class="alert alert-danger">
+          <ul class="mb-0">
+            {% for field, errors in form.errors.items %}
+              {% for error in errors %}
+                <li><strong>{{ field }}:</strong> {{ error }}</li>
+              {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
        
-        <form method="post" novalidate>
+        <form method="post" novalidate id="jobOrderForm">
           {% csrf_token %}
 
           {% if job %}
@@ -39,8 +53,7 @@
           {% endif %}
 
 
-
-          <div class="card" style="border-bottom: 0px;" id="card-ku">
+            <div class="card" style="border-bottom: 0px;" id="card-ku">
             <div class="card-body">
              
               <div class="row">
@@ -61,9 +74,10 @@
                 </div>
                 <div class="col-md-4">
                      <div class="form-group row">
-                            <label for="staticEmail" class="col-sm-4 col-form-label">T.O.P</label>
+                            <label for="staticEmail" class="col-sm-4 col-form-label">Sales</label>
                         <div class="col-sm-8">
-                          {{ form.payment_term }}
+                         
+                          <input class="form-control" type="text" value="{{request.user.username}}" readonly>
                         </div>
 
                        
@@ -91,7 +105,7 @@
                      <div class="form-group row">
                        <label for="staticEmail" class="col-sm-4 col-form-label">Quote Date</label>
                         <div class="col-sm-8">
-                            <input type="hidden" name="job_date" id="id_job_date">
+                           
 
                           {{ qform.quote_date }}
                         </div>
@@ -151,6 +165,7 @@
             </div>   
          </div>
           
+          
             {% include 'job_order/extension/pricing.html' %}
        
    
@@ -178,6 +193,13 @@
                           type="button" role="tab"
                           aria-controls="shipperTab" aria-selected="true">Customer Note</button>
                 </li>
+                 <li class="nav-item" role="presentation">
+                  <button class="nav-link "
+                          id="payment-info-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#paymentInfoTab"
+                          type="button" role="tab"
+                          aria-controls="shipperTab" aria-selected="true">Payment Information</button>
+                </li>
                 <li class="nav-item" role="presentation">
                   <button class="nav-link"
                           id="term-note-tab-btn"
@@ -185,6 +207,15 @@
                           type="button" role="tab"
                           aria-controls="consigneeTab" aria-selected="false">Term & Conditions</button>
                 </li>
+                 {% if job %}
+                 <li class="nav-item" role="presentation">
+                  <button class="nav-link"
+                          id="attachment-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#attachmentTab"
+                          type="button" role="tab"
+                          aria-controls="consigneeTab" aria-selected="false">Attachment</button>
+                </li>
+                {% endif %}
                
               </ul>
               <div class="tab-content p-2 fq-tab-content " id="myTabContent" style="background-color: #fff;">
@@ -209,13 +240,30 @@
                     {{ form.customer_note }}
         
                 </div>
+                 <div class="tab-pane fade show " 
+                    id="paymentInfoTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                      
+                    
+                     {% include 'job_order/extension/payment_info.html' %}
+        
+                </div>
                 <div class="tab-pane fade show " 
                     id="termNoteTab" 
                     role="tabpanel" aria-labelledby="home-tab">
                     {{ form.term_conditions }}
         
                 </div>
-                               
+                {% if job %}
+                <div class="tab-pane fade show " 
+                    id="attachmentTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                    
+                  {% include 'job_order/extension/attachment.html' %} 
+                    
+                </div>
+               {% endif %}
+        
               </div>
 
 
@@ -232,6 +280,7 @@
               <i class="fa fa-times me-1"></i> Cancel
             </a>
 
+              
             <button type="submit" class="btn btn-sm btn-primary">
               <i class="fa fa-save me-1"></i>
               {% if job %}Update{% else %}Create{% endif %}
@@ -395,6 +444,11 @@ textarea.form-control-sm{
 .s2loc-badge.is-port{background:rgba(25,135,84,.12);color:#198754;}
 .s2loc-badge.is-city{background:rgba(108,117,125,.12);color:#6c757d;}
 
+#btnDiscount {
+    font-size: 11px !important;
+    padding: 3px 8px !important;
+}
+
 </style>
 
 <link rel="stylesheet"
@@ -416,514 +470,17 @@ textarea.form-control-sm{
 <script src="{% static 'js/job/idr_kurs.js' %}">  </script>
 <script src="{% static 'vendor/js/select2.full.min.js' %}"> </script>
 <script src="{% static 'js/tax_select2_autoinit.js' %}"> </script>
+<script src="{% static 'js/job/location_init.js' %}"> </script>
 
 
 
-<script>
-(function () {
+<script src="{% static 'js/job/job_utils.js' %}"></script>
+<script src="{% static 'js/job/job_taxes.js' %}"></script>
+<script src="{% static 'js/job/job_calc.js' %}"></script>
+<script src="{% static 'js/job/job_discount.js' %}"></script>
+<script src="{% static 'js/job/job_location.js' %}"></script>
+<script src="{% static 'js/job/job_form.js' %}"></script>
 
-  // =========================
-  // Helpers angka Indonesia
-  // =========================
-  function parseID(v) {
-    if (v === null || v === undefined) return 0;
-    let s = String(v).trim();
-    if (!s) return 0;
 
-    s = s.replace(/\s+/g, "");
-
-    // Indonesia style: 1.234.567,89
-    if (s.includes(",")) {
-      s = s.replace(/\./g, "").replace(",", ".");
-      const n = Number(s);
-      return Number.isFinite(n) ? n : 0;
-    }
-
-    // plain number
-    const n = Number(s);
-    return Number.isFinite(n) ? n : 0;
-  }
-
-  function fmtID(n) {
-    const x = Number(n || 0);
-    return x.toLocaleString("id-ID", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  }
-
-  function fmtID3(n) {
-    const x = Number(n || 0);
-    return x.toLocaleString("id-ID", {
-      minimumFractionDigits: 3,
-      maximumFractionDigits: 3
-    });
-  }
-
-  function setReadonly(el) {
-    if (!el) return;
-    el.readOnly = true;
-    el.setAttribute("tabindex", "-1");
-  }
-
-  // =========================
-  // KURS helpers (raw + limit 3 desimal)
-  // =========================
-  function normalizeKursRaw(v) {
-    let s = String(v ?? "").trim().replace(/\s+/g, "");
-    if (!s) return "";
-
-    // kalau indo: 1.234,567 -> 1234.567
-    if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
-    // keep digit + dot
-    s = s.replace(/[^\d.]/g, "");
-    // rapihin dot ganda
-    const parts = s.split(".");
-    const intPart = parts[0] || "";
-    const decPart = (parts[1] || "").slice(0, 3); // ✅ max 3 digit
-    return decPart ? `${intPart}.${decPart}` : intPart;
-  }
-
-  function setKursPretty(kursInput) {
-    if (!kursInput) return;
-    const raw = normalizeKursRaw(kursInput.value);
-    kursInput.dataset.raw = raw;
-    kursInput.value = raw ? fmtID3(Number(raw)) : "";
-  }
-
-  function setKursRaw(kursInput) {
-    if (!kursInput) return;
-    const raw = normalizeKursRaw(kursInput.value);
-    kursInput.dataset.raw = raw;
-    kursInput.value = raw; // plain decimal buat edit
-  }
-
-  // =========================
-  // Hitung total (tanpa format)
-  // =========================
-  function recalcTotalRaw() {
-    const qtyEl   = document.getElementById("id_qty");
-    const priceEl = document.getElementById("id_price");
-    const totalEl = document.getElementById("id_total_amount");
-
-    if (!qtyEl || !priceEl || !totalEl) return;
-
-    const qty = parseID(qtyEl.value);
-    const price = parseID(priceEl.value);
-    const total = qty * price;
-
-    totalEl.value = fmtID(total);
-  }
-
-  function formatInput2(el) {
-    if (!el) return;
-    const n = parseID(el.value);
-    el.value = fmtID(n);
-  }
-
-  // =========================
-  // MAIN DOM READY
-  // =========================
-  document.addEventListener("DOMContentLoaded", function () {
-
-    const form = document.querySelector("form");
-    if (!form) return;
-
-    const qtyEl   = document.getElementById("id_qty");
-    const priceEl = document.getElementById("id_price");
-    const totalEl = document.getElementById("id_total_amount");
-
-    const taxEl   = document.getElementById("id_tax_amount");
-    const pphEl   = document.getElementById("id_pph_amount");
-    const grandEl = document.getElementById("id_grand_total");
-
-    const currencyEl = document.getElementById("id_currency");
-    const kursRow    = document.getElementById("row-kurs");
-    const kursInput  = document.getElementById("id_kurs_idr");
-    
-
-    // =========================
-    // Readonly fields
-    // =========================
-    setReadonly(totalEl);
-    setReadonly(taxEl);
-    setReadonly(pphEl);
-    setReadonly(grandEl);
-
-    // =========================
-    // Auto select on focus
-    // =========================
-    [qtyEl, priceEl, kursInput].forEach(function (el) {
-      if (!el) return;
-      el.addEventListener("focus", function () {
-        setTimeout(() => el.select(), 0);
-      });
-    });
-
-    // =========================
-    // Event qty & price
-    // =========================
-    if (qtyEl) {
-      qtyEl.addEventListener("input", recalcTotalRaw);
-      qtyEl.addEventListener("blur", function () {
-        formatInput2(qtyEl);
-        recalcTotalRaw();
-      });
-    }
-
-    if (priceEl) {
-      priceEl.addEventListener("input", recalcTotalRaw);
-      priceEl.addEventListener("blur", function () {
-        formatInput2(priceEl);
-        recalcTotalRaw();
-      });
-    }
-
-    // =========================
-    // Initial calc & format
-    // =========================
-    recalcTotalRaw();
-
-    // =========================
-    // Before submit → kirim angka plain
-    // =========================
-    form.addEventListener("submit", function () {
-      if (qtyEl) qtyEl.value = parseID(qtyEl.value);
-      if (priceEl) priceEl.value = parseID(priceEl.value);
-
-      if (totalEl) totalEl.value = parseID(totalEl.value);
-      if (taxEl) taxEl.value = parseID(taxEl.value);
-      if (pphEl) pphEl.value = parseID(pphEl.value);
-      if (grandEl) grandEl.value = parseID(grandEl.value);
-
-      // kurs kirim raw (plain decimal), bukan formatted
-      if (kursInput) {
-        kursInput.value = kursInput.dataset.raw || normalizeKursRaw(kursInput.value) || "";
-      }
-    });
-
-  });
-
-})();
-</script>
-
-
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  const $ = window.jQuery;
-  if (!$ || !$.fn.select2) return;
-
-  function kindClass(kind) {
-    kind = (kind || "").toLowerCase();
-    if (kind === "airport") return "is-airport";
-    if (kind === "seaport") return "is-port";
-    if (kind === "city") return "is-city";
-    return "is-other";
-  }
-
-  
-function renderItem(item) {
-    if (item.loading) return item.text;
-
-    const title = item.text || "";
-    const chain = [item.region, item.province].filter(Boolean).join(" — ");
-    const sub = item.subtext || "";
-
-    return $(`
-      <div>
-        <div><strong>${title}</strong> ${item.kind ? `<span class="text-muted">[${item.kind}]</span>` : ""}</div>
-        <div class="text-muted small">${chain || sub}</div>
-      </div>
-    `);
-  }
-
-
-  $(".js-location-select").each(function () {
-    const $el = $(this);
-
-    // penting: kalau pernah ke-init, destroy dulu biar gak dobel
-    if ($el.data("select2")) $el.select2("destroy");
-
-    $el.select2({
-      width: "100%",
-      placeholder: $el.data("placeholder") || "Pilih",
-      allowClear: true,
-      minimumInputLength: 1,
-      ajax: {
-        url: $el.data("url"),
-        dataType: "json",
-        delay: 250,
-        data: params => ({ q: params.term || "", page: params.page || 1 }),
-        processResults: data => ({
-          results: (data.results || []).map(x => ({
-            id: x.id,
-            text: x.text,
-            kind: x.kind || "",
-            code: x.code || "",
-            subtext: x.subtext || "",
-            district: x.district || "",
-            region: x.region || "",
-            province: x.province || ""
-
-          })),
-          pagination: data.pagination || { more: false }
-        })
-      },
-      templateResult: renderItem,
-      templateSelection: item => item.text || ""
-    });
-  });
-});
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  const $ = window.jQuery;
-  if (!$ || !$.fn.select2) return;
-
-  // 1) init select2 location kamu di sini...
-  // ...
-
-  // 2) init taxes select2
-  if (window.initTaxSelect2) {
-    window.initTaxSelect2(document);
-  }
-});
-</script>
-
-<script>
-(function () {
-  let TAX_MAP = {};
-
-  function readTaxMap() {
-    const el = document.getElementById("tax-map");
-    if (!el) return {};
-    try { return JSON.parse(el.textContent); } catch { return {}; }
-  }
-
-  function numID(v){
-    if(v==null) return 0;
-    let s = String(v).trim().replace(/\s+/g,"");
-    if(!s) return 0;
-    if(s.includes(",")) s = s.replace(/\./g,"").replace(",",".");
-    const n = Number(s);
-    return Number.isFinite(n) ? n : 0;
-  }
-
-  function fmtID(n){
-    return new Intl.NumberFormat("id-ID", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(Number(n ?? 0));
-  }
-
-  // support kalau field kamu bukan <input> tapi <span>/<div>
-  function setMoney(el, value){
-    if (!el) return;
-    const s = fmtID(value);
-    if ("value" in el) el.value = s;
-    else el.textContent = s;
-    el.dataset && (el.dataset.raw = String(value ?? 0));
-  }
-
-  function getSelectedTaxIds(){
-    const sel = document.getElementById("id_taxes");
-    if(!sel) return [];
-    return Array.from(sel.selectedOptions || []).map(o=>o.value).filter(Boolean);
-  }
-
-  function computeTaxes(base, taxIds){
-    let vat = 0;
-    let wht = 0;
-
-    taxIds.forEach((id) => {
-      const t = TAX_MAP[String(id)];
-      if (!t) return;
-
-      const r = (Number(t.rate || 0) / 100.0); // percent
-      const amt = base * r;
-
-      if (t.is_withholding) wht += amt;
-      else vat += amt;
-    });
-
-    return { vat, wht };
-  }
-
-  function recalc(){
-    const qtyEl   = document.getElementById("id_qty");
-    const priceEl = document.getElementById("id_price");
-    const taxesEl = document.getElementById("id_taxes");
-
-    const totalEl = document.getElementById("id_total_amount");
-    const taxEl   = document.getElementById("id_tax_amount");
-    const pphEl   = document.getElementById("id_pph_amount");
-    const grandEl = document.getElementById("id_grand_total");
-
-    if(!qtyEl || !priceEl || !taxesEl || !totalEl || !taxEl || !grandEl) return;
-
-    const qty = numID(qtyEl.value);
-    const price = numID(priceEl.value);
-    const base = qty * price;
-
-    const taxIds = getSelectedTaxIds();
-    const t = computeTaxes(base, taxIds);
-
-    const grand = base + t.vat - t.wht;
-
-    setMoney(totalEl, base);
-    setMoney(taxEl, t.vat);
-    if (pphEl) setMoney(pphEl, t.wht);
-    setMoney(grandEl, grand);
-  }
-
-  document.addEventListener("DOMContentLoaded", function () {
-    // ✅ baca tax-map setelah DOM siap
-    TAX_MAP = readTaxMap();
-    console.log("TAX_MAP size:", Object.keys(TAX_MAP).length);
-
-    // init select2 taxes (kalau ada)
-    if (window.initTaxSelect2) window.initTaxSelect2(document);
-
-    // readonly output
-    ["id_total_amount","id_tax_amount","id_pph_amount","id_grand_total"].forEach(id=>{
-      const el = document.getElementById(id);
-      if (el && "readOnly" in el) el.readOnly = true;
-    });
-
-    const $ = window.jQuery;
-    const taxesEl = document.getElementById("id_taxes");
-    const qtyEl = document.getElementById("id_qty");
-    const priceEl = document.getElementById("id_price");
-
-    if(qtyEl){
-      qtyEl.addEventListener("input", recalc);
-      qtyEl.addEventListener("blur", ()=>{ qtyEl.value = fmtID(numID(qtyEl.value)); recalc(); });
-    }
-    if(priceEl){
-      priceEl.addEventListener("input", recalc);
-      priceEl.addEventListener("blur", ()=>{ priceEl.value = fmtID(numID(priceEl.value)); recalc(); });
-    }
-
-    if(taxesEl){
-      if($ && $.fn.select2) $(taxesEl).on("change", recalc);
-      else taxesEl.addEventListener("change", recalc);
-    }
-
-    recalc();
-  });
-
-})();
-</script>
-
-
-
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  if (typeof flatpickr === "undefined") return;
-
-  //const qEl = document.getElementById("id_quote_date");
-  //const vEl = document.getElementById("id_valid_until");
-  const dateIds = [
-    "id_quote_date",
-    "id_valid_until",
-    "id_shp_date",   // ✅ tambah ini
-  ];
-
-  dateIds.forEach((id) => {
-    const el = document.getElementById(id);
-
-    if (!el || el._flatpickr) return;
-
-    flatpickr(el, {
-      dateFormat: "Y-m-d",   // value ke backend (Django)
-      altInput: true,
-      altFormat: "d-m-Y",    // tampilan user
-      allowInput: true,
-      clickOpens: true,
-    });
-  });
-
-
-
-});
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  const $ = window.jQuery;
-
-  const ORIGIN_ID = "id_origin";
-  const DEST_ID   = "id_destination";
-  const PICKUP_ID = "id_pickup";
-  const DELIV_ID  = "id_delivery";
-
-  function el(id){ return document.getElementById(id); }
-
-  function getS2Data(selectEl){
-    if (!selectEl) return null;
-    if ($ && $.fn.select2 && $(selectEl).data("select2")) {
-      const data = $(selectEl).select2("data") || [];
-      return data[0] || null;
-    }
-    return null;
-  }
-
-  // ✅ hanya nilai (tanpa label/bracket/kind)
-  function build3Lines(data){
-    if (!data) return "";
-    const lines = [];
-    if (data.text)     lines.push(String(data.text).trim());
-    if (data.region)   lines.push(String(data.region).trim());
-    if (data.province) lines.push(String(data.province).trim());
-    return lines.filter(Boolean).join("\n");
-  }
-
-  function appendOrSet(textarea, value){
-    if (!textarea) return;
-    const v = (value || "").trim();
-    if (!v) return;
-
-    if (!textarea.value.trim()) textarea.value = v;
-    else textarea.value = textarea.value.replace(/\s+$/,"") + "\n" + v;
-
-    textarea.dispatchEvent(new Event("input", { bubbles: true }));
-  }
-
-  const originEl = el(ORIGIN_ID);
-  const destEl   = el(DEST_ID);
-  const pickupEl = el(PICKUP_ID);
-  const delivEl  = el(DELIV_ID);
-
-  // checkbox IDs dari HTML kamu
-  const cbPickup  = document.getElementById("id_pickup_from_origin");
-  const cbDelivery = document.getElementById("id_delivery_from_destination");
-
-  function copyOriginToPickup(){
-    const data = getS2Data(originEl);
-    appendOrSet(pickupEl, build3Lines(data));
-  }
-
-  function copyDestToDelivery(){
-    const data = getS2Data(destEl);
-    appendOrSet(delivEl, build3Lines(data));
-  }
-
-  // ✅ trigger saat checkbox diclick
-  if (cbPickup){
-    cbPickup.addEventListener("change", function(){
-      if (cbPickup.checked) copyOriginToPickup();
-    });
-  }
-
-  if (cbDelivery){
-    cbDelivery.addEventListener("change", function(){
-      if (cbDelivery.checked) copyDestToDelivery();
-    });
-  }
-});
-</script>
 
 {% endblock %}

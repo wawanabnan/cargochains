@@ -1,0 +1,599 @@
+{# templates/sales/job_order_detail.html #}
+{% extends "adminbase.html" %}
+{% load static %}
+
+{% load indo_format %}  {# kalau filter indo_number ada di sini #}
+
+{% block content %}
+
+<div class="app-content-header d-none">
+  <div class="container-fluid">
+  
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1 class="h4 mb-0">Job Order Detail</h1>
+        <div class="text-muted small">
+          Job No: <strong>{{ job.number }}</strong><br>
+          Date: {{ job.job_date|date:"d-m-Y" }}
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+         <!-- Print Preview -->
+  
+
+  <!-- PDF -->
+ 
+
+
+        <a href="{% url 'job:job_order_list' %}"
+           class="btn btn-outline-secondary btn-sm">
+          <i class="fa fa-arrow-left me-1"></i> Back to List
+        </a>
+        <a href=""
+           class="btn btn-primary btn-sm">
+          <i class="fa fa-edit me-1"></i> Edit
+        </a>
+        <a href="#"
+            class="btn btn-outline-primary btn-sm"
+            target="_blank">
+            <i class="bi bi-file-earmark-pdf"></i> Revenue PDF
+          </a>
+
+      </div>
+    </div>
+  </div>
+</div>
+<div class="app-content">
+  <div class="container-fluid">
+    <div class="card shadow-sm">
+      <div class="card-header py-2">
+        <div class="d-flex align-items-center justify-content-between">
+
+          <!-- LEFT: TITLE + STATUS -->
+          <div class="d-flex align-items-center gap-2">
+            <div class="fw-semibold">
+              Job Orders
+             
+            </div>
+            
+            {% if job.status %}
+              <span class="badge
+                {% if job.status == 'DRAFT' %}text-bg-secondary
+                {% elif job.status == 'IN_COSTING' %}text-bg-success
+                {% elif job.status == 'IN_PROGRESS' %}text-bg-info
+                {% elif job.status == 'ON_HOLD' %}text-bg-warning
+                {% elif job.status == 'COMPLETED' %}text-bg-success
+                {% elif job.status == 'CANCELLED' %}text-bg-danger
+                {% endif %}
+              ">
+               {{ job.job_status_label }}
+              </span>
+            {% endif %}
+          </div>
+
+          <!-- RIGHT: ACTION BUTTONS -->
+          <div class="d-flex align-items-center gap-1">
+
+            {% if job.can_generate_proforma %}
+<form method="post" action="{% url 'job:generate_proforma' job.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-sm btn-primary">
+        Generate Proforma Invoice
+    </button>
+</form>
+{% endif %}
+          
+      <a class="btn btn-sm btn-outline-primary" target="_blank"
+        href="{% url 'job:job_order_print_preview' job.pk %}">
+        Preview
+      </a>
+
+      <a class="btn btn-sm btn-outline-success" target="_blank"
+        href="{% url 'job:job_order_pdf' job.pk %}">
+         PDF
+      </a>
+       <a  href="{% url 'job:job_order_edit' job.pk %}"
+           class="btn btn-success btn-sm">
+          <i class="fa fa-edit me-1"></i> Edit
+        </a>
+                    
+            {% if object.complete_journal_id %}
+            <a class="btn btn-outline-secondary btn-sm"
+              href="{% url 'accounting_reports:cogs_journals' %}?journal_id={{ object.complete_journal_id }}">
+              <i class="bi bi-journal-text me-1"></i> COGS Journal
+            </a>
+            {% endif %}
+
+
+            <!-- SHOW TO INVOICE -->
+             {% if job.status == job.ST_IN_PROGRESS %}
+               <form method="post" action="{% url 'job:job_order_generate_invoice' job.pk %}" class="d-inline">
+
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-primary">
+                <i class="bi bi-receipt"></i> To Invoice
+              </button>
+            </form>
+            {% endif %}
+            
+            
+
+            <!-- TO INVOICE (hanya setelah completed) -->
+            {% if not job.is_invoiced %}
+          
+            {% endif %}
+
+            <!-- ===== STATUS ACTIONS ===== -->
+
+            <!-- CONFIRM: Draft → On Going -->
+            {% if job.status == 'DRAFT' %}
+              <form method="post"
+                    action="{% url 'job:job_confirm' job.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-primary btn-sm">
+                  <i class="bi bi-check-circle"></i> Start Costing
+                </button>
+              </form>
+            {% endif %}
+
+            {% if job.status == job.ST_IN_COSTING %}
+            <form method="post" action="{% url 'job:job_start_progress' job.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-primary">
+                Start Progress
+              </button>
+            </form>
+            {% endif %}
+
+          
+
+           {# Cancel + Hold untuk IN_COSTING dan IN_PROGRESS #}
+           {% if job.status == job.ST_IN_COSTING or job.status == job.ST_IN_PROGRESS %}
+
+          <!-- CANCEL -->
+              <form method="post"
+                    action="{% url 'job:job_cancel' job.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="reason" value="Cancelled by user">
+                <button class="btn btn-danger btn-sm">
+                  <i class="bi bi-x-circle">Cancel</i>
+                </button>
+              </form>
+
+
+              <form method="post" action="{% url 'job:job_hold' job.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-warning">
+                  Hold
+                </button>
+              </form>
+
+            {% endif %}
+
+            {# Complete hanya untuk IN_PROGRESS #}
+            {% if job.status == job.ST_IN_PROGRESS %}
+              <form method="post" action="{% url 'job:job_complete' job.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-success">
+                  Complete
+                </button>
+              </form>
+            {% endif %}
+
+            <!-- ON HOLD ACTIONS -->
+            {% if job.status == 'ON_HOLD' %}
+
+              <!-- RESUME -->
+              <form method="post"
+                    action="{% url 'job:job_order_resume' job.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-success btn-sm">
+                  <i class="bi bi-play-circle"></i> Resume
+                </button>
+              </form>
+
+              <!-- CANCEL -->
+              <form method="post"
+                    action="{% url 'job:job_order_cancel' job.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="reason" value="Cancelled while on hold">
+                <button class="btn btn-outline-danger btn-sm">
+                  <i class="bi bi-x-circle"></i>
+                </button>
+              </form>
+
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+          
+          {%  include "job_order/extension/header.html" %}
+
+      </div>
+
+   
+
+    </div>
+    <div class="card mt-2" style="border-bottom:0px">
+     
+      <div class="card-header">
+          {% if job.status != "DRAFT" %}
+        <a
+          href="{% url 'job:joborder_cost_preview' job.id %}"
+          target="_blank"
+          class="btn btn-sm btn-outline-primary"
+        >
+          🖨️ Preview
+        </a>
+      <a class="btn btn-sm btn-outline-danger"
+        target="_blank"
+        href="{% url 'job:joborder_cost_pdf' job.pk %}">
+        📄 Pdf
+      </a>
+      {% endif %}
+      </div>
+
+    </div>
+
+    {#===========================================#}
+    <ul class="nav nav-pills nav-fill  mynav mt-0" 
+                id="myTab" role="tablist" style="border-top:0px">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active " 
+                        id="home-tab" 
+                        data-bs-toggle="tab" data-bs-target="#costTab" 
+                        type="button" role="tab" 
+                        aria-controls="home" aria-selected="true">Job Cost
+                </button>
+              </li>
+               <li class="nav-item" role="presentation">
+                <button class="nav-link" 
+                        id="home-tab" 
+                        data-bs-toggle="tab" data-bs-target="#noteTab" 
+                        type="button" role="tab" 
+                        aria-controls="home" aria-selected="true">Note
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" 
+                        id="profile-tab" 
+                        data-bs-toggle="tab" data-bs-target="#attachmentTab" 
+                        type="button" role="tab" 
+                        aria-controls="profile" aria-selected="false">Attachment
+                </button>
+              </li>
+              
+            
+    </ul>
+
+    
+<script>
+  window.COST_TYPE_META = {{ cost_type_meta_json|default:"{}"|safe }};
+</script>
+
+    <div id="jobcost-alert" class="alert alert-info d-none"></div>
+    <pre id="jobcost-debug"
+     class="small bg-light border rounded p-2 mt-2 d-none"
+     style="max-height: 260px; overflow:auto;"></pre>
+
+   
+ 
+    <div class="tab-content border border-0 mt-0" id="myCargoPriceTab">
+        <div class="tab-pane fade show active" id="costTab" role="tabpanel" aria-labelledby="cargotab">
+          
+            <form method="post" action="{% url 'job:job_order_costs_update' job.pk %}" novalidate id="jobcost-form">
+                {% csrf_token %}
+                {{ cost_formset.management_form }}
+
+                {% if cost_formset.non_form_errors %}
+                  <div class="alert alert-danger py-2 mb-2">{{ cost_formset.non_form_errors }}</div>
+                {% endif %}
+
+               
+                <div class="card border-0">
+                  <div class="card-body p-0">
+                      <input type="hidden"  name="jobcost_touched"  id="jobcost-touched" value="0">
+
+                    <div class="table-responsive" id="jobcost-area" data-cost-locked="{{ job.is_cost_locked|yesno:'1,0' }}">
+                        {% include 'job_order/extension/_cost_detail.html' %}
+                    </div>
+                  </div>
+                  
+                  <div class="d-flex justify-content-between align-items-center p-2 border " style="border-top: 0px !important">
+                  
+                    {% if not job.is_cost_locked and job.status != "DRAFT" %}
+                    
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="btn-jobcost-add">
+                      <i class="bi bi-plus-lg"></i> Add Row
+                    </button>
+
+                    <button type="submit" name="next" value="detail" class="btn btn-primary btn-sm">
+                      <i class="bi bi-save"></i> Save
+                    </button>
+
+                   
+                    {% endif %}
+                  </div>
+                </div>
+                
+            </form>       
+                    
+        </div>
+        <div class="tab-pane fade show active" 
+            id="noteTab" 
+            role="tabpanel" aria-labelledby="notetab">
+            
+
+        </div>
+        <div class="tab-pane fade" id="attachmentTab" 
+              role="tabpanel" aria-labelledby="price-tab">
+                {% include 'job_order/extension/attachment.html' %}
+
+        </div>
+          
+    </div>
+  </div>  
+</div>
+
+{% endblock %}
+{% block extra_css %}
+<style>
+/* ===================== TABS ===================== */
+#myTab { border: none; }
+
+#myTab .nav-link{
+  background-color: #f3f3f3 !important;
+  border-radius: 0;
+  color: #555 !important;
+  text-transform: uppercase;
+}
+
+#myTab .nav-link.active{
+  background-color: #e4e4e4!important;
+  border-radius: 0;
+  color:#333 !important;
+  font-weight: bold;
+}
+
+/* kalau pakai nav-pills lain */
+.mynav .nav-pills .nav-link.active{
+  background-color: #777;
+  color: #555;
+}
+
+/* ===================== TAB CONTENT ===================== */
+.tab-content{
+  padding: 0;
+  min-height: 100px;
+  background-color: #fff;
+}
+
+
+</style>
+<style>
+/* tbody td rapet */
+#jobcost-table tbody td{
+  padding: 3px 0 !important;
+  vertical-align: middle !important;
+}
+
+/* input/select rapet, kunci tinggi DI INPUT */
+#jobcost-table .form-control,
+#jobcost-table .form-select{
+  height: 20px !important;
+  min-height: 20px !important;
+  padding: 0 6px !important;
+  line-height: 1.1 !important;
+  font-size: .75rem !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* jangan paksa semua child td punya height tertentu */
+#jobcost-table tbody td > *{
+  display: block;
+}
+
+/* wrapper vendor/note: biarkan d-none bekerja */
+#jobcost-table .js-vendor-wrap,
+#jobcost-table .js-internal-note-wrap{
+  margin: 0 !important;
+}
+
+/* yang tampil saja di-center */
+#jobcost-table .js-vendor-wrap:not(.d-none),
+#jobcost-table .js-internal-note-wrap:not(.d-none){
+  display: flex;
+  align-items: center;
+}
+
+/* tombol delete jangan ngangkat row */
+#jobcost-table .remove-row{
+  padding: 0 !important;
+  line-height: 1 !important;
+  font-size: .75rem !important;
+  width: 18px;
+  height: 18px;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+/* thead & tfoot (kalau mau sama tinggi, atur padding bukan height) */
+#jobcost-table thead th,
+#jobcost-table tfoot td{
+  padding: 0px 6px !important;
+  line-height: 1.1 !important;
+  font-size: .75rem !important;
+   height: 25px !important;       /* samakan dengan input */
+  line-height: 25px !important;
+  vertical-align: middle !important;
+  white-space: nowrap;
+}
+
+/* tetap worksheet look */
+#jobcost-table .form-control,
+#jobcost-table .form-select {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+#jobcost-table .is-invalid {
+  outline: 1px solid rgba(220, 53, 69, 0.9) !important; /* ← dari 2px ke 1px */
+  outline-offset: -1px;                                /* rapat ke cell */
+  background-color: rgba(220, 53, 69, 0.04) !important; /* lebih soft */
+}
+
+
+/* =========================
+   COST LOCK (subtle)
+========================= */
+/* JANGAN pakai opacity di parent */
+#jobcost-area.is-cost-locked { 
+  position: relative;
+}
+
+/* overlay tipis sebagai pengganti opacity */
+#jobcost-area.is-cost-locked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.02);
+  pointer-events: none;
+}
+
+/* badge Not SO */
+#jobcost-area #jobcost-table .jobcost-detail-row .js-so-badge.text-bg-secondary {
+  background-color: #eef1f4 !important;
+  color: #495057 !important;
+  border-color: #dee2e6 !important;
+}
+
+/* tombol destructive disembunyikan saat locked */
+#jobcost-area.is-cost-locked .remove-row,
+#jobcost-area.is-cost-locked #btn-jobcost-add {
+  display: none !important;
+}
+
+/* disabled input: jangan grey bootstrap */
+#jobcost-area input:disabled,
+#jobcost-area select:disabled,
+#jobcost-area textarea:disabled {
+  background-color: #fff !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: inherit !important; /* Safari */
+}
+
+/* =========================
+   TOGGLE (chevron)
+========================= */
+#jobcost-area #jobcost-table td:first-child {
+  padding-left: 10px !important;
+}
+
+#jobcost-area .cost-toggle {
+  width: 18px !important;
+  height: 18px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-left: 2px !important;
+  margin-right: 8px !important;
+  line-height: 1 !important;
+  font-size: 11px !important;
+  color: #6c757d !important;
+  text-decoration: none !important;
+  border-radius: 4px !important;
+}
+
+#jobcost-area .cost-toggle:hover {
+  color: #0d6efd !important;
+  background-color: rgba(13, 110, 253, 0.10) !important;
+}
+
+/* =========================
+   DETAIL ROW (clean ERP)
+========================= */
+#jobcost-area #jobcost-table tr.jobcost-detail-row td {
+  border-top: 0 !important;
+  background-color: #fcfcfc !important;
+  padding: 8px 12px !important;
+}
+
+#jobcost-area #jobcost-table tr.jobcost-detail-row {
+  font-size: 13px !important;
+  color: #495057 !important;
+}
+
+/* =========================
+   BADGE (override bootstrap)
+========================= */
+#text-allocated .text-muted {color:red}
+#jobcost-area #jobcost-table .jobcost-detail-row .js-so-badge {
+  font-weight: 700 !important;
+  letter-spacing: 0.3px !important;
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  border-radius: 999px !important;
+  border: 1px solid transparent !important;
+}
+
+/* Not SO */
+#jobcost-area #jobcost-table .jobcost-detail-row .js-so-badge.text-bg-secondary {
+  background-color:#dc3545 !important;
+  color: #fff !important;
+  border-color: #dee2e6 !important;
+}
+
+/* Partial */
+#jobcost-area #jobcost-table .jobcost-detail-row .js-so-badge.text-bg-warning {
+  background-color: #fff3cd !important;
+  color: #664d03 !important;
+  border-color: #ffecb5 !important;
+}
+
+/* Fully */
+#jobcost-area #jobcost-table .jobcost-detail-row .js-so-badge.text-bg-success {
+  background-color: #d1e7dd !important;
+  color: #0f5132 !important;
+  border-color: #badbcc !important;
+}
+
+/* =========================
+   Create SO button (mini pill)
+========================= */
+#jobcost-area .btn-so-mini {
+  padding: 2px 10px !important;
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+  border-radius: 999px !important;
+}
+
+
+
+</style>
+
+
+
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script src="{% static 'js/job/jobcost_table.js' %}"></script>
+<script src="{% static 'js/job/jobcost_ajax.js' %}"></script>
+
+
+
+
+
+
+{% endblock %}

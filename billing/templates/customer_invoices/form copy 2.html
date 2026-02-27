@@ -1,0 +1,989 @@
+{% extends "adminbase.html" %}
+{% load static %}
+
+{% load indo_format %}
+{% block content %}
+
+
+
+ <div class="app-content-header">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+      <h4 class="card-title mb-0">
+        Invoices
+    </h4>
+    <a class="btn btn-primary btn-sm" href="{% url 'billing:invoice_list' %}">Back</a>
+
+    </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+    <form method="post" class="card-body" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {% if form.errors %}
+      <div class="alert alert-danger">
+        <div class="fw-semibold mb-1">Header error:</div>
+        {{ form.errors }}
+      </div>
+    {% endif %}
+    {% if formset.non_form_errors %}
+      <div class="alert alert-danger">
+        <div class="fw-semibold mb-1">Line error:</div>
+        {{ formset.non_form_errors }}
+      </div>
+    
+      {% endif %}
+    
+    
+    {#-----------------------------------HEADER-------------------------------#}
+    <div class="card card-body mb-3">
+      <div class="row g-3">
+
+        <!-- LEFT COLUMN -->
+        <div class="col-lg-6">
+
+          <div class="mb-3">
+            {{ form.customer.label_tag }}
+            {{ form.customer }}
+            {% if form.customer.errors %}<div class="text-danger small mt-1">{{ form.customer.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="mb-3">
+            {{ form.payment_term.label_tag }}
+            {{ form.payment_term }}
+            {% if form.payment_term.errors %}<div class="text-danger small mt-1">{{ form.payment_term.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="mb-0">
+            {{ form.notes_customer.label_tag }}
+            {{ form.notes_customer }}
+            {% if form.notes_customer.errors %}<div class="text-danger small mt-1">{{ form.notes_customer.errors|striptags }}</div>{% endif %}
+          </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        
+        <div class="col-lg-6">
+
+        <div class="row g-3">
+
+            <div class="col-md-6">
+              <label class="form-label">{{ form.invoice_date.label }}</label>
+              <div class="input-group input-group-sm" id="invDateWrap">
+                <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+                {{ form.invoice_date }}
+              </div>
+              {% if form.invoice_date.errors %}<div class="text-danger small mt-1">{{ form.invoice_date.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">{{ form.due_date.label }}</label>
+              <div class="input-group input-group-sm" id="dueDateWrap">
+                <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
+                {{ form.due_date }}
+              </div>
+              {% if form.due_date.errors %}<div class="text-danger small mt-1">{{ form.due_date.errors|striptags }}</div>{% endif %}
+            </div>
+
+
+        <!-- CURRENCY -->
+        <div class="col-md-6">
+          {{ form.currency.label_tag }}
+          {{ form.currency }}
+          {% if form.currency.errors %}
+            <div class="text-danger small mt-1">
+              {{ form.currency.errors|striptags }}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-6">
+         <label class="form-label">IDR Rate</label>
+              <div class="input-group input-group-sm" id="dueDateWrap">
+                <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
+                {{ form.idr_rate }}
+              </div>
+              {% if form.idr_rate.errors %}<div class="text-danger small mt-1">{{ form.idr_rate.errors|striptags }}</div>{% endif %}
+ 
+        </div>
+
+  </div>
+
+  <!-- NOTES INTERNAL -->
+  <div class="mt-3">
+    {{ form.notes_internal.label_tag }}
+    {{ form.notes_internal }}
+    {% if form.notes_internal.errors %}
+      <div class="text-danger small mt-1">
+        {{ form.notes_internal.errors|striptags }}
+      </div>
+    {% endif %}
+  </div>
+
+        </div>
+
+      </div>
+    </div>
+
+
+    
+    {#------------------------------END OF HEADER-------------------------------#}
+    <div class="card card-body mb-3 p-0">
+
+      {{ formset.management_form }}
+
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered align-top">
+          <thead class="table-light">
+            <tr>
+              <th>Product (Services)</th>
+              <th class="text-end" style="width: 120px;">Qty</th>
+              <th class="text-end" style="width: 140px;">Price</th>
+              <th style="width: 300px;">Taxes</th>
+              <th class="text-end" style="width: 170px;">Amount</th>
+              <th class="text-center" style="width: 80px;">Del</th>
+            </tr>
+          </thead>
+          <tbody id="linesBody">
+  {% for lf in formset.forms %}
+    {% if formset.is_bound or lf.instance.pk %}
+    <tr class="line-row">
+      <td>
+        {{ lf.id }}
+        {{ lf.description }}
+        {% if lf.description.errors %}
+          <div class="text-danger small mt-1">
+            {{ lf.description.errors|striptags }}
+          </div>
+        {% endif %}
+      </td>
+
+      <td class="text-end">
+        {{ lf.quantity }}
+        {% if lf.quantity.errors %}
+          <div class="text-danger small mt-1 text-start">
+            {{ lf.quantity.errors|striptags }}
+          </div>
+        {% endif %}
+      </td>
+
+      <td class="text-end">
+        {{ lf.price }}
+        {% if lf.price.errors %}
+          <div class="text-danger small mt-1 text-start">
+            {{ lf.price.errors|striptags }}
+          </div>
+        {% endif %}
+      </td>
+
+      <td>
+        <div class="small">
+          {{ lf.taxes }}
+        </div>
+        {% if lf.taxes.errors %}
+          <div class="text-danger small mt-1">
+            {{ lf.taxes.errors|striptags }}
+          </div>
+        {% endif %}
+      </td>
+
+      <td class="text-end">
+        <span class="js-row-amount">0,00</span>
+      </td>
+
+      <!-- DELETE COLUMN (FINAL) -->
+      <td class="text-center">
+        {% if lf.DELETE %}
+          <span class="d-none">{{ lf.DELETE }}</span>
+        {% endif %}
+        <a href="javascript:void(0)"
+           class="text-danger small btnRemoveLine"
+           title="Remove">
+          <i class="fa fa-trash"></i>
+        </a>
+      </td>
+    </tr>
+    {% endif %}
+  {% endfor %}
+          </tbody>
+
+        </table>
+      </div>
+
+      {# ===== empty_form template for Add Line (works even when no row exists) ===== #}
+      <script type="text/template" id="lineEmptyTemplate">
+        <tr class="line-row">
+          <td>
+            {{ formset.empty_form.id }}
+            {{ formset.empty_form.description }}
+          </td>
+
+          <td class="text-end">
+            {{ formset.empty_form.quantity }}
+          </td>
+
+          <td class="text-end">
+            {{ formset.empty_form.price }}
+          </td>
+
+          <td>
+            <div class="small">
+              {{ formset.empty_form.taxes }}
+            </div>
+          </td>
+
+          <td class="text-end">
+            <span class="js-row-amount">0,00</span>
+          </td>
+
+          <!-- DELETE COLUMN -->
+          <td class="text-center">
+            <a href="javascript:void(0)"
+              class="text-danger small btnRemoveLine"
+              title="Remove">
+              <i class="fa fa-trash"></i>
+            </a>
+          </td>
+        </tr>
+      </script>
+
+      <div class="d-flex justify-content-between align-items-start mt-2 p-2">
+        <!-- LEFT: Add line -->
+        <div>
+          <a href="javascript:void(0)" id="btnAddLine" class="text-primary text-decoration-none small">
+            <i class="fa fa-plus me-1"></i> Add line
+          </a>
+        </div>
+
+        <!-- RIGHT: SUMMARY (SINGLE, ALIGNED) -->
+        <div class="ux-summary">
+          <div class="ux-sum-row">
+            <div class="ux-sum-label small text-muted">Sub Total</div>
+            <div class="ux-sum-val">
+              <input type="text"
+                     id="ux_subtotal"
+                     class="form-control form-control-sm text-end"
+                     value="0,00"
+                     readonly>
+            </div>
+          </div>
+
+          <div id="taxLinesWrap" style="display:none;">
+            <div id="taxLinesList"></div>
+          </div>
+
+          <div class="ux-sum-row ux-sum-total">
+            <div class="ux-sum-label small text-muted fw-semibold">Total</div>
+            <div class="ux-sum-val">
+              <input type="text"
+                     id="ux_total"
+                     class="form-control form-control-sm text-end fw-semibold"
+                     value="0,00"
+                     readonly>
+            </div>
+          </div>
+        </div>
+        <!-- END SUMMARY -->
+      </div>
+
+      <div class="text-muted small mt-2">
+        * Amount otomatis = qty × price (JS). Server tetap recalc saat Save.
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'billing:invoice_list' %}">Back</a>
+      <button class="btn btn-primary btn-sm" type="submit">Save</button>
+    </div>
+
+       {{ tax_map|json_script:"tax-map" }}
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@eonasdan/tempus-dominus@6.9.5/dist/css/tempus-dominus.min.css">
+
+<style>
+  .form-control:focus,
+.form-select:focus {
+  box-shadow: none !important;
+  border-color: var(--bs-border-color);
+}
+
+/* Input group (datepicker, dll) */
+.input-group .form-control:focus,
+.input-group .form-select:focus {
+  box-shadow: none !important;
+}
+
+/* Tempus Dominus / calendar input */
+.tempus-dominus-widget,
+.tempus-dominus-widget * {
+  box-shadow: none !important;
+}
+
+  table .form-control, table .form-select {
+    border: none !important;
+    box-shadow: none;
+  }
+  table tr td { padding: 0; }
+  table tr th {
+    background: #f4f4f4;
+    padding: 5px 10px !important;
+  }
+
+  /* ===== SUMMARY ALIGNMENT (FINAL) ===== */
+  .ux-summary{
+    min-width: 320px;
+    max-width: 420px;
+    margin-left: auto;
+  }
+  /* label kiri (rata kanan) + kolom angka kanan (fixed 170px) */
+  .ux-sum-row, .ux-tax-row{
+    display: grid;
+    grid-template-columns: 1fr 170px; /* harus sama dengan lebar kolom angka */
+    align-items: center;
+    column-gap: .5rem;
+    margin-bottom: .25rem;
+  }
+  .ux-sum-label{
+    text-align: right;
+    padding-right: .25rem;
+  }
+  .ux-sum-val input{
+    width: 100%;
+  }
+  .ux-sum-total{
+    border-top: 1px solid #dee2e6;
+    padding-top: .25rem;
+    margin-top: .25rem;
+  }
+
+  /* Popup kalender */
+.tempus-dominus-widget {
+  border: 1px solid #dee2e6;          /* border bootstrap */
+  border-radius: .375rem;             /* sama kaya card */
+  background-color: #fff;
+}
+
+/* Header kalender */
+.tempus-dominus-widget .toolbar {
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* Footer (today / clear / close) */
+.tempus-dominus-widget .calendar-controls {
+  border-top: 1px solid #dee2e6;
+}
+
+/* Sel tanggal */
+.tempus-dominus-widget .date-container-days .day {
+  border-radius: .25rem;
+}
+
+/* Hover tanggal */
+.tempus-dominus-widget .date-container-days .day:hover {
+  background-color: #f1f3f5;
+}
+
+/* Tanggal aktif */
+.tempus-dominus-widget .date-container-days .active {
+  background-color: #0d6efd;
+  color: #fff;
+}
+
+/* Hilangkan glow aneh */
+.tempus-dominus-widget,
+.tempus-dominus-widget * {
+  box-shadow: none !important;
+}
+
+.tax-badge-container .select2-selection__choice {
+  border-radius: 6px !important;
+  padding: 2px 6px !important;
+  font-size: 12px !important;
+}
+
+
+</style>
+<link rel="stylesheet" href="{% static 'vendor/css/select2.min.css' %}">
+<style>
+/* Rapikan choice supaya gak grey box */
+.select2-container .select2-selection__choice {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 2px 6px 2px 0 !important;
+}
+
+/* Style tombol X supaya kecil & clean */
+.select2-container .select2-selection__choice__remove {
+  position: relative;
+  margin-right: 4px !important;
+  color: #fff !important;
+  font-weight: bold;
+}
+
+/* Supaya X masuk ke dalam badge */
+.select2-selection__choice .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Besarin container multiple */
+.select2-container .select2-selection--multiple {
+  min-height: 38px !important;
+  padding: 4px 8px !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: .5rem !important;
+}
+
+/* Rapikan choice */
+.select2-container .select2-selection__choice {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 4px 6px 4px 0 !important;
+}
+
+/* Besarin badge */
+.select2-selection__choice .badge {
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+  
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@eonasdan/tempus-dominus@6.9.5/dist/js/tempus-dominus.min.js"></script>
+<script src="{% static 'js/idr_rate_ID.js' %}">  </script>
+<script src="{% static 'vendor/js/select2.full.min.js' %}"> </script>
+<script src="{% static 'js/tax_select2_color.js' %}"> </script>
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+   
+
+  const TAX_MAP = JSON.parse(
+    document.getElementById("tax-map").textContent || "{}"
+  );
+
+  const linesBody  = document.getElementById("linesBody");
+  const btnAdd     = document.getElementById("btnAddLine");
+  const tpl        = document.getElementById("lineEmptyTemplate");
+  const totalForms = document.querySelector('input[name$="-TOTAL_FORMS"]');
+
+  // display totals (UX only)
+  const uxSubEl   = document.getElementById("ux_subtotal");
+  const uxTotalEl = document.getElementById("ux_total");
+  const formEl    = document.querySelector("form");
+
+  // hidden real fields (kalau masih ada di form)
+  const subEl   = document.getElementById("id_subtotal_amount") || document.querySelector('[name="subtotal_amount"]');
+  const taxEl   = document.getElementById("id_tax_amount")      || document.querySelector('[name="tax_amount"]');
+  const totalEl = document.getElementById("id_total_amount")    || document.querySelector('[name="total_amount"]');
+
+  // =========================
+  // PARSER ANGKA (AMAN)
+  // =========================
+  function toNum(val) {
+    if (val === null || val === undefined) return 0;
+    let s = String(val).trim();
+    if (!s) return 0;
+
+    if (s.includes(",")) {
+      s = s.replace(/\s+/g, "");
+      s = s.replace(/\./g, "").replace(",", ".");
+      const n = parseFloat(s);
+      return isNaN(n) ? 0 : n;
+    }
+
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function fmtID(n) {
+    n = Number(n || 0);
+    const fixed = n.toFixed(2);
+    let [a, b] = fixed.split(".");
+    a = a.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return a + "," + b;
+  }
+
+  function setInputFormatted(el) {
+    if (!el) return;
+    el.value = fmtID(toNum(el.value));
+  }
+
+  // fallback parse "11%" dari text
+  function getRateFromText(text) {
+    const m = String(text || "").match(/(\d+(?:[.,]\d+)?)\s*%/);
+    if (!m) return 0;
+    return parseFloat(m[1].replace(",", ".")) || 0;
+  }
+
+  // Force qty/price existing jadi js-num
+  if (linesBody) {
+    linesBody.querySelectorAll('input[name$="-quantity"], input[name$="-price"]').forEach(function (el) {
+      el.type = "text";
+      el.classList.add("js-num");
+      el.setAttribute("inputmode", "decimal");
+      el.setAttribute("autocomplete", "off");
+      if (!el.value) el.value = "0,00";
+      setInputFormatted(el);
+    });
+  }
+
+  function recalcRow(tr) {
+    const qtyEl   = tr.querySelector('input[name$="-quantity"]');
+    const priceEl = tr.querySelector('input[name$="-price"]');
+    const amtSpan = tr.querySelector(".js-row-amount");
+
+    const qty    = toNum(qtyEl ? qtyEl.value : 0);
+    const price  = toNum(priceEl ? priceEl.value : 0);
+    const amount = qty * price;
+
+    if (amtSpan) amtSpan.textContent = fmtID(amount);
+    return amount;
+  }
+
+  
+  function calcRowTaxes(tr, amount, taxBreakdown) {
+    let outputTaxTotal = 0;
+    let withholdingTotal = 0;
+
+    const sel = tr.querySelector('select[name$="-taxes"]');
+    if (!sel) return { outputTaxTotal: 0, withholdingTotal: 0 };
+
+    const selected = Array.from(sel.selectedOptions || []);
+
+    selected.forEach(opt => {
+      const id = opt.value;
+      const tax = TAX_MAP[id];
+      if (!tax) return;
+
+      const rate = parseFloat(tax.rate) || 0;
+      if (!rate) return;
+
+      const taxAmount = amount * rate / 100.0;
+
+      if (tax.is_withholding) {
+        withholdingTotal += taxAmount;
+      } else {
+        outputTaxTotal += taxAmount;
+      }
+
+      const label = opt.textContent.trim();
+      taxBreakdown[label] = (taxBreakdown[label] || 0) + taxAmount;
+    });
+
+    return { outputTaxTotal, withholdingTotal };
+  }
+    
+ 
+  function recalcTotals() {
+    if (!linesBody) return;
+
+    let subtotal = 0;
+    let outputTaxTotal = 0;
+    let withholdingTotal = 0;
+    const taxBreakdown = {};
+
+    const rows = linesBody.querySelectorAll("tr.line-row");
+
+    rows.forEach(tr => {
+      const del = tr.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      if (del && del.checked) return;
+      if (tr.style.display === "none" || tr.classList.contains("d-none")) return;
+
+      const amount = recalcRow(tr);
+      subtotal += amount;
+
+      const taxResult = calcRowTaxes(tr, amount, taxBreakdown);
+      outputTaxTotal += taxResult.outputTaxTotal;
+      withholdingTotal += taxResult.withholdingTotal;
+    });
+
+    const totalBeforeWithholding = subtotal + outputTaxTotal;
+    const netPayable = totalBeforeWithholding - withholdingTotal;
+
+    // UX display
+    if (uxSubEl) uxSubEl.value = fmtID(subtotal);
+    if (uxTotalEl) uxTotalEl.value = fmtID(netPayable);
+
+    // Hidden fields for backend
+    if (subEl) subEl.value = subtotal.toFixed(2);
+    if (taxEl) taxEl.value = outputTaxTotal.toFixed(2);
+    if (totalEl) totalEl.value = totalBeforeWithholding.toFixed(2);
+
+    renderTaxBreakdown(taxBreakdown);
+  }
+
+  // blok input '.' supaya user tidak bikin "1.00"
+  if (linesBody) {
+    linesBody.addEventListener("keydown", function(e){
+      const el = e.target;
+      if (!el.classList || !el.classList.contains("js-num")) return;
+      if (e.key === ".") e.preventDefault();
+    });
+  }
+
+  // select all on focus
+  document.addEventListener("focusin", function (e) {
+    const el = e.target;
+    if (el && el.classList && el.classList.contains("js-num")) {
+      try { el.select(); } catch (_) {}
+    }
+  });
+
+  // format on blur
+  document.addEventListener("blur", function (e) {
+    const el = e.target;
+    if (el && el.classList && el.classList.contains("js-num")) {
+      setInputFormatted(el);
+      recalcTotals();
+    }
+  }, true);
+
+  // live recalc
+  if (linesBody) {
+    linesBody.addEventListener("input", function (e) {
+      const tr = e.target.closest("tr.line-row");
+      if (!tr) return;
+      if (e.target.name && (e.target.name.endsWith("-quantity") || e.target.name.endsWith("-price"))) {
+        recalcTotals();
+      }
+    });
+
+    // ✅ FINAL change handler: support select taxes + fallback checkbox + delete
+    linesBody.addEventListener("change", function (e) {
+      const tr = e.target.closest("tr.line-row");
+      if (!tr) return;
+
+      if (
+        e.target.matches('select[name$="-taxes"]') ||
+        e.target.matches('input[type="checkbox"][name$="-taxes"]') ||
+        e.target.matches('input[type="checkbox"][name$="-DELETE"]')
+      ) {
+        recalcTotals();
+      }
+    });
+
+    // delete: existing row → check DELETE & hide; new row → remove
+    linesBody.addEventListener("click", function (e) {
+      const btn = e.target.closest(".btnRemoveLine");
+      if (!btn) return;
+
+      const row = btn.closest("tr.line-row");
+      if (!row) return;
+
+      const delInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      if (delInput) {
+        delInput.checked = true;
+        row.style.display = "none";
+      } else {
+        row.remove();
+      }
+      recalcTotals();
+    });
+  }
+
+
+  function renderTaxBreakdown(taxBreakdown) {
+    const wrap = document.getElementById("taxLinesWrap");
+    const list = document.getElementById("taxLinesList");
+    if (!wrap || !list) return;
+
+    const keys = Object.keys(taxBreakdown);
+    if (!keys.length) {
+      wrap.style.display = "none";
+      list.innerHTML = "";
+      return;
+    }
+
+    wrap.style.display = "";
+
+    list.innerHTML = keys.map(k => `
+      <div class="ux-tax-row">
+        <div class="ux-sum-label small text-muted">${k}</div>
+        <div class="ux-sum-val">
+          <input type="text"
+                class="form-control form-control-sm text-end"
+                readonly
+                value="${fmtID(taxBreakdown[k])}">
+        </div>
+      </div>
+    `).join("");
+  }
+
+  // Add line
+  if (btnAdd && tpl && totalForms && linesBody) {
+    btnAdd.addEventListener("click", function () {
+      const idx  = parseInt(totalForms.value || "0", 10);
+      const html = tpl.innerHTML.replace(/__prefix__/g, String(idx));
+
+      const temp = document.createElement("tbody");
+      temp.innerHTML = html.trim();
+      const row = temp.firstElementChild;
+      if (!row) return;
+
+      const qtyEl   = row.querySelector('input[name$="-quantity"]');
+      const priceEl = row.querySelector('input[name$="-price"]');
+
+      if (qtyEl) {
+        qtyEl.type = "text";
+        qtyEl.classList.add("js-num");
+        qtyEl.value = "0,00";
+        qtyEl.setAttribute("inputmode", "decimal");
+        qtyEl.setAttribute("autocomplete", "off");
+      }
+      if (priceEl) {
+        priceEl.type = "text";
+        priceEl.classList.add("js-num");
+        priceEl.value = "0,00";
+        priceEl.setAttribute("inputmode", "decimal");
+        priceEl.setAttribute("autocomplete", "off");
+      }
+
+      linesBody.appendChild(row);
+      totalForms.value = String(idx + 1);
+
+      if (qtyEl)   setInputFormatted(qtyEl);
+      if (priceEl) setInputFormatted(priceEl);
+
+      recalcTotals();
+
+      const descEl = row.querySelector('input[name$="-description"], textarea[name$="-description"]');
+      if (descEl) descEl.focus();
+    });
+  }
+
+  // Before submit: kirim angka format backend "1000.00"
+  if (formEl) {
+    let submitting = false;
+
+    formEl.addEventListener("submit", function (e) {
+      if (submitting) return;
+
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      if (linesBody) {
+        linesBody.querySelectorAll('input[name$="-quantity"], input[name$="-price"]').forEach(function (el) {
+          el.value = (toNum(el.value) || 0).toFixed(2);
+        });
+      }
+
+      submitting = true;
+      formEl.submit();
+    }, true);
+  }
+
+  // init
+  document.querySelectorAll("input.js-num").forEach(el => setInputFormatted(el));
+  recalcTotals();
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  if (typeof tempusDominus === "undefined") return;
+
+  const invWrap = document.getElementById("invDateWrap");
+  const dueWrap = document.getElementById("dueDateWrap");
+
+  const invInput = document.getElementById("id_invoice_date") || (invWrap ? invWrap.querySelector("input") : null);
+  const dueInput = document.getElementById("id_due_date") || (dueWrap ? dueWrap.querySelector("input") : null);
+
+  if (invInput) invInput.type = "text";
+  if (dueInput) dueInput.type = "text";
+
+  function todayDMY() {
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  }
+
+  // YYYY-MM-DD -> DD-MM-YYYY (untuk tampilan)
+  function toDMY(v) {
+    v = (v || "").trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+      const [y, m, d] = v.split("-");
+      return `${d}-${m}-${y}`;
+    }
+    return v;
+  }
+
+  // DD-MM-YYYY / DD/MM/YYYY / DD.MM.YYYY -> YYYY-MM-DD (untuk submit ke Django)
+  function toYMD(v) {
+    v = (v || "").trim();
+    if (!v) return v;
+
+    // sudah benar
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+
+    // split by non-digit
+    const parts = v.split(/\D+/).filter(Boolean);
+    if (parts.length !== 3) return v;
+
+    // detect order
+    // kalau token pertama 4 digit => Y-M-D
+    if (parts[0].length === 4) {
+      const [y, m, d] = parts;
+      if (y.length === 4 && m.length <= 2 && d.length <= 2) {
+        return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      }
+      return v;
+    }
+
+    // else assume D-M-Y
+    const [d, m, y] = parts;
+    if (y.length === 4) {
+      return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    }
+    return v;
+  }
+
+  // === Set default + normalize display ===
+  if (invInput) {
+    if (!invInput.value || !invInput.value.trim()) invInput.value = todayDMY();
+    invInput.value = toDMY(invInput.value);
+  }
+  if (dueInput) {
+    if (!dueInput.value || !dueInput.value.trim()) dueInput.value = invInput ? invInput.value : todayDMY();
+    dueInput.value = toDMY(dueInput.value);
+  }
+
+  const opts = {
+    display: {
+      components: { calendar: true, date: true, month: true, year: true, decades: true, clock: false },
+      buttons: { today: true, clear: true, close: true }
+    },
+    localization: { format: "dd-MM-yyyy" }
+  };
+
+  if (invWrap) new tempusDominus.TempusDominus(invWrap, opts);
+  if (dueWrap) new tempusDominus.TempusDominus(dueWrap, opts);
+
+  // === PAKSA convert sebelum submit (capture + document-level) ===
+  function convertInputs() {
+    if (invInput && invInput.value) invInput.value = toYMD(invInput.value);
+    if (dueInput && dueInput.value) dueInput.value = toYMD(dueInput.value);
+  }
+
+  // convert saat blur juga, biar gak keburu submit
+  if (invInput) invInput.addEventListener("blur", convertInputs, true);
+  if (dueInput) dueInput.addEventListener("blur", convertInputs, true);
+
+  // convert saat submit (paling penting)
+  document.addEventListener("submit", function (e) {
+    // hanya untuk form yang memuat input invoice_date
+    if (invInput && e.target && e.target.contains(invInput)) convertInputs();
+  }, true);
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  const taxMapEl = document.getElementById("tax-map");
+  const TAX_MAP = taxMapEl ? JSON.parse(taxMapEl.textContent || "{}") : {};
+
+  function formatTax(option) {
+    if (!option.id) return option.text;
+
+    const tax = TAX_MAP[String(option.id)];
+    if (!tax) return option.text;
+
+    const badgeClass = tax.is_withholding
+      ? "badge bg-danger text-white"
+      : "badge bg-primary text-white";
+
+    return $('<span class="' + badgeClass + '">' + option.text + '</span>');
+  }
+
+  function initTaxSelect(context=document) {
+    const selects = context.querySelectorAll('select[name$="-taxes"]');
+
+    selects.forEach(function (el) {
+
+      const $el = window.jQuery(el);
+
+      // 💥 HIDE native select dulu (penting)
+      el.style.display = "none";
+
+      // destroy kalau sudah init
+      if ($el.hasClass("select2-hidden-accessible")) {
+        $el.select2("destroy");
+      }
+
+      $el.select2({
+        width: "100%",
+        dropdownAutoWidth: true,
+        closeOnSelect: false, // karena multi
+        templateResult: formatTax,
+        templateSelection: formatTax,
+        escapeMarkup: function (m) { return m; }
+      });
+      $el.on("select2:select select2:unselect", function () {
+        recalcTotals();
+      });
+
+    });
+  }
+
+  // init awal
+  initTaxSelect();
+
+  // re-init saat add line
+  const btnAdd = document.getElementById("btnAddLine");
+  const linesBody = document.getElementById("linesBody");
+
+  if (btnAdd && linesBody) {
+    btnAdd.addEventListener("click", function () {
+      setTimeout(function () {
+        const lastRow = linesBody.querySelector("tr.line-row:last-child");
+        if (lastRow) initTaxSelect(lastRow);
+      }, 50);
+    });
+  }
+
+});
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+
+  // 🔥 Tangkap semua perubahan select taxes
+  $(document).on(
+    "select2:select select2:unselect",
+    'select[name$="-taxes"]',
+    function () {
+      recalcTotals();
+    }
+  );
+
+});
+</script>
+{% endblock %}

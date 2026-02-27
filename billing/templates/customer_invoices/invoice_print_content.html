@@ -1,0 +1,164 @@
+{% load static %}
+{% load indo_format %}
+
+    <!-- Header invoice (dipertahankan, versi rapi seperti contoh FO) -->
+    <table class="service">
+      <tr>
+        <td class="text-left" style="width:60%; vertical-align: top;">
+  TO:<br>
+
+  {# 1) Company Name dulu, fallback ke name #}
+  <strong>
+    {% if invoice.customer.company_name %}
+      {{ invoice.customer.company_name }}
+    {% else %}
+      {{ invoice.customer.name }}
+    {% endif %}
+  </strong>
+  <br>
+
+  {# 2) Billing contact: pilih yang is_billing_contact=True, kalau tidak ada ambil contact pertama #}
+  {% with bc=invoice.customer.contacts.all|first %}
+    {# cari billing contact secara manual #}
+    {% for c in invoice.customer.contacts.all %}
+      {% if c.is_billing_contact %}
+        {% with bc=c %}{% endwith %}
+      {% endif %}
+    {% endfor %}
+
+    {% if bc %}
+      Attn: {{ bc.name }}<br>
+
+      {% if bc.email %}
+        Email: {{ bc.email }}<br>
+      {% endif %}
+
+      {% if bc.phone %}
+        Phone: {{ bc.phone }}<br>
+      {% elif bc.mobile %}
+        Phone: {{ bc.mobile }}<br>
+      {% endif %}
+    {% endif %}
+  {% endwith %}
+
+  {# 3) Address: pakai structured address kalau ada, fallback ke address legacy #}
+  {% if invoice.customer.full_address_lines %}
+    <br>
+    {% for line in invoice.customer.full_address_lines %}
+      {{ line }}<br>
+    {% endfor %}
+  {% elif invoice.customer.address %}
+    <br>{{ invoice.customer.address|linebreaksbr }}
+  {% endif %}
+</td>
+
+        <td class="text-left">
+          <h1 style="margin:0 0 6px 0;">INVOICE</h1>
+          <div>No: {{ invoice.number }}</div>
+          <div>Date: {{ invoice.invoice_date|date:"d M Y" }}</div>
+          <div>Due: {{ invoice.due_date|date:"d M Y" }}</div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- LINE ITEMS (dipertahankan: Qty/Price/Tax/Amount) -->
+    <table class="lines ">
+      <thead>
+        <tr>
+        <th class="text-right" style="width:5%;">No</th>
+          <th class="desc">Description</th>
+          <th class="text-right" style="width:8%;">Qty</th>
+          <th class="text-right" style="width:12%;">Price</th>
+          <th class="text-center" style="width:10%;">Tax</th>
+          <th class="text-right" style="width:15%;">Amount</th>
+         </tr>
+      </thead>
+      <tbody>
+        {% for ln in invoice.lines.all %}
+          <tr>
+            <td class="muted">{{ forloop.counter }}</td>
+            <td style="white-space:pre-line;">{{ ln.description }}</td>
+            <td class="text-right">{{ ln.quantity|indo_number }}</td>
+            <td class="text-right">{{ ln.price|indo_number }}</td>
+
+            <!-- taxes ManyToMany: loop .all -->
+            <td class="text-center">
+              {% for tx in ln.taxes.all %}
+                {{ tx.rate }}{% if not forloop.last %}, {% endif %}
+              {% empty %}
+                -
+              {% endfor %}
+            </td>
+
+            <td class="text-right">{{ ln.amount|indo_currency }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="text-center muted">Belum ada line.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+        <td class="text-right" colspan="5"  style="width:80%;">Subtotal</td>
+        <td class="text-right">{{ invoice.subtotal_amount|indo_currency }}</td>
+      </tr>
+      <tr>
+        <td colspan="5" class="text-right">Tax</td>
+        <td class="text-right">{{ invoice.tax_amount|indo_currency }}</td>
+      </tr>
+      <tr>
+        <td colspan="5" class="text-right"><strong>Total</strong></td>
+        <td class="text-right"><strong>{{ invoice.total_amount|indo_currency }}</strong></td>
+      </tr>
+
+      </tfoot>
+    </table>
+
+   
+
+    <p style="margin-top:10px;">
+      <strong>Terbilang:&nbsp;</strong>{{ invoice.total_amount|indo_terbilang_uang|capfirst }} 
+    </p>
+
+    {% if invoice.customer_note %}
+      <div style="margin-top: 12px;">
+        <strong>Notes:</strong><br>
+       {{ invoice.customer_notes|safe }}
+
+      </div>
+    {% endif %}
+     {% if invoice.tern_conditions %}
+        <div style="margin-top: 12px;">
+        <strong>Notes:</strong><br>
+        {{ invoice.terms_conditions|safe }}
+      </div>
+    {% endif %}
+
+    <br><br><br>
+    <p style="margin:0;"><strong>PLEASE TRANSFER TO</strong></p>
+
+    <div class="container" style="margin-top:6px;">
+      <div class="left-div">
+        <table class="bank-div" style="width:100%">
+          <tr><td style="width:40%">BANK</td><td>:</td><td>&nbsp;MANDIRI KCP TG PRIOK JKT UTARA</td></tr>
+          <tr><td>SWIFT CODE</td><td>:</td><td>&nbsp;BMRIIDJA</td></tr>
+          <tr><td>CURRENCY IDR NO</td><td>:</td><td>&nbsp;120.003.45556.77</td></tr>
+        </table>
+
+        <table class="bank-div" style="width:100%; margin-top:8px;">
+          <tr><td style="width:40%">BANK</td><td>:</td><td>&nbsp;BCA KCP ARKADIA</td></tr>
+          <tr><td>SWIFT CODE</td><td>:</td><td>&nbsp;CENAIDJA</td></tr>
+          <tr><td>CURRENCY IDR NO</td><td>:</td><td>&nbsp;540.520.0616</td></tr>
+        </table>
+      </div>
+
+      <div class="right-div">
+        Jakarta, {{ invoice.invoice_date|date:"d F Y" }}
+        <br><br><br><br><br><br><br>
+        TEGUH ANDRIANTO<br>
+        DIREKTUR UTAMA
+      </div>
+
+      <div class="content"></div>
+    </div>

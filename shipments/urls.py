@@ -42,7 +42,7 @@ path("track/<str:tracking_no>/", public_tracking_page, name="public_tracking_pag
 app_name = "shipments"
 
 
-from shipments.views.vendor_bills import VendorBillListView, VendorBillCreateView, VendorBillUpdateView
+from billing.views.vendor_bills import VendorBillListView, VendorBillCreateView, VendorBillUpdateView
 
 urlpatterns += [
     path("vendor-bills/", VendorBillListView.as_view(), name="vendor_bill_list"),
@@ -57,7 +57,7 @@ from django.urls import path
 
 
 
-from shipments.views.vendor_bills import VendorBillListView, VendorBillCreateView, VendorBillUpdateView
+from billing.views.vendor_bills import VendorBillListView, VendorBillCreateView, VendorBillUpdateView
 
 urlpatterns += [
     path("vendor-bills/", VendorBillListView.as_view(), name="vendor_bill_list"),

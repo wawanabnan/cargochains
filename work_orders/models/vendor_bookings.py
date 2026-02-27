@@ -307,9 +307,21 @@ class VendorBooking(models.Model):
     )
 
 
+    @property
+    def watermark_label(self):
+        mapping = {
+        self.ST_DRAFT: "DRAFT",
+        self.ST_SUBMITTED: "SUBMITTED",
+        self.ST_REJECTED: "REJECTED",
+        self.ST_CANCELLED: "CANCELLED",
+        }
+        return mapping.get(self.status, "")
+    
     class Meta:
         db_table = "vendor_bookings"
         ordering = ["-created_at"]
+
+        
 
     def __str__(self):
         return f"{self.vb_number or 'DRAFT'} - {self.job_order_id}"

@@ -18,8 +18,9 @@ from job.views.job_order import (
    JobOrderBulkStatusView,
    JobOrderCostsUpdateView,
    JobOrderGenerateInvoiceView,
-    JobOrderGenerateProformaView
-    
+    #JobOrderGenerateProformaView
+    GenerateDPInvoiceView,
+    GenerateFinalInvoiceView,
 )
 
 from job.views.job_cost_types import (
@@ -67,6 +68,16 @@ urlpatterns = [
         JobOrderGenerateInvoiceView.as_view(),
         name="job_order_generate_invoice",
     ),
+      path(
+        "job-orders/generate-dp/<int:pk>/",
+        GenerateDPInvoiceView.as_view(),
+        name="generate_dp_invoice",
+    ),
+    path(
+        "job-orders/generate-final/<int:pk>/",
+        GenerateFinalInvoiceView.as_view(),
+        name="generate_final_invoice",
+    ),
 
 
     path("job-order/<int:pk>/confirm/", job_confirm, name="job_confirm"),
@@ -75,12 +86,6 @@ urlpatterns = [
     path("job-order/<int:pk>/resume/", job_resume, name="job_resume"),
     path("job-order/<int:pk>/complete/", job_complete, name="job_complete"),
     path("job-order/<int:pk>/cancel/", job_cancel, name="job_cancel"),
-
-    path(
-        "jobs/<int:pk>/generate-proforma/",
-        JobOrderGenerateProformaView.as_view(),
-        name="generate_proforma"
-    ),
 
     path("reports/job/", sales_report, name="sales_report"),
     path("reports/job/pdf/", sales_report_pdf, name="sales_report_pdf"),
@@ -132,7 +137,7 @@ from job.views.job_order_print import JobOrderPrintPreviewView, JobOrderPDFView
 
 urlpatterns += [
     path("job-orders/<int:pk>/print-preview/", JobOrderPrintPreviewView.as_view(), name="job_order_print_preview"),
-    path("job-orders/<int:pk>/print/", JobOrderPDFView.as_view(), name="job_order_pdf"),
+    path("job-orders/<int:pk>/pdf/", JobOrderPDFView.as_view(), name="job_order_pdf"),
 ]
 
 

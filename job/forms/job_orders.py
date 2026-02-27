@@ -318,9 +318,9 @@ class JobOrderForm(forms.ModelForm):
         cleaned["price"] = price
         cleaned["total_amount"] = total
 
-        print("CLEAN DISCOUNT TYPE:", cleaned.get("discount_type"))
-        print("POST RAW DISCOUNT:", self.data.get("discount_value"))
-        print("CLEANED DISCOUNT:", cleaned.get("discount_value"))
+        #print("CLEAN DISCOUNT TYPE:", cleaned.get("discount_type"))
+        #print("POST RAW DISCOUNT:", self.data.get("discount_value"))
+        #print("CLEANED DISCOUNT:", cleaned.get("discount_value"))
 
         # Helper parse uang (bisa string "1.000,50" atau Decimal)
         def _money(name, default="0"):

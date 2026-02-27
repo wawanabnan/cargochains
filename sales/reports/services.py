@@ -1,6 +1,6 @@
 from decimal import Decimal
 from django.db.models import Sum
-from sales.models import Invoice
+from billing.models.customer_invoice import Invoice
 
 D0 = Decimal("0.00")
 

@@ -22,10 +22,11 @@ from core.utils.numbering import get_next_number
 from django.db.models import Sum
 from django.http import JsonResponse, HttpResponseBadRequest
 from decimal import Decimal, InvalidOperation
+from django.core.exceptions import ValidationError
 
 
-from sales.models import   Invoice, InvoiceLine
-from sales.utils.invoices import generate_invoice_from_job
+from billing.models.customer_invoice import   Invoice, InvoiceLine
+from billing.utils.invoices import generate_invoice_from_job
 from django.db.models import Sum
 from django.contrib import messages
 from django.db import transaction
@@ -151,6 +152,7 @@ class JobOrderCreateView(LoginRequiredMixin, View):
             "job": None,
             "cost_formset": None,
             "tax_map": _build_tax_map(),
+             'is_update': False
         })
 
     def post(self, request):
@@ -178,7 +180,8 @@ class JobOrderCreateView(LoginRequiredMixin, View):
                 "form": form,
                 "job": None,
                 "cost_formset": None,
-                "tax_map": _build_tax_map(),  # biar JS pajak tetap jalan
+                "tax_map": _build_tax_map(),  
+                "is_update": False, 
             })
 
         job = form.save(commit=False)
@@ -221,14 +224,7 @@ class JobOrderUpdateView(LoginRequiredMixin, View):
         })
 
     def post(self, request, pk):
-        job = self.get_object(pk)
-
-        print("\n====== RAW REQUEST.POST ======")
-        for k, v in request.POST.items():
-            print(k, "=>", v)
-        print("================================\n")
-
-        
+        job = self.get_object(pk)        
         form = JobOrderForm(request.POST, request.FILES, instance=job)
 
         if not form.is_valid():
@@ -305,45 +301,52 @@ class JobOrderDetailView(LoginRequiredMixin, DetailView):
 
         return ctx
 
+from django.http import JsonResponse
+
+
+from django.http import JsonResponse
+from django.views import View
+from django.shortcuts import get_object_or_404
+
 class JobOrderAttachmentUploadView(LoginRequiredMixin, View):
-    """
-    Terima POST (multipart) untuk upload attachment job order.
-    """
 
     def post(self, request, pk):
         job = get_object_or_404(JobOrder, pk=pk)
-        form = JobOrderAttachmentForm(request.POST, request.FILES)
 
-        if not form.is_valid():
-            messages.error(request, "Upload gagal. Pastikan file dipilih dan format benar.")
-            return redirect("sales:job_order_detail", pk=job.pk)
+        file = request.FILES.get("file")
+        description = request.POST.get("description", "")
 
-        att = form.save(commit=False)
-        att.job_order = job
-        att.uploaded_by = request.user
-        att.save()
+        if not file:
+            return JsonResponse({
+                "success": False,
+                "error": "File tidak ditemukan"
+            }, status=400)
 
-        messages.success(request, "Attachment berhasil ditambahkan.")
-        return redirect("sales:job_order_detail", pk=job.pk)
+        att = JobOrderAttachment.objects.create(
+            job_order=job,
+            file=file,
+            description=description,
+            uploaded_by=request.user
+        )
 
+        return JsonResponse({
+            "success": True,
+            "id": att.pk
+        })
+    
 
 class JobOrderAttachmentDeleteView(LoginRequiredMixin, View):
-    """
-    Hapus satu attachment job order.
-    """
 
     def post(self, request, pk, att_id):
         job = get_object_or_404(JobOrder, pk=pk)
         att = get_object_or_404(JobOrderAttachment, pk=att_id, job_order=job)
 
-        # (Opsional) bisa cek permission dulu di sini
-
-        att.file.delete(save=False)  # hapus file fisik
+        att.file.delete(save=False)
         att.delete()
-        messages.success(request, "Attachment berhasil dihapus.")
-        return redirect("sales:job_order_detail", pk=job.pk)
 
-
+        return JsonResponse({"success": True})
+    
+    
 class JobOrderBulkStatusView(LoginRequiredMixin, View):
     def post(self, request):
         action = request.POST.get("action")
@@ -351,7 +354,7 @@ class JobOrderBulkStatusView(LoginRequiredMixin, View):
 
         if not ids:
             messages.info(request, "Tidak ada Job Order yang dipilih.")
-            return redirect("sales:job_order_list")
+            return redirect("job:job_order_list")
 
         qs = JobOrder.objects.filter(pk__in=ids).exclude(status=JobOrder.ST_COMPLETED)
 
@@ -527,6 +530,17 @@ class JobOrderCostsUpdateView(LoginRequiredMixin, View):
         messages.success(request, "Job Cost tersimpan.")
         return redirect("job:job_order_detail", pk=job.pk)
 
+    
+
+def _build_tax_map():
+    qs = Tax.objects.filter(is_active=True).only("id", "rate", "is_withholding")
+    return {
+        str(t.id): {
+            "rate": float(t.rate or Decimal("0")),          # percent
+            "is_withholding": bool(t.is_withholding),
+        }
+        for t in qs
+    }
 
 
 class JobOrderGenerateInvoiceView(LoginRequiredMixin, View):
@@ -539,35 +553,46 @@ class JobOrderGenerateInvoiceView(LoginRequiredMixin, View):
             request,
             f"Invoice {invoice.number} berhasil dibuat dari Job {job.number}."
         )
-        return redirect("sales:invoice_detail", pk=invoice.pk)
-    
+        return redirect("billing:invoice_detail", pk=invoice.pk)
 
-class JobOrderGenerateProformaView(View):
 
+class GenerateDPInvoiceView(LoginRequiredMixin, View):
     def post(self, request, pk):
-        job = get_object_or_404(Job, pk=pk)
+        job = get_object_or_404(JobOrder, pk=pk)
 
-        if not job.can_generate_proforma:
-            messages.warning(request, "Proforma tidak bisa dibuat.")
-            return redirect('job_detail', pk=job.pk)
+        try:
+            invoice = generate_invoice_from_job(
+                job,
+                Invoice.INV_DP,
+                request.user
+            )
 
-        # ====== LOGIC GENERATE PROFORMA DI SINI ======
-        # Misalnya buat nomor proforma, simpan PDF, dll
-        # Untuk sekarang kita hanya set flag saja
+            messages.success(request, "DP invoice created successfully.")
+            return redirect("billing:invoice_detail", pk=invoice.pk)
 
-        job.is_proforma = True
-        job.save()
-
-        messages.success(request, "Proforma invoice berhasil dibuat.")
-        return redirect('job_detail', pk=job.pk)
+        except ValidationError as e:
+            messages.error(request, str(e))
+            return redirect("job:job_order_detail", pk=job.pk)
+        
 
 
-def _build_tax_map():
-    qs = Tax.objects.filter(is_active=True).only("id", "rate", "is_withholding")
-    return {
-        str(t.id): {
-            "rate": float(t.rate or Decimal("0")),          # percent
-            "is_withholding": bool(t.is_withholding),
-        }
-        for t in qs
-    }
+class GenerateFinalInvoiceView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        job = get_object_or_404(JobOrder, pk=pk)
+
+        try:
+            invoice = generate_invoice_from_job(
+                job,
+                Invoice.INV_FINAL,
+                request.user
+            )
+
+            messages.success(request, "Final invoice created successfully.")
+            return redirect("billing:invoice_detail", pk=invoice.pk)
+
+        except ValidationError as e:
+            messages.error(request, str(e))
+            return redirect("job:job_order_detail", pk=job.pk)      
+
+
+

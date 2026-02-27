@@ -1,0 +1,142 @@
+{% extends "print/base_pdf_letterhead.html" %}
+{% load indo_format %}
+
+{% block content %}
+
+<h2 style="margin:0 0 8px 0;text-align: right;">Job Order</h2>
+<p style="margin:0 0 8px 0;text-align: right;">{{number}}</p>
+<br>
+
+<table style="width:100%; margin-bottom:10px;">
+  <tr>
+    <td style="width:60%; vertical-align:top;">
+      <!-- LEFT -->
+      To : {{ jo.customer.name }}
+      {% for line in jo.customer.address_lines %}
+        <div>{{ line }}</div>
+      {% endfor %}
+    </td>
+
+    <td style="width:35%; vertical-align:top;">
+      <!-- RIGHT -->
+      <br>
+      <table>
+        
+        <tr><td>Date</td><td>{{ q.quote_date|date:"d-m-Y" }}</td></tr>
+        <tr><td>Payment Term</td><td>{{ jo.payment_term.name }}</td></tr>
+        
+
+      </table>
+    
+    </td>
+  </tr>
+</table>
+
+<table class="table table-bordered">
+  <thead class="table-light">
+    <tr>
+      <th>Description</th>
+      <th class="text-end nowrap" style="width:8%">Qty</th>
+      <th class="text-end nowrap" style="width:16%">Price</th>
+      <th class="text-end nowrap" style="width:14%">Tax</th>
+      <th class="text-end nowrap" style="width:16%">Subtotal</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="wrap">
+        {{ jo.print_description|linebreaksbr }}
+      </td>
+      <td class="text-end nowrap">{{ jo.qty | indo_number}}</td>
+      <td class="text-end nowrap">{{ jo.price | indo_number }}</td>
+      <td class="text-end nowrap">{{ jo.ppn_label_rate_display }}</td>
+      <td class="text-end nowrap">{{ jo.total_amount | indo_number}}</td>
+    </tr>
+    <tfoot>
+      <tr>
+        <td class="text-end" colspan="4">Sub Total</td>
+        <td class="text-end">{{ jo.total_amount | indo_number }}</td>
+
+      </tr>
+      <tr>
+        <td class="text-end" colspan="4">Tax Amount</td>
+        <td class="text-end">{{ jo.tax_amount | indo_number }}</td>
+
+      </tr>
+      <tr>
+        <td class="text-end" colspan="4">Total Amount</td>
+        <td class="text-end">{{ jo.grand_total | indo_number  }}</td>
+
+      </tr>
+       {% if jo.pph_amount %}
+        <tr>
+          <td class="text-end"><b>PPH</b></td>
+          <td class="text-end nowrap">-{{ jo.pph_amount }}</td>
+        </tr>
+        {% endif %}
+    </tfoot>
+  </tbody>
+</table>
+
+<table style="margin-top:10px;">
+  <tr>
+    <td style="width:60%; vertical-align:top;">
+      {% if jo.customer_note %}
+        <div><b>Notes</b></div>
+        <div class="wrap">{{ jo.customer_note|safe }}</div>
+      {% endif %}
+      {% if jo.sla_note %}
+        <div style="margin-top:8px;"><b>Syarat dan Kondition</b></div>
+        <div class="wrap">{{ jo.sla_note|safe }}</div>
+      {% endif %}
+    </td>
+    <td style="width:40%; vertical-align:top;">
+     
+    </td>
+  </tr>
+</table>
+
+<div style="margin-top:24px;">
+  <div style="height:70px;">
+    {% if signature_image %}
+      <img src="{{ signature_image.url }}" style="height:60px; object-fit:contain;">
+    {% endif %}
+  </div>
+
+  <div style="font-weight:600;">{{ signature_name }}</div>
+  {% if signature_title %}
+    <div style="font-size:12px; color:#666;">{{ signature_title }}</div>
+  {% endif %}
+</div>
+
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  
+/* Force normal hanging indent for lists (override inline styles from TinyMCE) */
+.wrap ul,
+.wrap ol {
+  list-style-position: outside !important;
+  padding-left: 1.7em !important;   /* atur 1.0em - 1.6em sesuai selera */
+  margin: 4px 0 0 0 !important;
+  text-indent: 0 !important;
+}
+
+.wrap li {
+  margin: 2px 0 !important;
+  padding-left: 0 !important;
+  text-indent: 0 !important;
+}
+
+/* TinyMCE kadang bikin <li><p>...</p></li> */
+.wrap li p {
+  margin: 0 !important;
+}
+
+
+  
+</style>
+
+{% endblock%}

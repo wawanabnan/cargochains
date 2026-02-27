@@ -124,7 +124,6 @@
                         <label for="staticEmail" class="col-sm-4 col-form-label">Valid until</label>
                         <div class="col-sm-8">
                             <input type="hidden" name="job_date" id="id_job_date">
-
                           {{ qform.valid_until }}
                         </div>
                       </div>
@@ -181,10 +180,10 @@
                 </li>
                 <li class="nav-item" role="presentation">
                   <button class="nav-link"
-                          id="sla-note-tab-btn"
-                          data-bs-toggle="tab" data-bs-target="#slaNoteTab"
+                          id="term-note-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#termNoteTab"
                           type="button" role="tab"
-                          aria-controls="consigneeTab" aria-selected="false">Service Level Agreement</button>
+                          aria-controls="consigneeTab" aria-selected="false">Term & Conditions</button>
                 </li>
                
               </ul>
@@ -211,9 +210,9 @@
         
                 </div>
                 <div class="tab-pane fade show " 
-                    id="slaNoteTab" 
+                    id="termNoteTab" 
                     role="tabpanel" aria-labelledby="home-tab">
-                    {{ form.sla_note }}
+                    {{ form.term_conditions }}
         
                 </div>
                                
@@ -623,21 +622,22 @@ document.addEventListener("DOMContentLoaded", function () {
     return "is-other";
   }
 
-  function renderItem(item) {
+  
+function renderItem(item) {
     if (item.loading) return item.text;
 
-    const $row = $('<div class="s2loc-row"></div>');
-    const $left = $('<div class="s2loc-left"></div>');
-    const $right = $('<div class="s2loc-right"></div>');
+    const title = item.text || "";
+    const chain = [item.region, item.province].filter(Boolean).join(" — ");
+    const sub = item.subtext || "";
 
-    $left.append($('<div class="s2loc-title"></div>').text(item.text || ""));
-
-    if (item.code) $right.append($('<div class="s2loc-code"></div>').text(item.code));
-    if (item.kind) $right.append($('<span class="s2loc-badge"></span>').addClass(kindClass(item.kind)).text(item.kind));
-
-    $row.append($left).append($right);
-    return $row;
+    return $(`
+      <div>
+        <div><strong>${title}</strong> ${item.kind ? `<span class="text-muted">[${item.kind}]</span>` : ""}</div>
+        <div class="text-muted small">${chain || sub}</div>
+      </div>
+    `);
   }
+
 
   $(".js-location-select").each(function () {
     const $el = $(this);
@@ -661,7 +661,11 @@ document.addEventListener("DOMContentLoaded", function () {
             text: x.text,
             kind: x.kind || "",
             code: x.code || "",
-            subtext: x.subtext || ""
+            subtext: x.subtext || "",
+            district: x.district || "",
+            region: x.region || "",
+            province: x.province || ""
+
           })),
           pagination: data.pagination || { more: false }
         })
@@ -813,49 +817,7 @@ document.addEventListener("DOMContentLoaded", function () {
 })();
 </script>
 
-<script src="https://cdn.tiny.cloud/1/klpop8ud5zsip7zloht3kglaf0it7sau7hlm7yfscb3cjxsq/tinymce/6/tinymce.min.js"
-          referrerpolicy="origin">
-  </script>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  const sla = document.getElementById("id_sla_note");
-  const notes = document.getElementById("id_customer_note");
 
- // console.log("sla el:", sla, "notes el:", notes);
- // console.log("sla tag:", sla?.tagName, "notes tag:", notes?.tagName);
-
-  if (!sla && !notes) return;
-
-  // Kalau sudah pernah init, jangan init ulang
-  if (window.tinymce?.get("id_sla_note") || window.tinymce?.get("id_customer_note")) return;
-
-  tinymce.init({
-    selector: "#id_sla_note, #id_customer_note",
-    height: 280,
-    menubar: false,
-    plugins: "lists link table code autoresize",
-    toolbar: "undo redo | bold italic underline | bullist numlist | link table | removeformat | code",
-    branding: false,
-    content_style: `
-      ul,ol{margin:0; padding-left:0; list-style-position:inside;}
-      li{margin:2px 0; padding:0;}
-      li p{margin:0; display:inline;}
-    `,
-    formats: {
-      bullist: { selector: "ul", styles: { margin: "0", paddingLeft: "0", listStylePosition: "inside" } },
-      numlist: { selector: "ol", styles: { margin: "0", paddingLeft: "0", listStylePosition: "inside" } },
-    },
-     paste_as_text: true,
-      paste_remove_styles: true,
-      paste_remove_styles_if_webkit: true,
-    setup: function (editor) {
-      editor.on("change keyup", function () {
-        editor.save(); // sync balik ke textarea untuk submit Django
-      });
-    }
-  });
-});
-</script>
 
 
 <script>
@@ -886,6 +848,81 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const $ = window.jQuery;
+
+  const ORIGIN_ID = "id_origin";
+  const DEST_ID   = "id_destination";
+  const PICKUP_ID = "id_pickup";
+  const DELIV_ID  = "id_delivery";
+
+  function el(id){ return document.getElementById(id); }
+
+  function getS2Data(selectEl){
+    if (!selectEl) return null;
+    if ($ && $.fn.select2 && $(selectEl).data("select2")) {
+      const data = $(selectEl).select2("data") || [];
+      return data[0] || null;
+    }
+    return null;
+  }
+
+  // ✅ hanya nilai (tanpa label/bracket/kind)
+  function build3Lines(data){
+    if (!data) return "";
+    const lines = [];
+    if (data.text)     lines.push(String(data.text).trim());
+    if (data.region)   lines.push(String(data.region).trim());
+    if (data.province) lines.push(String(data.province).trim());
+    return lines.filter(Boolean).join("\n");
+  }
+
+  function appendOrSet(textarea, value){
+    if (!textarea) return;
+    const v = (value || "").trim();
+    if (!v) return;
+
+    if (!textarea.value.trim()) textarea.value = v;
+    else textarea.value = textarea.value.replace(/\s+$/,"") + "\n" + v;
+
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  const originEl = el(ORIGIN_ID);
+  const destEl   = el(DEST_ID);
+  const pickupEl = el(PICKUP_ID);
+  const delivEl  = el(DELIV_ID);
+
+  // checkbox IDs dari HTML kamu
+  const cbPickup  = document.getElementById("id_pickup_from_origin");
+  const cbDelivery = document.getElementById("id_delivery_from_destination");
+
+  function copyOriginToPickup(){
+    const data = getS2Data(originEl);
+    appendOrSet(pickupEl, build3Lines(data));
+  }
+
+  function copyDestToDelivery(){
+    const data = getS2Data(destEl);
+    appendOrSet(delivEl, build3Lines(data));
+  }
+
+  // ✅ trigger saat checkbox diclick
+  if (cbPickup){
+    cbPickup.addEventListener("change", function(){
+      if (cbPickup.checked) copyOriginToPickup();
+    });
+  }
+
+  if (cbDelivery){
+    cbDelivery.addEventListener("change", function(){
+      if (cbDelivery.checked) copyDestToDelivery();
+    });
+  }
 });
 </script>
 

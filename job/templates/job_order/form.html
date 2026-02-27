@@ -201,6 +201,15 @@
                           type="button" role="tab"
                           aria-controls="consigneeTab" aria-selected="false">Term & Conditions</button>
                 </li>
+                 {% if job %}
+                 <li class="nav-item" role="presentation">
+                  <button class="nav-link"
+                          id="attachment-tab-btn"
+                          data-bs-toggle="tab" data-bs-target="#attachmentTab"
+                          type="button" role="tab"
+                          aria-controls="consigneeTab" aria-selected="false">Attachment</button>
+                </li>
+                {% endif %}
                
               </ul>
               <div class="tab-content p-2 fq-tab-content " id="myTabContent" style="background-color: #fff;">
@@ -239,8 +248,16 @@
                     {{ form.term_conditions }}
         
                 </div>
-              
-               
+                {% if job %}
+                <div class="tab-pane fade show " 
+                    id="attachmentTab" 
+                    role="tabpanel" aria-labelledby="home-tab">
+                    
+                      {% include 'job_order/extension/attachment.html' %}
+                    
+                </div>
+               {% endif %}
+        
               </div>
 
 

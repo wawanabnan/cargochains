@@ -6,31 +6,20 @@
   <div class="d-flex flex-wrap gap-2 align-items-center">
 
      <!-- RIGHT: Actions -->
-     <a class="btn btn-outline-primary btn-sm" target="_blank"
-        href="{% url 'work_orders:service_order_print' vb.id %}">
-        Print Preview
-      </a>
-
-      <a class="btn btn-outline-secondary btn-sm" target="_blank"
-        href="{% url 'work_orders:service_order_pdf' vb.id %}">
-        PDF
-      </a>
-
-
-
+      
     <a class="btn btn-outline-secondary btn-sm"
        href="{% url 'work_orders:service_order_list' %}">
       Back
     </a>
 
-    <a class="btn btn-outline-primary btn-sm"
-       href="{% url 'work_orders:service_order_print' vb.id %}"
-       target="_blank">
-      Print
-      {% if vb.status == "DRAFT" %}
-        <span class="ms-1 badge text-bg-warning">DRAFT</span>
-      {% endif %}
-    </a>
+     <a class="btn btn-outline-primary btn-sm" target="_blank"
+        href="{% url 'work_orders:service_order_print' vb.id %}">
+        <i class="bi bi-eye me-1"></i> Preview
+      </a>
+
+
+
+   
 
     {# Open SEA Shipping Instruction #}
     {% if vb.service_order_mode == "SEA" and vb.status in "CONFIRMED DONE" %}

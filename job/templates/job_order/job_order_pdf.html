@@ -1,16 +1,16 @@
 {% extends "print/base_pdf_letterhead.html" %}
 {% load indo_format %}
 
+
 {% block content %}
 
-<h2 style="margin:0 0 8px 0;text-align: right;">Job Order</h2>
-<p style="margin:0 0 8px 0;text-align: right;">{{number}}</p>
+<h3 style="margin:0 0 8px 0;text-align: right;">Job Order</h3>
+<p style="margin:0 0 8px 0;text-align: right;">{{ jo.number }}</p>
 <br>
 
-<table style="width:100%; margin-bottom:10px;">
+<table cstyle="width:100%; margin-bottom:10px;" >
   <tr>
     <td style="width:60%; vertical-align:top;">
-      <!-- LEFT -->
       To : {{ jo.customer.name }}
       {% for line in jo.customer.address_lines %}
         <div>{{ line }}</div>
@@ -18,81 +18,132 @@
     </td>
 
     <td style="width:35%; vertical-align:top;">
-      <!-- RIGHT -->
       <br>
       <table>
-        
-        <tr><td>Date</td><td>{{ q.quote_date|date:"d-m-Y" }}</td></tr>
+        <tr><td style="width:150px">Date</td><td>{{ jo.job_date|date:"d-m-Y" }}</td></tr>
         <tr><td>Payment Term</td><td>{{ jo.payment_term.name }}</td></tr>
-        
-
+        <tr><td>Currency</td><td>{{ jo.currency }}</td></tr>
       </table>
-    
     </td>
   </tr>
 </table>
+<br>
 
-<table class="table table-bordered">
+<table class="table table-bordered main-table">
   <thead class="table-light">
     <tr>
+      <th style="width:4%">No</th>
       <th>Description</th>
       <th class="text-end nowrap" style="width:8%">Qty</th>
       <th class="text-end nowrap" style="width:16%">Price</th>
       <th class="text-end nowrap" style="width:14%">Tax</th>
-      <th class="text-end nowrap" style="width:16%">Subtotal</th>
+      <th class="text-end nowrap" style="width:16%">Amount</th>
     </tr>
   </thead>
+
   <tbody>
     <tr>
-      <td class="wrap">
-        {{ jo.print_description|linebreaksbr }}
-      </td>
-      <td class="text-end nowrap">{{ jo.qty | indo_number}}</td>
-      <td class="text-end nowrap">{{ jo.price | indo_number }}</td>
+      <td class="text-end">1</td>
+      <td class="wrap">{{ jo.print_description|linebreaksbr }}</td>
+      <td class="text-end nowrap">{{ jo.qty|indo_number }}</td>
+      <td class="text-end nowrap">{{ jo.price|indo_number }}</td>
       <td class="text-end nowrap">{{ jo.ppn_label_rate_display }}</td>
-      <td class="text-end nowrap">{{ jo.total_amount | indo_number}}</td>
+      <td class="text-end nowrap">{{ jo.total_amount|indo_number }}</td>
     </tr>
-    <tfoot>
-      <tr>
-        <td class="text-end" colspan="4">Sub Total</td>
-        <td class="text-end">{{ jo.total_amount | indo_number }}</td>
-
-      </tr>
-      <tr>
-        <td class="text-end" colspan="4">Tax Amount</td>
-        <td class="text-end">{{ jo.tax_amount | indo_number }}</td>
-
-      </tr>
-      <tr>
-        <td class="text-end" colspan="4">Total Amount</td>
-        <td class="text-end">{{ jo.grand_total | indo_number  }}</td>
-
-      </tr>
-       {% if jo.pph_amount %}
-        <tr>
-          <td class="text-end"><b>PPH</b></td>
-          <td class="text-end nowrap">-{{ jo.pph_amount }}</td>
-        </tr>
-        {% endif %}
-    </tfoot>
   </tbody>
+
+<tfoot>
+  <!-- TOTAL BEFORE DISCOUNT -->
+  <tr>
+    <td class="text-end" colspan="5">Total</td>
+    <td class="text-end">{{ jo.total_amount|indo_number }}</td>
+  </tr>
+
+  <!-- DISCOUNT (only if exists) -->
+  {% if jo.discount_amount > 0 %}
+  <tr>
+    <td class="text-end" colspan="5">
+      Discount
+      {% if jo.discount_type == "PERCENT" %}
+        ({{ jo.discount_value|indo_number }}%)
+      {% endif %}
+    </td>
+    <td class="text-end">
+      -{{ jo.discount_amount|indo_number }}
+    </td>
+  </tr>
+  {% endif %}
+
+  <!-- SUBTOTAL AFTER DISCOUNT -->
+  <tr>
+    <td class="text-end" colspan="5">Sub Total</td>
+    <td class="text-end">
+      {{ jo.subtotal_after_discount|indo_number }}
+    </td>
+  </tr>
+
+  <!-- TAX -->
+  <tr>
+    <td class="text-end" colspan="5">VAT Amount</td>
+    <td class="text-end">
+      {{ jo.tax_amount|indo_number }}
+    </td>
+  </tr>
+
+  <!-- GRAND TOTAL -->
+  <tr>
+    <td class="text-end fw-bold" colspan="5"><b>Grand Total</b></td>
+    <td class="text-end fw-bold">
+      <b>{{ jo.grand_total|indo_number }}</b>
+    </td>
+  </tr>
+
+  {% if jo.pph_amount %}
+  <tr>
+    <td class="text-end" colspan="4"><b>PPH</b></td>
+    <td class="text-end nowrap">
+      -{{ jo.pph_amount|indo_number }}
+    </td>
+  </tr>
+  {% endif %}
+
+  <!-- DOWN PAYMENT SECTION -->
+  {% if jo.down_payment_percent > 0 %}
+  <tr>
+    <td colspan="5" style="border-left:0px;border-right:0px">&nbsp;</td>
+  </tr>
+
+  <tr>
+    <td class="text-end" colspan="5">
+      Down Payment ({{ jo.down_payment_percent|indo_number }}%)
+    </td>
+    <td class="text-end">
+      {{ jo.down_payment_amount|indo_number }}
+    </td>
+  </tr>
+
+ 
+  {% endif %}
+</tfoot>
+
+
+
+
 </table>
 
-<table style="margin-top:10px;">
+<table style="margin-top:10px; ">
   <tr>
     <td style="width:60%; vertical-align:top;">
       {% if jo.customer_note %}
         <div><b>Notes</b></div>
         <div class="wrap">{{ jo.customer_note|safe }}</div>
       {% endif %}
-      {% if jo.sla_note %}
-        <div style="margin-top:8px;"><b>Syarat dan Kondition</b></div>
-        <div class="wrap">{{ jo.sla_note|safe }}</div>
+      {% if jo.term_conditions %}
+        <div style="margin-top:12px;"><b>Term & Conditions</b></div>
+        <div class="wrap">{{ jo.term_conditions|safe }}</div>
       {% endif %}
     </td>
-    <td style="width:40%; vertical-align:top;">
-     
-    </td>
+    <td style="width:40%; vertical-align:top;"></td>
   </tr>
 </table>
 
@@ -109,34 +160,53 @@
   {% endif %}
 </div>
 
-
 {% endblock %}
 
 {% block extra_css %}
 <style>
-  
-/* Force normal hanging indent for lists (override inline styles from TinyMCE) */
-.wrap ul,
-.wrap ol {
-  list-style-position: outside !important;
-  padding-left: 1.7em !important;   /* atur 1.0em - 1.6em sesuai selera */
-  margin: 4px 0 0 0 !important;
-  text-indent: 0 !important;
+  /* list indent fix */
+  .wrap ul, .wrap ol {
+    list-style-position: outside !important;
+    padding-left: 1.7em !important;
+    margin: 4px 0 0 0 !important;
+    text-indent: 0 !important;
+  }
+  .wrap li {
+    margin: 2px 0 !important;
+    padding-left: 0 !important;
+    text-indent: 0 !important;
+  }
+  .wrap li p { margin: 0 !important; }
+
+  /* toolbar OUTSIDE the paper */
+  .print-toolbar-outside{
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 99999;
+    width: 140px;
+    padding: 10px;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(6px);
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 10px 28px rgba(0,0,0,.12);
+  }
+
+table.main-table td,
+table.main-table th {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  line-height: 1.3 !important;
 }
 
-.wrap li {
-  margin: 2px 0 !important;
-  padding-left: 0 !important;
-  text-indent: 0 !important;
+h3 {
+  font-size: 20px !important;
+  font-weight: 600;
 }
 
-/* TinyMCE kadang bikin <li><p>...</p></li> */
-.wrap li p {
-  margin: 0 !important;
-}
-
-
-  
+  @media print{
+    .print-toolbar-outside{ display:none !important; }
+  }
 </style>
-
-{% endblock%}
+{% endblock %}

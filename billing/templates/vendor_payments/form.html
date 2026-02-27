@@ -1,0 +1,124 @@
+{% extends "adminbase.html" %}
+{% load static %}
+{% block content %}
+
+<div class="app-content-header">
+  <div class="container-fluid d-flex justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-0">VENDOR PAYMENT</h4>
+      {% if obj %}
+        <div class="small text-muted">
+          VB: {{ obj.vb_number|default:"(draft)" }} • Letter: {{ obj.letter_number|default:"-" }} • {{ obj.status }}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'billing:vendor_payment_list' %}" class="btn btn-outline-secondary btn-sm">
+        Back
+      </a>
+
+      <button form="vpForm" type="submit" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-save me-1"></i> Save
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="container-fluid">
+
+    <form id="vpForm" method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <div class="row g-2">
+
+            <div class="col-md-4">
+              <label class="form-label small mb-1">Vendor</label>
+              {{ form.vendor }}
+              {% if form.vendor.errors %}<div class="text-danger small">{{ form.vendor.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label small mb-1">Payment Date</label>
+              {{ form.payment_date }}
+              {% if form.payment_date.errors %}<div class="text-danger small">{{ form.payment_date.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label small mb-1">Currency</label>
+              {{ form.currency }}
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label small mb-1">IDR Rate</label>
+              {{ form.idr_rate }}
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label small mb-1">Cash/Bank</label>
+              {{ form.cash_account }}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small mb-1">Reference</label>
+              {{ form.reference }}
+            </div>
+
+            <div class="col-md-8">
+              <label class="form-label small mb-1">Memo</label>
+              {{ form.memo }}
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center">
+          <div class="fw-semibold">Lines</div>
+          <div class="small text-muted">Total: {{ obj.total_amount|default:"0" }}</div>
+        </div>
+
+        <div class="card-body p-0">
+          {{ formset.management_form }}
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width:38%">Vendor Booking</th>
+                <th>Description</th>
+                <th class="text-end" style="width:16%">Amount</th>
+                <th class="text-center" style="width:70px">Del</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for f in formset %}
+              <tr>
+                <td>{{ f.vendor_booking }}</td>
+                <td>{{ f.description }}</td>
+                <td class="text-end">{{ f.amount }}</td>
+                <td class="text-center">{{ f.DELETE }}</td>
+              </tr>
+              {% endfor %}
+
+              {% if not formset.forms %}
+              <tr><td colspan="4" class="text-center text-muted py-4">Belum ada line.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/idr_rate.js' %}"></script>
+{% endblock %}

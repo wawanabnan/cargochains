@@ -16,11 +16,11 @@
 
 {% block content %}
 
-<h2 style="margin:0 0 8px 0;text-align: right;">Job Order</h2>
-<p style="margin:0 0 8px 0;text-align: right;">{{ number }}</p>
+<h3 style="margin:0 0 8px 0;text-align: right;">Job Order</h3>
+<p style="margin:0 0 8px 0;text-align: right;">{{ jo.number }}</p>
 <br>
 
-<table style="width:100%; margin-bottom:10px;">
+<table cstyle="width:100%; margin-bottom:10px;" >
   <tr>
     <td style="width:60%; vertical-align:top;">
       To : {{ jo.customer.name }}
@@ -32,26 +32,30 @@
     <td style="width:35%; vertical-align:top;">
       <br>
       <table>
-        <tr><td>Date</td><td>{{ q.quote_date|date:"d-m-Y" }}</td></tr>
+        <tr><td style="width:150px">Date</td><td>{{ jo.job_date|date:"d-m-Y" }}</td></tr>
         <tr><td>Payment Term</td><td>{{ jo.payment_term.name }}</td></tr>
+        <tr><td>Currency</td><td>{{ jo.currency }}</td></tr>
       </table>
     </td>
   </tr>
 </table>
+<br>
 
-<table class="table table-bordered">
+<table class="table table-bordered main-table">
   <thead class="table-light">
     <tr>
+      <th style="width:4%">No</th>
       <th>Description</th>
       <th class="text-end nowrap" style="width:8%">Qty</th>
       <th class="text-end nowrap" style="width:16%">Price</th>
       <th class="text-end nowrap" style="width:14%">Tax</th>
-      <th class="text-end nowrap" style="width:16%">Subtotal</th>
+      <th class="text-end nowrap" style="width:16%">Amount</th>
     </tr>
   </thead>
 
   <tbody>
     <tr>
+      <td class="text-end">1</td>
       <td class="wrap">{{ jo.print_description|linebreaksbr }}</td>
       <td class="text-end nowrap">{{ jo.qty|indo_number }}</td>
       <td class="text-end nowrap">{{ jo.price|indo_number }}</td>
@@ -60,38 +64,95 @@
     </tr>
   </tbody>
 
-  <tfoot>
-    <tr>
-      <td class="text-end" colspan="4">Sub Total</td>
-      <td class="text-end">{{ jo.total_amount|indo_number }}</td>
-    </tr>
-    <tr>
-      <td class="text-end" colspan="4">Tax Amount</td>
-      <td class="text-end">{{ jo.tax_amount|indo_number }}</td>
-    </tr>
-    <tr>
-      <td class="text-end" colspan="4">Total Amount</td>
-      <td class="text-end">{{ jo.grand_total|indo_number }}</td>
-    </tr>
-    {% if jo.pph_amount %}
-      <tr>
-        <td class="text-end" colspan="4"><b>PPH</b></td>
-        <td class="text-end nowrap">-{{ jo.pph_amount }}</td>
-      </tr>
-    {% endif %}
-  </tfoot>
+<tfoot>
+  <!-- TOTAL BEFORE DISCOUNT -->
+  <tr>
+    <td class="text-end" colspan="5">Total</td>
+    <td class="text-end">{{ jo.total_amount|indo_number }}</td>
+  </tr>
+
+  <!-- DISCOUNT (only if exists) -->
+  {% if jo.discount_amount > 0 %}
+  <tr>
+    <td class="text-end" colspan="5">
+      Discount
+      {% if jo.discount_type == "PERCENT" %}
+        ({{ jo.discount_value|indo_number }}%)
+      {% endif %}
+    </td>
+    <td class="text-end">
+      -{{ jo.discount_amount|indo_number }}
+    </td>
+  </tr>
+  {% endif %}
+
+  <!-- SUBTOTAL AFTER DISCOUNT -->
+  <tr>
+    <td class="text-end" colspan="5">Sub Total</td>
+    <td class="text-end">
+      {{ jo.subtotal_after_discount|indo_number }}
+    </td>
+  </tr>
+
+  <!-- TAX -->
+  <tr>
+    <td class="text-end" colspan="5">VAT Amount</td>
+    <td class="text-end">
+      {{ jo.tax_amount|indo_number }}
+    </td>
+  </tr>
+
+  <!-- GRAND TOTAL -->
+  <tr>
+    <td class="text-end fw-bold" colspan="5"><b>Grand Total</b></td>
+    <td class="text-end fw-bold">
+      <b>{{ jo.grand_total|indo_number }}</b>
+    </td>
+  </tr>
+
+  {% if jo.pph_amount %}
+  <tr>
+    <td class="text-end" colspan="4"><b>PPH</b></td>
+    <td class="text-end nowrap">
+      -{{ jo.pph_amount|indo_number }}
+    </td>
+  </tr>
+  {% endif %}
+
+  <!-- DOWN PAYMENT SECTION -->
+  {% if jo.down_payment_percent > 0 %}
+  <tr>
+    <td colspan="5" style="border-left:0px;border-right:0px">&nbsp;</td>
+  </tr>
+
+  <tr>
+    <td class="text-end" colspan="5">
+      Down Payment ({{ jo.down_payment_percent|indo_number }}%)
+    </td>
+    <td class="text-end">
+      {{ jo.down_payment_amount|indo_number }}
+    </td>
+  </tr>
+
+ 
+  {% endif %}
+</tfoot>
+
+
+
+
 </table>
 
-<table style="margin-top:10px;">
+<table style="margin-top:10px; ">
   <tr>
     <td style="width:60%; vertical-align:top;">
       {% if jo.customer_note %}
         <div><b>Notes</b></div>
         <div class="wrap">{{ jo.customer_note|safe }}</div>
       {% endif %}
-      {% if jo.sla_note %}
-        <div style="margin-top:8px;"><b>Syarat dan Kondition</b></div>
-        <div class="wrap">{{ jo.sla_note|safe }}</div>
+      {% if jo.term_conditions %}
+        <div style="margin-top:12px;"><b>Term & Conditions</b></div>
+        <div class="wrap">{{ jo.term_conditions|safe }}</div>
       {% endif %}
     </td>
     <td style="width:40%; vertical-align:top;"></td>
@@ -143,6 +204,14 @@
     border-radius: 14px;
     box-shadow: 0 10px 28px rgba(0,0,0,.12);
   }
+
+.main-table td,
+.main-table th {
+  padding-top: 5px !important;
+  padding-bottom: 5px !important;
+  line-height: 1.4;
+  vertical-align: top;
+}
 
   @media print{
     .print-toolbar-outside{ display:none !important; }

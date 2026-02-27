@@ -42,8 +42,8 @@ urlpatterns = [
     path("projects/", include("projects.urls")),
     path("purchases/", include("purchases.urls")),
 
-    #path("payments/", include("payments.urls", namespace="payments")),
-    path("", include(("payments.urls", "payments"), namespace="payments")),
+    #path("billings/", include("billing.urls", namespace="billing")),
+    path("", include(("billing.urls", "billing"), namespace="billing")),
 
     
     path("accounting/", include("accounting.urls",namespace="accounting")),

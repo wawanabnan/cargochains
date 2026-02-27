@@ -689,7 +689,9 @@ class VendorBookingCreateView(LoginRequiredMixin, TemplateView):
         if mode not in ("SEA", "AIR", "INLAND"):
             mode = "GENERAL"
 
+        cfg = SalesConfig.get_solo()
 
+        
         vb = VendorBooking(
             job_order=job,
             vendor_id=locked_vendor_id,

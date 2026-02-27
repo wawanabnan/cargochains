@@ -1,0 +1,65 @@
+{% extends "print/base_preview_letterhead.html" %}
+
+{% block extra_css %}
+<style>
+  table.service {
+    width:100%;
+    border-collapse: collapse;
+    margin-top:10px;
+    font-size:12px;
+  }
+
+  table.service th {
+    background:#f0f0f0;
+    padding:6px;
+    border:1px solid #ddd;
+    font-weight:bold;
+  }
+
+  table.service td {
+    padding:6px;
+    border:1px solid #e2e2e2;
+  }
+
+  table.lines {
+    width:100%;
+    border-collapse: collapse;
+    margin-top:10px;
+    font-size:12px;
+  }
+
+  table.lines th {
+    background:#f0f0f0;
+    padding:6px;
+    border:1px solid #ddd;
+  }
+
+  table.lines td {
+    padding:6px;
+    border:1px solid #e2e2e2;
+  }
+
+  .text-right { text-align:right; }
+  .text-center { text-align:center; }
+  .muted { color:#666; }
+
+  .left-div {
+    float:left;
+    width:400px;
+  }
+
+  .right-div {
+    float:right;
+    width:300px;
+  }
+
+  .bank-div td {
+    font-size:10px;
+  }
+</style>
+{% endblock %}
+
+
+{% block content %}
+  {% include "customer_invoices/invoice_print_content.html" %}
+{% endblock %}

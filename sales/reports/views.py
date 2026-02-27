@@ -4,7 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from .services import SalesRevenueReportService
 from django.db import models
 
-from sales.models import Invoice
+from billing.models.customer_invoice import Invoice
 from django.db.models import Value
 from partners.models import Customer
 from core.models.currencies import Currency

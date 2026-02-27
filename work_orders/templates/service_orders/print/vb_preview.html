@@ -12,5 +12,33 @@
 {% endblock %}
 
 {% block content %}
+  {% if vb.status in "DRAFT,SUBMITTED,REJECTED,CANCELLED" %}
+
+    {% if vb.watermark_label %}
+    <div class="so-watermark">
+      {{ vb.watermark_label }}
+    </div>
+    {% endif %}
+  
+  {% endif %}
+
   {% include "service_orders/print/_vb_body.html" %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.so-watermark {
+    position: fixed;
+    top: 55%;                 /* ⬅ lebih turun */
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-30deg);
+    font-size: 120px;
+    font-weight: 800;
+    color: rgba(120, 120, 120, 0.06);  /* ⬅ abu & lebih transparan */
+    letter-spacing: 14px;
+    z-index: 0;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
 {% endblock %}
