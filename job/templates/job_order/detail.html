@@ -121,17 +121,7 @@
             {% endif %}
 
 
-            <!-- SHOW TO INVOICE -->
-             {% if job.status == job.ST_IN_PROGRESS %}
-               <form method="post" action="{% url 'job:job_order_generate_invoice' job.pk %}" class="d-inline">
-
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-primary">
-                <i class="bi bi-receipt"></i> To Invoice
-              </button>
-            </form>
-            {% endif %}
-            
+                   
             
 
             <!-- TO INVOICE (hanya setelah completed) -->
