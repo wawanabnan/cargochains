@@ -383,17 +383,19 @@ from django.db import transaction
 
 class JobOrderCostsUpdateView(LoginRequiredMixin, View):
 
-    
-    def post(self, request, pk):
+   def post(self, request, pk):
 
         job = get_object_or_404(JobOrder, pk=pk)
+        is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
 
+        # ===============================
+        # 🔒 Lock status
+        # ===============================
         if job.status in {
-                JobOrder.ST_IN_PROGRESS,
-                JobOrder.ST_COMPLETED,
-                JobOrder.ST_CANCELLED,
-            }:
-            is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+            JobOrder.ST_IN_PROGRESS,
+            JobOrder.ST_COMPLETED,
+            JobOrder.ST_CANCELLED,
+        }:
             msg = "Job Cost terkunci saat status IN PROGRESS."
 
             if is_ajax:
@@ -406,51 +408,33 @@ class JobOrderCostsUpdateView(LoginRequiredMixin, View):
             messages.error(request, msg)
             return redirect("job:job_order_detail", pk=job.pk)
 
-
+        # ===============================
+        # 🧾 Build Formset
+        # ===============================
         formset = JobCostFormSet(request.POST, instance=job)
-        is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
 
-        # ==================================================
-        # ✅ FINAL RULE:
-        # kalau user TIDAK menyentuh apa pun → JANGAN validasi
-        # ==================================================
-        touched = request.POST.get("jobcost_touched") == "1"
+        # ===============================
+        # 🛑 Tidak Ada Perubahan
+        # ===============================
+        if not formset.has_changed():
 
-        if not touched:
             if is_ajax:
-                html = render_to_string(
-                    "job_order/extension/_cost_detail.html",
-                    {
-                        "job": job,
-                        "cost_formset": JobCostFormSet(instance=job),
-                        "cost_type_meta_json": cost_type_meta_json(),
-                    },
-                    request=request,
-                )
                 return JsonResponse({
                     "ok": True,
                     "ajax": True,
                     "message": "Tidak ada perubahan.",
-                    "html": html,
-                    "debug": {"touched": False},
+                    # ⛔ jangan kirim html → jangan replace DOM
                 })
 
             messages.info(request, "Tidak ada perubahan pada Job Cost.")
             return redirect("job:job_order_detail", pk=job.pk)
 
-        # ==================================================
-        # ⬇️ BARU DI SINI VALIDASI KETAT
-        # ==================================================
-        print("DESC required:", formset.forms[-1].fields["description"].required)
-        print("DESC model blank:", formset.forms[-1]._meta.model._meta.get_field("description").blank)
-        print("DESC posted:", repr(formset.forms[-1].data.get("job_order_costs-6-description")))
-
+        # ===============================
+        # ❌ Invalid
+        # ===============================
         if not formset.is_valid():
 
-            # ==================================================
-            # ✅ INJECT class "is-invalid" utk field yang error
-            # (biar border merah muncul di UI)
-            # ==================================================
+            # inject is-invalid class
             for f in formset.forms:
                 if not f.errors:
                     continue
@@ -461,12 +445,6 @@ class JobOrderCostsUpdateView(LoginRequiredMixin, View):
                     css = field.widget.attrs.get("class", "")
                     if "is-invalid" not in css:
                         field.widget.attrs["class"] = (css + " is-invalid").strip()
-            # ==================================================
-
-            debug = {
-                "non_form_errors": formset.non_form_errors(),
-                "forms": [f.errors for f in formset.forms],
-            }
 
             if is_ajax:
                 html = render_to_string(
@@ -475,7 +453,7 @@ class JobOrderCostsUpdateView(LoginRequiredMixin, View):
                         "job": job,
                         "cost_formset": formset,
                         "cost_type_meta_json": cost_type_meta_json(),
-                        "cost_locked": job.is_cost_locked, 
+                        "cost_locked": job.is_cost_locked,
                     },
                     request=request,
                 )
@@ -484,32 +462,32 @@ class JobOrderCostsUpdateView(LoginRequiredMixin, View):
                     "ajax": True,
                     "message": "Ada error input. Cek field merah.",
                     "html": html,
-                    "debug": debug,
                 }, status=400)
 
             messages.error(request, "Ada error input pada Job Cost.")
             return redirect("job:job_order_detail", pk=job.pk)
 
-        # ==================================================
-        # ✅ SAVE (karena touched + valid)
-        # ==================================================
+        # ===============================
+        # 💾 SAVE
+        # ===============================
         with transaction.atomic():
+
             instances = formset.save(commit=False)
 
-            # SAVE/UPDATE yang ada di formset
             for obj in instances:
-            #    ct = obj.cost_type  # JobCostType instance
-            #    obj.uom_id = ct.uom_id   # ✅ copy FK id (anti string)
                 obj.save()
 
-            # DELETE rows yang ditandai
             for obj in formset.deleted_objects:
                 obj.delete()
 
             formset.save_m2m()
 
+        # ===============================
+        # ✅ SUCCESS
+        # ===============================
         if is_ajax:
             fresh_formset = JobCostFormSet(instance=job)
+
             html = render_to_string(
                 "job_order/extension/_cost_detail.html",
                 {
@@ -520,6 +498,7 @@ class JobOrderCostsUpdateView(LoginRequiredMixin, View):
                 },
                 request=request,
             )
+
             return JsonResponse({
                 "ok": True,
                 "ajax": True,
@@ -528,9 +507,7 @@ class JobOrderCostsUpdateView(LoginRequiredMixin, View):
             })
 
         messages.success(request, "Job Cost tersimpan.")
-        return redirect("job:job_order_detail", pk=job.pk)
-
-    
+        return redirect("job:job_order_detail", pk=job.pk) 
 
 def _build_tax_map():
     qs = Tax.objects.filter(is_active=True).only("id", "rate", "is_withholding")

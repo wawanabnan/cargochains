@@ -1,3 +1,66 @@
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 5.15.0-164-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Tue Mar  3 11:46:13 WIB 2026
+
+  System load:  0.14               Processes:             160
+  Usage of /:   76.9% of 57.97GB   Users logged in:       1
+  Memory usage: 50%                IPv4 address for eth0: 103.127.99.53
+  Swap usage:   53%
+
+ * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+   just raised the bar for easy, resilient and secure K8s cluster deployment.
+
+   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+
+Expanded Security Maintenance for Applications is not enabled.
+
+100 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+27 additional security updates can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+
+*** System restart required ***
+You have mail.
+Last login: Fri Feb 27 13:50:22 2026 from 182.10.97.33
+[exited]
+root@mail:~# sudo -iu django
+django@mail:~$ cd ~/apps/cargochains
+django@mail:~/apps/cargochains$ nano /work_orders/view/service_orders.py
+django@mail:~/apps/cargochains$ nano work_orders/view/service_orders.py
+django@mail:~/apps/cargochains$ nano work_orders/views/service_orders.py
+django@mail:~/apps/cargochains$ cd /static
+-bash: cd: /static: No such file or directory
+django@mail:~/apps/cargochains$ ls
+4.2         config     django-error.log  media      requirements.txt     staticfiles
+account     core       geo               partners   sales                templates
+accounting  coreutils  job               payments   sales_configuration  timestamps.patch
+billing     data       _logs             projects   shipments            venv
+bin         deploy     manage.py         purchases  static               work_orders
+django@mail:~/apps/cargochains$ cd staticfiles
+django@mail:~/apps/cargochains/staticfiles$ ls
+admin     adminlte4  core  __init__.py  js     rest_framework  summernote  vendor_bookings
+adminlte  brand      img   jazzmin      print  stellar         vendor
+django@mail:~/apps/cargochains/staticfiles$ cd js
+django@mail:~/apps/cargochains/staticfiles/js$ cd job
+django@mail:~/apps/cargochains/staticfiles/js/job$ ls
+ attachment.js           jobcost_ajax.js           job_discount.js   job_utils.js
+ idr_kurs.js            'jobcost_table copy.js'    job_form.js       location_init.js
+ job_calc.js             jobcost_table_insert.js   job_location.js
+'jobcost_ajax copy.js'   jobcost_table.js          job_taxes.js
+django@mail:~/apps/cargochains/staticfiles/js/job$ nano job_cost_ajax.js
+django@mail:~/apps/cargochains/staticfiles/js/job$ nano jobcost_ajax.js
+django@mail:~/apps/cargochains/staticfiles/js/job$ nano jobcost_ajax.js
+django@mail:~/apps/cargochains/staticfiles/js/job$ nano jobcost_ajax.js
+django@mail:~/apps/cargochains/staticfiles/js/job$ nano jobcost_ajax.js
+django@mail:~/apps/cargochains/staticfiles/js/job$ nano jobcost_ajax.js
+django@mail:~/apps/cargochains/staticfiles/js/job$ nano jobcost_ajax.js
+django@mail:~/apps/cargochains/staticfiles/js/job$ cat  jobcost_ajax.js
 // jobcost_ajax.js (CLEAN)
 // - AJAX submit untuk Job Cost formset
 // - Replace partial HTML ke container
@@ -159,7 +222,7 @@
     });
 
     // replace partial (baik success maupun error)
-    if (data && data.html) {
+    if (data && data.html === "string") {
       const root = getRoot();
       // kalau root = document, jangan innerHTML (safety)
       if (root !== document) root.innerHTML = data.html;
@@ -168,6 +231,7 @@
         window.initJobCostTable();
       }
        ensureJobCostDebugVisibleIfEnabled();
+       bindOnce();
     }
 
     // INVALID 400 => alert + buka wrapper hidden + fokus
@@ -186,6 +250,13 @@
     }
 
     // SUCCESS
+
+    if (!data.html) {
+       showJobCostAlert(data?.message || "Tidak ada perubahan", "info", 2000);
+       return data;
+    }
+
+
     showJobCostAlert(data?.message || "Tersimpan ✅", "success", 2500);
     return data;
   }

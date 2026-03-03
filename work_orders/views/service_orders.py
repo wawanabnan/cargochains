@@ -733,6 +733,7 @@ class VendorBookingCreateView(LoginRequiredMixin, TemplateView):
             ))
 
         VendorBookingLine.objects.bulk_create(vb_lines)
+        
 
         update_url = reverse("work_orders:service_order_update", args=[vb.id])
         return redirect(
