@@ -45,8 +45,8 @@ class ProfitabilityService:
 
         # guard posted kalau field ada
         try:
-            j = Journal.objects.only("id", "is_posted").get(id=jid)
-            if hasattr(j, "is_posted") and not j.is_posted:
+            j = Journal.objects.only("id", "posted").get(id=jid)
+            if hasattr(j, "posted") and not j.posted:
                 return DEC0
         except Journal.DoesNotExist:
             return DEC0
@@ -103,8 +103,8 @@ class ProfitabilityService:
 
         # kalau mau enforce posted:
         try:
-            j = Journal.objects.only("id", "is_posted").get(id=jid)
-            if hasattr(j, "is_posted") and not j.is_posted:
+            j = Journal.objects.only("id", "posted").get(id=jid)
+            if hasattr(j, "posted") and not j.posted:
                 return []
         except Journal.DoesNotExist:
             return []
@@ -120,7 +120,7 @@ class ProfitabilityService:
 class COGSJournalReportService:
     """
     Report audit jurnal COGS (ledger view).
-    Default: posted only kalau field is_posted tersedia.
+    Default: posted only kalau field posted tersedia.
     """
 
     def get_journals(self, *, date_from=None, date_to=None, posted_only=True, journal_id=None):
@@ -131,8 +131,8 @@ class COGSJournalReportService:
             qs = qs.filter(journal_type="COGS")
 
         # posted only (kalau field ada)
-        if posted_only and hasattr(Journal, "is_posted"):
-            qs = qs.filter(is_posted=True)
+        if posted_only and hasattr(Journal, "posted"):
+            qs = qs.filter(posted=True)
 
         if journal_id:
             qs = qs.filter(id=journal_id)
