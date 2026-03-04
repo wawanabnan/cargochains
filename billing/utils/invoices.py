@@ -135,7 +135,12 @@ def generate_invoice_from_job(job, invoice_type, user):
     # =============================
     # CREATE INVOICE
     # =============================
+   
     with transaction.atomic():
+
+    # =============================
+    # CEK DUPLICATE DP
+    # =============================
         if invoice_type == Invoice.INV_DP:
             if Invoice.objects.select_for_update().filter(
                 job_order=job,
@@ -143,35 +148,70 @@ def generate_invoice_from_job(job, invoice_type, user):
             ).exists():
                 raise ValidationError("DP invoice already exists.")
 
+        # =============================
+        # FINAL INVOICE (NO RECALC TAX)
+        # =============================
+        if invoice_type == Invoice.INV_FINAL:
 
-        invoice = Invoice.objects.create(
-            job_order=job,
-            invoice_type=invoice_type,
-            customer=job.customer,
-            currency=job.currency,
-            payment_term=job.payment_term,
-            subtotal_amount=0,
-            tax_amount=0,
-            total_amount=0,
-            tax_locked=True,  
-            status=Invoice.ST_DRAFT,
-            created_by=user,
-        )
+            invoice = Invoice.objects.create(
+                job_order=job,
+                invoice_type=invoice_type,
+                customer=job.customer,
+                currency=job.currency,
+                payment_term=job.payment_term,
+                subtotal_amount=job.subtotal_amount,
+                tax_amount=job.tax_amount,
+                total_amount=job.grand_total,
+                tax_locked=True,
+                status=Invoice.ST_DRAFT,
+                created_by=user,
+            )
 
-        line = InvoiceLine.objects.create(
-            invoice=invoice,
-            description=description,
-            quantity=1,
-            price=base_amount,
-            amount=base_amount,
-            service=job.service if hasattr(job, "service") else None,
-        )
+            InvoiceLine.objects.create(
+                invoice=invoice,
+                description=description,
+                quantity=1,
+                price=job.subtotal_amount,
+                amount=job.subtotal_amount,
+                service=job.service if hasattr(job, "service") else None,
+            )
 
-        # Copy taxes from service
-        if job.service and hasattr(job.service, "taxes"):
-            line.taxes.set(job.service.taxes.all())
+            # ❌ JANGAN COPY TAX
+            # ❌ JANGAN recalc
 
-        # Calculate totals
-        recalc_invoice_totals(invoice)
+        # =============================
+        # DP INVOICE (NORMAL TAX FLOW)
+        # =============================
+        else:
 
-    return invoice
+            invoice = Invoice.objects.create(
+                job_order=job,
+                invoice_type=invoice_type,
+                customer=job.customer,
+                currency=job.currency,
+                payment_term=job.payment_term,
+                subtotal_amount=0,
+                tax_amount=0,
+                total_amount=0,
+                tax_locked=True,
+                status=Invoice.ST_DRAFT,
+                created_by=user,
+            )
+
+            line = InvoiceLine.objects.create(
+                invoice=invoice,
+                description=description,
+                quantity=1,
+                price=base_amount,
+                amount=base_amount,
+                service=job.service if hasattr(job, "service") else None,
+            )
+
+            # DP boleh copy tax
+            if job.service and hasattr(job.service, "taxes"):
+                line.taxes.set(job.service.taxes.all())
+
+            # DP boleh hitung ulang
+            recalc_invoice_totals(invoice)
+
+            return invoice
